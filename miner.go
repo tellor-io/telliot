@@ -30,6 +30,9 @@ import (
     "math/rand"
     "time"
     "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
+    tellor "./contracts" // for demo
 )
 
 //Variables - eventually put in config file
@@ -39,6 +42,7 @@ const networkID uint8 = 1
 const publicKey bytes = "0x..."
 const privateKey bytes = "0x..."
 const databaseURL string = "http://localhost7545"
+const abi string = json.abi;
 
 
 /*Variables to Grab
@@ -78,47 +82,91 @@ func solveChallenge(challenge bytes, difficulty uint32) uin32{
 
 }
 
-func getRequestedValues(){
+func getRequestedValues() (bool,uint) {
 
+	return true,value
+
+}
+
+func checkGasPriceAndBalance() (bool,uint){
+	myBalance := 0;
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+		if err != nil {
+		  log.Fatal(err)
+		}
+	if(myBalance > gasPrice * transactionCost){
+		return true, gasPrice
+	}
+	else{
+		return false,0
+	}
 }
 
 func submitTransaction(solution uint, requestId uint){
 	//pull current gas price
 	//check if you have enough gas (warn if low)
 	//submit transaction
-	value = process.argv[4] - 0
+	goodToSubmit,gasCost := checkGasPriceAndBalance()
+	if goodToSubmit {
+		goodToSubmit,value = process.argv[4] - 0
+		if goodToSubmit{
+		    client, err := ethclient.Dial("https://rinkeby.infura.io")
+		    if err != nil {
+		        log.Fatal(err)
+		    }
 
+		    privateKey, err := crypto.HexToECDSA(privateKey)
+		    if err != nil {
+		        log.Fatal(err)
+		    }
 
-	var address = process.argv[5];
-	var abi = json.abi;
-	var account = process.argv[6];
-	var privateKey = new Buffer(process.argv[7], 'hex');
+		    publicKey := privateKey.Public()
+		    publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		    if !ok {
+		        log.Fatal("error casting public key to ECDSA")
+		    }
 
-	let myContract = new web3.eth.Contract(abi,address);
-	let data = myContract.methods.submitMiningSolution(solution,requestId,value).encodeABI();
+		    fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+		    nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+		    if err != nil {
+		        log.Fatal(err)
+		    }
 
-	//web3.eth.sendTransaction({to: oracle.address,from:accounts[0],gas:7000000,data:oracle2.methods.requestData(api,0,0).encodeABI()});
+		    auth := bind.NewKeyedTransactor(privateKey)
+		    auth.Nonce = big.NewInt(int64(nonce))
+		    auth.Value = big.NewInt(0)     // in wei
+		    auth.GasLimit = uint64(300000) // in units
+		    auth.GasPrice = gasCost
 
-	web3.eth.getTransactionCount(account, function (err, nonce) {
-	     var tx = new Tx({
-	      nonce: nonce,
-	      gasPrice: web3.utils.toHex(web3.utils.toWei('20', 'gwei')),
-	      gasLimit: 2000000,
-	      to: address,
-	      value: 0,
-	      data: data,
-	    });
-	    tx.sign(privateKey);
+		    address := common.HexToAddress(contractAddress)
+		    instance, err := tellor.submitMiningSolution(solution,requestId,value)
+		    if err != nil {
+		        log.Fatal(err)
+		    }
 
-	    var raw = '0x' + tx.serialize().toString('hex');
-	    web3.eth.sendSignedTransaction(raw).on('transactionHash', function (txHash) {
-	      }).on('receipt', function (receipt) {
-	          //console.log("receipt:" + receipt);
-	      }).on('confirmation', function (confirmationNumber, receipt) {
-	          //console.log("confirmationNumber:" + confirmationNumber + " receipt:" + receipt);
-	      }).on('error', function (error) {
-	    });
-	  });
+		    key := [32]byte{}
+		    value := [32]byte{}
+		    copy(key[:], []byte("foo"))
+		    copy(value[:], []byte("bar"))
+
+		    tx, err := instance.SetItem(auth, key, value)
+		    if err != nil {
+		        log.Fatal(err)
+		    }
+
+		    fmt.Printf("tx sent: %s", tx.Hash().Hex()) // tx sent: 0x8d490e535678e9a24360e955d75b27ad307bdfb97a1dca51d0f3035dcee3e870
+
+		    result, err := instance.Items(nil, key)
+		    if err != nil {
+		        log.Fatal(err)
+		    }
+
+		    fmt.Println(string(result[:])) // "bar"
+
+		}
+
+	}
+
 }
 
 func main() {
@@ -141,3 +189,13 @@ func main() {
 		}
 	}
 }
+
+package main
+
+import (
+    "fmt"
+    "log"
+
+
+
+)
