@@ -20,6 +20,11 @@ Other features that it should also have to properly do these main tasks:
 Resources:
 https://goethereumbook.org/client-setup/
 
+To create go file:
+	cd contracts
+	abigen -sol TellorMaster.sol -pkg contracts -out tellorMaster.go
+
+
 */
 
 package main
@@ -32,7 +37,11 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
-    tellor "./contracts" // for demo
+    "crypto/sha256"
+    "github.com/miguelmota/go-solidity-sha3"
+	"golang.org/x/crypto/ripemd160"
+	
+    tellor "./contracts"
 )
 
 //Variables - eventually put in config file
@@ -54,10 +63,25 @@ const abi string = json.abi;
 	Current Ethereum balance (check if you have enough)
 */
 
-func getCurrentChallenge(){
+func getCurrentChallenge() string,uint,uint,string,uint,uint {
 
-	return currentChallenge, difficulty, requestId
+	client, err := ethclient.Dial("http://localhost:8545")
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	contractAddress := common.HexToAddress("0x9f7bC259319001166e986210d846af7C15B1f644")
+	instance, err := tellor.NewTellorMaster(contractAddress, client)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	currentChallenge, requestId, difficulty, queryString, granularity, totalTip, err := instance.GetCurrentVariables(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(fmt.Sprintf("%x", currentChallenge), requestId, difficulty, queryString, granularity, totalTip) // 60806...10029
+	return fmt.Sprintf("%x", currentChallenge), requestId, difficulty, queryString, granularity, totalTip
 }
 
 func solveChallenge(challenge bytes, difficulty uint32) uin32{
@@ -66,11 +90,16 @@ func solveChallenge(challenge bytes, difficulty uint32) uin32{
 	i := 0 //
 	s1 := rand.NewSource(time.Now().UnixNano())
     r1 := rand.New(s1)
-
-	for solution = 0 && i < 100000{
-		v = Web3.toHex(Web3.sha3(hexstr=_string));
-		z= hashlib.new('ripemd160',bytes.fromhex(v[2:])).hexdigest()
-		n = "0x" + hashlib.new('sha256',bytes.fromhex(z)).hexdigest()
+		_string = str(challenge).strip() + public_address[2:].strip() + str(nonce)[2:].strip()
+		for solution = 0 && i < 100000{
+	    hash := solsha3.SoliditySHA3(
+	        solsha3.String(_string),
+	    )
+		hasher := ripemd160.New()
+		hasher.Write([]byte(hash))
+		z:= hasher.Sum(nil)
+		z= hashlib.new('ripemd160',bytes.fromhex(hash).hexdigest()
+		n := sha256.Sum256([]byte(z)
 		hash1 = int(n,16);
 		if hash1 % difficulty == 0{
 			return solution
@@ -82,8 +111,8 @@ func solveChallenge(challenge bytes, difficulty uint32) uin32{
 
 }
 
-func getRequestedValues() (bool,uint) {
-
+func getRequestedValues(_granularity uint64) (bool,uint) {
+	value = 1000 * _granularity
 	return true,value
 
 }
@@ -189,13 +218,3 @@ func main() {
 		}
 	}
 }
-
-package main
-
-import (
-    "fmt"
-    "log"
-
-
-
-)
