@@ -87,28 +87,35 @@ func getCurrentChallenge() string,uint,uint,string,uint,uint {
 func solveChallenge(challenge bytes, difficulty uint32) uin32{
 	//intermittently check if challenge has changed
 	solution := 0
-	i := 0 //
-	s1 := rand.NewSource(time.Now().UnixNano())
-    r1 := rand.New(s1)
-		_string = str(challenge).strip() + public_address[2:].strip() + str(nonce)[2:].strip()
-		for solution = 0 && i < 100000{
-	    hash := solsha3.SoliditySHA3(
-	        solsha3.String(_string),
-	    )
+	for i := 0; i < 100000000 {
+		nonce := randInt(0, 100000000000000000000000)
+		_string := challenge + public_address[2:] + nonce
+		hash := solsha3.SoliditySHA3(
+			solsha3.Bytes32(decodeHex(_string)),
+		)
 		hasher := ripemd160.New()
 		hasher.Write([]byte(hash))
-		z:= hasher.Sum(nil)
-		z= hashlib.new('ripemd160',bytes.fromhex(hash).hexdigest()
-		n := sha256.Sum256([]byte(z)
-		hash1 = int(n,16);
-		if hash1 % difficulty == 0{
-			return solution
+		hash1 := hasher.Sum(nil)
+		n := sha256.Sum256([]byte(hash1))
+		q := fmt.Sprintf("%x", n)
+		p := new(big.Int)
+		p, ok := p.SetString(q, 16)
+		if !ok {
+			fmt.Println("SetString: error")
+			return 1
+		}
+		v := big.NewInt(difficulty)
+		x := new(big.Int)
+		fmt.Println(v)
+		x.Mod(p, v)
+		fmt.Println(x)
+		if x.Cmp(big.NewInt(0)) == 0 {
+			fmt.Println("Solution Found", p)
+			return p
 		}
 		i++
 	}
-
-	return solution
-
+	return 0
 }
 
 func getRequestedValues(_granularity uint64) (bool,uint) {
