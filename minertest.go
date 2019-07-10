@@ -7,7 +7,7 @@ import (
 	"log"
 	"math/big"
 
-	tellor "./contracts"
+	tellor "./contracts1"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -57,16 +57,16 @@ func submitSolution() {
 	auth.GasPrice = gasPrice
 
 	contractAddress := common.HexToAddress("0x9f7bC259319001166e986210d846af7C15B1f644")
-	instance, err := tellor.NewTellor(contractAddress, client)
+	instance, err := tellor.NewTellorTransactor(contractAddress, client)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var requestId uint = 9
-	var value uint = 1000
+	requestId := big.NewInt(1)
+	value := big.NewInt(1000)
 	solution := "85000"
 
-	tx, err := instance.submitMiningSolution(auth, solution, requestId, value)
+	tx, err := instance.SubmitMiningSolution(auth, solution, requestId, value)
 	if err != nil {
 		log.Fatal(err)
 	}
