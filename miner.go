@@ -36,9 +36,11 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
+	"os"
 	"time"
 
 	tellor "./contracts"
@@ -51,21 +53,22 @@ import (
 	"golang.org/x/crypto/ripemd160"
 )
 
-//Variables - eventually put in config file
-const contract_Address string = "0x9f7bC259319001166e986210d846af7C15B1f644"
-const nodeURL string = "http://localhost:8545" // or "https://mainnet.infura.io"
-const private_Key string = "4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16"
-const databaseURL string = "http://localhost7545"
-const public_address string = "e037ec8ec9ec423826750853899394de7f024fee"
+type Config struct {
+	Contract_Address string `json:"contract_Address"`
+	NodeURL          string `json:"nodeURL"`
+	Private_Key      string `json:"private_Key"`
+	DatabaseURL      string `json:"databaseURL"`
+	Public_address   string `json:"public_address"`
+}
 
-func getCurrentChallenge() ([]byte, *big.Int, *big.Int, string, *big.Int, *big.Int) {
+func getCurrentChallenge(Config Config) ([]byte, *big.Int, *big.Int, string, *big.Int, *big.Int) {
 
-	client, err := ethclient.Dial(nodeURL)
+	client, err := ethclient.Dial(Config.NodeURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	contractAddress := common.HexToAddress(contract_Address)
+	contractAddress := common.HexToAddress(Config.Contract_Address)
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
 	if err != nil {
 		log.Fatal(err)
@@ -103,11 +106,11 @@ func decodeHex(s string) []byte {
 	return b
 }
 
-func solveChallenge(challenge []byte, _difficulty *big.Int) string {
+func solveChallenge(Config Config, challenge []byte, _difficulty *big.Int) string {
 	for i := 0; i < 100000000; i++ {
 		nonce := randInt() //do we need to use big number?
 		fmt.Println(nonce)
-		_string := fmt.Sprintf("%x", challenge) + public_address + nonce
+		_string := fmt.Sprintf("%x", challenge) + Config.Public_address + nonce
 		fmt.Println("String created", _string)
 		hash := solsha3.SoliditySHA3(
 			solsha3.Bytes32(decodeHex(_string)),
@@ -143,13 +146,13 @@ func getRequestedValues(_requestId, _granularity *big.Int) (bool, *big.Int) {
 
 }
 
-func submitTransaction(solution string, value, requestId *big.Int) {
-	client, err := ethclient.Dial(nodeURL)
+func submitTransaction(Config Config, solution string, value, requestId *big.Int) {
+	client, err := ethclient.Dial(Config.NodeURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	privateKey, err := crypto.HexToECDSA(private_Key)
+	privateKey, err := crypto.HexToECDSA(Config.Private_Key)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -184,7 +187,7 @@ func submitTransaction(solution string, value, requestId *big.Int) {
 		auth.GasLimit = uint64(300000) // in units
 		auth.GasPrice = gasPrice
 
-		contractAddress := common.HexToAddress(contract_Address)
+		contractAddress := common.HexToAddress(Config.Contract_Address)
 		instance, err := tellor1.NewTellorTransactor(contractAddress, client)
 		if err != nil {
 			log.Fatal(err)
@@ -201,23 +204,34 @@ func submitTransaction(solution string, value, requestId *big.Int) {
 }
 
 func main() {
+
+	var config Config
+	configFile, err := os.Open("config.json")
+	fmt.Println(configFile)
+	defer configFile.Close()
+	if err != nil {
+		return
+	}
+	dec := json.NewDecoder(configFile)
+	err = dec.Decode(&config)
+	fmt.Println("config", config)
 	var nonce string
 	var prevCurrentChallenge []byte
 	x := 0
 	fmt.Println("starting miner")
 	for x < 10 {
-		currentChallenge, requestId, difficulty, _, granularity, _ := getCurrentChallenge()
+		currentChallenge, requestId, difficulty, _, granularity, _ := getCurrentChallenge(config)
 		fmt.Println("challenge retrieved", requestId.String())
 		if x == 0 || bytes.Compare(prevCurrentChallenge, currentChallenge) != 0 {
 			prevCurrentChallenge = currentChallenge
 			fmt.Println("Going to get Challenge")
-			nonce = solveChallenge(currentChallenge, difficulty)
+			nonce = solveChallenge(config, currentChallenge, difficulty)
 			fmt.Println("Challenge Solved", nonce)
 			if nonce != "" {
 				goodValue, value := getRequestedValues(requestId, granularity)
 				fmt.Println("Value Retrieved", value.String())
 				if goodValue {
-					submitTransaction(nonce, value, requestId)
+					submitTransaction(config, nonce, value, requestId)
 					fmt.Println("Transaction submitted!")
 				} else {
 					fmt.Println("Value Error")
