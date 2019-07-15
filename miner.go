@@ -43,8 +43,10 @@ import (
 	"os"
 	"time"
 
-	tellor "./pkg/contracts"
-	tellor1 "./contracts1"
+	tellor1 "github.com/tellor-io/TellorMiner/contracts1"
+
+	tellor "github.com/tellor-io/TellorMiner/contracts"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
