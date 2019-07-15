@@ -10,11 +10,19 @@ import (
 )
 
 type mockClient struct {
+	balance  *big.Int
+	nonce    uint64
+	gasPrice *big.Int
 }
 
 //NewMockClient returns instance of mock client
 func NewMockClient() ETHClient {
 	return &mockClient{}
+}
+
+//NewMockClientWithValues creates a mock client with default values to return for calls
+func NewMockClientWithValues(balance *big.Int, nonce uint64, gasPrice *big.Int) ETHClient {
+	return &mockClient{balance, nonce, gasPrice}
 }
 
 func (c *mockClient) Close() {
@@ -30,13 +38,13 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 }
 
 func (c *mockClient) PendingNonceAt(ctx context.Context, address common.Address) (uint64, error) {
-	return 0, nil
+	return c.nonce, nil
 }
 
 func (c *mockClient) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
-	return new(big.Int), nil
+	return c.gasPrice, nil
 }
 
 func (c *mockClient) BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error) {
-	return new(big.Int), nil
+	return c.balance, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
 )
 
@@ -14,8 +15,8 @@ type TestTracker struct {
 
 //Exec impl for test tracker
 func (t *TestTracker) Exec(ctx context.Context) error {
-	fmt.Printf("Test execution with client: %+v, DB: %+v\n", ctx.Value(ClientContextKey), ctx.Value(DBContextKey))
-	db := ctx.Value(DBContextKey).(db.DB)
+	fmt.Printf("Test execution with client: %+v, DB: %+v\n", ctx.Value(ClientContextKey), ctx.Value(common.DBContextKey))
+	db := ctx.Value(common.DBContextKey).(db.DB)
 	err := db.Put("TEST", []byte("Value"))
 	if err != nil {
 		log.Fatal(err)

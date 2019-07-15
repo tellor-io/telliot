@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
@@ -55,7 +56,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 				{
 
 					c := context.WithValue(ctx, ClientContextKey, r.client)
-					c = context.WithValue(c, DBContextKey, r.db)
+					c = context.WithValue(c, common.DBContextKey, r.db)
 					for _, t := range trackers {
 						err := t.Exec(c)
 						if err != nil {

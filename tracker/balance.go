@@ -5,7 +5,10 @@ import (
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
@@ -18,9 +21,7 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 
 	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(ClientContextKey).(rpc.ETHClient)
-
-	//do this later
-	//DB := ctx.Value("DB")
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	//get the single config instance
 	cfg, err := config.GetConfig()
@@ -40,7 +41,7 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 		log.Fatal(err)
 		return err
 	}
-	log.Printf("Balance: %v", balance)
-	//DB.update("Balance", balance)
-	return nil
+	enc := hexutil.EncodeBig(balance)
+	log.Printf("Balance: %v", enc)
+	return DB.Put(db.BalanceKey, []byte(enc))
 }
