@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -11,6 +12,9 @@ import (
 
 //ETHClient is the main abstraction interface for client operations
 type ETHClient interface {
+	//close the client
+	Close()
+
 	// CodeAt returns the code of the given account. This is needed to differentiate
 	// between contract internal errors and the local chain being out of sync.
 	CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
@@ -40,6 +44,11 @@ func NewClient(ct context.Context, url string) (ETHClient, error) {
 		return nil, err
 	}
 	return &clientInstance{ethClient: client}, nil
+}
+
+func (c *clientInstance) Close() {
+	fmt.Println("Closing ETHClient")
+	c.ethClient.Close()
 }
 
 func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {

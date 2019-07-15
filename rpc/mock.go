@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -11,9 +12,13 @@ import (
 type mockClient struct {
 }
 
-//NewMock returns instance of mock client
+//NewMockClient returns instance of mock client
 func NewMockClient() ETHClient {
 	return &mockClient{}
+}
+
+func (c *mockClient) Close() {
+	fmt.Println("Closing mock client")
 }
 
 func (c *mockClient) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {

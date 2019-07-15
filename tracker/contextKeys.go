@@ -7,4 +7,7 @@ import (
 var (
 	//ClientContextKey is the key used to set the eth client on tracker contexts
 	ClientContextKey = util.NewKey("tracker", "ETHClient")
+
+	//DBContextKey is the key used to set the DB instance on tracker contexts
+	DBContextKey = util.NewKey("tracker", "DB")
 )

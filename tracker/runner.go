@@ -6,18 +6,19 @@ import (
 	"time"
 
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
 //Runner will execute all configured trackers
 type Runner struct {
 	client rpc.ETHClient
-	//db db.DBClient
+	db     db.DB
 }
 
 //NewRunner will create a new runner instance
-func NewRunner(client rpc.ETHClient) (*Runner, error) {
-	return &Runner{client: client}, nil
+func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
+	return &Runner{client: client, db: db}, nil
 }
 
 //Start will kick off the runner until the given exit channel selects.
@@ -39,6 +40,9 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 
 	ticker := time.NewTicker(time.Duration(sleep) * time.Second)
 	go func() {
+		defer r.client.Close()
+		defer r.db.Close()
+
 		for {
 			select {
 			case _ = <-exitCh:
@@ -51,6 +55,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 				{
 
 					c := context.WithValue(ctx, ClientContextKey, r.client)
+					c = context.WithValue(c, DBContextKey, r.db)
 					for _, t := range trackers {
 						err := t.Exec(c)
 						if err != nil {
