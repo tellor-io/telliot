@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/tellor-io/TellorMiner/util"
 )
 
 //Config holds global config info derived from config.json
@@ -13,8 +15,13 @@ type Config struct {
 	PrivateKey        string   `json:"privateKey"`
 	DatabaseURL       string   `json:"databaseURL"`
 	PublicAddress     string   `json:"publicAddress"`
+	EthClientTimeout  uint     `json:"ethClientTimeout"`
 	TrackerSleepCycle uint     `json:"trackerCycle"` //in seconds
-	Trackers          []string `json:"trackerTypes"`
+	Trackers          []string `json:"trackers"`
+	DBFile            string   `json:"dbFile"`
+	ServerHost        string   `json:"serverHost"`
+	ServerPort        uint     `json:"serverPort"`
+	logger            *util.Logger
 }
 
 var config *Config
@@ -31,7 +38,8 @@ func init() {
 	}
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
-	fmt.Printf("config: %+v", config)
+	config.logger = util.NewLogger("config", "Config", util.InfoLogLevel)
+	config.logger.Info("config: %+v", config)
 }
 
 //GetConfig returns a shared instance of config

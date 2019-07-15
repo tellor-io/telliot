@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/tellor-io/TellorMiner/common"
@@ -18,7 +19,7 @@ func (h *BalanceHandler) Incoming(ctx context.Context, req *http.Request) (int, 
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	v, err := DB.Get(db.BalanceKey)
 	if err != nil {
-		fmt.Printf("Problem reading balance from DB: %v\n", err)
+		log.Printf("Problem reading balance from DB: %v\n", err)
 		return 500, `{"error": "Could not read balance from DB"}`
 	}
 	return 200, fmt.Sprintf(`{ "balance": "%s" }`, string(v))

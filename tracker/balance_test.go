@@ -21,7 +21,7 @@ func TestBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 	tracker := &BalanceTracker{}
-	ctx := context.WithValue(context.Background(), ClientContextKey, client)
+	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
 	if err != nil {

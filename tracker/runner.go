@@ -38,8 +38,9 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		}
 		trackers[i] = t
 	}
-
-	ticker := time.NewTicker(time.Duration(sleep) * time.Second)
+	sleepTime := time.Duration(sleep) * time.Second
+	fmt.Printf("Trackers will run every %v\n", sleepTime)
+	ticker := time.NewTicker(sleepTime)
 	go func() {
 		defer r.client.Close()
 		defer r.db.Close()
@@ -54,10 +55,11 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 				}
 			case _ = <-ticker.C:
 				{
-
-					c := context.WithValue(ctx, ClientContextKey, r.client)
+					fmt.Println("Running trackers...")
+					c := context.WithValue(ctx, common.ClientContextKey, r.client)
 					c = context.WithValue(c, common.DBContextKey, r.db)
 					for _, t := range trackers {
+						fmt.Printf("Calling tracker: %v\n", t)
 						err := t.Exec(c)
 						if err != nil {
 							fmt.Println("Problem in tracker", err)
