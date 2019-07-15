@@ -49,8 +49,8 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 				}
 			case _ = <-ticker.C:
 				{
-					fmt.Println("Will run tracker queries", time.Now())
-					c := context.WithValue(ctx, "client", r.client)
+
+					c := context.WithValue(ctx, ClientContextKey, r.client)
 					for _, t := range trackers {
 						err := t.Exec(c)
 						if err != nil {

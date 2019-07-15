@@ -17,7 +17,7 @@ type BalanceTracker struct {
 func (b *BalanceTracker) Exec(ctx context.Context) error {
 
 	//cast client using type assertion since context holds generic interface{}
-	client := ctx.Value("ETHClient").(rpc.ETHClient)
+	client := ctx.Value(ClientContextKey).(rpc.ETHClient)
 
 	//do this later
 	//DB := ctx.Value("DB")
