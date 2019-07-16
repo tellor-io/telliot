@@ -41,7 +41,7 @@ func ParseConfig(path string) (*Config, error) {
 	}
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
-	config.logger = util.NewLogger("config", "Config", util.InfoLogLevel)
+	config.logger = util.NewLogger("config", "Config")
 	config.logger.Info("config: %+v", config)
 	return config, nil
 }

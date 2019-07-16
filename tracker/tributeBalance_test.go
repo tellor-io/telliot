@@ -20,8 +20,8 @@ func TestTributeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &TributeBalanceTracker{}
-	ctx := context.WithValue(context.Background(), ClientContextKey, client)
+	tracker := &TributeTracker{}
+	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
 	if err != nil {
