@@ -34,7 +34,7 @@ func (c *mockClient) CodeAt(ctx context.Context, contract common.Address, blockN
 	return []byte{}, nil
 }
 func (c *mockClient) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
-	return nil, nil
+	return []byte{}, nil
 }
 func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	return []byte{}, nil
@@ -57,7 +57,7 @@ func (c *mockClient) BalanceAt(ctx context.Context, address common.Address, bloc
 }
 
 func (c *mockClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
-	return nil, nil
+	return []types.Log{}, nil
 }
 func (c *mockClient) SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
 	return nil, nil
@@ -68,5 +68,5 @@ func (c *mockClient) SendTransaction(ctx context.Context, tx *types.Transaction)
 }
 
 func (c *mockClient) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
-	return nil, nil
+	return []byte{}, nil
 }
