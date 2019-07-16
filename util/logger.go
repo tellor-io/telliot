@@ -32,7 +32,12 @@ type Logger struct {
 }
 
 //NewLogger creates a log instance for the given component with the given log level enabled
-func NewLogger(pkg string, component string, level LogLevel) *Logger {
+func NewLogger(pkg string, component string) *Logger {
+	levels, err := GetLoggingConfig()
+	if err != nil {
+		panic(err)
+	}
+	level := levels.GetLevel(pkg, component)
 	ll := xlateLevel(level)
 	log := logrus.New()
 	log.SetLevel(ll)

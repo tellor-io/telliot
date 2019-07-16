@@ -58,7 +58,7 @@ func Open(file string) (DB, error) {
 		return nil, err
 	}
 
-	i := &impl{db: db, log: util.NewLogger("db", "DB", util.InfoLogLevel)}
+	i := &impl{db: db, log: util.NewLogger("db", "DB")}
 	i.log.Info("Created DB at path: %s\n", file)
 	return i, nil
 }
