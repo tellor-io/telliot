@@ -13,21 +13,21 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-func TestCurrentVariables(t *testing.T) {
+func TestDisputeStatus(t *testing.T) {
 	startBal := big.NewInt(356000)
 	client := rpc.NewMockClientWithValues(startBal, 1, big.NewInt(7000000000))
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &CurrentVariablesTracker{}
+	tracker := &DisputeTracker{}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := DB.Get(db.RequestIdKey)
+	v, err := DB.Get(db.DisputeStatusKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,8 +35,8 @@ func TestCurrentVariables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("Tribute Balance stored: %v\n", string(v))
+	t.Logf("Dispute Status stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 0 {
-		t.Fatalf("Current Request ID from client did not match what should have been stored in DB. %s != %s", b, string(1))
+		t.Fatalf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")
 	}
 }

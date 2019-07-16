@@ -2,7 +2,6 @@ package tracker
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -44,12 +43,10 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("Current Variables", fmt.Sprintf("%x", currentChallenge), requestID, difficulty, queryString, granularity, totalTip)
-
-	DB.Put(db.CurrentChallengeKey, currentChallenge)
+	DB.Put(db.CurrentChallengeKey, currentChallenge[:])
 	DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(requestID)))
 	DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(difficulty)))
-	DB.Put(db.QueryStringKey, queryString)
+	DB.Put(db.QueryStringKey, []byte(queryString))
 	DB.Put(db.GranularityKey, []byte(hexutil.EncodeBig(granularity)))
 	DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
 	return nil

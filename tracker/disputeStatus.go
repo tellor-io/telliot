@@ -13,10 +13,10 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-type TributeTracker struct {
+type DisputeTracker struct {
 }
 
-func (b *TributeTracker) Exec(ctx context.Context) error {
+func (b *DisputeTracker) Exec(ctx context.Context) error {
 	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
@@ -45,14 +45,12 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	balance, err := instance.BalanceOf(nil, fromAddress)
+	status, _, err := instance.GetStakerInfo(nil, fromAddress)
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
-	enc := hexutil.EncodeBig(balance)
+	enc := hexutil.EncodeBig(status)
 	log.Printf("Balance: %v", enc)
-	return DB.Put(db.TributeBalanceKey, []byte(enc))
-
-	return nil
+	return DB.Put(db.DisputeStatusKey, []byte(enc))
 }
