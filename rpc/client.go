@@ -27,20 +27,20 @@ type ETHClient interface {
 	// input.
 	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
 
+	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
+
+	// PendingCodeAt returns the code of the given account in the pending state.
+	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
+
 	//PendingNonceAt gets the given address's nonce for submitting transactions
 	PendingNonceAt(ctx context.Context, address common.Address) (uint64, error)
 	EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error)
-	//SuggestGasPrice retrieves the current gas price in the network
 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
 
 	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
 	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-	//BalanceAt gets the balance for the given address at the given block.
 	BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error)
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
-
-	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
 }
 
 //clientInstance is the concrete implementation of the ETHClient
@@ -120,10 +120,6 @@ func (c *clientInstance) SubscribeFilterLogs(ctx context.Context, query ethereum
 	return nil, nil
 }
 
-func (c *clientInstance) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
-	return 0, nil
-}
-
 func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
 	var res []byte
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
@@ -158,6 +154,16 @@ func (c *clientInstance) SuggestGasPrice(ctx context.Context) (*big.Int, error) 
 	var res *big.Int
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.SuggestGasPrice(*_ctx)
+		res = r
+		return e
+	})
+	return res, _err
+}
+
+func (c *clientInstance) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
+	var res uint64
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.EstimateGas(*_ctx, call)
 		res = r
 		return e
 	})

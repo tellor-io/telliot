@@ -26,10 +26,10 @@ type Config struct {
 
 var config *Config
 
-func init() {
-	path := os.Getenv("CONFIG")
+//ParseConfig and set a shared config entry
+func ParseConfig(path string) {
 	if len(path) == 0 {
-		panic("Missing env CONFIG variable")
+		panic("Invalid config path")
 	}
 	configFile, err := os.Open(path)
 	defer configFile.Close()
