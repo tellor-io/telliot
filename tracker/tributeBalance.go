@@ -1,10 +1,10 @@
 package tracker
 
-/*
 import (
 	"context"
 	"log"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -31,13 +31,21 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	//get address from config
 	_fromAddress := cfg.PublicAddress
 
+	//convert to address
+	fromAddress := common.HexToAddress(_fromAddress)
+
+	_conAddress := cfg.ContractAddress
+
+	//convert to address
+	contractAddress := common.HexToAddress(_conAddress)
+
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
 
-	balance, err := instance.GetBalance(fromAddress)
+	balance, err := instance.BalanceOf(nil, fromAddress)
 	if err != nil {
 		log.Fatal(err)
 		return err
