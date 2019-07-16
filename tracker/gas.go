@@ -14,7 +14,7 @@ type GasTracker struct {
 }
 
 func (b *GasTracker) Exec(ctx context.Context) error {
-	client := ctx.Value(ClientContextKey).(rpc.ETHClient)
+	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())

@@ -1,6 +1,5 @@
 package tracker
 
-/*
 import (
 	"context"
 	"math/big"
@@ -21,8 +20,8 @@ func TestTributeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &TributeBalanceTracker{}
-	ctx := context.WithValue(context.Background(), ClientContextKey, client)
+	tracker := &TributeTracker{}
+	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
 	if err != nil {
@@ -41,4 +40,3 @@ func TestTributeBalance(t *testing.T) {
 		t.Fatalf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)
 	}
 }
-*/
