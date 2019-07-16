@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/common"
+	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
 )
@@ -22,7 +23,7 @@ func TestGas(t *testing.T) {
 		t.Fatal(err)
 	}
 	tracker := &GasTracker{}
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
+	ctx := context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
 	if err != nil {
