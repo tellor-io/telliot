@@ -73,17 +73,20 @@ func (i *impl) Has(key string) (bool, error) {
 }
 
 func (i *impl) Put(key string, value []byte) error {
+	i.log.Debug("Adding DB entry: %s with %d bytes of data", key, len(value))
 	return i.db.Put([]byte(key), value, nil)
 }
 
 func (i *impl) Get(key string) ([]byte, error) {
 	b, e := i.db.Get([]byte(key), nil)
 	if e == errors.ErrNotFound {
+		i.log.Debug("Did not find value for key: %s", key)
 		return nil, nil
 	}
 	return b, e
 }
 
 func (i *impl) Delete(key string) error {
+	i.log.Debug("Deleting key: %s", key)
 	return i.db.Delete([]byte(key), nil)
 }

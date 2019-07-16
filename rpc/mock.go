@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type mockClient struct {
@@ -45,6 +46,30 @@ func (c *mockClient) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 	return c.gasPrice, nil
 }
 
+func (c *mockClient) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
+	return 0, nil
+}
+
+func (c *mockClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
+	return nil, nil
+}
+
+func (c *mockClient) SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+	return nil, nil
+}
+
 func (c *mockClient) BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error) {
 	return c.balance, nil
+}
+
+func (c *mockClient) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
+	return nil, nil
+}
+
+func (c *mockClient) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
+	return nil, nil
+}
+
+func (c *mockClient) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+	return nil
 }

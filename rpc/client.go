@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/tellor-io/TellorMiner/config"
 )
@@ -26,14 +27,24 @@ type ETHClient interface {
 	// input.
 	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
 
+	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
+
+	// PendingCodeAt returns the code of the given account in the pending state.
+	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
+
 	//PendingNonceAt gets the given address's nonce for submitting transactions
 	PendingNonceAt(ctx context.Context, address common.Address) (uint64, error)
 
 	//SuggestGasPrice retrieves the current gas price in the network
 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
 
+	//EstimateGas retrieves a gas estimate for a call
+	EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error)
+
 	//BalanceAt gets the balance for the given address at the given block.
 	BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error)
+
+	SendTransaction(ctx context.Context, tx *types.Transaction) error
 }
 
 //clientInstance is the concrete implementation of the ETHClient
@@ -135,6 +146,16 @@ func (c *clientInstance) SuggestGasPrice(ctx context.Context) (*big.Int, error) 
 	return res, _err
 }
 
+func (c *clientInstance) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
+	var res uint64
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.EstimateGas(*_ctx, call)
+		res = r
+		return e
+	})
+	return res, _err
+}
+
 func (c *clientInstance) BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error) {
 	var res *big.Int
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
@@ -143,4 +164,17 @@ func (c *clientInstance) BalanceAt(ctx context.Context, address common.Address, 
 		return e
 	})
 	return res, _err
+}
+
+// PendingCodeAt returns the code of the given account in the pending state.
+func (c *clientInstance) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
+	return nil, nil
+}
+
+func (c *clientInstance) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
+	return nil, nil
+}
+
+func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+	return nil
 }
