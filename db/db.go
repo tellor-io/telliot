@@ -1,13 +1,13 @@
 package db
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/tellor-io/TellorMiner/util"
 )
 
 const (
@@ -38,7 +38,8 @@ type DB interface {
 }
 
 type impl struct {
-	db *leveldb.DB
+	db  *leveldb.DB
+	log *util.Logger
 }
 
 //Open the database using the given DB file as its data store
@@ -56,11 +57,14 @@ func Open(file string) (DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &impl{db}, nil
+
+	i := &impl{db: db, log: util.NewLogger("db", "DB", util.InfoLogLevel)}
+	i.log.Info("Created DB at path: %s\n", file)
+	return i, nil
 }
 
 func (i *impl) Close() error {
-	fmt.Println("Closing DB...")
+	i.log.Info("Closing DB...")
 	return i.db.Close()
 }
 
@@ -73,7 +77,11 @@ func (i *impl) Put(key string, value []byte) error {
 }
 
 func (i *impl) Get(key string) ([]byte, error) {
-	return i.db.Get([]byte(key), nil)
+	b, e := i.db.Get([]byte(key), nil)
+	if e == errors.ErrNotFound {
+		return nil, nil
+	}
+	return b, e
 }
 
 func (i *impl) Delete(key string) error {

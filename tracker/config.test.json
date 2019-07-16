@@ -1,6 +1,6 @@
 {
     "trackerCycle": 1,
-    "trackerTypes": [
+    "trackers": [
         "test"
     ]
 }

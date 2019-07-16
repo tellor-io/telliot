@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -35,7 +36,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(404)
 		return
 	}
-	fmt.Println("Incoming url", url)
+	log.Println("Incoming request", url)
 	if e := recover(); e != nil {
 		fmt.Printf("Problem with controller %s: %v\n", url, e)
 		fmt.Fprintf(w, "Problem handling request")
