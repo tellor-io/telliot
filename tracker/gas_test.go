@@ -14,7 +14,9 @@ import (
 )
 
 func TestGas(t *testing.T) {
-	client := rpc.NewMockClientWithValues(big.NewInt(7000000000), 1, big.NewInt(7000000000))
+	opts := &rpc.MockOptions{ETHBalance: big.NewInt(356000), Nonce: 1, GasPrice: big.NewInt(7000000000), TokenBalance: big.NewInt(0)}
+	client := rpc.NewMockClientWithValues(opts)
+
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_gas"))
 	if err != nil {
 		t.Fatal(err)

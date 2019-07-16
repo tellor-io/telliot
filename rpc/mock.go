@@ -3,17 +3,34 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+const (
+	balanceAtFN = "0x70a08231"
+)
+
+//MockOptions are config options for the mock client
+type MockOptions struct {
+	ETHBalance   *big.Int
+	Nonce        uint64
+	GasPrice     *big.Int
+	TokenBalance *big.Int
+}
+
 type mockClient struct {
-	balance  *big.Int
-	nonce    uint64
-	gasPrice *big.Int
+	balance      *big.Int
+	nonce        uint64
+	gasPrice     *big.Int
+	tokenBalance *big.Int
 }
 
 //NewMockClient returns instance of mock client
@@ -22,8 +39,12 @@ func NewMockClient() ETHClient {
 }
 
 //NewMockClientWithValues creates a mock client with default values to return for calls
-func NewMockClientWithValues(balance *big.Int, nonce uint64, gasPrice *big.Int) ETHClient {
-	return &mockClient{balance, nonce, gasPrice}
+func NewMockClientWithValues(opts *MockOptions) ETHClient {
+	return &mockClient{balance: opts.ETHBalance, nonce: opts.Nonce, gasPrice: opts.GasPrice, tokenBalance: opts.TokenBalance}
+}
+
+func (c *mockClient) SetTokenBalance(bal *big.Int) {
+	c.tokenBalance = bal
 }
 
 func (c *mockClient) Close() {
@@ -31,12 +52,21 @@ func (c *mockClient) Close() {
 }
 
 func (c *mockClient) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
-	return []byte{}, nil
+	return []byte("1234567890"), nil
 }
 func (c *mockClient) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
 	return nil, nil
 }
 func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+	fn := hexutil.Encode(call.Data[0:4])
+	switch fn {
+	case balanceAtFN:
+		{
+			log.Println("Getting balance from contract")
+			return math.PaddedBigBytes(c.tokenBalance, 32), nil
+		}
+	}
+	log.Printf("Call unhandled Fn: %s\n", fn)
 	return []byte{}, nil
 }
 
@@ -61,6 +91,7 @@ func (c *mockClient) SubscribeFilterLogs(ctx context.Context, query ethereum.Fil
 }
 
 func (c *mockClient) BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error) {
+	log.Printf("Asking for balance for address: %v\n", address)
 	return c.balance, nil
 }
 

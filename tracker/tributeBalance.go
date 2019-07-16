@@ -46,6 +46,7 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	}
 
 	balance, err := instance.BalanceOf(nil, fromAddress)
+	log.Printf("Balance: %v\n", balance)
 	if err != nil {
 		log.Fatal(err)
 		return err

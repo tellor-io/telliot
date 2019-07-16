@@ -3,14 +3,18 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/big"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/util"
 )
 
 //ETHClient is the main abstraction interface for client operations
@@ -47,6 +51,7 @@ type ETHClient interface {
 type clientInstance struct {
 	ethClient *ethclient.Client
 	timeout   time.Duration
+	log       *util.Logger
 }
 
 var (
@@ -68,7 +73,7 @@ func NewClient(url string) (ETHClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &clientInstance{ethClient: client, timeout: timeout}, nil
+	return &clientInstance{ethClient: client, timeout: timeout, log: util.NewLogger("rpc", "client")}, nil
 }
 
 func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Context) error) error {
@@ -81,6 +86,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if err == nil {
 			return nil
 		}
+		c.log.Debug("Problem in calling eth client: %v", err)
 		//pause for a bit and try again
 		sleepTime := backoff[tryCount%len(backoff)]
 		tryCount++
@@ -103,27 +109,63 @@ func (c *clientInstance) Close() {
 }
 
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
-	return nil
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		e := c.SendTransaction(*_ctx, tx)
+		return e
+	})
+	return _err
 }
 
 func (c *clientInstance) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
-	return nil, nil
+	var res []byte
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.PendingCallContract(*_ctx, call)
+		res = r
+		return e
+	})
+	return res, _err
 }
 
 func (c *clientInstance) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
-	return nil, nil
+	var res []byte
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.PendingCodeAt(*_ctx, account)
+		res = r
+		return e
+	})
+	return res, _err
 }
+
 func (c *clientInstance) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
-	return nil, nil
+	var res []types.Log
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.FilterLogs(*_ctx, query)
+		res = r
+		return e
+	})
+	return res, _err
 }
+
 func (c *clientInstance) SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
-	return nil, nil
+	var res ethereum.Subscription
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.SubscribeFilterLogs(*_ctx, query, ch)
+		res = r
+		return e
+	})
+	return res, _err
 }
 
 func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
 	var res []byte
+	log.Println("Getting code at address", contract)
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.CodeAt(*_ctx, contract, blockNumber)
+		if e != nil {
+			c.log.Error("Problem getting code from eth client: %v", e)
+		}
+		log.Printf("_normalLog Found %d bytes of code at address: %v", len(r), contract)
+		c.log.Info("Found %d bytes of code at address: %v", len(r), contract)
 		res = r
 		return e
 	})
@@ -132,8 +174,14 @@ func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, bl
 
 func (c *clientInstance) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	var res []byte
+	fn := hexutil.Encode(call.Data[0:4])
+	c.log.Info("Calling contract fn: %v\n", fn)
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.CallContract(*_ctx, call, blockNumber)
+		if e != nil {
+			c.log.Error("Problem calling %s: %v", fn, e)
+		}
+		c.log.Info("Called fn: %s with result %v", fn, r)
 		res = r
 		return e
 	})
@@ -172,8 +220,10 @@ func (c *clientInstance) EstimateGas(ctx context.Context, call ethereum.CallMsg)
 
 func (c *clientInstance) BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error) {
 	var res *big.Int
+	c.log.Info("Getting balance of address")
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.BalanceAt(*_ctx, address, block)
+		c.log.Debug("Getting balance for address %v: $v\n", address, r)
 		res = r
 		return e
 	})
