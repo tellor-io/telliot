@@ -1,5 +1,6 @@
 package tracker
 
+/*
 import (
 	"context"
 	"math/big"
@@ -13,7 +14,7 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-func TestTributeBalance(t *testing.T) {
+func TestCurrentVariables(t *testing.T) {
 	startBal := big.NewInt(356000)
 	client := rpc.NewMockClientWithValues(startBal, 1, big.NewInt(7000000000))
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
@@ -40,3 +41,4 @@ func TestTributeBalance(t *testing.T) {
 		t.Fatalf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)
 	}
 }
+*/

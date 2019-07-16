@@ -2,9 +2,9 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
+	"github.com/tellor-io/TellorMiner/cli"
 	"github.com/tellor-io/TellorMiner/util"
 )
 
@@ -27,25 +27,33 @@ type Config struct {
 var config *Config
 
 //ParseConfig and set a shared config entry
-func ParseConfig(path string) {
+func ParseConfig(path string) (*Config, error) {
 	if len(path) == 0 {
-		panic("Invalid config path")
+		path = cli.GetFlags().ConfigPath
+		if len(path) == 0 {
+			panic("Invalid config path. Not provided and not a command line option")
+		}
 	}
 	configFile, err := os.Open(path)
 	defer configFile.Close()
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
 	config.logger = util.NewLogger("config", "Config", util.InfoLogLevel)
 	config.logger.Info("config: %+v", config)
+	return config, nil
 }
 
 //GetConfig returns a shared instance of config
 func GetConfig() (*Config, error) {
 	if config == nil {
-		return nil, fmt.Errorf("Config was not initialized")
+		_, err := ParseConfig("")
+		if err != nil {
+			return nil, err
+		}
+		return config, nil
 	}
 	return config, nil
 }

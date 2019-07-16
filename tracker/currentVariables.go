@@ -1,6 +1,5 @@
 package tracker
 
-/*
 import (
 	"context"
 	"fmt"
@@ -23,7 +22,7 @@ type CurrentVariablesTracker struct {
 func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 
 	//cast client using type assertion since context holds generic interface{}
-	client := ctx.Value(ClientContextKey).(rpc.ETHClient)
+	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	//get the single config instance
@@ -55,5 +54,3 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
 	return nil
 }
-
-*/
