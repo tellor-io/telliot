@@ -18,6 +18,10 @@ var (
 	sharedFlags *Flags
 )
 
+func init() {
+	GetFlags()
+}
+
 //GetFlags parses command line entries into a shared structure with values
 func GetFlags() *Flags {
 	if sharedFlags == nil {
