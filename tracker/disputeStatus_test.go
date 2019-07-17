@@ -15,7 +15,10 @@ import (
 
 func TestDisputeStatus(t *testing.T) {
 	startBal := big.NewInt(356000)
-	client := rpc.NewMockClientWithValues(startBal, 1, big.NewInt(7000000000))
+	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
+		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, DisputeStatus: big.NewInt(1)}
+	client := rpc.NewMockClientWithValues(opts)
+
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
 	if err != nil {
 		t.Fatal(err)

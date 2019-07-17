@@ -15,7 +15,8 @@ import (
 
 func TestBalance(t *testing.T) {
 	startBal := big.NewInt(356000)
-	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000), TokenBalance: big.NewInt(0)}
+	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
+		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))

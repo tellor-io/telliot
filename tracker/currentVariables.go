@@ -37,6 +37,16 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		log.Fatal(err)
 	}
 
+	/*
+		time, exists, err := instance.GetLastNewValueById(nil, big.NewInt(1))
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+
+		log.Printf("Time: %v Exists: %v\n", time, exists)
+	*/
+
 	currentChallenge, requestID, difficulty, queryString, granularity, totalTip, err := instance.GetCurrentVariables(nil)
 	if err != nil {
 		log.Fatal(err)
@@ -49,5 +59,6 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	DB.Put(db.QueryStringKey, []byte(queryString))
 	DB.Put(db.GranularityKey, []byte(hexutil.EncodeBig(granularity)))
 	DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
+
 	return nil
 }

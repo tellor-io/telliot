@@ -51,6 +51,6 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 		return err
 	}
 	enc := hexutil.EncodeBig(status)
-	log.Printf("Balance: %v", enc)
+	log.Printf("Staker Status: %v", enc)
 	return DB.Put(db.DisputeStatusKey, []byte(enc))
 }

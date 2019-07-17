@@ -181,7 +181,10 @@ func (c *clientInstance) CallContract(ctx context.Context, call ethereum.CallMsg
 		if e != nil {
 			c.log.Error("Problem calling %s: %v", fn, e)
 		}
-		c.log.Info("Called fn: %s with result %v", fn, r)
+		for i := 0; i < len(r); i += 32 {
+			c.log.Info("Slice %d: %s\n", i, hexutil.Encode(r[i:i+32]))
+		}
+		c.log.Info("Called fn: %s with result %v (len: %d)", fn, r, len(r))
 		res = r
 		return e
 	})
