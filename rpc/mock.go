@@ -1,10 +1,14 @@
 package rpc
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
 	"math/big"
+	"time"
+
+	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -15,22 +19,41 @@ import (
 )
 
 const (
-	balanceAtFN = "0x70a08231"
+	balanceAtFN     = "0x70a08231"
+	top50FN         = "0xb5413029"
+	currentVarsFN   = "0xa22e407a"
+	disputeStatusFN = "0x733bdef0"
 )
+
+//CurrentChallenge holds details about the current mining challenge
+type CurrentChallenge struct {
+	ChallengeHash [32]byte
+	RequestID     *big.Int
+	Difficulty    *big.Int
+	QueryString   string
+	Granularity   *big.Int
+	Tip           *big.Int
+}
 
 //MockOptions are config options for the mock client
 type MockOptions struct {
-	ETHBalance   *big.Int
-	Nonce        uint64
-	GasPrice     *big.Int
-	TokenBalance *big.Int
+	ETHBalance       *big.Int
+	Nonce            uint64
+	GasPrice         *big.Int
+	TokenBalance     *big.Int
+	Top50Requests    []*big.Int
+	CurrentChallenge *CurrentChallenge
+	DisputeStatus    *big.Int
 }
 
 type mockClient struct {
-	balance      *big.Int
-	nonce        uint64
-	gasPrice     *big.Int
-	tokenBalance *big.Int
+	balance          *big.Int
+	nonce            uint64
+	gasPrice         *big.Int
+	tokenBalance     *big.Int
+	top50Requests    []*big.Int
+	currentChallenge *CurrentChallenge
+	disputeStatus    *big.Int
 }
 
 //NewMockClient returns instance of mock client
@@ -40,7 +63,10 @@ func NewMockClient() ETHClient {
 
 //NewMockClientWithValues creates a mock client with default values to return for calls
 func NewMockClientWithValues(opts *MockOptions) ETHClient {
-	return &mockClient{balance: opts.ETHBalance, nonce: opts.Nonce, gasPrice: opts.GasPrice, tokenBalance: opts.TokenBalance}
+	return &mockClient{balance: opts.ETHBalance, nonce: opts.Nonce,
+		gasPrice: opts.GasPrice, tokenBalance: opts.TokenBalance,
+		top50Requests: opts.Top50Requests, currentChallenge: opts.CurrentChallenge,
+		disputeStatus: opts.DisputeStatus}
 }
 
 func (c *mockClient) SetTokenBalance(bal *big.Int) {
@@ -63,7 +89,69 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	case balanceAtFN:
 		{
 			log.Println("Getting balance from contract")
-			return math.PaddedBigBytes(c.tokenBalance, 32), nil
+			return math.PaddedBigBytes(math.U256(c.tokenBalance), 32), nil
+		}
+	case top50FN:
+		{
+			log.Println("Getting top-50")
+			b := new(bytes.Buffer)
+			for _, t := range c.top50Requests {
+				hex := math.PaddedBigBytes(math.U256(t), 32)
+				b.Write(hex)
+			}
+			return b.Bytes(), nil
+		}
+	case currentVarsFN:
+		{
+			log.Println("Getting current variables")
+			//bytes32, uint, uint,string memory,uint,uint
+			//current challenge hash, curretnRequestId, level of difficulty, api/query string, and granularity(number of decimals requested
+			b := new(bytes.Buffer)
+
+			_, err := b.Write(c.currentChallenge.ChallengeHash[:])
+			if err != nil {
+				return nil, err
+			}
+
+			if err := paddedInt(b, c.currentChallenge.RequestID); err != nil {
+				return nil, err
+			}
+			if err := paddedInt(b, c.currentChallenge.Difficulty); err != nil {
+				return nil, err
+			}
+			asBytes := []byte(c.currentChallenge.QueryString)
+			origLength := len(asBytes)
+			diff := 32 - (len(asBytes) % 32)
+			asBytes = common.RightPadBytes(asBytes, len(asBytes)+diff)
+			//strings are dynamic types and therefore have an 'offset' in the position
+			//where string resides in results. We will then write the length-prefixed string
+			//at that position later
+			if err := paddedInt(b, big.NewInt(192)); err != nil {
+				return nil, err
+			}
+
+			if err := paddedInt(b, c.currentChallenge.Granularity); err != nil {
+				return nil, err
+			}
+			if err := paddedInt(b, c.currentChallenge.Tip); err != nil {
+				return nil, err
+			}
+			//now we write the length of the string
+			if err := paddedInt(b, big.NewInt(int64(origLength))); err != nil {
+				return nil, err
+			}
+			//now the bytes
+			_, err = b.Write(asBytes)
+			return b.Bytes(), nil
+
+		}
+
+	case disputeStatusFN:
+		{
+			b := new(bytes.Buffer)
+			b.Write(math.PaddedBigBytes(math.U256(c.disputeStatus), 32))
+			b.Write(math.PaddedBigBytes(math.U256(big.NewInt(time.Now().Unix())), 32))
+			return b.Bytes(), nil
 		}
 	}
 	log.Printf("Call unhandled Fn: %s\n", fn)
@@ -99,4 +187,20 @@ func (c *mockClient) SendTransaction(ctx context.Context, tx *types.Transaction)
 
 func (c *mockClient) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
 	return nil, nil
+}
+
+func paddedRLP(w *bytes.Buffer, val interface{}) error {
+	b, err := rlp.EncodeToBytes(val)
+	if err != nil {
+		return err
+	}
+	log.Printf("Val: %v Enc: %v\n", val, b)
+	_, err = w.Write(common.LeftPadBytes(b, 32))
+	return err
+}
+
+func paddedInt(w *bytes.Buffer, val *big.Int) error {
+	hex := math.PaddedBigBytes(math.U256(val), 32)
+	_, err := w.Write(hex)
+	return err
 }

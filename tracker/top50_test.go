@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
@@ -16,7 +16,31 @@ import (
 
 func TestTop50(t *testing.T) {
 	startBal := big.NewInt(356000)
-	client := rpc.NewMockClientWithValues(startBal, 1, big.NewInt(7000000000))
+	/*
+		opts := &rpc.MockOptions{ETHBalance: big.NewInt(356000), Nonce: 1, GasPrice: big.NewInt(700000000), TokenBalance: startBal}
+		client := rpc.NewMockClientWithValues(opts)
+	*/
+
+	/*
+		cfg, err := config.GetConfig()
+		if err != nil {
+			t.Fatal(err)
+		}
+		url := cfg.NodeURL
+		client, err := rpc.NewClient(url)
+		if err != nil {
+			t.Fatal(err)
+		}
+	*/
+	top50 := make([]*big.Int, 51)
+	for i := range top50 {
+		top50[i] = big.NewInt(int64(i))
+	}
+
+	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
+		TokenBalance: big.NewInt(0), Top50Requests: top50}
+	client := rpc.NewMockClientWithValues(opts)
+
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
 	if err != nil {
 		t.Fatal(err)
@@ -32,13 +56,10 @@ func TestTop50(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := hexutil.DecodeBig(string(v))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("Tribute Balance stored: %v\n", string(v))
-	if b.Cmp(startBal) != 0 {
-		t.Fatalf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)
+
+	bigs := strings.Split(string(v), ",")
+	if len(bigs) == 0 {
+		t.Fatal("Expected CSV list of top50 ids")
 	}
 }
 */

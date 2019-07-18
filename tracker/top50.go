@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	tellor "github.com/tellor-io/TellorMiner/contracts"
@@ -13,7 +14,7 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-//CurrentVariablesTracker concrete tracker type
+//Top50Tracker concrete tracker type
 type Top50Tracker struct {
 }
 
@@ -33,6 +34,7 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,11 +44,15 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 		log.Fatal(err)
 		return err
 	}
-	rIDs := []byte{}
-	for i, _ := range top50 {
-		rIDs = append(rIDs[:], top50[i].Bytes()[:]...)
+	rIDs := ""
+
+	for i := range top50 {
+		if i > 0 {
+			rIDs += ","
+		}
+		rIDs += hexutil.EncodeBig(top50[i])
 
 	}
-	return DB.Put(db.TotalTipKey, rIDs)
+	return DB.Put(db.Top50Key, []byte(rIDs))
 }
 */
