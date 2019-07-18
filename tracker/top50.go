@@ -1,5 +1,6 @@
 package tracker
 
+/*
 import (
 	"context"
 	"log"
@@ -48,3 +49,4 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 	}
 	return DB.Put(db.TotalTipKey, rIDs)
 }
+*/

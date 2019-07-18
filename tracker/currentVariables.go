@@ -1,5 +1,6 @@
 package tracker
 
+/*
 import (
 	"context"
 	"log"
@@ -51,3 +52,5 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
 	return nil
 }
+
+*/

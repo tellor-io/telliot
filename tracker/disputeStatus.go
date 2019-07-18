@@ -1,5 +1,6 @@
 package tracker
 
+/*
 import (
 	"context"
 	"log"
@@ -54,3 +55,4 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	log.Printf("Balance: %v", enc)
 	return DB.Put(db.DisputeStatusKey, []byte(enc))
 }
+*/
