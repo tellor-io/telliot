@@ -24,6 +24,9 @@ Initial setup needs dependencies. Do this:
 
 Now you're ready to build/test
 
-When building/testing, go into src/github.com/tellor-io/TellorMiner and run "go test ./<package-to-test> 
+When building/testing, go into src/github.com/tellor-io/TellorMiner and run "go test ./<package-to-test> -config=<path to config>
+e.g.  go test -v ./tracker -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config.json
+or to run
+go run C:/company/code/go/src/github.com/tellor-io/TellorMiner/main.go -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config.json
 and it will test from there.
 

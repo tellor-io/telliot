@@ -1,6 +1,5 @@
 package tracker
 
-/*
 import (
 	"context"
 	"math/big"
@@ -44,4 +43,3 @@ func TestDisputeStatus(t *testing.T) {
 		t.Fatalf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")
 	}
 }
-*/

@@ -32,17 +32,14 @@ func TestCurrentVariables(t *testing.T) {
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, CurrentChallenge: chal}
 	client := rpc.NewMockClientWithValues(opts)
 
-	/*
-		cfg, err := config.GetConfig()
-		if err != nil {
-			t.Fatal(err)
-		}
-		client, err := rpc.NewClient(cfg.NodeURL)
-		if err != nil {
-			t.Fatal(err)
-		}
-	*/
-
+		// cfg, err := config.GetConfig()
+		// if err != nil {
+		// 	t.Fatal(err)
+		// }
+		// client, err := rpc.NewClient(cfg.NodeURL)
+		// if err != nil {
+		// 	t.Fatal(err)
+		// }
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
 	if err != nil {
 		t.Fatal(err)

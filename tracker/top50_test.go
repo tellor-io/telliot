@@ -16,12 +16,12 @@ import (
 
 func TestTop50(t *testing.T) {
 	startBal := big.NewInt(356000)
-	/*
+
 		opts := &rpc.MockOptions{ETHBalance: big.NewInt(356000), Nonce: 1, GasPrice: big.NewInt(700000000), TokenBalance: startBal}
 		client := rpc.NewMockClientWithValues(opts)
-	*/
 
-	/*
+
+
 		cfg, err := config.GetConfig()
 		if err != nil {
 			t.Fatal(err)
@@ -31,7 +31,7 @@ func TestTop50(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	*/
+
 	top50 := make([]*big.Int, 51)
 	for i := range top50 {
 		top50[i] = big.NewInt(int64(i))
