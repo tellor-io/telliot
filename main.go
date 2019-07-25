@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"time"
 
-	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/dataServer"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/pow"
@@ -30,19 +29,10 @@ func main() {
 
 	//Once synced, start miner
 	fmt.Println("Starting Tellor Miner")
-	mineTributes()
+	mineTributes(ds)
 }
-
-type Main interface {
-	//Exec will be run as a go function. The given context will be a KeyValue context containing
-	//the client to use for tracking ops.
-	Exec(ctx context.Context) error
-}
-
-func mineTributes() {
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+func mineTributes(ds *dataServer.DataServer) {
+	DB := ds.DB
 	var nonce string
 	var prevCurrentChallenge []byte
 	x := 0

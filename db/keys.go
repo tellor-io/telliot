@@ -23,5 +23,5 @@ const TributeBalanceKey = "trib_balance"
 //Dispute Status
 const DisputeStatusKey = "dispute_status"
 
-//RequestID's are stored as the string of the number
+//RequestID's are stored as the string of the number and the normalized timestamp
 //e.g. "2" is the key for request ID 2
