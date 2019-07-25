@@ -1,8 +1,8 @@
 package tracker
 
-/*
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,9 +18,13 @@ import (
 type CurrentVariablesTracker struct {
 }
 
+func (b *CurrentVariablesTracker) String() string {
+	return "CurrentVariablesTracker"
+}
+
 //Exec implementation for tracker
 func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
-
+	fmt.Println("working to line 28 nontest")
 	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
@@ -38,13 +42,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		log.Fatal(err)
 	}
 
-		time, exists, err := instance.GetLastNewValueById(nil, big.NewInt(1))
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-		log.Printf("Time: %v Exists: %v\n", time, exists)
-
+	fmt.Println("working to line 51 non-test")
 	currentChallenge, requestID, difficulty, queryString, granularity, totalTip, err := instance.GetCurrentVariables(nil)
 	if err != nil {
 		log.Fatal(err)
@@ -60,5 +58,3 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 
 	return nil
 }
-
-*/

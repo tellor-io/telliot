@@ -19,7 +19,7 @@ func TestDisputeStatus(t *testing.T) {
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, DisputeStatus: big.NewInt(1)}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
+	DB, err := db.Open(filepath.Join(os.TempDir(), "test_disputeStatus"))
 	if err != nil {
 		t.Fatal(err)
 	}

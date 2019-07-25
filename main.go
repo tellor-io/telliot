@@ -30,11 +30,18 @@ func main() {
 
 	//Once synced, start miner
 	fmt.Println("Starting Tellor Miner")
-	mineTributes(ctx)
-	//Miner()
+	mineTributes()
 }
 
-func mineTributes(ctx context.Context) {
+type Main interface {
+	//Exec will be run as a go function. The given context will be a KeyValue context containing
+	//the client to use for tracking ops.
+	Exec(ctx context.Context) error
+}
+
+func mineTributes() {
+	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
+	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	var nonce string
 	var prevCurrentChallenge []byte
