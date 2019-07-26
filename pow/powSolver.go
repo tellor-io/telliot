@@ -49,11 +49,10 @@ func SolveChallenge(challenge []byte, _difficulty *big.Int) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Solving for difficulty: ", _difficulty)
 	for i := 0; i < 100000000; i++ {
 		nonce := randInt() //do we need to use big number?
-		fmt.Println(nonce)
 		_string := fmt.Sprintf("%x", challenge) + cfg.PublicAddress + nonce
-		fmt.Println("String created", _string)
 		hash := solsha3.SoliditySHA3(
 			solsha3.Bytes32(decodeHex(_string)),
 		)
@@ -62,7 +61,6 @@ func SolveChallenge(challenge []byte, _difficulty *big.Int) string {
 		hash1 := hasher.Sum(nil)
 		n := sha256.Sum256([]byte(hash1))
 		q := fmt.Sprintf("%x", n)
-		fmt.Println("Sha256 found", q)
 		p := new(big.Int)
 		p, ok := p.SetString(q, 16)
 		if !ok {
@@ -71,7 +69,6 @@ func SolveChallenge(challenge []byte, _difficulty *big.Int) string {
 		}
 		x := new(big.Int)
 		x.Mod(p, _difficulty)
-		fmt.Println(x)
 		if x.Cmp(big.NewInt(0)) == 0 {
 			fmt.Println("Solution Found", p)
 			return nonce

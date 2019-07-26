@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"fmt"
 	"log"
 	"math/big"
@@ -38,7 +37,7 @@ func mineTributes(ds *dataServer.DataServer) {
 	var prevCurrentChallenge []byte
 	x := 0
 	fmt.Println("starting miner")
-	for {
+	for x < 1 {
 		currentChallenge, _ := DB.Get(db.CurrentChallengeKey)
 		if bytes.Compare(prevCurrentChallenge, currentChallenge) != 0 {
 			prevCurrentChallenge = currentChallenge
@@ -50,13 +49,19 @@ func mineTributes(ds *dataServer.DataServer) {
 			fmt.Println("Difficulty", difficulty)
 			ndata := big.NewInt(int64(data))
 			nonce = pow.SolveChallenge(currentChallenge, ndata)
+			fmt.Println("nonce", nonce)
 			if nonce != "" {
 				requestID, _ := DB.Get(db.RequestIdKey)
-				data = binary.BigEndian.Uint64(requestID)
+				for i, x := range requestID {
+					data |= uint64(x) << uint64(i*8)
+				}
 				rdata := big.NewInt(int64(data))
 				value, _ := DB.Get(fmt.Sprint(requestID))
-				data = binary.BigEndian.Uint64(value)
+				for i, x := range value {
+					data |= uint64(x) << uint64(i*8)
+				}
 				ndata = big.NewInt(int64(data))
+				fmt.Println("Submitting Solution: nonce,ndata,rdata")
 				pow.SubmitTransaction(nonce, ndata, rdata)
 				nonce = ""
 			}
