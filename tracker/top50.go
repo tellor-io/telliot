@@ -1,6 +1,5 @@
 package tracker
 
-/*
 import (
 	"context"
 	"log"
@@ -16,6 +15,10 @@ import (
 
 //Top50Tracker concrete tracker type
 type Top50Tracker struct {
+}
+
+func (b *Top50Tracker) String() string {
+	return "Top50Tracker"
 }
 
 //Exec implementation for tracker
@@ -55,4 +58,3 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 	}
 	return DB.Put(db.Top50Key, []byte(rIDs))
 }
-*/

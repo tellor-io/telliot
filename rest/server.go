@@ -22,6 +22,16 @@ func Create(ctx context.Context, host string, port uint) (*Server, error) {
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	router := routes.NewRouter(DB)
 	router.AddRoute("/balance", &routes.BalanceHandler{})
+	router.AddRoute("/currentChallenge", &routes.CurrentChallengeHandler{})
+	router.AddRoute("/requestId", &routes.RequestIdHandler{})
+	router.AddRoute("/difficulty", &routes.DifficultyHandler{})
+	router.AddRoute("/queryString", &routes.QueryStringHandler{})
+	router.AddRoute("/granularity", &routes.GranularityHandler{})
+	router.AddRoute("/totalTip", &routes.TotalTipHandler{})
+	router.AddRoute("/gas", &routes.GasHandler{})
+	router.AddRoute("/top50", &routes.Top50Handler{})
+	router.AddRoute("/tributeBalance", &routes.TributeBalanceHandler{})
+	router.AddRoute("/disputeStatus", &routes.DisputeStatusHandler{})
 	http.Handle("/", router)
 	return &Server{server: srv}, nil
 }

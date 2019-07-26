@@ -16,6 +16,10 @@ import (
 type TributeTracker struct {
 }
 
+func (b *TributeTracker) String() string {
+	return "TributeTracker"
+}
+
 func (b *TributeTracker) Exec(ctx context.Context) error {
 	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)

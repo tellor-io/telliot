@@ -41,6 +41,10 @@ type PrespecifiedRequest struct {
 
 var thisPSR PrespecifiedRequest
 
+func (b *RequestDataTracker) String() string {
+	return "RequestDataTracker"
+}
+
 func (b *RequestDataTracker) Exec(ctx context.Context) error {
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	isPre, _, _ := checkPrespecifiedRequest(1)

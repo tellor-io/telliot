@@ -28,6 +28,7 @@ func main() {
 	fmt.Println("Database Ready")
 
 	//Once synced, start miner
+	time.Sleep(1000 * time.Millisecond)
 	fmt.Println("Starting Tellor Miner")
 	mineTributes(ds)
 }
@@ -42,7 +43,11 @@ func mineTributes(ds *dataServer.DataServer) {
 		if bytes.Compare(prevCurrentChallenge, currentChallenge) != 0 {
 			prevCurrentChallenge = currentChallenge
 			difficulty, _ := DB.Get(db.DifficultyKey)
-			data := binary.BigEndian.Uint64(difficulty)
+			var data uint64
+			for i, x := range difficulty {
+				data |= uint64(x) << uint64(i*8)
+			}
+			fmt.Println("Difficulty", difficulty)
 			ndata := big.NewInt(int64(data))
 			nonce = pow.SolveChallenge(currentChallenge, ndata)
 			if nonce != "" {

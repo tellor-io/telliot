@@ -9,7 +9,13 @@
     "ethClientTimeout": 3000,
     "trackerCycle": 1,
  "trackers": [
-        "balance"
+        "balance",
+        "currentVariables",
+        "disputeStatus",
+        "gas",
+        "top50",
+        "tributeBalance",
+        "fetchData"
     ],
     "dbFile": "/tmp/tellor/tellor_db"
 }

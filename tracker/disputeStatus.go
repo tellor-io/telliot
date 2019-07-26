@@ -13,9 +13,15 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
+//DisputeTracker struct
 type DisputeTracker struct {
 }
 
+func (b *DisputeTracker) String() string {
+	return "DisputeTracker"
+}
+
+//Exec - Places the Dispute Status in the database
 func (b *DisputeTracker) Exec(ctx context.Context) error {
 	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)

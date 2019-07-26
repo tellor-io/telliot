@@ -13,6 +13,10 @@ import (
 type TestTracker struct {
 }
 
+func (b TestTracker) String() string {
+	return "TestTracker"
+}
+
 //Exec impl for test tracker
 func (t *TestTracker) Exec(ctx context.Context) error {
 	fmt.Printf("Test execution with client: %+v, DB: %+v\n", ctx.Value(common.ClientContextKey), ctx.Value(common.DBContextKey))

@@ -13,7 +13,7 @@
             "apis":[
                 "json(https://api.gdax.com/products/BTC-USD/ticker).price"
             ],
-            "transformation" : "value",
+            "transformation" : "median",
             "granularity" : 1000
         }
     ]
