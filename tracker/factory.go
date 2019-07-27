@@ -33,7 +33,7 @@ func createTracker(name string) (Tracker, error) {
 		}
 	case "fetchData":
 		{
-			return &BalanceTracker{}, nil
+			return &RequestDataTracker{}, nil
 		}
 	}
 

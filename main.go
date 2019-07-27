@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/dataServer"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/pow"
@@ -27,7 +27,7 @@ func main() {
 	fmt.Println("Database Ready")
 
 	//Once synced, start miner
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(5000 * time.Millisecond)
 	fmt.Println("Starting Tellor Miner")
 	mineTributes(ds)
 }
@@ -42,26 +42,15 @@ func mineTributes(ds *dataServer.DataServer) {
 		if bytes.Compare(prevCurrentChallenge, currentChallenge) != 0 {
 			prevCurrentChallenge = currentChallenge
 			difficulty, _ := DB.Get(db.DifficultyKey)
-			var data uint64
-			for i, x := range difficulty {
-				data |= uint64(x) << uint64(i*8)
-			}
-			fmt.Println("Difficulty", difficulty)
-			ndata := big.NewInt(int64(data))
+			ndata, _ := hexutil.DecodeBig(string(difficulty))
 			nonce = pow.SolveChallenge(currentChallenge, ndata)
 			fmt.Println("nonce", nonce)
 			if nonce != "" {
 				requestID, _ := DB.Get(db.RequestIdKey)
-				for i, x := range requestID {
-					data |= uint64(x) << uint64(i*8)
-				}
-				rdata := big.NewInt(int64(data))
-				value, _ := DB.Get(fmt.Sprint(requestID))
-				for i, x := range value {
-					data |= uint64(x) << uint64(i*8)
-				}
-				ndata = big.NewInt(int64(data))
-				fmt.Println("Submitting Solution: nonce,ndata,rdata")
+				rdata, _ := hexutil.DecodeBig(string(requestID))
+				value, _ := DB.Get(fmt.Sprint(rdata))
+				ndata, _ := hexutil.DecodeBig(string(value))
+				fmt.Println("Submitting Solution:", nonce, ndata, rdata)
 				pow.SubmitTransaction(nonce, ndata, rdata)
 				nonce = ""
 			}

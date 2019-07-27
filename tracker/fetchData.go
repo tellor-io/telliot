@@ -76,6 +76,7 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 	}
 
 	log.Printf("Staker Status: %v", enc)
+	fmt.Println("Storing Fetch Data", fmt.Sprint(thisPSR.RequestID))
 	return DB.Put(fmt.Sprint(thisPSR.RequestID), []byte(enc))
 }
 
