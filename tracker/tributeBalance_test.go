@@ -19,7 +19,7 @@ func TestTributeBalance(t *testing.T) {
 		TokenBalance: startBal, Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
+	DB, err := db.Open(filepath.Join(os.TempDir(), "test_Tributebalance"))
 	if err != nil {
 		t.Fatal(err)
 	}

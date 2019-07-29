@@ -58,6 +58,4 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	enc := hexutil.EncodeBig(balance)
 	log.Printf("Balance: %v", enc)
 	return DB.Put(db.TributeBalanceKey, []byte(enc))
-
-	return nil
 }

@@ -26,7 +26,7 @@ func TestTop50(t *testing.T) {
 		TokenBalance: big.NewInt(0), Top50Requests: top50}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
+	DB, err := db.Open(filepath.Join(os.TempDir(), "test_top50"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestTop50(t *testing.T) {
 	}
 	v, err := DB.Get(db.Top50Key)
 	fmt.Println("V", v)
-
+	fmt.Println("newV", v[0])
 	if err != nil {
 		t.Fatal(err)
 	}

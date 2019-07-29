@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	tellor "github.com/tellor-io/TellorMiner/contracts"
@@ -47,14 +46,11 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 		log.Fatal(err)
 		return err
 	}
-	rIDs := ""
+	rIDs := []byte{}
 
 	for i := range top50 {
-		if i > 0 {
-			rIDs += ","
-		}
-		rIDs += hexutil.EncodeBig(top50[i])
+		rIDs = append(rIDs, top50[i].Bytes()...)
 
 	}
-	return DB.Put(db.Top50Key, []byte(rIDs))
+	return DB.Put(db.Top50Key, rIDs)
 }

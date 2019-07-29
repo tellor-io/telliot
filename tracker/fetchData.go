@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"net/http"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -57,6 +55,20 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 	}
 	enc := "0x"
 	//Loop through all PSRs
+	configFile, err := os.Open("../psr.json")
+
+	if err != nil {
+		fmt.Println("Error", err)
+		return err
+	}
+
+	defer configFile.Close()
+	byteValue, _ := ioutil.ReadAll(configFile)
+	var psr PrespecifiedRequests
+	// we unmarshal our byteArray which contains our
+	// jsonFile's content into 'users' which we defined above
+	json.Unmarshal(byteValue, &psr)
+
 	for i := 0; i < len(psr.PrespecifiedRequests); i++ {
 		thisPSR = psr.PrespecifiedRequests[i]
 		fmt.Println("Id: ", psr.PrespecifiedRequests[i].RequestID)
@@ -64,15 +76,12 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		fmt.Println("Transformation: ", psr.PrespecifiedRequests[i].Transformation)
 		var myFetches []int
 		for i := 0; i < len(thisPSR.APIs); i++ {
-			fmt.Println(i)
 			myFetches = append(myFetches, fetchAPI(thisPSR.Granularity, thisPSR.APIs[i]))
 		}
-		fmt.Println("My Fetches", myFetches)
 		res, _ := CallPrespecifiedRequest(funcs, thisPSR.Transformation, myFetches)
 		y := res[0].Interface().(uint)
 		fmt.Println(big.NewInt(int64(y)))
 		enc = hexutil.EncodeBig(big.NewInt(int64(y)))
-		log.Printf("Staker Status: %v", enc)
 		fmt.Println("Storing Fetch Data", fmt.Sprint(thisPSR.RequestID))
 		DB.Put(fmt.Sprint(thisPSR.RequestID), []byte(enc))
 	}
@@ -82,17 +91,11 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(v)
-	bigs := strings.Split(string(v), ",")
-	fmt.Println(bigs)
-	for i := 0; i < len(bigs); i++ {
+	fmt.Println("Why doesn't this work?", v)
+	for i := 0; i < len(v); i++ {
 		fmt.Println(i)
-		fmt.Println(bigs[i])
-		i1, err := strconv.Atoi(bigs[i])
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
+		fmt.Println("Line 88", v[i])
+		i1 := int(v[i])
 		if i1 > 0 {
 			isPre, _, _ := checkPrespecifiedRequest(uint(i1))
 			if isPre {
@@ -100,6 +103,7 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 			} else {
 				fmt.Println("Normal Fetch")
 				//We need to go get the queryString (we should store it somewhere)
+				//also we need the granularity
 				fetchres := int64(fetchAPI(1000, API))
 				fmt.Println(big.NewInt(fetchres))
 				enc = hexutil.EncodeBig(big.NewInt(fetchres))
@@ -127,16 +131,14 @@ func fetchAPI(_granularity uint, queryString string) int {
 }
 
 func checkPrespecifiedRequest(requestID uint) (bool, PrespecifiedRequest, error) {
-	configFile, err := os.Open("psr.json")
+	configFile, err := os.Open("../psr.json")
 
 	if err != nil {
 		fmt.Println("Error", err)
 		return false, thisPSR, err
 	}
 	defer configFile.Close()
-	fmt.Println(configFile)
 	byteValue, _ := ioutil.ReadAll(configFile)
-	fmt.Println(byteValue)
 	var psr PrespecifiedRequests
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'users' which we defined above
@@ -144,7 +146,7 @@ func checkPrespecifiedRequest(requestID uint) (bool, PrespecifiedRequest, error)
 	fmt.Println(psr)
 	for i := 0; i < len(psr.PrespecifiedRequests); i++ {
 		if psr.PrespecifiedRequests[i].RequestID == requestID {
-			thisPSR = psr.PrespecifiedRequests[0]
+			thisPSR = psr.PrespecifiedRequests[i]
 			fmt.Println("Id: ", psr.PrespecifiedRequests[i].RequestID)
 			fmt.Println("APIs: ", psr.PrespecifiedRequests[i].APIs)
 			fmt.Println("Transformation: ", psr.PrespecifiedRequests[i].Transformation)

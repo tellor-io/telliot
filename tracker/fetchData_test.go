@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -17,15 +18,15 @@ func TestFetchData(t *testing.T) {
 	startBal := big.NewInt(456000)
 
 	top50 := make([]*big.Int, 51)
-	for i := 1; i < 4; i++ {
+	for i := range top50 {
 		top50[i] = big.NewInt(int64(i))
 	}
 
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
-		TokenBalance: startBal, Top50Requests: []*big.Int{}}
+		TokenBalance: big.NewInt(0), Top50Requests: top50}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
+	DB, err := db.Open(filepath.Join(os.TempDir(), "test_fetchData"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +37,7 @@ func TestFetchData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := DB.Get("1")
+	v, err := DB.Get(fmt.Sprint(1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,6 +45,7 @@ func TestFetchData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(b)
 	t.Logf("Data stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 1 {
 		t.Fatalf("Data for each ID from client did not match what should have been stored in DB. %s != %s", b, startBal)

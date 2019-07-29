@@ -32,7 +32,7 @@ and it will test from there.
 
 For testing purposes
 
- go test -v ./tracker/top50 -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config.json
+go test -v ./tracker -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config.json
 
 go run C:/company/code/go/src/github.com/tellor-io/TellorMiner/main.go -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config1.json
 go run C:/company/code/go/src/github.com/tellor-io/TellorMiner/main.go -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config2.json
