@@ -91,10 +91,7 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println("Why doesn't this work?", v)
-	for i := 0; i < len(v); i++ {
-		fmt.Println(i)
-		fmt.Println("Line 88", v[i])
+	for i := 1; i < len(v); i++ {
 		i1 := int(v[i])
 		if i1 > 0 {
 			isPre, _, _ := checkPrespecifiedRequest(uint(i1))
@@ -105,7 +102,6 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 				//We need to go get the queryString (we should store it somewhere)
 				//also we need the granularity
 				fetchres := int64(fetchAPI(1000, API))
-				fmt.Println(big.NewInt(fetchres))
 				enc = hexutil.EncodeBig(big.NewInt(fetchres))
 				DB.Put(fmt.Sprint(i1), []byte(enc))
 			}
@@ -118,7 +114,6 @@ func fetchAPI(_granularity uint, queryString string) int {
 	var r QueryStruct
 	var rgx = regexp.MustCompile(`\((.*?)\)`)
 	url := rgx.FindStringSubmatch(queryString)[1]
-	fmt.Println("url", url)
 	resp, _ := http.Get(url)
 	input, _ := ioutil.ReadAll(resp.Body)
 	err := json.Unmarshal(input, &r)

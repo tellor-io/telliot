@@ -30,6 +30,14 @@ func TestFetchData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tracker1 := &Top50Tracker{}
+	ctx1 := context.WithValue(context.Background(), common.ClientContextKey, client)
+	ctx1 = context.WithValue(ctx1, common.DBContextKey, DB)
+	err = tracker1.Exec(ctx1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tracker := &RequestDataTracker{}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
