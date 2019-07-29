@@ -1,0 +1,21 @@
+{
+    "contractAddress": "0x9f7bC259319001166e986210d846af7C15B1f644",
+    "nodeURL": "http://localhost:8545",
+    "privateKey": "4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16",
+    "databaseURL":"http://localhost7545",
+    "publicAddress": "e037ec8ec9ec423826750853899394de7f024fee",
+    "serverHost": "localhost",
+    "serverPort": 5000,
+    "ethClientTimeout": 3000,
+    "trackerCycle": 3,
+ "trackers": [
+        "balance",
+        "currentVariables",
+        "disputeStatus",
+        "gas",
+        "top50",
+        "tributeBalance",
+        "fetchData"
+    ],
+    "dbFile": "/tmp/tellor/tellor_db"
+}

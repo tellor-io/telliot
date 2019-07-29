@@ -122,8 +122,8 @@ func SubmitTransaction(solution string, value, requestId *big.Int) error {
 	if balance.Cmp(cost) >= 0 {
 		auth := bind.NewKeyedTransactor(privateKey)
 		auth.Nonce = big.NewInt(int64(nonce))
-		auth.Value = big.NewInt(0)     // in wei
-		auth.GasLimit = uint64(300000) // in units
+		auth.Value = big.NewInt(0)      // in wei
+		auth.GasLimit = uint64(3000000) // in units
 		auth.GasPrice = gasPrice
 
 		contractAddress := common.HexToAddress(cfg.ContractAddress)

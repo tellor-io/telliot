@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -40,6 +41,7 @@ type PrespecifiedRequest struct {
 }
 
 var thisPSR PrespecifiedRequest
+var psr PrespecifiedRequests
 
 func (b *RequestDataTracker) String() string {
 	return "RequestDataTracker"
@@ -47,7 +49,6 @@ func (b *RequestDataTracker) String() string {
 
 func (b *RequestDataTracker) Exec(ctx context.Context) error {
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	isPre, _, _ := checkPrespecifiedRequest(1)
 	funcs := map[string]interface{}{
 		"value":   value,
 		"average": average,
@@ -55,9 +56,12 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		"square":  square,
 	}
 	enc := "0x"
-
-	if isPre {
-		fmt.Println("Prespec")
+	//Loop through all PSRs
+	for i := 0; i < len(psr.PrespecifiedRequests); i++ {
+		thisPSR = psr.PrespecifiedRequests[i]
+		fmt.Println("Id: ", psr.PrespecifiedRequests[i].RequestID)
+		fmt.Println("APIs: ", psr.PrespecifiedRequests[i].APIs)
+		fmt.Println("Transformation: ", psr.PrespecifiedRequests[i].Transformation)
 		var myFetches []int
 		for i := 0; i < len(thisPSR.APIs); i++ {
 			fmt.Println(i)
@@ -68,16 +72,42 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		y := res[0].Interface().(uint)
 		fmt.Println(big.NewInt(int64(y)))
 		enc = hexutil.EncodeBig(big.NewInt(int64(y)))
-	} else {
-		fmt.Println("Normal Fetch")
-		fetchres := int64(fetchAPI(1000, API))
-		fmt.Println(big.NewInt(fetchres))
-		enc = hexutil.EncodeBig(big.NewInt(fetchres))
+		log.Printf("Staker Status: %v", enc)
+		fmt.Println("Storing Fetch Data", fmt.Sprint(thisPSR.RequestID))
+		DB.Put(fmt.Sprint(thisPSR.RequestID), []byte(enc))
 	}
-
-	log.Printf("Staker Status: %v", enc)
-	fmt.Println("Storing Fetch Data", fmt.Sprint(thisPSR.RequestID))
-	return DB.Put(fmt.Sprint(thisPSR.RequestID), []byte(enc))
+	//Loop through all those in Top50
+	v, err := DB.Get(db.Top50Key)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(v)
+	bigs := strings.Split(string(v), ",")
+	fmt.Println(bigs)
+	for i := 0; i < len(bigs); i++ {
+		fmt.Println(i)
+		fmt.Println(bigs[i])
+		i1, err := strconv.Atoi(bigs[i])
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		if i1 > 0 {
+			isPre, _, _ := checkPrespecifiedRequest(uint(i1))
+			if isPre {
+				fmt.Println("Prespec")
+			} else {
+				fmt.Println("Normal Fetch")
+				//We need to go get the queryString (we should store it somewhere)
+				fetchres := int64(fetchAPI(1000, API))
+				fmt.Println(big.NewInt(fetchres))
+				enc = hexutil.EncodeBig(big.NewInt(fetchres))
+				DB.Put(fmt.Sprint(i1), []byte(enc))
+			}
+		}
+	}
+	return nil
 }
 
 func fetchAPI(_granularity uint, queryString string) int {

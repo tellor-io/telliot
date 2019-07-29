@@ -51,7 +51,7 @@ func mineTributes(ds *dataServer.DataServer) {
 				value, _ := DB.Get(fmt.Sprint(rdata))
 				ndata, _ := hexutil.DecodeBig(string(value))
 				fmt.Println("Submitting Solution:", nonce, ndata, rdata)
-				pow.SubmitTransaction(nonce, ndata, rdata)
+				//pow.SubmitTransaction(nonce, ndata, rdata)
 				nonce = ""
 			}
 			x++
