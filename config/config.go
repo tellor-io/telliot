@@ -21,8 +21,11 @@ type Config struct {
 	DBFile            string   `json:"dbFile"`
 	ServerHost        string   `json:"serverHost"`
 	ServerPort        uint     `json:"serverPort"`
+	FetchTimeout      uint     `json:"fetchTimeout"`
 	logger            *util.Logger
 }
+
+const defaultTimeout = 30000 //30 second fetch timeout
 
 var config *Config
 
@@ -42,6 +45,9 @@ func ParseConfig(path string) (*Config, error) {
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
 	config.logger = util.NewLogger("config", "Config")
+	if config.FetchTimeout == 0 {
+		config.FetchTimeout = defaultTimeout
+	}
 	config.logger.Info("config: %+v", config)
 	return config, nil
 }

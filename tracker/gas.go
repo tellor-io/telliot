@@ -13,7 +13,7 @@ import (
 type GasTracker struct {
 }
 
-func (b GasTracker) String() string {
+func (b *GasTracker) String() string {
 	return "GasTracker"
 }
 

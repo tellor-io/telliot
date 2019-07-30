@@ -2,88 +2,86 @@ package tracker
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"net/http"
-	"os"
 	"reflect"
 	"regexp"
 	"sort"
-	"strconv"
+	"sync"
+	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	tellorCommon "github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/util"
 )
 
 const API = "json(https://api.gdax.com/products/ETH-USD/ticker).price"
 
+var waitGroupKey = util.NewKey("tracker", "fetchWaitGroup")
+
 type RequestDataTracker struct {
 }
 
-type QueryStruct struct {
-	Price string `price`
+type FetchResult struct {
+	value *big.Int
+	reqId uint
 }
 
-type PrespecifiedRequests struct {
-	PrespecifiedRequests []PrespecifiedRequest `json:"prespecifiedRequests"`
-}
-type PrespecifiedRequest struct {
-	RequestID      uint     `json:"requestID"`
-	APIs           []string `json:"apis"`
-	Transformation string   `json:"transformation"`
-	Granularity    uint     `json:"granularity"`
-}
-
+/*
 var thisPSR PrespecifiedRequest
 var psr PrespecifiedRequests
+*/
 
 func (b *RequestDataTracker) String() string {
 	return "RequestDataTracker"
 }
 
 func (b *RequestDataTracker) Exec(ctx context.Context) error {
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	funcs := map[string]interface{}{
-		"value":   value,
-		"average": average,
-		"median":  median,
-		"square":  square,
-	}
-	enc := "0x"
-	//Loop through all PSRs
-	configFile, err := os.Open("../psr.json")
+	//DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	var syncGroup sync.WaitGroup
+	ctx = context.WithValue(ctx, waitGroupKey, syncGroup)
 
+	/*
+		funcs := map[string]interface{}{
+			"value":   value,
+			"average": average,
+			"median":  median,
+			"square":  square,
+		}
+	*/
+
+	//pre-initialized PSR's
+	psr, err := psrInstance()
 	if err != nil {
-		fmt.Println("Error", err)
 		return err
 	}
 
-	defer configFile.Close()
-	byteValue, _ := ioutil.ReadAll(configFile)
-	var psr PrespecifiedRequests
-	// we unmarshal our byteArray which contains our
-	// jsonFile's content into 'users' which we defined above
-	json.Unmarshal(byteValue, &psr)
+	//we will wait for all requests to complete before this tracker is done
+	syncGroup.Add(len(psr.Requests))
 
-	for i := 0; i < len(psr.PrespecifiedRequests); i++ {
-		thisPSR = psr.PrespecifiedRequests[i]
-		fmt.Println("Id: ", psr.PrespecifiedRequests[i].RequestID)
-		fmt.Println("APIs: ", psr.PrespecifiedRequests[i].APIs)
-		fmt.Println("Transformation: ", psr.PrespecifiedRequests[i].Transformation)
+	//we spread fetch calls across go routines and they write their values back
+	//dbChan := make(chan *FetchResult)
+
+	//handle errors in some way. For now, we just log them. But better model
+	//would be to push them to a more abstract error logging/alerting mechanism
+	//for monitoring activity
+	//errChan := make(chan error)
+
+	return nil
+
+	/***
+	for i := 0; i < len(psr.Requests); i++ {
+		thisPSR := psr.Requests[i]
 		var myFetches []int
 		for i := 0; i < len(thisPSR.APIs); i++ {
 			myFetches = append(myFetches, fetchAPI(thisPSR.Granularity, thisPSR.APIs[i]))
 		}
 		res, _ := CallPrespecifiedRequest(funcs, thisPSR.Transformation, myFetches)
 		y := res[0].Interface().(uint)
-		fmt.Println(big.NewInt(int64(y)))
+		//fmt.Println(big.NewInt(int64(y)))
 		enc = hexutil.EncodeBig(big.NewInt(int64(y)))
 		fmt.Println("Storing Fetch Data", fmt.Sprint(thisPSR.RequestID))
-		DB.Put(fmt.Sprint(thisPSR.RequestID), []byte(enc))
+		DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, thisPSR.RequestID), []byte(enc))
 	}
 	//Loop through all those in Top50
 	v, err := DB.Get(db.Top50Key)
@@ -92,7 +90,14 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		return err
 	}
 	for i := 1; i < len(v); i++ {
-		i1 := int(v[i])
+
+		id := int(v[i])
+		//pull request metadata from DB
+		queryMeta, err := DB.Get(fmt.Sprintf("%s%d", db.QueryMetadataPrefix, id))
+		if err != nil {
+
+		}
+
 		if i1 > 0 {
 			isPre, _, _ := checkPrespecifiedRequest(uint(i1))
 			if isPre {
@@ -108,9 +113,36 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		}
 	}
 	return nil
+	**/
 }
 
-func fetchAPI(_granularity uint, queryString string) int {
+func fetchAPI(ctx context.Context, _granularity uint, queryString string, resultChan chan *FetchResult, errorChan chan error) {
+	//DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	syncGroup := ctx.Value(waitGroupKey).(sync.WaitGroup)
+	defer syncGroup.Done()
+
+	cfg, err := config.GetConfig()
+	if err != nil {
+		errorChan <- err
+		return
+	}
+
+	timeout := time.Duration(time.Duration(cfg.FetchTimeout) * time.Second)
+
+	//TODO: need to abstract how to get URL string and JSON parsinglogic
+	var rgx = regexp.MustCompile(`\((.*?)\)`)
+	url := rgx.FindStringSubmatch(queryString)[1]
+	req := &FetchRequest{queryURL: url, timeout: timeout}
+
+	valueStr, err := fetchWithRetries(req)
+	if err != nil {
+		errorChan <- err
+		return
+	}
+}
+
+/*
+func oldfetchAPI(_granularity uint, queryString string) int {
 	var r QueryStruct
 	var rgx = regexp.MustCompile(`\((.*?)\)`)
 	url := rgx.FindStringSubmatch(queryString)[1]
@@ -150,6 +182,7 @@ func checkPrespecifiedRequest(requestID uint) (bool, PrespecifiedRequest, error)
 	}
 	return false, thisPSR, nil
 }
+*/
 
 func value(num []int) uint {
 	fmt.Println("Calling Value", num)
