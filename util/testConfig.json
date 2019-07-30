@@ -1,0 +1,14 @@
+[
+    {
+        "component": "config.Config",
+        "level": "INFO"
+    },
+    {
+        "component":"db.DB",
+        "level": "DEBUG"
+    },
+    {
+        "component": "rpc.client",
+        "level": "DEBUG"
+    }
+]

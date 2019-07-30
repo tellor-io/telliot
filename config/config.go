@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"sync"
 
 	"github.com/tellor-io/TellorMiner/cli"
 	"github.com/tellor-io/TellorMiner/util"
@@ -23,11 +24,15 @@ type Config struct {
 	ServerPort        uint     `json:"serverPort"`
 	FetchTimeout      uint     `json:"fetchTimeout"`
 	logger            *util.Logger
+	mux               sync.Mutex
 }
 
 const defaultTimeout = 30000 //30 second fetch timeout
 
-var config *Config
+var (
+	config *Config
+	mux    sync.Mutex
+)
 
 //ParseConfig and set a shared config entry
 func ParseConfig(path string) (*Config, error) {
@@ -55,11 +60,14 @@ func ParseConfig(path string) (*Config, error) {
 //GetConfig returns a shared instance of config
 func GetConfig() (*Config, error) {
 	if config == nil {
-		_, err := ParseConfig("")
-		if err != nil {
-			return nil, err
+		mux.Lock()
+		defer mux.Unlock()
+		if config == nil {
+			_, err := ParseConfig("")
+			if err != nil {
+				return nil, err
+			}
 		}
-		return config, nil
 	}
 	return config, nil
 }
