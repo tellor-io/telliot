@@ -35,6 +35,10 @@ func createTracker(name string) (Tracker, error) {
 		{
 			return &RequestDataTracker{}, nil
 		}
+	case "psr":
+		{
+			return BuildPSRTracker()
+		}
 	}
 
 	return nil, nil

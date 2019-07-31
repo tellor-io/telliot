@@ -27,7 +27,7 @@ type Config struct {
 	mux               sync.Mutex
 }
 
-const defaultTimeout = 30000 //30 second fetch timeout
+const defaultTimeout = 30 //30 second fetch timeout
 
 var (
 	config *Config

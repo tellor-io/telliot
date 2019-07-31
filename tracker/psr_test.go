@@ -15,7 +15,7 @@ import (
 )
 
 func TestPSR(t *testing.T) {
-	db, err := db.Open(filepath.Join(os.TempDir(), "test_leveldb"))
+	db, err := db.Open(filepath.Join(os.TempDir(), "test_psrFetch"))
 	if err != nil {
 		log.Fatal(err)
 		panic(err.Error())

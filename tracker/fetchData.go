@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"sync"
@@ -14,9 +15,13 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-//const API = "json(https://api.gdax.com/products/ETH-USD/ticker).price"
+//need a rate limit to throttle requests to 3rd party APIs
+const fetchRate = time.Second / 4 //fetch requests per second
 
+//log
 var fetchLog = util.NewLogger("tracker", "FetchDataTracker")
+
+//key to lookup a shared sync wait group in context
 var waitGroupKey = util.NewKey("tracker", "fetchWaitGroup")
 
 //RequestDataTracker fetches data from remote APIs
@@ -29,34 +34,43 @@ type FetchResult struct {
 	reqID uint
 }
 
-/*
-var thisPSR PrespecifiedRequest
-var psr PrespecifiedRequests
-*/
-
 func (b *RequestDataTracker) String() string {
 	return "RequestDataTracker"
 }
 
 //Exec is implementation of tracker interface
 func (b *RequestDataTracker) Exec(ctx context.Context) error {
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+
+	//ticker to monitor to ensure we don't exceed max fetch request rate
+	throttle := time.Tick(time.Duration(fetchRate))
+
+	//wait group to synchronize concurrent fetch routines
 	var syncGroup sync.WaitGroup
+
+	//wait group to stop anonymous go routes below
 	var doneGroup sync.WaitGroup
+	//there are two of them below
 	doneGroup.Add(2)
+
+	//add the sync group to the context so go routines can grab it for use in separate thread
 	ctx = context.WithValue(ctx, waitGroupKey, &syncGroup)
 
-	//we spread fetch calls across go routines and they write their values back
+	//we spread fetch calls across go routines and this channel will receive their results
 	dbChan := make(chan *FetchResult)
-
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	go func() {
+		//make sure we mark that we finished once all fetches are done
 		defer doneGroup.Done()
 		for {
 			res := <-dbChan
 			if res == nil {
+				//below we send a nil entry through so we bail once we see that
 				return
 			}
+			//encode the value in hex
 			enc := hexutil.EncodeBig(res.value)
+			fetchLog.Debug("Storing fetch result: %v for id: %d", res.value, res.reqID)
+			//and write it to DB using value prefix and request Id
 			DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, res.reqID), []byte(enc))
 		}
 	}()
@@ -76,22 +90,54 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		}
 	}()
 
+	//read the last top50 pulled from on-chain
 	v, err := DB.Get(db.Top50Key)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	for i := 1; i < len(v); i++ {
+	fetchLog.Debug("Pulled Top50 from DB: %v\n", v)
+
+	//for each top50 request id
+	for i := 0; i < len(v); i++ {
 
 		id := int(v[i])
+
+		//ignore PSR-range request ids
+		if id <= 50 {
+			continue //PSR
+		}
+
 		//pull request metadata from DB
+		fetchLog.Debug("Checking DB for request with id: %d\n", id)
 		queryMetaBytes, err := DB.Get(fmt.Sprintf("%s%d", db.QueryMetadataPrefix, id))
+		var meta *IDSpecifications
 		if err != nil {
+			fetchLog.Error("Problem reading request meta from DB: %v\n", err)
 			errChan <- err
 			continue
 		}
-		fmt.Println("Value", string(queryMetaBytes))
+
+		//all this needs to be moved to the top50Tracker so that fetching merely relies on
+		//what top50 pulled in current cyle. Also means top50 must run BEFORE this tracker
+		if queryMetaBytes == nil || len(queryMetaBytes) == 0 {
+			fetchLog.Error("Did not find request metadata in DB, cannot fetch data for id: %v\n", id)
+			continue
+		}
+
+		if meta == nil && queryMetaBytes != nil {
+			meta = new(IDSpecifications)
+			if err := json.Unmarshal(queryMetaBytes, meta); err != nil {
+				top50Logger.Error("Problem unmarshalling query metadata from DB: %v\n", err)
+			}
+		}
+
+		if meta != nil && len(meta.QueryString) > 0 {
+			syncGroup.Add(1)
+			<-throttle
+			go fetchAPI(ctx, uint(id), uint(meta.Granularity), meta.QueryString, dbChan, errChan)
+		}
 	}
 
 	syncGroup.Wait()
@@ -169,6 +215,7 @@ func fetchAPI(ctx context.Context, reqID uint, _granularity uint, queryString st
 	timeout := time.Duration(time.Duration(cfg.FetchTimeout) * time.Second)
 	url, args := util.ParseQueryString(queryString)
 	req := &FetchRequest{queryURL: url, timeout: timeout}
+	fetchLog.Debug("Fetching price data from: %s\n", url)
 	payload, err := fetchWithRetries(req)
 	if err != nil {
 		errorChan <- err

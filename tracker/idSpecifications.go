@@ -1,33 +1,31 @@
-package util
+package tracker
 
 import (
 	"context"
 	"log"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	tellor "github.com/tellor-io/TellorMiner/contracts"
-	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
 type IDSpecifications struct {
-	requestID   uint
-	queryString string
-	granularity int
+	RequestID   uint   `json:"requestId"`
+	QueryString string `json:"queryString"`
+	Granularity int    `json:"granularity"`
 }
 
-func getSpecs(ctx context.Context, requestID uint) IDSpecifications {
-	var thisId IDSpecifications
+func GetSpecs(ctx context.Context, requestID uint) (*IDSpecifications, error) {
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	//get the single config instance
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Fatal(err)
-		return err
+		return nil, err
 	}
 
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
@@ -35,14 +33,11 @@ func getSpecs(ctx context.Context, requestID uint) IDSpecifications {
 	if err != nil {
 		log.Fatal(err)
 	}
-	queryString, _, _, granularity, _, err := instance.GetRequestVars(requestId, nil)
+	queryString, _, _, granularity, _, _, err := instance.GetRequestVars(nil, big.NewInt(int64(requestID)))
 	if err != nil {
 		log.Fatal(err)
-		return err
+		return nil, err
 	}
-	thisId.requestID = requestID
-	thisId.queryString = queryString
-	thisId.granularity = granularity
 
-	return thisID
+	return &IDSpecifications{requestID, queryString, int(granularity.Uint64())}, nil
 }

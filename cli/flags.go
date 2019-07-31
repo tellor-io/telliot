@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
 )
 
 const configPath = "config"
@@ -32,7 +31,7 @@ func GetFlags() *Flags {
 		logPath := flag.String(loggingConfigPath, "", "Path to a JSON logging config file")
 		psr := flag.String(psrPath, "", "Path to the psr.json file for pre-specified requests")
 		flag.Parse()
-		log.Printf("Path: %s, LogPath: %s, PSRPath: %s, Args: %v", *path, *logPath, *psr, flag.Args())
+		//log.Printf("Path: %s, LogPath: %s, PSRPath: %s, Args: %v", *path, *logPath, *psr, flag.Args())
 		f.ConfigPath = *path
 		f.LoggingConfigPath = *logPath
 		f.PSRPath = *psr
