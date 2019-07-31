@@ -117,6 +117,7 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 			if e != nil {
 				psrLog.Error("Problem in PSR fetch: %v]\n", e)
 			} else {
+				psrLog.Info("Finishing PSR tracker run...")
 				return
 			}
 		}
@@ -125,11 +126,15 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 	for i := 0; i < len(psr.Requests); i++ {
 		p := psr.Requests[i]
 		syncGroup.Add(1)
+		psrLog.Info("Fetching PSR with id: %v\n", p.RequestID)
 		go p.fetch(ctx, errorCh)
 	}
+	psrLog.Info("Waiting for PSR's to complete...")
 	syncGroup.Wait()
 	errorCh <- nil
+	psrLog.Info("Waiting for exit on error reader...")
 	doneGroup.Wait()
+	psrLog.Info("PSR Tracker cycle complete")
 	return nil
 }
 

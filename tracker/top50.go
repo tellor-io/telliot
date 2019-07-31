@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/big"
 
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/contracts"
@@ -12,6 +13,7 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
+var zero = big.NewInt(0)
 var top50Logger = util.NewLogger("tracker", "Top50Tracker")
 
 //Top50Tracker concrete tracker type
@@ -52,9 +54,14 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 		return err
 	}
 	rIDs := []byte{}
+	top50Logger.Info("Retrieved %d IDs from on-chain request", len(top50))
 
 	for i := range top50 {
 		reqID := top50[i]
+		if reqID.Cmp(zero) == 0 {
+			top50Logger.Info("Skipping zero-value request id")
+			continue
+		}
 		queryMetadata, err := DB.Get(fmt.Sprintf("%s%d", db.QueryMetadataPrefix, reqID.Uint64()))
 		if err != nil {
 			top50Logger.Error("Problem reading query meta from DB: %v\n", err)
@@ -68,8 +75,10 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 			top50Logger.Debug("Pulling query metadata from on-chain with id: %v\n", reqID)
 			meta, err = GetSpecs(ctx, uint(reqID.Uint64()))
 			if err != nil {
-
+				top50Logger.Error("Problem pulling query metadata from on-chain: %v\n", err)
+				continue
 			}
+
 			if meta == nil {
 				top50Logger.Error("Could not resolve request with id: %v\n", reqID)
 				continue

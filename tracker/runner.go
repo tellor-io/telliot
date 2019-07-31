@@ -2,7 +2,6 @@ package tracker
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -45,42 +44,42 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		trackers[i] = t
 	}
 
-	contractAddress := common.HexToAddress(cfg.ContractAddress)
-	masterInstance, err := tellor.NewTellorMaster(contractAddress, r.client)
-	if err != nil {
-		runnerLog.Error("Problem creating tellor master instance: %v\n", err)
-		return err
+	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
+	if masterInstance == nil {
+		contractAddress := common.HexToAddress(cfg.ContractAddress)
+		masterInstance, err = tellor.NewTellorMaster(contractAddress, r.client)
+		if err != nil {
+			runnerLog.Error("Problem creating tellor master instance: %v\n", err)
+			return err
+		}
+		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 	}
 
 	sleepTime := time.Duration(sleep) * time.Second
-	fmt.Printf("Trackers will run every %v\n", sleepTime)
+	runnerLog.Info("Trackers will run every %v\n", sleepTime)
 	ticker := time.NewTicker(sleepTime)
-	go func() {
-		defer r.client.Close()
-		defer r.db.Close()
+	if ctx.Value(tellorCommon.ClientContextKey) == nil {
+		ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)
+	}
+	if ctx.Value(tellorCommon.DBContextKey) == nil {
+		ctx = context.WithValue(ctx, tellorCommon.DBContextKey, r.db)
+	}
 
+	go func() {
+		r.callTrackers(ctx, &trackers)
 		for {
+			runnerLog.Info("Waiting for next tracker run cycle...")
 			select {
 			case _ = <-exitCh:
 				{
-					fmt.Println("Exiting run loop")
+					runnerLog.Info("Exiting run loop")
 					ticker.Stop()
 					return
 				}
 			case _ = <-ticker.C:
 				{
-					fmt.Println("Running trackers...")
-					c := context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)
-					c = context.WithValue(c, tellorCommon.DBContextKey, r.db)
-					c = context.WithValue(c, tellorCommon.MasterContractContextKey, masterInstance)
-					for _, t := range trackers {
-						fmt.Printf("Calling tracker: %v\n", t)
-						err := t.Exec(c)
-						if err != nil {
-							fmt.Println("Problem in tracker", err)
-						}
-					}
-
+					runnerLog.Info("Running trackers...")
+					r.callTrackers(ctx, &trackers)
 				}
 			}
 		}
@@ -88,4 +87,15 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 
 	return nil
 
+}
+
+func (r *Runner) callTrackers(ctx context.Context, trackers *[]Tracker) error {
+	for _, t := range *trackers {
+		runnerLog.Info("Calling tracker: %v\n", t)
+		err := t.Exec(ctx)
+		if err != nil {
+			runnerLog.Error("Problem in tracker: %v\n", err)
+		}
+	}
+	return nil
 }

@@ -1,10 +1,9 @@
-package dataServer
+package ops
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -16,8 +15,8 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-func TestDataServer(t *testing.T) {
-	exitCh := make(chan int)
+func TestDataServerOps(t *testing.T) {
+	exitCh := make(chan os.Signal)
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -43,23 +42,16 @@ func TestDataServer(t *testing.T) {
 	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, DB)
 	ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, client)
 	ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
-	ds, err := CreateServer(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ds.Start(ctx, exitCh)
 
-	time.Sleep(5000 * time.Millisecond)
-
-	resp, err := http.Get("http://localhost:5000/balance")
+	ops, err := CreateDataServerOps(ctx, exitCh)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
-	fmt.Printf("Finished: %+v", resp)
-	exitCh <- 1
+	ops.Start(ctx)
+	time.Sleep(2 * time.Second)
+	exitCh <- os.Interrupt
 	time.Sleep(1 * time.Second)
-	if !ds.Stopped {
-		t.Fatal("Did not stop server")
+	if ops.Running {
+		t.Fatal("data server is still running after stopping")
 	}
 }

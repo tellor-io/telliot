@@ -14,61 +14,63 @@ import (
 
 //DataServer holds refs to primary stack of utilities for data retrieval and serving
 type DataServer struct {
-	server    *rest.Server
-	DB        db.DB
-	runner    *tracker.Runner
-	ethClient rpc.ETHClient
-	exitCh    chan int
+	server       *rest.Server
+	DB           db.DB
+	runner       *tracker.Runner
+	ethClient    rpc.ETHClient
+	exitCh       chan int
+	runnerExitCh chan int
+	Stopped      bool
 }
 
 //CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data
-func CreateServer() (*DataServer, error) {
-
+func CreateServer(ctx context.Context) (*DataServer, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	if len(cfg.DBFile) == 0 {
-		log.Fatal("Missing dbFile config setting")
-	}
-
-	DB, err := db.Open(cfg.DBFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	client, err := rpc.NewClient(cfg.NodeURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	DB := ctx.Value(common.DBContextKey).(db.DB)
+	client := ctx.Value(common.ClientContextKey).(rpc.ETHClient)
 	run, err := tracker.NewRunner(client, DB)
 	if err != nil {
 		log.Fatal(err)
 	}
-	ctx := context.WithValue(context.Background(), common.DBContextKey, DB)
-	ctx = context.WithValue(ctx, common.ClientContextKey, client)
 	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
 
-	return &DataServer{srv, DB, run, client, nil}, nil
+	return &DataServer{server: srv, DB: DB, runner: run, ethClient: client, exitCh: nil, Stopped: true, runnerExitCh: nil}, nil
 }
 
 //Start the data server and all underlying resources
 func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 	ds.exitCh = exitCh
-	ctx = context.WithValue(ctx, common.DBContextKey, ds.DB)
-	ctx = context.WithValue(ctx, common.ClientContextKey, ds.ethClient)
-	err := ds.runner.Start(ctx, ds.exitCh)
+	ds.runnerExitCh = make(chan int)
+	err := ds.runner.Start(ctx, ds.runnerExitCh)
 	if err != nil {
 		return err
 	}
 
 	ds.server.Start()
+	go func() {
+		<-ds.exitCh
+		ds.stop()
+	}()
 	return nil
 }
 
-//Stop the data server and all underlying resources
-func (ds *DataServer) Stop() error {
-	ds.exitCh <- 1
+func (ds *DataServer) stop() error {
+	//stop tracker run loop
+	ds.runnerExitCh <- 1
+
+	//stop REST erver
 	ds.server.Stop()
+
+	//stop the DB
+	ds.DB.Close()
+
+	//stop the eth RPC client
+	ds.ethClient.Close()
+
+	//all done
+	ds.Stopped = true
 	return nil
 }

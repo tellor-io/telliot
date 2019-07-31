@@ -9,7 +9,10 @@ import (
 	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rest/routes"
+	"github.com/tellor-io/TellorMiner/util"
 )
+
+var serverLog = util.NewLogger("rest", "Server")
 
 //Server wraps http server with pre-configured paths
 type Server struct {
@@ -39,7 +42,7 @@ func Create(ctx context.Context, host string, port uint) (*Server, error) {
 //Start the server listening for incoming requests
 func (s *Server) Start() {
 	go func() {
-		fmt.Printf("Starting server on %+v\n", s.server.Addr)
+		serverLog.Info("Starting server on %+v\n", s.server.Addr)
 		// returns ErrServerClosed on graceful close
 		if err := s.server.ListenAndServe(); err != http.ErrServerClosed {
 			// NOTE: there is a chance that next line won't have time to run,
@@ -53,6 +56,6 @@ func (s *Server) Start() {
 
 //Stop stops the server listening
 func (s *Server) Stop() error {
-	fmt.Println("Stopping server")
+	serverLog.Info("Stopping server")
 	return s.server.Close()
 }

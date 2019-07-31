@@ -2,7 +2,7 @@
 
 PKG="$1"
 PSR=`pwd`/psr.json
-CFG=`pwd`/config.json
+CFG=`pwd`/../../../../localConfig.json
 LOG=`pwd`/loggingConfig.json
 
 if [ -z "${PKG}" ]; then

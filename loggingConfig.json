@@ -9,7 +9,7 @@
     },
     {
         "component": "rpc.client",
-        "level": "DEBUG"
+        "level": "INFO"
     },
     {
         "component": "rpc.ABICodec",
