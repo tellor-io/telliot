@@ -15,7 +15,8 @@
         "gas",
         "top50",
         "tributeBalance",
-        "fetchData"
+        "fetchData",
+        "psr"
     ],
     "dbFile": "/tmp/tellor/tellor_db"
 }

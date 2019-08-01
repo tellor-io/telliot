@@ -142,7 +142,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 			}
 			if priceValue != nil {
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
-				//pow.SubmitTransaction(none, priceValue, cycle.requestID)
+				pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
 			}
 		}
 
