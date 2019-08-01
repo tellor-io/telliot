@@ -30,11 +30,13 @@ type MinerOps struct {
 	log           *util.Logger
 	Running       bool
 	lastChallenge *miningCycle
+	miner         *pow.PoWSolver
 }
 
 //CreateMinerOps creates a new miner operation ready to start run loop
 func CreateMinerOps(ctx context.Context, exitCh chan os.Signal) (*MinerOps, error) {
-	return &MinerOps{exitCh: exitCh, log: util.NewLogger("ops", "MinerOps"), Running: false}, nil
+	miner := pow.CreateMiner()
+	return &MinerOps{exitCh: exitCh, log: util.NewLogger("ops", "MinerOps"), Running: false, miner: miner}, nil
 }
 
 //Start will start the mining run loop
@@ -48,6 +50,7 @@ func (ops *MinerOps) Start(ctx context.Context) {
 			case _ = <-ops.exitCh:
 				{
 					ops.log.Info("Stopping miner")
+					ops.miner.Stop()
 					ops.Running = false
 					return
 				}
@@ -59,8 +62,8 @@ func (ops *MinerOps) Start(ctx context.Context) {
 					//channel and a bunch of extraneous requests will happen after a full mine.
 					cycle, err := ops.buildNextCycle(ctx)
 					if err == nil {
-						if cycle != nil {
-							ops.mine(ctx, cycle)
+						if cycle != nil && !ops.miner.IsMining() {
+							go ops.mine(ctx, cycle)
 						}
 					}
 				}
@@ -125,7 +128,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 		ops.lastChallenge = cycle
 		ops.log.Info("Mining for PoW nonce...")
 		//FIXME: need to make sure that if the machine is stopped that any ongoing PoW computation will end
-		nonce := pow.SolveChallenge(cycle.challenge, cycle.difficulty)
+		nonce := ops.miner.SolveChallenge(cycle.challenge, cycle.difficulty)
 		if !ops.Running {
 			return
 		}

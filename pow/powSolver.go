@@ -22,6 +22,12 @@ import (
 	"golang.org/x/crypto/ripemd160"
 )
 
+//PoWSolver state for mining operation
+type PoWSolver struct {
+	canMine bool
+	mining  bool
+}
+
 func randInt() string {
 	max := new(big.Int)
 	max.Exp(big.NewInt(2), big.NewInt(130), nil).Sub(max, big.NewInt(1))
@@ -46,13 +52,31 @@ func decodeHex(s string) []byte {
 	return b
 }
 
-func SolveChallenge(challenge []byte, _difficulty *big.Int) string {
+//CreateMiner creates a new miner instance
+func CreateMiner() *PoWSolver {
+	return &PoWSolver{canMine: true, mining: false}
+}
+
+//SolveChallenge performs PoW
+func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) string {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
+	if !p.canMine {
+		return ""
+	}
+	p.mining = true
+	defer func() {
+		p.mining = false
+	}()
+
 	fmt.Println("Solving for difficulty: ", _difficulty)
 	for i := 0; i < 100000000; i++ {
+		if !p.canMine {
+			return ""
+		}
+
 		nonce := randInt() //do we need to use big number?
 		_string := fmt.Sprintf("%x", challenge) + cfg.PublicAddress + nonce
 		hash := solsha3.SoliditySHA3(
@@ -77,6 +101,16 @@ func SolveChallenge(challenge []byte, _difficulty *big.Int) string {
 		}
 	}
 	return ""
+}
+
+//Stop mining operations
+func (p *PoWSolver) Stop() {
+	p.canMine = false
+}
+
+//IsMining checks whether the miner is currently working on a PoW
+func (p *PoWSolver) IsMining() bool {
+	return p.mining
 }
 
 //SubmitSolution signs transaction and submits on-chain
