@@ -6,4 +6,4 @@ LOG=`pwd`/loggingConfig.json
 
 
 echo "Starting TellorMiner main"
-go run . -psrPath="${PSR}" -config="${CFG}" -logConfig="${LOG}" -miner -dataServer
+go run . -psrPath="${PSR}" -config="${CFG}" -logConfig="${LOG}" "$@"

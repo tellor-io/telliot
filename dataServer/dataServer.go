@@ -10,6 +10,7 @@ import (
 	"github.com/tellor-io/TellorMiner/rest"
 	"github.com/tellor-io/TellorMiner/rpc"
 	"github.com/tellor-io/TellorMiner/tracker"
+	"github.com/tellor-io/TellorMiner/util"
 )
 
 //DataServer holds refs to primary stack of utilities for data retrieval and serving
@@ -22,6 +23,7 @@ type DataServer struct {
 	runnerExitCh chan int
 	Stopped      bool
 	readyChannel chan bool
+	log          *util.Logger
 }
 
 //CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data
@@ -38,14 +40,25 @@ func CreateServer(ctx context.Context) (*DataServer, error) {
 	}
 	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
 
-	ready := make(chan bool)
-	return &DataServer{server: srv, DB: DB, runner: run, ethClient: client, exitCh: nil, Stopped: true, runnerExitCh: nil, readyChannel: ready}, nil
+	//make sure channel buffer size 1 since there is no guarantee that anyone
+	//would be listening to the channel
+	ready := make(chan bool, 1)
+	return &DataServer{server: srv,
+		DB:           DB,
+		runner:       run,
+		ethClient:    client,
+		exitCh:       nil,
+		Stopped:      true,
+		runnerExitCh: nil,
+		readyChannel: ready,
+		log:          util.NewLogger("dataServer", "DataServer")}, nil
 }
 
 //Start the data server and all underlying resources
 func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 	ds.exitCh = exitCh
 	ds.runnerExitCh = make(chan int)
+	ds.Stopped = false
 	err := ds.runner.Start(ctx, ds.runnerExitCh)
 	if err != nil {
 		return err
@@ -54,8 +67,11 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 	ds.server.Start()
 	go func() {
 		<-ds.runner.Ready()
+		ds.log.Info("Runner signaled it is ready")
 		ds.readyChannel <- true
+		ds.log.Info("DataServer ready for use")
 		<-ds.exitCh
+		ds.log.Info("DataServer received signal to stop")
 		ds.stop()
 	}()
 	return nil

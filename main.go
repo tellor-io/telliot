@@ -87,8 +87,11 @@ func main() {
 	}
 
 	if miner != nil {
-		//start the miner after at least one cycle from the data server
-		<-ds.Ready()
+		//start the miner after at least one cycle from the data server, if it's running
+		if ds != nil {
+			<-ds.Ready()
+		}
+
 		miner.Start(ctx)
 	}
 
