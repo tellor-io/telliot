@@ -80,7 +80,7 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		return nil, err
 	}
 	if ops.lastChallenge != nil && bytes.Compare(currentChallenge, ops.lastChallenge.challenge) == 0 {
-		return ops.lastChallenge, nil
+		return nil, nil
 	}
 
 	diff, err := DB.Get(db.DifficultyKey)
