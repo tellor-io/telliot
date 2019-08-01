@@ -59,7 +59,7 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 	for i := range top50 {
 		reqID := top50[i]
 		if reqID.Cmp(zero) == 0 {
-			top50Logger.Info("Skipping zero-value request id")
+			//top50Logger.Info("Skipping zero-value request id")
 			continue
 		}
 		queryMetadata, err := DB.Get(fmt.Sprintf("%s%d", db.QueryMetadataPrefix, reqID.Uint64()))
