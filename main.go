@@ -12,6 +12,7 @@ import (
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/contracts"
+	"github.com/tellor-io/TellorMiner/contracts1"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/ops"
 	"github.com/tellor-io/TellorMiner/rpc"
@@ -49,6 +50,7 @@ func main() {
 	//create an instance of the tellor master contract for on-chain interactions
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
 	masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
+	transactorInstance, err := contracts1.NewTellorTransactor(contractAddress, client)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,6 +62,7 @@ func main() {
 	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, db)
 	ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, client)
 	ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
+	ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
 
 	exitChannels := make([]*chan os.Signal, 0)
 

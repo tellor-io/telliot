@@ -53,6 +53,10 @@ func (ops *MinerOps) Start(ctx context.Context) {
 				}
 			case _ = <-ticker.C:
 				{
+					//FIXME: this needs to be refactored/designed because it assumes that the
+					//mining cycle will complete before the next time cycle. Even though the
+					//mining is synchronous, many time entries will be pushed into the ticker
+					//channel and a bunch of extraneous requests will happen after a full mine.
 					cycle, err := ops.buildNextCycle(ctx)
 					if err == nil {
 						if cycle != nil {
@@ -141,6 +145,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				}
 			}
 			if priceValue != nil {
+				//FIXME: actually submit on-chain!
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
 				//pow.SubmitTransaction(none, priceValue, cycle.requestID)
 			}

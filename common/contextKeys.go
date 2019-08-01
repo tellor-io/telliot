@@ -13,4 +13,7 @@ var (
 
 	//MasterContractContextKey is the shared context key to get shared master tellor contract instance
 	MasterContractContextKey = util.NewKey("common", "masterContract")
+
+	//TransactorContractContextKey is the shared context key to get shared transactor tellor contract instance
+	TransactorContractContextKey = util.NewKey("common", "transactorContract")
 )
