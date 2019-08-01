@@ -147,7 +147,8 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 			if priceValue != nil {
 				//FIXME: actually submit on-chain!
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
-				pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
+				//pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
+				pow.SubmitSolution(ctx, nonce, priceValue, cycle.requestID)
 			}
 		}
 
