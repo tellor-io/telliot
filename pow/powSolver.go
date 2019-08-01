@@ -161,7 +161,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	auth.GasLimit = uint64(3000000) // in units
 	auth.GasPrice = gasPrice
 
-	instance := ctx.Value(tellorCommon.MasterContractContextKey).(tellor1.TellorTransactor)
+	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 
 	fmt.Println(auth, solution, requestId, value)
 	tx, err := instance.SubmitMiningSolution(auth, solution, requestId, value)
