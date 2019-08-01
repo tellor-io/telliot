@@ -40,13 +40,14 @@ func CreateMinerOps(ctx context.Context, exitCh chan os.Signal) (*MinerOps, erro
 //Start will start the mining run loop
 func (ops *MinerOps) Start(ctx context.Context) {
 	ops.Running = true
-
+	ops.log.Info("Starting miner")
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		for {
 			select {
 			case _ = <-ops.exitCh:
 				{
+					ops.log.Info("Stopping miner")
 					ops.Running = false
 					return
 				}
@@ -101,12 +102,16 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		ops.log.Error("Problem reading price data from DB: %v\n", err)
 		return nil, err
 	}
-	value, err := hexutil.DecodeBig(string(val))
-	if err != nil {
-		ops.log.Error("Problem decoding price value: %v\n", err)
-		return nil, err
+	if len(val) > 0 {
+		value, err := hexutil.DecodeBig(string(val))
+		if err != nil {
+			ops.log.Error("Problem decoding price value: %v\n", err)
+			return nil, err
+		}
+		return &miningCycle{challenge: currentChallenge, difficulty: difficulty, nonce: "", requestID: asInt, value: value}, nil
 	}
-	return &miningCycle{challenge: currentChallenge, difficulty: difficulty, nonce: "", requestID: asInt, value: value}, nil
+	ops.log.Warn("No price data found for request id: %d\n", asInt.Uint64())
+	return nil, nil
 }
 
 func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
@@ -115,7 +120,12 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 	if lastCycle == nil || bytes.Compare(lastCycle.challenge, cycle.challenge) != 0 {
 		ops.lastChallenge = cycle
 		ops.log.Info("Mining for PoW nonce...")
+		//FIXME: need to make sure that if the machine is stopped that any ongoing PoW computation will end
 		nonce := pow.SolveChallenge(cycle.challenge, cycle.difficulty)
+		if !ops.Running {
+			return
+		}
+
 		ops.log.Info("Mined nonce", nonce)
 		if nonce != "" {
 			val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, cycle.requestID.Uint64()))

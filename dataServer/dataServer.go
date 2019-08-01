@@ -21,6 +21,7 @@ type DataServer struct {
 	exitCh       chan int
 	runnerExitCh chan int
 	Stopped      bool
+	readyChannel chan bool
 }
 
 //CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data
@@ -37,7 +38,8 @@ func CreateServer(ctx context.Context) (*DataServer, error) {
 	}
 	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
 
-	return &DataServer{server: srv, DB: DB, runner: run, ethClient: client, exitCh: nil, Stopped: true, runnerExitCh: nil}, nil
+	ready := make(chan bool)
+	return &DataServer{server: srv, DB: DB, runner: run, ethClient: client, exitCh: nil, Stopped: true, runnerExitCh: nil, readyChannel: ready}, nil
 }
 
 //Start the data server and all underlying resources
@@ -51,10 +53,17 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 
 	ds.server.Start()
 	go func() {
+		<-ds.runner.Ready()
+		ds.readyChannel <- true
 		<-ds.exitCh
 		ds.stop()
 	}()
 	return nil
+}
+
+//Ready provides notification channel that data from trackers is ready for use
+func (ds *DataServer) Ready() chan bool {
+	return ds.readyChannel
 }
 
 func (ds *DataServer) stop() error {

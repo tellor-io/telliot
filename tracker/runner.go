@@ -17,13 +17,14 @@ var runnerLog = util.NewLogger("tracker", "Runner")
 
 //Runner will execute all configured trackers
 type Runner struct {
-	client rpc.ETHClient
-	db     db.DB
+	client       rpc.ETHClient
+	db           db.DB
+	readyChannel chan bool
 }
 
 //NewRunner will create a new runner instance
 func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
-	return &Runner{client: client, db: db}, nil
+	return &Runner{client: client, db: db, readyChannel: make(chan bool)}, nil
 }
 
 //Start will kick off the runner until the given exit channel selects.
@@ -67,6 +68,8 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 
 	go func() {
 		r.callTrackers(ctx, &trackers)
+		//after first run, let others know that tracker output data is ready for use
+		r.readyChannel <- true
 		for {
 			runnerLog.Info("Waiting for next tracker run cycle...")
 			select {
@@ -98,4 +101,9 @@ func (r *Runner) callTrackers(ctx context.Context, trackers *[]Tracker) error {
 		}
 	}
 	return nil
+}
+
+//Ready provides notification channel to know that the tracker data output is ready for use
+func (r *Runner) Ready() chan bool {
+	return r.readyChannel
 }

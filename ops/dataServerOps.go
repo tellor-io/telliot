@@ -59,3 +59,9 @@ func (ops *DataServerOps) Start(ctx context.Context) {
 		ops.log.Info("Data server shutdown complete")
 	}()
 }
+
+//Ready signals that the data server has completed at least one tracker cycle and any external dependencies
+//should be ready to use its initial output
+func (ops *DataServerOps) Ready() chan bool {
+	return ops.server.Ready()
+}
