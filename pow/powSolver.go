@@ -163,7 +163,8 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 
 	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 
-	fmt.Println(auth, solution, requestId, value)
+	fmt.Printf("Calling contract with vars: %v, %v, %v, %v\n", auth, solution, requestId, value)
+
 	tx, err := instance.SubmitMiningSolution(auth, solution, requestId, value)
 	if err != nil {
 		log.Fatal(err)
