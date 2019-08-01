@@ -63,6 +63,7 @@ func (ops *MinerOps) Start(ctx context.Context) {
 					cycle, err := ops.buildNextCycle(ctx)
 					if err == nil {
 						if cycle != nil && !ops.miner.IsMining() {
+							ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 							go ops.mine(ctx, cycle)
 						}
 					}
