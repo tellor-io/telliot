@@ -13,4 +13,4 @@ go run . -psrPath="${PSR}" -config="${CFG2}" -logConfig="${LOG}" "$@" &
 go run . -psrPath="${PSR}" -config="${CFG3}" -logConfig="${LOG}" "$@" &
 go run . -psrPath="${PSR}" -config="${CFG4}" -logConfig="${LOG}" "$@" &
 go run . -psrPath="${PSR}" -config="${CFG5}" -logConfig="${LOG}" "$@"
-#go run . -miner -dataServer -psrPath=C:/company/code/go/src/github.com/tellor-io/TellorMiner/psr.json -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config2.json -logConfig=C:/company/code/go/src/github.com/tellor-io/TellorMiner/loggingConfig.json
+#go run . -miner -dataServer -psrPath=C:/company/code/go/src/github.com/tellor-io/TellorMiner/psr.json -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config4.json -logConfig=C:/company/code/go/src/github.com/tellor-io/TellorMiner/loggingConfig.json

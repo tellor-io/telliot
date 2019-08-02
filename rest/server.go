@@ -35,6 +35,7 @@ func Create(ctx context.Context, host string, port uint) (*Server, error) {
 	router.AddRoute("/top50", &routes.Top50Handler{})
 	router.AddRoute("/tributeBalance", &routes.TributeBalanceHandler{})
 	router.AddRoute("/disputeStatus", &routes.DisputeStatusHandler{})
+	router.AddRoute("/miningStatus", &routes.MiningStatusHandler{})
 	http.Handle("/", router)
 	return &Server{server: srv}, nil
 }

@@ -40,8 +40,8 @@ func randInt() string {
 	}
 	//n := big.NewInt(9000)
 	//String representation of n in base 16
-	nonce := fmt.Sprintf("%x", n.String()) //n.Text(16)
-	return nonce
+	//nonce := fmt.Sprintf("%x", n.String()) //n.Text(16)
+	return n.String()
 }
 
 func decodeHex(s string) []byte {
@@ -72,6 +72,7 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 	defer func() {
 		p.mining = false
 	}()
+	fmt.Println("Challenge", challenge)
 	fmt.Println("thisChallenge", fmt.Sprintf("%x", challenge))
 	fmt.Println("Solving for difficulty: ", _difficulty)
 	for i := 0; i < 100000000; i++ {
@@ -79,7 +80,8 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 			return ""
 		}
 
-		nonce := randInt() //do we need to use big number?
+		nn := randInt() //do we need to use big number?
+		nonce := fmt.Sprintf("%x", nn)
 		_string := fmt.Sprintf("%x", challenge) + cfg.PublicAddress + nonce
 		hash := solsha3.SoliditySHA3(
 			solsha3.Bytes32(decodeHex(_string)),
@@ -99,8 +101,8 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 		x := new(big.Int)
 		x.Mod(p, _difficulty)
 		if x.Cmp(big.NewInt(0)) == 0 {
-			fmt.Println("Solution Found", nonce)
-			return nonce
+			fmt.Println("Solution Found", nn)
+			return nn
 		}
 	}
 	return ""

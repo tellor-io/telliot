@@ -9,7 +9,7 @@
     },
     {
         "component": "rpc.client",
-        "level": "DEBUG"
+        "level": "INFO"
     },
     {
         "component": "rpc.ABICodec",
@@ -17,7 +17,7 @@
     },
     {
         "component": "rpc.mockClient",
-        "level": "DEBUG"
+        "level": "INFO"
     },
     {
         "component": "tracker.Top50Tracker",

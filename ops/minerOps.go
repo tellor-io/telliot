@@ -89,6 +89,16 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		ops.log.Error("Problem reading difficult from DB: %v\n", err)
 		return nil, err
 	}
+	miningStatus, err := DB.Get(db.MiningStatusKey)
+	if err != nil {
+		ops.log.Error("Problem reading miningStatus from DB: %v\n", err)
+		return nil, err
+	}
+	fmt.Println("mining status")
+	if bytes.Compare(miningStatus, []byte{1}) == 0 {
+		fmt.Println("Already Mined")
+		return nil, nil
+	}
 	difficulty, err := hexutil.DecodeBig(string(diff))
 	if err != nil {
 		ops.log.Error("Problem decoding difficulty: %v\n", err)
@@ -104,6 +114,10 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 	if err != nil {
 		ops.log.Error("Problem decoding request id as big int: %v\n", err)
 		return nil, err
+	}
+	if asInt.Cmp(big.NewInt(0)) == 0 {
+		fmt.Println("RequestID is zero")
+		return nil, nil
 	}
 	val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, asInt.Uint64()))
 	if err != nil {
@@ -151,8 +165,8 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 			if priceValue != nil {
 				//FIXME: actually submit on-chain!
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
-				pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
-				//pow.SubmitSolution(ctx, nonce, priceValue, cycle.requestID)
+				//pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
+				pow.SubmitSolution(ctx, nonce, priceValue, cycle.requestID)
 			}
 		}
 
