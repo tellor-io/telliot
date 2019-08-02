@@ -31,7 +31,7 @@ type PoWSolver struct {
 
 func randInt() string {
 	max := new(big.Int)
-	max.Exp(big.NewInt(2), big.NewInt(130), nil).Sub(max, big.NewInt(1))
+	max.Exp(big.NewInt(2), big.NewInt(32), nil).Sub(max, big.NewInt(1))
 
 	//Generate cryptographically strong pseudo-random between 0 - max
 	n, err := rand.Int(rand.Reader, max)
@@ -169,7 +169,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 
 	fmt.Printf("Calling contract with vars: %v, %v, %v, %v\n", auth, solution, requestId, value)
-
+	fmt.Printf("%T\n", solution)
 	tx, err := instance.SubmitMiningSolution(auth, solution, requestId, value)
 	if err != nil {
 		log.Fatal(err)

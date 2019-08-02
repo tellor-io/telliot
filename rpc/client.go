@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/big"
 	"time"
@@ -110,6 +111,7 @@ func (c *clientInstance) Close() {
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		c.log.Debug("Sending txn on-chain: %v\n", tx)
+		fmt.Println("TX SENT CLIENT", tx)
 		e := c.ethClient.SendTransaction(*_ctx, tx)
 		return e
 	})
