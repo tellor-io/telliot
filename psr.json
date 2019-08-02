@@ -15,6 +15,29 @@
             ],
             "transformation" : "median",
             "granularity" : 1000
+        },        {
+            "requestID":3,
+            "apis":[
+                "json(https://api.gdax.com/products/ETH-USD/ticker).price"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000
+        },
+        {
+            "requestID":4,
+            "apis":[
+                "json(https://api.gdax.com/products/BTC-USD/ticker).price"
+            ],
+            "transformation" : "median",
+            "granularity" : 1000
+        },
+        {
+            "requestID":5,
+            "apis":[
+                "json(https://api.gdax.com/products/BTC-USD/ticker).price"
+            ],
+            "transformation" : "median",
+            "granularity" : 1000
         }
     ]
 }

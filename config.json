@@ -7,7 +7,7 @@
     "serverHost": "localhost",
     "serverPort": 5000,
     "ethClientTimeout": 3000,
-    "trackerCycle": 3,
+    "trackerCycle": 30,
  "trackers": [
         "balance",
         "currentVariables",
