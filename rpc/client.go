@@ -111,13 +111,12 @@ func (c *clientInstance) Close() {
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		c.log.Debug("Sending txn on-chain: %v\n", tx)
-		fmt.Println("TX SENT CLIENT", tx)
+		fmt.Println("TX SENT CLIENT", fmt.Sprintf("%x", tx))
 		e := c.ethClient.SendTransaction(*_ctx, tx)
 		return e
 	})
 	return _err
 }
-
 func (c *clientInstance) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
 	var res []byte
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {

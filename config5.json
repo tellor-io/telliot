@@ -3,7 +3,7 @@
     "nodeURL": "https://rinkeby.infura.io/v3/7f11ed6df93946658bf4c817620fbced",
     "privateKey": "78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14",
     "databaseURL":"http://localhost7545",
-    "publicAddress": "3233afa02644ccd048587f8ba6e99b3c00a34dcc",
+    "publicAddress": "3233afA02644CCd048587F8ba6e99b3C00A34DcC",
     "serverHost": "localhost",
     "serverPort": 5005,
     "ethClientTimeout": 3000,

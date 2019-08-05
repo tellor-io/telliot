@@ -10,7 +10,6 @@ import (
 	"log"
 	"math/big"
 
-	"github.com/apexskier/cryptoPadding"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -40,7 +39,8 @@ func randInt() string {
 	}
 	//n := big.NewInt(9000)
 	//String representation of n in base 16
-	//nonce := fmt.Sprintf("%x", n.String()) //n.Text(16)
+	//n.Text(16)
+	//n = big.NewInt(7140296)
 	return n.String()
 }
 
@@ -60,7 +60,6 @@ func CreateMiner() *PoWSolver {
 
 //SolveChallenge performs PoW
 func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) string {
-	var padding cryptoPadding.ZeroPadding
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -89,8 +88,7 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 		hasher := ripemd160.New()
 		hasher.Write([]byte(hash))
 		hash1 := hasher.Sum(nil)
-		paddedData, _ := padding.Pad(hash1, 32)
-		n := sha256.Sum256(paddedData)
+		n := sha256.Sum256(hash1)
 		q := fmt.Sprintf("%x", n)
 		p := new(big.Int)
 		p, ok := p.SetString(q, 16)

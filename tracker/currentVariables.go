@@ -58,16 +58,38 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		bitSetVar = []byte{1}
 	}
 	fmt.Println("MyStatus", myStatus)
-
-	fmt.Println("Already Mined")
 	currentVarsLog.Info("Retrieved variables. challengeHash: %v", currentChallenge)
 
-	DB.Put(db.CurrentChallengeKey, currentChallenge[:])
-	DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(requestID)))
-	DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(difficulty)))
-	DB.Put(db.QueryStringKey, []byte(queryString))
-	DB.Put(db.GranularityKey, []byte(hexutil.EncodeBig(granularity)))
-	DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
-	DB.Put(db.MiningStatusKey, bitSetVar)
-	return nil
+	err = DB.Put(db.CurrentChallengeKey, currentChallenge[:])
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	err = DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(requestID)))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(difficulty)))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	err = DB.Put(db.QueryStringKey, []byte(queryString))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	err = DB.Put(db.GranularityKey, []byte(hexutil.EncodeBig(granularity)))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	err = DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	
+	return DB.Put(db.MiningStatusKey, bitSetVar)
 }

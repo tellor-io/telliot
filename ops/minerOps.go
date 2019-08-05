@@ -44,7 +44,7 @@ func (ops *MinerOps) Start(ctx context.Context) {
 	ops.Running = true
 	ops.log.Info("Starting miner")
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(35 * time.Second)
 		for {
 			select {
 			case _ = <-ops.exitCh:
@@ -167,6 +167,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
 				//pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
 				pow.SubmitSolution(ctx, nonce, priceValue, cycle.requestID)
+				//pow.SubmitSolution(ctx, nonce, big.NewInt(221000), big.NewInt(1))
 			}
 		}
 
