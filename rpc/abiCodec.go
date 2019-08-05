@@ -51,12 +51,12 @@ func BuildCodec() (*ABICodec, error) {
 	methodMap := make(map[string]*abi.Method)
 	eventMap := make(map[string]*abi.Event)
 	for _, a := range abiStruct.Methods {
-		sig := hexutil.Encode(a.ID())
+		sig := hexutil.Encode(a.Id())
 		abiCodecLog.Debug("Mapping method sig: %s to method: %s", sig, a.Name)
 		methodMap[sig] = &abi.Method{Name: a.Name, Const: a.Const, Inputs: a.Inputs, Outputs: a.Outputs}
 	}
 	for _, e := range abiStruct.Events {
-		sig := hexutil.Encode(e.ID().Bytes())
+		sig := hexutil.Encode(e.Id().Bytes())
 		abiCodecLog.Debug("Mapping event sig: %s to event %s", sig, e.Name)
 		eventMap[sig] = &abi.Event{Name: e.Name, Anonymous: e.Anonymous, Inputs: e.Inputs}
 	}
