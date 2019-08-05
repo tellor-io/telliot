@@ -1,0 +1,23 @@
+{
+    "contractAddress": "0x3f1571E4DFC9f3A016D90e0C9824C56fD8107a3e",
+    "nodeURL": "https://rinkeby.infura.io/v3/7f11ed6df93946658bf4c817620fbced",
+    "privateKey": "4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe",
+    "databaseURL":"http://localhost7545",
+    "publicAddress": "230570cd052f40e14c14a81038c6f3aa685d712b",
+    "serverHost": "localhost",
+    "serverPort": 5004,
+    "ethClientTimeout": 3000,
+    "trackerCycle": 30,
+    "requestData":false,
+ "trackers": [
+        "balance",
+        "currentVariables",
+        "disputeStatus",
+        "gas",
+        "top50",
+        "tributeBalance",
+        "fetchData",
+        "psr"
+    ],
+    "dbFile": "/tmp/tellor/tellor_db4"
+}

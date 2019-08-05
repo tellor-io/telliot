@@ -7,9 +7,16 @@
     "serverHost": "localhost",
     "serverPort": 5000,
     "ethClientTimeout": 3000,
-    "trackerCycle": 1,
+    "trackerCycle": 30,
  "trackers": [
-        "balance"
+        "balance",
+        "currentVariables",
+        "disputeStatus",
+        "gas",
+        "top50",
+        "tributeBalance",
+        "fetchData",
+        "psr"
     ],
     "dbFile": "/tmp/tellor/tellor_db"
 }

@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -31,24 +32,14 @@ func TestCurrentVariables(t *testing.T) {
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, CurrentChallenge: chal}
 	client := rpc.NewMockClientWithValues(opts)
 
-	/*
-		cfg, err := config.GetConfig()
-		if err != nil {
-			t.Fatal(err)
-		}
-		client, err := rpc.NewClient(cfg.NodeURL)
-		if err != nil {
-			t.Fatal(err)
-		}
-	*/
-
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
+	DB, err := db.Open(filepath.Join(os.TempDir(), "test_currentVariables"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	tracker := &CurrentVariablesTracker{}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
+	fmt.Println("Working to Line 41")
 	err = tracker.Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -57,6 +48,7 @@ func TestCurrentVariables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println("Working to Line 51", v)
 	b, err := hexutil.DecodeBig(string(v))
 	if err != nil {
 		t.Fatal(err)

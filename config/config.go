@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"sync"
 
 	"github.com/tellor-io/TellorMiner/cli"
 	"github.com/tellor-io/TellorMiner/util"
@@ -21,10 +22,18 @@ type Config struct {
 	DBFile            string   `json:"dbFile"`
 	ServerHost        string   `json:"serverHost"`
 	ServerPort        uint     `json:"serverPort"`
+	FetchTimeout      uint     `json:"fetchTimeout"`
+	RequestData       bool     `json:"requestData"`
 	logger            *util.Logger
+	mux               sync.Mutex
 }
 
-var config *Config
+const defaultTimeout = 30 //30 second fetch timeout
+
+var (
+	config *Config
+	mux    sync.Mutex
+)
 
 //ParseConfig and set a shared config entry
 func ParseConfig(path string) (*Config, error) {
@@ -42,6 +51,9 @@ func ParseConfig(path string) (*Config, error) {
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
 	config.logger = util.NewLogger("config", "Config")
+	if config.FetchTimeout == 0 {
+		config.FetchTimeout = defaultTimeout
+	}
 	config.logger.Info("config: %+v", config)
 	return config, nil
 }
@@ -49,11 +61,14 @@ func ParseConfig(path string) (*Config, error) {
 //GetConfig returns a shared instance of config
 func GetConfig() (*Config, error) {
 	if config == nil {
-		_, err := ParseConfig("")
-		if err != nil {
-			return nil, err
+		mux.Lock()
+		defer mux.Unlock()
+		if config == nil {
+			_, err := ParseConfig("")
+			if err != nil {
+				return nil, err
+			}
 		}
-		return config, nil
 	}
 	return config, nil
 }

@@ -1,0 +1,30 @@
+[
+    {
+        "component": "config.Config",
+        "level": "INFO"
+    },
+    {
+        "component":"db.DB",
+        "level": "INFO"
+    },
+    {
+        "component": "rpc.client",
+        "level": "INFO"
+    },
+    {
+        "component": "rpc.ABICodec",
+        "level": "INFO"
+    },
+    {
+        "component": "rpc.mockClient",
+        "level": "INFO"
+    },
+    {
+        "component": "tracker.Top50Tracker",
+        "level": "INFO"
+    },
+    {
+        "component": "tracker.FetchDataTracker",
+        "level": "INFO"
+    }
+]

@@ -13,6 +13,10 @@ import (
 type GasTracker struct {
 }
 
+func (b *GasTracker) String() string {
+	return "GasTracker"
+}
+
 func (b *GasTracker) Exec(ctx context.Context) error {
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)

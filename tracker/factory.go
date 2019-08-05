@@ -7,10 +7,37 @@ func createTracker(name string) (Tracker, error) {
 		{
 			return &TestTracker{}, nil
 		}
-
 	case "balance":
 		{
 			return &BalanceTracker{}, nil
+		}
+	case "currentVariables":
+		{
+			return &CurrentVariablesTracker{}, nil
+		}
+	case "disputeStatus":
+		{
+			return &DisputeTracker{}, nil
+		}
+	case "gas":
+		{
+			return &GasTracker{}, nil
+		}
+	case "top50":
+		{
+			return &Top50Tracker{}, nil
+		}
+	case "tributeBalance":
+		{
+			return &TributeTracker{}, nil
+		}
+	case "fetchData":
+		{
+			return &RequestDataTracker{}, nil
+		}
+	case "psr":
+		{
+			return BuildPSRTracker()
 		}
 	}
 

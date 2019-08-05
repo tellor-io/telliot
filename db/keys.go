@@ -3,13 +3,14 @@ package db
 //BalanceKey is the key to store/lookup account balance
 const BalanceKey = "eth_balance"
 
-//Current Variables
+//CurrentChallengeKey DB key
 const CurrentChallengeKey = "current_challenge"
 const RequestIdKey = "current_requestId"
 const DifficultyKey = "current_difficulty"
 const QueryStringKey = "current_query_string"
 const GranularityKey = "current_granularity"
 const TotalTipKey = "current_total_tip"
+const MiningStatusKey = "mining_status"
 
 //Gas
 const GasKey = "wei_gas_price"
@@ -22,3 +23,10 @@ const TributeBalanceKey = "trib_balance"
 
 //Dispute Status
 const DisputeStatusKey = "dispute_status"
+
+//RequestID's are stored with this prefix and the id itself
+//e.g. "qm_2" represents request ID 2
+const QueryMetadataPrefix = "qm_"
+
+//Request values are stored with this prefix plus request id
+const QueriedValuePrefix = "qv_"

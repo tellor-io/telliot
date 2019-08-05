@@ -1,0 +1,12 @@
+{
+    "prespecifiedRequests":[
+        {
+            "requestID":1,
+            "apis":[
+                "json(https://api.gdax.com/products/ETH-USD/ticker).price"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000
+        }
+    ]
+}
