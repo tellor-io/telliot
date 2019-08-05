@@ -8,6 +8,7 @@
     "serverPort": 5001,
     "ethClientTimeout": 3000,
     "trackerCycle": 30,
+    "requestData":true,
  "trackers": [
         "balance",
         "currentVariables",

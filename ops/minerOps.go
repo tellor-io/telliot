@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/pow"
 	"github.com/tellor-io/TellorMiner/util"
@@ -74,6 +75,12 @@ func (ops *MinerOps) Start(ctx context.Context) {
 }
 
 func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
+
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	currentChallenge, err := DB.Get(db.CurrentChallengeKey)
 	if err != nil {
@@ -117,6 +124,10 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 	}
 	if asInt.Cmp(big.NewInt(0)) == 0 {
 		fmt.Println("RequestID is zero")
+		if cfg.RequestData {
+			fmt.Println("Requesting Data")
+			pow.RequestData(ctx)
+		}
 		return nil, nil
 	}
 	val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, asInt.Uint64()))
@@ -139,15 +150,14 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 	lastCycle := ops.lastChallenge
 	DB := ctx.Value(common.DBContextKey).(db.DB)
+	if !ops.Running {
+		return
+	}
 	if lastCycle == nil || bytes.Compare(lastCycle.challenge, cycle.challenge) != 0 {
 		ops.lastChallenge = cycle
 		ops.log.Info("Mining for PoW nonce...")
 		//FIXME: need to make sure that if the machine is stopped that any ongoing PoW computation will end
 		nonce := ops.miner.SolveChallenge(cycle.challenge, cycle.difficulty)
-		if !ops.Running {
-			return
-		}
-
 		ops.log.Info("Mined nonce", nonce)
 		if nonce != "" {
 			val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, cycle.requestID.Uint64()))

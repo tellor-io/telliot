@@ -11,9 +11,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -179,69 +177,63 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	return nil
 }
 
-func SubmitTransaction(solution string, value, requestId *big.Int) error {
-
-	//get the single config instance
+//Data Requester
+func RequestData(ctx context.Context) error {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		log.Fatal(err)
 		return err
 	}
-
-	client, err := ethclient.Dial(cfg.NodeURL)
-	if err != nil {
-		log.Fatal(err)
-	}
+	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
 	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		log.Fatal("error casting public key to ECDSA")
+		return fmt.Errorf("error casting public key to ECDSA")
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
 	cost := new(big.Int)
 	cost.Mul(gasPrice, big.NewInt(700000))
-	if balance.Cmp(cost) >= 0 {
-		auth := bind.NewKeyedTransactor(privateKey)
-		auth.Nonce = big.NewInt(int64(nonce))
-		auth.Value = big.NewInt(0)      // in wei
-		auth.GasLimit = uint64(3000000) // in units
-		auth.GasPrice = gasPrice
-
-		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		instance, err := tellor1.NewTellorTransactor(contractAddress, client)
-		if err != nil {
-			log.Fatal(err)
-		}
-		solution := string(solution)
-		fmt.Println(auth, solution, requestId, value)
-		tx, err := instance.SubmitMiningSolution(auth, solution, requestId, value)
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-
-		fmt.Printf("tx sent: %s", tx.Hash().Hex()) // tx sent: 0x8d490e535678e9a24360e955d75b27ad307bdfb97a1dca51d0f3035dcee3e870
+	if balance.Cmp(cost) < 0 {
+		//FIXME: notify someone that we're out of funds!
+		return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
 	}
+
+	auth := bind.NewKeyedTransactor(privateKey)
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)      // in wei
+	auth.GasLimit = uint64(3000000) // in units
+	auth.GasPrice = gasPrice
+
+	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+
+	tx, err := instance.AddTip(auth, big.NewInt(1), big.NewInt(0))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	fmt.Printf("tx sent: %s", tx.Hash().Hex())
+
 	return nil
 }

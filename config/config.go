@@ -23,6 +23,7 @@ type Config struct {
 	ServerHost        string   `json:"serverHost"`
 	ServerPort        uint     `json:"serverPort"`
 	FetchTimeout      uint     `json:"fetchTimeout"`
+	RequestData       bool     `json:"requestData"`
 	logger            *util.Logger
 	mux               sync.Mutex
 }
