@@ -154,7 +154,6 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 		return
 	}
 	if lastCycle == nil || bytes.Compare(lastCycle.challenge, cycle.challenge) != 0 {
-		ops.lastChallenge = cycle
 		ops.log.Info("Mining for PoW nonce...")
 		//FIXME: need to make sure that if the machine is stopped that any ongoing PoW computation will end
 		nonce := ops.miner.SolveChallenge(cycle.challenge, cycle.difficulty)
@@ -173,7 +172,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				}
 			}
 			if priceValue != nil {
-				//FIXME: actually submit on-chain!
+				ops.lastChallenge = cycle
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
 				//pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
 				pow.SubmitSolution(ctx, nonce, priceValue, cycle.requestID)
