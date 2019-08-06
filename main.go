@@ -66,69 +66,77 @@ func main() {
 
 	exitChannels := make([]*chan os.Signal, 0)
 
-	if cli.DataServer {
-		ch := make(chan os.Signal)
-		exitChannels = append(exitChannels, &ch)
-		ds, err = ops.CreateDataServerOps(ctx, ch)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	if cli.Transfer {
+		ops.Transfer(cli.ToAddress, cli.Amount, ctx)
 
-	if cli.Miner {
-		ch := make(chan os.Signal)
-		exitChannels = append(exitChannels, &ch)
-		miner, err = ops.CreateMinerOps(ctx, ch)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	} else if cli.Deposit {
+		ops.Deposit(ctx)
 
-	if ds != nil {
-		//start the data server
-		ds.Start(ctx)
-	}
-
-	if miner != nil {
-		//start the miner after at least one cycle from the data server, if it's running
-		if ds != nil {
-			<-ds.Ready()
+	} else {
+		if cli.DataServer {
+			ch := make(chan os.Signal)
+			exitChannels = append(exitChannels, &ch)
+			ds, err = ops.CreateDataServerOps(ctx, ch)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
-		miner.Start(ctx)
-	}
-
-	//now we wait for kill sig
-	<-c
-	//and then notify exit channels
-	for _, ch := range exitChannels {
-		*ch <- os.Interrupt
-	}
-	cnt := 0
-	for {
-		cnt++
-		start := time.Now()
-		dsStopped := false
-		minerStopped := false
+		if cli.Miner {
+			ch := make(chan os.Signal)
+			exitChannels = append(exitChannels, &ch)
+			miner, err = ops.CreateMinerOps(ctx, ch)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 
 		if ds != nil {
-			dsStopped = !ds.Running
-		} else {
-			dsStopped = true
+			//start the data server
+			ds.Start(ctx)
 		}
 
 		if miner != nil {
-			minerStopped = !miner.Running
-		} else {
-			minerStopped = true
+			//start the miner after at least one cycle from the data server, if it's running
+			if ds != nil {
+				<-ds.Ready()
+			}
+
+			miner.Start(ctx)
 		}
 
-		if !dsStopped && !minerStopped && cnt > 60 {
-			mainLog.Warn("Taking longer than expected to operations. Waited %v so far", time.Now().Sub(start))
-		} else if dsStopped && minerStopped {
-			break
+		//now we wait for kill sig
+		<-c
+		//and then notify exit channels
+		for _, ch := range exitChannels {
+			*ch <- os.Interrupt
 		}
-		time.Sleep(500 * time.Millisecond)
+		cnt := 0
+		for {
+			cnt++
+			start := time.Now()
+			dsStopped := false
+			minerStopped := false
+
+			if ds != nil {
+				dsStopped = !ds.Running
+			} else {
+				dsStopped = true
+			}
+
+			if miner != nil {
+				minerStopped = !miner.Running
+			} else {
+				minerStopped = true
+			}
+
+			if !dsStopped && !minerStopped && cnt > 60 {
+				mainLog.Warn("Taking longer than expected to operations. Waited %v so far", time.Now().Sub(start))
+			} else if dsStopped && minerStopped {
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
 	}
 	mainLog.Info("Main shutdown complete")
 }
