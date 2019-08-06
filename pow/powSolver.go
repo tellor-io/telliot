@@ -28,7 +28,7 @@ type PoWSolver struct {
 
 func randInt() string {
 	max := new(big.Int)
-	max.Exp(big.NewInt(2), big.NewInt(32), nil).Sub(max, big.NewInt(1))
+	max.Exp(big.NewInt(2), big.NewInt(125), nil).Sub(max, big.NewInt(1))
 
 	//Generate cryptographically strong pseudo-random between 0 - max
 	n, err := rand.Int(rand.Reader, max)
@@ -72,7 +72,7 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 	fmt.Println("Challenge", challenge)
 	fmt.Println("thisChallenge", fmt.Sprintf("%x", challenge))
 	fmt.Println("Solving for difficulty: ", _difficulty)
-	for i := 0; i < 100000000; i++ {
+	for i := 0; i < 100000000000; i++ {
 		if !p.canMine {
 			return ""
 		}
@@ -101,6 +101,7 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 			return nn
 		}
 	}
+	fmt.Println("No Solution Found")
 	return ""
 }
 
