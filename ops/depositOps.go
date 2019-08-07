@@ -2,11 +2,13 @@ package ops
 
 import (
 	"context"
-	"os"
-	"time"
-
-	"github.com/tellor-io/TellorMiner/dataServer"
-	"github.com/tellor-io/TellorMiner/util"
+	"math/big"
+	"fmt"
+	"log"
+	"crypto/ecdsa"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/tellor-io/TellorMiner/rpc"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -75,21 +77,21 @@ import (
 		return err
 	}
 
-	balance, err := instance.BalanceOf(nil, _fromAddress)
+	balance, err = instance.BalanceOf(nil,fromAddress)
 	log.Printf("Balance: %v\n", balance)
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
-	amt := big.NewInt(amount)
+	amt := big.NewInt(1000)
 	if balance.Cmp(amt) < 0{
-		fmt.PrintLn("You must have the amount you want to send")
+		fmt.Println("You must have the amount you want to send")
 		return nil
 	}
 
-	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+	instance2 := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 
-	tx, err := instance.DepositStake(auth)
+	tx, err := instance2.DepositStake(auth)
 	if err != nil {
 		log.Fatal(err)
 		return err

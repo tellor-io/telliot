@@ -9,15 +9,17 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/crypto"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/contracts"
 	tellor1 "github.com/tellor-io/TellorMiner/contracts1"
 	"github.com/tellor-io/TellorMiner/rpc"
 	"golang.org/x/crypto/ripemd160"
+	"github.com/tellor-io/TellorMiner/db"
 )
 
 //PoWSolver state for mining operation
@@ -150,12 +152,32 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 		return err
 	}
 
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+
+	instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
+	_,asInt, _, _, _, _, err := instance2.GetCurrentVariables(nil)
+	if err != nil {
+		newID, err := DB.Get(db.RequestIdKey)
+		if err != nil {
+			return err
+		}
+		asInt, err = hexutil.DecodeBig(string(newID))
+		if err != nil {
+			return err
+		}
+	}
+	if asInt.Cmp(requestId) != 0 {
+		fmt.Println("RequestID has changed")
+		return nil
+	}
+
 	cost := new(big.Int)
 	cost.Mul(gasPrice, big.NewInt(700000))
 	if balance.Cmp(cost) < 0 {
 		//FIXME: notify someone that we're out of funds!
 		return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
 	}
+
 
 	auth := bind.NewKeyedTransactor(privateKey)
 	auth.Nonce = big.NewInt(int64(nonce))

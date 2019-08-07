@@ -2,11 +2,13 @@ package ops
 
 import (
 	"context"
-	"os"
-	"time"
-
-	"github.com/tellor-io/TellorMiner/dataServer"
-	"github.com/tellor-io/TellorMiner/util"
+	"math/big"
+	"fmt"
+	"crypto/ecdsa"
+	"log"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/tellor-io/TellorMiner/rpc"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -18,7 +20,7 @@ import (
  * This is the operational transfer component. Its purpose is to transfer tellor tokens
  */
 
-func Transfer(toAddress string, amount int,ctx context.Context) (error) {
+func Transfer(toAddress string, amount string,ctx context.Context) (error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return err
@@ -68,27 +70,29 @@ func Transfer(toAddress string, amount int,ctx context.Context) (error) {
 
 
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
-	toAddress := common.HexToAddress(toAddress)
+	toAdd := common.HexToAddress(toAddress)
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
 
-	balance, err := instance.BalanceOf(nil, _fromAddress)
+	balance, err = instance.BalanceOf(nil, common.HexToAddress(_fromAddress))
 	log.Printf("Balance: %v\n", balance)
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
-	amt := big.NewInt(amount)
+	fmt.Println("My balance",balance)
+	amt := new(big.Int)
+	amt,_ = amt.SetString(amount, 10)
 	if balance.Cmp(amt) < 0{
-		fmt.PrintLn("You must have the amount you want to send")
+		fmt.Println("You must have the amount you want to send")
 		return nil
 	}
-	instance = ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+	instance2 := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 
-	tx, err := instance.Transfer(auth, toAddress,amt)
+	tx, err := instance2.Transfer(auth, toAdd,amt)
 	if err != nil {
 		log.Fatal(err)
 		return err

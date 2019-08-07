@@ -23,7 +23,7 @@ type Flags struct {
 	DataServer        bool
 	Transfer          bool
 	ToAddress         string
-	Amount            int
+	Amount            string
 	Deposit           bool
 }
 
@@ -47,7 +47,7 @@ func GetFlags() *Flags {
 		transfer := flag.Bool(transferArg, false, "Whether to transfer funds")
 		deposit := flag.Bool(depositArg, false, "Whether to deposit funds")
 		toAddress := flag.String(toAddressArg, "", "Address of party to transfer to")
-		amount := flag.Int(amountArg, 0, "amount to transfer")
+		amount := flag.String(amountArg, "0", "amount to transfer")
 
 		flag.Parse()
 		//log.Printf("Path: %s, LogPath: %s, PSRPath: %s, Args: %v", *path, *logPath, *psr, flag.Args())
