@@ -1,7 +1,7 @@
 #!/bin/sh
 PSR=`pwd`/psr.json
 #CFG=`pwd`/../../../../localConfig.json
-CFG=`pwd`/../../../../localConfig.json
+CFG=`pwd`/config.json
 LOG=`pwd`/loggingConfig.json
 echo "Starting TellorMiner main"
 go run . -psrPath="${PSR}" -config="${CFG}" -logConfig="${LOG}" "$@"

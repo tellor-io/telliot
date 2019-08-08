@@ -157,6 +157,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
 	_,asInt, _, _, _, _, err := instance2.GetCurrentVariables(nil)
 	if err != nil {
+		fmt.Println("ERROR getting REQUEST ID")
 		newID, err := DB.Get(db.RequestIdKey)
 		if err != nil {
 			return err

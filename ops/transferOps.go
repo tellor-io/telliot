@@ -60,12 +60,12 @@ func Transfer(toAddress string, amount string,ctx context.Context) (error) {
 		//FIXME: notify someone that we're out of funds!
 		return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
 	}
-
+	fmt.Println(nonce)
 	auth := bind.NewKeyedTransactor(privateKey)
-	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Nonce = big.NewInt(nonce)
 	auth.Value = big.NewInt(0)      // in wei
-	auth.GasLimit = uint64(3000000) // in units
-	auth.GasPrice = gasPrice
+	auth.GasLimit = uint64(300000) // in units
+	auth.GasPrice = gasPrice.Mul(gasPrice,big.NewInt(3))
 	_fromAddress := cfg.PublicAddress
 
 
