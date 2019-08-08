@@ -42,7 +42,7 @@ To transfer tributes
 
 go run ./main.go -transfer -to=<0x...toaddress....> -amount=<number of tributes>
 
-e.g. go run ./main.go -transfer -to=0xe037ec8ec9ec423826750853899394de7f024fee -amount=1000000000000000000
+e.g. go run ./main.go -transfer -to=0x2f51c4bf6b66634187214a695be6cdd344d4e9d1 -amount=100 -config=./config.json -psrPath=./psr2.json -logConfig=./loggingConfig.json
 
 To deposit your stake initially (assuming you have 1000 Tributes)
 

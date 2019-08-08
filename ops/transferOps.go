@@ -62,7 +62,7 @@ func Transfer(toAddress string, amount string,ctx context.Context) (error) {
 	}
 	fmt.Println(nonce)
 	auth := bind.NewKeyedTransactor(privateKey)
-	auth.Nonce = big.NewInt(nonce)
+	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0)      // in wei
 	auth.GasLimit = uint64(300000) // in units
 	auth.GasPrice = gasPrice.Mul(gasPrice,big.NewInt(3))
