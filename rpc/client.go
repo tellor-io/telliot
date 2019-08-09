@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -86,7 +87,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if err == nil {
 			return nil
 		}
-		if strings.Contains(err.Error, "nonce too low"){
+		if strings.Contains(err.Error(), "nonce too low"){
 			return nil
 		}
 		c.log.Debug("Problem in calling eth client: %v", err)
