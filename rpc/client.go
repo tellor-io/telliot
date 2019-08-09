@@ -86,6 +86,9 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if err == nil {
 			return nil
 		}
+		if strings.Contains(err.Error, "nonce too low"){
+			return nil
+		}
 		c.log.Debug("Problem in calling eth client: %v", err)
 		//pause for a bit and try again
 		sleepTime := backoff[tryCount%len(backoff)]
@@ -100,7 +103,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if dl.Before(time.Now()) {
 			return err
 		}
-	}
+	} nonce too low
 }
 
 func (c *clientInstance) Close() {
