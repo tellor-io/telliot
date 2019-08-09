@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
+	"time"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -232,27 +233,15 @@ func RequestData(ctx context.Context) error {
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	requestID, err := DB.Get(db.RequestIdKey)
 	if err != nil {
-		ops.log.Error("Problem reading request id from DB: %v\n", err)
-		return nil, err
+		return err
 	}
 	asInt, err := hexutil.DecodeBig(string(requestID))
 	if err != nil {
-		ops.log.Error("Problem decoding request id as big int: %v\n", err)
-		return nil, err
+		return err
 	}
-	if asInt.Cmp(big.NewInt(0)) == 0 {
-		fmt.Println("RequestID is zero")
-		if cfg.RequestData {
-			fmt.Println("Requesting Data")
-			pow.RequestData(ctx)
-		}
-		return nil, nil
-	}
-
-	i: = 2
+	i := 2
 
 	for asInt.Cmp(big.NewInt(0)) == 0{
-
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			return err
@@ -289,12 +278,10 @@ func RequestData(ctx context.Context) error {
 
 		requestID, err := DB.Get(db.RequestIdKey)
 		if err != nil {
-			ops.log.Error("Problem reading request id from DB: %v\n", err)
 			return nil
 		}
-		asInt, err := hexutil.DecodeBig(string(requestID))
+		asInt, err = hexutil.DecodeBig(string(requestID))
 		if err != nil {
-			ops.log.Error("Problem decoding request id as big int: %v\n", err)
 			return nil
 		}
 		i++
