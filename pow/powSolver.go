@@ -173,7 +173,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	}
 
 	cost := new(big.Int)
-	cost.Mul(gasPrice, big.NewInt(700000))
+	cost.Mul(gasPrice, big.NewInt(800000))
 	if balance.Cmp(cost) < 0 {
 		//FIXME: notify someone that we're out of funds!
 		return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
@@ -183,7 +183,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	auth := bind.NewKeyedTransactor(privateKey)
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0)      // in wei
-	auth.GasLimit = uint64(3000000) // in units
+	auth.GasLimit = uint64(1000000) // in units
 	auth.GasPrice = gasPrice
 
 	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
@@ -203,6 +203,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 
 //Data Requester
 func RequestData(ctx context.Context) error {
+
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return err
@@ -226,38 +227,78 @@ func RequestData(ctx context.Context) error {
 		return err
 	}
 
-	gasPrice, err := client.SuggestGasPrice(context.Background())
+
+
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	requestID, err := DB.Get(db.RequestIdKey)
 	if err != nil {
-		return err
+		ops.log.Error("Problem reading request id from DB: %v\n", err)
+		return nil, err
 	}
-
-	balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
+	asInt, err := hexutil.DecodeBig(string(requestID))
 	if err != nil {
-		return err
+		ops.log.Error("Problem decoding request id as big int: %v\n", err)
+		return nil, err
+	}
+	if asInt.Cmp(big.NewInt(0)) == 0 {
+		fmt.Println("RequestID is zero")
+		if cfg.RequestData {
+			fmt.Println("Requesting Data")
+			pow.RequestData(ctx)
+		}
+		return nil, nil
 	}
 
-	cost := new(big.Int)
-	cost.Mul(gasPrice, big.NewInt(700000))
-	if balance.Cmp(cost) < 0 {
-		//FIXME: notify someone that we're out of funds!
-		return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
+	i: = 2
+
+	for asInt.Cmp(big.NewInt(0)) == 0{
+
+		gasPrice, err := client.SuggestGasPrice(context.Background())
+		if err != nil {
+			return err
+		}
+	
+		balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
+		if err != nil {
+			return err
+		}
+	
+		cost := new(big.Int)
+		cost.Mul(gasPrice, big.NewInt(700000))
+		if balance.Cmp(cost) < 0 {
+			//FIXME: notify someone that we're out of funds!
+			return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
+		}
+	
+		auth := bind.NewKeyedTransactor(privateKey)
+		auth.Nonce = big.NewInt(int64(nonce))
+		auth.Value = big.NewInt(0)      // in wei
+		auth.GasLimit = uint64(200000) // in units
+		auth.GasPrice = gasPrice.Mul(gasPrice,big.NewInt(int64(i)))
+	
+		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+	
+		tx, err := instance.AddTip(auth, big.NewInt(1), big.NewInt(0))
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+	
+		fmt.Printf("tx sent: %s", tx.Hash().Hex())
+		time.Sleep(30 * time.Second)
+
+		requestID, err := DB.Get(db.RequestIdKey)
+		if err != nil {
+			ops.log.Error("Problem reading request id from DB: %v\n", err)
+			return nil
+		}
+		asInt, err := hexutil.DecodeBig(string(requestID))
+		if err != nil {
+			ops.log.Error("Problem decoding request id as big int: %v\n", err)
+			return nil
+		}
+		i++
 	}
-
-	auth := bind.NewKeyedTransactor(privateKey)
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)      // in wei
-	auth.GasLimit = uint64(3000000) // in units
-	auth.GasPrice = gasPrice
-
-	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
-
-	tx, err := instance.AddTip(auth, big.NewInt(1), big.NewInt(0))
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
-
-	fmt.Printf("tx sent: %s", tx.Hash().Hex())
-
 	return nil
+
 }
