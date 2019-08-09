@@ -103,7 +103,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if dl.Before(time.Now()) {
 			return err
 		}
-	} nonce too low
+	}
 }
 
 func (c *clientInstance) Close() {
