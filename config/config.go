@@ -24,6 +24,7 @@ type Config struct {
 	ServerPort        uint     `json:"serverPort"`
 	FetchTimeout      uint     `json:"fetchTimeout"`
 	RequestData       bool     `json:"requestData"`
+	GasMultiplier     uint     `json:"gasMultiplier"`
 	logger            *util.Logger
 	mux               sync.Mutex
 }
