@@ -185,7 +185,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0)      // in wei
 	auth.GasLimit = uint64(1000000) // in units
-	auth.GasPrice = gasPrice
+	auth.GasPrice = gasPrice.Mul(gasPrice,big.NewInt(2))
 
 	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 
@@ -274,7 +274,7 @@ func RequestData(ctx context.Context) error {
 		}
 	
 		fmt.Printf("tx sent: %s", tx.Hash().Hex())
-		time.Sleep(30 * time.Second)
+		time.Sleep(60 * time.Second)
 
 		requestID, err := DB.Get(db.RequestIdKey)
 		if err != nil {
