@@ -124,7 +124,7 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 	}
 	if asInt.Cmp(big.NewInt(0)) == 0 {
 		fmt.Println("RequestID is zero")
-		if cfg.RequestData {
+		if cfg.RequestData > 0 {
 			fmt.Println("Requesting Data")
 			pow.RequestData(ctx)
 		}

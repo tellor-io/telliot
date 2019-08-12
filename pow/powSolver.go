@@ -267,7 +267,7 @@ func RequestData(ctx context.Context) error {
 	
 		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 	
-		tx, err := instance.AddTip(auth, big.NewInt(1), big.NewInt(0))
+		tx, err := instance.AddTip(auth, big.NewInt(int64(cfg.RequestData)), big.NewInt(0))
 		if err != nil {
 			log.Fatal(err)
 			return err
