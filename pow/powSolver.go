@@ -253,7 +253,7 @@ func RequestData(ctx context.Context) error {
 		}
 	
 		cost := new(big.Int)
-		cost.Mul(gasPrice, big.NewInt(700000))
+		cost.Mul(gasPrice, big.NewInt(200000))
 		if balance.Cmp(cost) < 0 {
 			//FIXME: notify someone that we're out of funds!
 			return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
