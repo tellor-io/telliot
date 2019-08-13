@@ -17,7 +17,7 @@ go run . -psrPath="${PSR}" -config="${CFG4}" -logConfig="${LOG}" "$@" &
 go run . -psrPath="${PSR}" -config="${CFG5}" -logConfig="${LOG}" "$@" 
 #go run . -miner -dataServer -psrPath=C:/company/code/go/src/github.com/tellor-io/TellorMiner/psr.json -config=C:/company/code/go/src/github.com/tellor-io/TellorMiner/config3.json -logConfig=C:/company/code/go/src/github.com/tellor-io/TellorMiner/loggingConfig.json
 #go run ./main.go -deposit -config=./config6.json -psrPath=./psr2.json -logConfig=./loggingConfig.json
-#go run ./main.go -transfer -to=0xe0d7bae200f0994b11423e8be8f386060bbdd808 -amount=1000000000000000000000 -config=./config3.json -psrPath=./psr2.json -logConfig=./loggingConfig.json
+#go run ./main.go -transfer -to=0x538d278e05a35c96bcdca1039e92c65b994256a0 -amount=1 -config=./config3.json -psrPath=./psr2.json -logConfig=./loggingConfig.json
 
-#0x8b73fa2c839ccea66e8eddf0aa95f6bc4c6aaa11e2fa126c1d9334985b0e7666
+#0x8b73fa2c839ccea66e8eddf0aa95f6bc4c6aaa11e2fa126c1d9334go run ./main.go -transfer -to=0x538d278e05a35c96bcdca1039e92c65b994256a0 -amount=1 -config=./config3.json -psrPath=./psr2.json985b0e7666
 #0xe0d7bae200f0994b11423e8be8f386060bbdd808
