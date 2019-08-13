@@ -44,9 +44,9 @@ func CreateMinerOps(ctx context.Context, exitCh chan os.Signal) (*MinerOps, erro
 func (ops *MinerOps) Start(ctx context.Context) {
 	ops.Running = true
 	ops.log.Info("Starting miner")
+	var oldcycle *miningCycle
 	go func() {
 		ticker := time.NewTicker(35 * time.Second)
-		oldcycle := nil
 		for {
 			select {
 			case _ = <-ops.exitCh:
@@ -63,9 +63,9 @@ func (ops *MinerOps) Start(ctx context.Context) {
 					//mining is synchronous, many time entries will be pushed into the ticker
 					//channel and a bunch of extraneous requests will happen after a full mine.
 					cycle, err := ops.buildNextCycle(ctx)
-					if err == nil && (oldcycle ==nil || bytes.Compare(cycle.challenge,oldcycle.challenge) != 0 ){
+					if err == nil && (oldcycle.challenge == nil || bytes.Compare(cycle.challenge,oldcycle.challenge) != 0 ){
 						if cycle != nil && !ops.miner.IsMining() {
-							oldcycle := cycle
+							oldcycle = cycle
 							ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 							go ops.mine(ctx, cycle)
 						}
@@ -181,7 +181,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				//pow.SubmitSolution(ctx, nonce, big.NewInt(221000), big.NewInt(1))
 			}
 		}else{
-			lasCycle = nil
+			lastCycle = nil
 			return
 		}
 
