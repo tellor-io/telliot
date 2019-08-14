@@ -80,7 +80,7 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 	//To fix...we need a way to stop this if a new challenge comes down the pipe
 	for{
 		i++
-		if i % 10000000000000 == 0{
+		if i % 100000000000 == 0{
 			fmt.Println("Still Mining")
 		}
 		if !p.canMine {

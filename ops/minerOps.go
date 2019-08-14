@@ -65,6 +65,8 @@ func (ops *MinerOps) Start(ctx context.Context) {
 							cycle.oldChallenge = cycle.challenge
 							ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 							go ops.mine(ctx, cycle)
+						}else{
+							fmt.Println("Miner is Mining : ",ops.miner.IsMining())
 						}
 					}
 				}
