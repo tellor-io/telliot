@@ -3,6 +3,7 @@ package tracker
 import (
 	"context"
 	"log"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
