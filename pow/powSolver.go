@@ -66,6 +66,7 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 		log.Fatal(err)
 	}
 	if !p.canMine {
+		fmt.Println("P can't mine")
 		return ""
 	}
 	p.mining = true
@@ -83,6 +84,8 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 			fmt.Println("Still Mining")
 		}
 		if !p.canMine {
+			fmt.Println("P can't mine")
+			p.mining = false
 			return ""
 		}
 
@@ -97,16 +100,18 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 		hash1 := hasher.Sum(nil)
 		n := sha256.Sum256(hash1)
 		q := fmt.Sprintf("%x", n)
-		p := new(big.Int)
-		p, ok := p.SetString(q, 16)
+		numHash := new(big.Int)
+		numHash, ok := numHash.SetString(q, 16)
 		if !ok {
-			fmt.Println("SetString: error")
+			fmt.Println("!!!!!SetString: error")
+			p.mining = false
 			return ""
 		}
 		x := new(big.Int)
-		x.Mod(p, _difficulty)
+		x.Mod(numHash, _difficulty)
 		if x.Cmp(big.NewInt(0)) == 0 {
 			fmt.Println("Solution Found", nn)
+			p.mining = false
 			return nn
 		}
 	}
