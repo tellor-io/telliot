@@ -3,7 +3,7 @@ package tracker
 import (
 	"context"
 	"log"
-
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -47,13 +47,13 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("instance Error, disputeStatus")
 		return err
 	}
 
 	status, _, err := instance.GetStakerInfo(nil, fromAddress)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("instance Error, disputeStatus")
 		return err
 	}
 	enc := hexutil.EncodeBig(status)

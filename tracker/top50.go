@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/big"
 
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -28,29 +27,14 @@ func (b *Top50Tracker) String() string {
 func (b *Top50Tracker) Exec(ctx context.Context) error {
 
 	//cast client using type assertion since context holds generic interface{}
-	//client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	//get the single config instance
-	//cfg, err := config.GetConfig()
-	//if err != nil {
-	//	top50Logger.Error("Problem getting configuration", err)
-	//	return err
-	//}
-
 	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
-	//contractAddress := common.HexToAddress(cfg.ContractAddress)
-	//instance, err := tellor.NewTellorMaster(contractAddress, client)
-
-	//if err != nil {
-	//	top50Logger.Error("Problem creating Tellor contract", err)
-	//	return err
-	//}
 
 	top50Logger.Debug("Querying for top50 request IDs...")
 	top50, err := instance.GetRequestQ(nil)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("top50 get error")
 		return err
 	}
 	rIDs := []byte{}

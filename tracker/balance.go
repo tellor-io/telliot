@@ -46,7 +46,7 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)
 
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("balance Error, balance.go")
 		return err
 	}
 	fmt.Printf("Balance retrieved: %v\n", balance)

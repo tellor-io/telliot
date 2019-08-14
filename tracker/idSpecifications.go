@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"math/big"
-
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -31,11 +31,12 @@ func GetSpecs(ctx context.Context, requestID uint) (*IDSpecifications, error) {
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("instance Error, IDspecs")
+		return nil,err
 	}
 	queryString, _, _, granularity, _, _, err := instance.GetRequestVars(nil, big.NewInt(int64(requestID)))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("query Error, IDspecs")
 		return nil, err
 	}
 
