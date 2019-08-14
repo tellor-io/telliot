@@ -75,7 +75,13 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 	fmt.Println("Challenge", challenge)
 	fmt.Println("thisChallenge", fmt.Sprintf("%x", challenge))
 	fmt.Println("Solving for difficulty: ", _difficulty)
-	for i := 0; i < 1000000000000; i++ {
+	i := 0
+	//To fix...we need a way to stop this if a new challenge comes down the pipe
+	for{
+		i++
+		if i % 10000000000000 == 0{
+			fmt.Println("Still Mining")
+		}
 		if !p.canMine {
 			return ""
 		}
@@ -104,8 +110,6 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 			return nn
 		}
 	}
-	fmt.Println("No Solution Found")
-	return ""
 }
 
 //Stop mining operations

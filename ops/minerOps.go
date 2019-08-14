@@ -19,6 +19,7 @@ import (
 //miningCycle holds all details for the current mining challenge and fields needed to submit a result
 type miningCycle struct {
 	challenge  []byte
+	oldChallenge []byte
 	difficulty *big.Int
 	nonce      string
 	requestID  *big.Int
@@ -57,13 +58,11 @@ func (ops *MinerOps) Start(ctx context.Context) {
 				}
 			case _ = <-ticker.C:
 				{
-					//FIXME: this needs to be refactored/designed because it assumes that the
-					//mining cycle will complete before the next time cycle. Even though the
-					//mining is synchronous, many time entries will be pushed into the ticker
-					//channel and a bunch of extraneous requests will happen after a full mine.
+					//FIXME: we need to stop mining if there's a new challenge
 					cycle, err := ops.buildNextCycle(ctx)
-					if err == nil {
-						if cycle != nil && !ops.miner.IsMining() {
+					if err == nil && cycle != nil {
+						if (cycle.oldChallenge == nil || bytes.Compare(cycle.oldChallenge,cycle.challenge) != 0)  && !ops.miner.IsMining() {
+							cycle.oldChallenge = cycle.challenge
 							ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 							go ops.mine(ctx, cycle)
 						}
@@ -141,7 +140,7 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 			ops.log.Error("Problem decoding price value: %v\n", err)
 			return nil, err
 		}
-		return &miningCycle{challenge: currentChallenge, difficulty: difficulty, nonce: "", requestID: asInt, value: value}, nil
+		return &miningCycle{challenge: currentChallenge,oldChallenge: nil, difficulty: difficulty, nonce: "", requestID: asInt, value: value}, nil
 	}
 	ops.log.Warn("No price data found for request id: %d\n", asInt.Uint64())
 	return nil, nil
@@ -178,7 +177,8 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				//pow.SubmitSolution(ctx, nonce, big.NewInt(221000), big.NewInt(1))
 			}
 		}else{
-			lastCycle = nil
+			ops.log.Info("Nonce is nil")
+			cycle.oldChallenge = nil
 			return
 		}
 
