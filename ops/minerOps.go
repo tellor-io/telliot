@@ -44,7 +44,6 @@ func CreateMinerOps(ctx context.Context, exitCh chan os.Signal) (*MinerOps, erro
 func (ops *MinerOps) Start(ctx context.Context) {
 	ops.Running = true
 	ops.log.Info("Starting miner")
-	var oldcycle *miningCycle
 	go func() {
 		ticker := time.NewTicker(35 * time.Second)
 		for {
@@ -63,9 +62,9 @@ func (ops *MinerOps) Start(ctx context.Context) {
 					//mining is synchronous, many time entries will be pushed into the ticker
 					//channel and a bunch of extraneous requests will happen after a full mine.
 					cycle, err := ops.buildNextCycle(ctx)
-					if err == nil && (oldcycle.challenge == nil || bytes.Compare(cycle.challenge,oldcycle.challenge) != 0 ){
+					if err == nil {
 						if cycle != nil && !ops.miner.IsMining() {
-							oldcycle = cycle
+							oldcycle := cycle
 							ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 							go ops.mine(ctx, cycle)
 						}
@@ -157,7 +156,6 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 	}
 	if lastCycle == nil || bytes.Compare(lastCycle.challenge, cycle.challenge) != 0 {
 		ops.log.Info("Mining for PoW nonce...")
-		//FIXME: need to make sure that if the machine is stopped that any ongoing PoW computation will end
 		nonce := ops.miner.SolveChallenge(cycle.challenge, cycle.difficulty)
 		ops.log.Info("Mined nonce", nonce)
 		if nonce != "" {
@@ -181,7 +179,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				//pow.SubmitSolution(ctx, nonce, big.NewInt(221000), big.NewInt(1))
 			}
 		}else{
-			lastCycle = nil
+			lasCycle = nil
 			return
 		}
 
