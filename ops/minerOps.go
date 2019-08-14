@@ -64,7 +64,6 @@ func (ops *MinerOps) Start(ctx context.Context) {
 					cycle, err := ops.buildNextCycle(ctx)
 					if err == nil {
 						if cycle != nil && !ops.miner.IsMining() {
-							oldcycle := cycle
 							ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 							go ops.mine(ctx, cycle)
 						}
@@ -179,7 +178,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				//pow.SubmitSolution(ctx, nonce, big.NewInt(221000), big.NewInt(1))
 			}
 		}else{
-			lasCycle = nil
+			lastCycle = nil
 			return
 		}
 
