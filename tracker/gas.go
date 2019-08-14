@@ -23,7 +23,8 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		return err
 	}
 
 	enc := hexutil.EncodeBig(gasPrice)

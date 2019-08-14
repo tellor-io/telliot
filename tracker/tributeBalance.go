@@ -45,14 +45,14 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Instance error - TributeBalance")
 		return err
 	}
 
 	balance, err := instance.BalanceOf(nil, fromAddress)
 	log.Printf("Balance: %v\n", balance)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Balance Retrieval Error - Tribute Balance")
 		return err
 	}
 	enc := hexutil.EncodeBig(balance)

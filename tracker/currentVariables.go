@@ -44,13 +44,13 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
 	currentChallenge, requestID, difficulty, queryString, granularity, totalTip, err := instance.GetCurrentVariables(nil)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Current Variables Retrieval Error")
 		return err
 	}
 	//if we've mined it, don't save it
 	myStatus, err := instance.DidMine(nil, currentChallenge, fromAddress)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("My Status Retrieval Error")
 		return err
 	}
 	bitSetVar := []byte{0}
@@ -62,32 +62,32 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 
 	err = DB.Put(db.CurrentChallengeKey, currentChallenge[:])
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Current Variables Put Error")
 		return err
 	}
 	err = DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(requestID)))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Current Variables Put Error")
 		return err
 	}
 	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(difficulty)))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Current Variables Put Error")
 		return err
 	}
 	err = DB.Put(db.QueryStringKey, []byte(queryString))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Current Variables Put Error")
 		return err
 	}
 	err = DB.Put(db.GranularityKey, []byte(hexutil.EncodeBig(granularity)))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Current Variables Put Error")
 		return err
 	}
 	err = DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Current Variables Put Error")
 		return err
 	}
 	
