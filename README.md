@@ -4,14 +4,16 @@ This is the workhorse of the Miner system as it takes on solving the PoW challen
 It's built on Go and utilizes a split structure.  The database piece is a LevelDB that keeps track of all variables (challenges, difficulty, values to submit, etc.) and the miner simply solves the PoW challenge.  This enables parties to split the pieces for optimization.
 
 <p align="center">
-    <img src= './public/minerspecs.png' alt='MinerSpecs' />
+    <img src= './public/minerspecs.png' width="250" alt='MinerSpecs' />
 </p>
 
-## Tellor Deployed Addresses
+
+### Tellor Deployed Addresses
 
 Mainnet - [0x0ba45a8b5d5575935b8158a88c631e9f9c95a2e5](https://etherscan.io/address/0x0ba45a8b5d5575935b8158a88c631e9f9c95a2e5)
 
 Rinkeby - [0x3f1571e4dfc9f3a016d90e0c9824c56fd8107a3e](https://rinkeby.etherscan.io/address/0x3f1571e4dfc9f3a016d90e0c9824c56fd8107a3e)
+
 
 
 ### Instructions for deployment
