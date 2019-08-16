@@ -181,7 +181,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 		fmt.Println("RequestID has changed")
 		return nil
 	}
-	f := new(big.Float).SetInt(nil)
+	f := new(big.Float).SetInt(gasPrice)
 	g := new(big.Float).SetFloat64(1.2)
 	f.Mul(f,g)//This is the multiplier...should we put this in the config?
 	gasPrice,_ = f.Int(gasPrice)
