@@ -181,7 +181,10 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 		fmt.Println("RequestID has changed")
 		return nil
 	}
-
+	f := new(big.Float).SetInt(nil)
+	g := new(big.Float).SetFloat64(1.2)
+	f.Mul(f,g)//This is the multiplier...should we put this in the config?
+	gasPrice,_ = f.Int(gasPrice)
 	cost := new(big.Int)
 	cost.Mul(gasPrice, big.NewInt(800000))
 	if balance.Cmp(cost) < 0 {
@@ -194,7 +197,7 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0)      // in wei
 	auth.GasLimit = uint64(1000000) // in units
-	auth.GasPrice = gasPrice.Mul(gasPrice,big.NewInt(2))
+	auth.GasPrice = gasPrice
 
 	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 
