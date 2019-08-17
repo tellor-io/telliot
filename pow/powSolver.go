@@ -17,7 +17,6 @@ import (
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/contracts"
 	tellor1 "github.com/tellor-io/TellorMiner/contracts1"
 	"github.com/tellor-io/TellorMiner/rpc"
 	"golang.org/x/crypto/ripemd160"
@@ -165,15 +164,10 @@ func SubmitSolution(ctx context.Context, challenge []byte, solution string, valu
 
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
-	thisChallenge2,_, _, _, _, _, err := instance2.GetCurrentVariables(nil)
-	thisChallenge := thisChallenge2[:]
+	thisChallenge, err := DB.Get(db.CurrentChallengeKey)
 	if err != nil {
 		fmt.Println("couldn't retrieve new")
-		thisChallenge, err = DB.Get(db.CurrentChallengeKey)
-		if err != nil {
-			return err
-		}
+		return err
 	}
 	if bytes.Compare(thisChallenge,challenge) != 0 {
 		fmt.Println("Challenge has changed")

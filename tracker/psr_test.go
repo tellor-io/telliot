@@ -14,6 +14,8 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 )
 
+//./runTest.sh TestPSR tracker
+
 func TestPSR(t *testing.T) {
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_psrFetch"))
 	if err != nil {

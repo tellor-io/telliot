@@ -88,6 +88,7 @@ func (psr *PSRTracker) init() error {
 	byteValue, _ := ioutil.ReadAll(configFile)
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'Requests' which we defined above
+
 	err = json.Unmarshal(byteValue, &psr)
 	if err != nil {
 		return err
@@ -108,7 +109,7 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 	var doneGroup sync.WaitGroup
 	ctx = context.WithValue(ctx, psrWaitGroupKey, &syncGroup)
 	errorCh := make(chan error)
-
+	fmt.Println("Starting")
 	doneGroup.Add(1)
 	go func() {
 		defer doneGroup.Done()
@@ -153,6 +154,8 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 	for i := 0; i < len(r.APIs); i++ {
 		api := r.APIs[i]
 		url, args := util.ParseQueryString(api)
+		psrLog.Info("Made it to here", url,args)
+		psrLog.Info(args[0])
 		reqs[i] = &FetchRequest{queryURL: url, timeout: timeout}
 		argGroups[i] = args
 	}

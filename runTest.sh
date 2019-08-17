@@ -3,7 +3,7 @@
 NAME="$1"
 PKG="$2"
 PSR=`pwd`/psr.json
-CFG=`pwd`/../../../../localConfig.json
+CFG=`pwd`/myconfig.json
 LOG=`pwd`/loggingConfig.json
 
 if [ -z "${NAME}" ]; then
