@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"time"
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -128,7 +129,7 @@ func (p *PoWSolver) IsMining() bool {
 }
 
 //SubmitSolution signs transaction and submits on-chain
-func SubmitSolution(ctx context.Context, solution string, value, requestId *big.Int) error {
+func SubmitSolution(ctx context.Context, challenge []byte, solution string, value, requestId *big.Int) error {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return err
@@ -165,20 +166,17 @@ func SubmitSolution(ctx context.Context, solution string, value, requestId *big.
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
-	_,asInt, _, _, _, _, err := instance2.GetCurrentVariables(nil)
+	thisChallenge2,_, _, _, _, _, err := instance2.GetCurrentVariables(nil)
+	thisChallenge := thisChallenge2[:]
 	if err != nil {
-		fmt.Println("ERROR getting REQUEST ID")
-		newID, err := DB.Get(db.RequestIdKey)
-		if err != nil {
-			return err
-		}
-		asInt, err = hexutil.DecodeBig(string(newID))
+		fmt.Println("couldn't retrieve new")
+		thisChallenge, err = DB.Get(db.CurrentChallengeKey)
 		if err != nil {
 			return err
 		}
 	}
-	if asInt.Cmp(requestId) != 0 {
-		fmt.Println("RequestID has changed")
+	if bytes.Compare(thisChallenge,challenge) != 0 {
+		fmt.Println("Challenge has changed")
 		return nil
 	}
 	f := new(big.Float).SetInt(gasPrice)

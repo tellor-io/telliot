@@ -175,7 +175,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				ops.lastChallenge = cycle
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
 				//pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
-				pow.SubmitSolution(ctx, nonce, priceValue, cycle.requestID)
+				pow.SubmitSolution(ctx, cycle.challenge, nonce, priceValue, cycle.requestID)
 				//pow.SubmitSolution(ctx, nonce, big.NewInt(221000), big.NewInt(1))
 			}
 		}else{
