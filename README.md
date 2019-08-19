@@ -1,3 +1,15 @@
+<p align="center">
+  <a href='https://www.tellor.io/'>
+    <img src= './public/Tellor.png' width="250" height="200" alt='tellor.io' />
+  </a>
+</p>
+
+<p align="center">
+  <a href='https://twitter.com/WeAreTellor'>
+    <img src= 'https://img.shields.io/twitter/url/http/shields.io.svg?style=social' alt='Twitter WeAreTellor' />
+  </a> 
+</p>
+
 # Tellor Miner
 
 This is the workhorse of the Miner system as it takes on solving the PoW challenge.  
