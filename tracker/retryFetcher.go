@@ -41,7 +41,6 @@ func batchFetchWithRetries(reqs []*FetchRequest) ([][]byte, error) {
 			res[i] = data
 		}
 	}
-
 	return res, nil
 }
 

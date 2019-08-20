@@ -1,6 +1,15 @@
 {
     "prespecifiedRequests":[
         {
+            "requestID":1,
+            "symbol":"ETH/USD - GDAX",
+            "apis":[
+                "json(https://api.gdax.com/products/ETH-USD/ticker).price"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000
+        },
+        {
             "requestID":2,
             "symbol": "BTC/USD - Binance",
             "apis": [

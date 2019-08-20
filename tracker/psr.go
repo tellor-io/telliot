@@ -154,8 +154,6 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 	for i := 0; i < len(r.APIs); i++ {
 		api := r.APIs[i]
 		url, args := util.ParseQueryString(api)
-		psrLog.Info("Made it to here", url,args)
-		psrLog.Info(args[0])
 		reqs[i] = &FetchRequest{queryURL: url, timeout: timeout}
 		argGroups[i] = args
 	}
@@ -167,8 +165,8 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 			vals[i] = -1
 			continue
 		}
-
 		v, err := util.ParsePayload(payloads[i], r.Granularity, argGroups[i])
+		fmt.Println("returned Value",v)
 		if err != nil {
 			errorCh <- err
 			vals[i] = -1
