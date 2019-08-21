@@ -65,14 +65,17 @@ func dumpJSON(v interface{}, kn string,args []string) (float64,error){
 		}
 		for k, v := range x {
 			if k == args[Bi-1]{
-				if len(args) == Bi {
 					dumpJSON(v, fmt.Sprintf(knf, root, k),args)
+					if len(args) == Bi {
 					res, err := converter(v)
 					if err !=nil{
 						fmt.Println(err)
 						return 0,false
 					}
-					return res,true
+					if res != 1 {
+						return res,true
+					}
+					return 0,false
 				}
 			}
 
@@ -136,18 +139,15 @@ func dumpJSON(v interface{}, kn string,args []string) (float64,error){
 func converter(v interface{}) (float64,error){
 	switch vv := v.(type) {
 	case string:
-		i, _ := strconv.ParseFloat(vv,64)
+		i, _ := strconv.ParseFloat(normalizeAmerican(vv),64)
 		return i,nil
 	case bool:
 		return 1,nil
 	case float64:
-		fmt.Println("vv",vv)
 		return float64(vv),nil
 	case int:
-		fmt.Println("vv",vv)
 		return float64(vv),nil
 	case int64:
-		fmt.Println("int64",vv)
 		return float64(vv),nil
 	case map[string]interface{}:
 		return 1,nil
@@ -156,7 +156,10 @@ func converter(v interface{}) (float64,error){
 	case interface{}:
 		return 2,nil
 	default:
-		fmt.Println("vv",vv)
 		return 0, errors.New("emit macho dwarf: elf header corrupted")
 	}
+}
+
+func normalizeAmerican(old string) string {
+    return strings.Replace(old, ",", "", -1)
 }

@@ -166,7 +166,6 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 			continue
 		}
 		v, err := util.ParsePayload(payloads[i], r.Granularity, argGroups[i])
-		fmt.Println("returned Value",v)
 		if err != nil {
 			errorCh <- err
 			vals[i] = -1
@@ -174,7 +173,6 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 		}
 		vals[i] = v
 	}
-
 	res, err := computeTransformation(r.Transformation, vals)
 	if err != nil {
 		errorCh <- err
@@ -196,7 +194,6 @@ func computeTransformation(name string, params ...interface{}) (result reflect.V
 		in[k] = reflect.ValueOf(param)
 	}
 	result = f.Call(in)[0]
-	//fmt.Println("Result", result)
 	return result, nil
 }
 

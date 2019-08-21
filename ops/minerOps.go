@@ -164,19 +164,26 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 			if err != nil {
 				ops.log.Error("Problem reading price data from DB: %v. Using last known value: %v\n", err, cycle.value)
 				priceValue = cycle.value
-			} else {
+			} else if val != nil{
 				priceValue, err = hexutil.DecodeBig(string(val))
 				if err != nil {
 					ops.log.Error("Problem decoding price value from DB data: %v\n", err)
 					priceValue = nil
 				}
+			}else{
+				ops.log.Info("Price is nil, check API and/or PSR value")
+				cycle.oldChallenge = nil
+				return
 			}
 			if priceValue != nil {
 				ops.lastChallenge = cycle
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
-				//pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
 				pow.SubmitSolution(ctx, cycle.challenge, nonce, priceValue, cycle.requestID)
-				//pow.SubmitSolution(ctx, nonce, big.NewInt(221000), big.NewInt(1))
+			}
+			else{
+				ops.log.Info("Price is nil, check API and/or PSR value")
+				cycle.oldChallenge = nil
+				return
 			}
 		}else{
 			ops.log.Info("Nonce is nil")
