@@ -42,7 +42,6 @@ func ParsePayload(payload []byte, _granularity uint, args []string) (int, error)
 		fmt.Println("ERROR",err)
 	}
 	s, _ := strconv.ParseFloat(fmt.Sprintf("%v", result), 64)
-	fmt.Println("Solution",int(s * float64(_granularity)) )
 	return int(s * float64(_granularity)), nil
 }
 var Bi = 0

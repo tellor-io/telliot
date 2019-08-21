@@ -33,6 +33,7 @@ type MinerOps struct {
 	Running       bool
 	lastChallenge *miningCycle
 	miner         *pow.PoWSolver
+	Requesting	bool
 }
 
 //CreateMinerOps creates a new miner operation ready to start run loop
@@ -58,16 +59,19 @@ func (ops *MinerOps) Start(ctx context.Context) {
 				}
 			case _ = <-ticker.C:
 				{
-					//FIXME: we need to stop mining if there's a new challenge
-					cycle, err := ops.buildNextCycle(ctx)
-					if err == nil && cycle != nil {
-						if (cycle.oldChallenge == nil || bytes.Compare(cycle.oldChallenge,cycle.challenge) != 0)  && !ops.miner.IsMining() {
-							cycle.oldChallenge = cycle.challenge
-							ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
-							go ops.mine(ctx, cycle)
-						}else{
-							fmt.Println("Miner is Mining : ",ops.miner.IsMining())
+					if !ops.Requesting{
+						cycle, err := ops.buildNextCycle(ctx)
+						if err == nil && cycle != nil {
+							if (cycle.oldChallenge == nil || bytes.Compare(cycle.oldChallenge,cycle.challenge) != 0)  && !ops.miner.IsMining() {
+								cycle.oldChallenge = cycle.challenge
+								ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
+								go ops.mine(ctx, cycle)
+							}else{
+								fmt.Println("Miner is Mining : ",ops.miner.IsMining())
+							}
 						}
+					}else{
+						fmt.Println("Miner is requesting Data")
 					}
 				}
 			}
@@ -127,7 +131,10 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		fmt.Println("RequestID is zero")
 		if cfg.RequestData > 0 {
 			fmt.Println("Requesting Data")
+			ops.Requesting = true
 			pow.RequestData(ctx)
+			fmt.Println("Done Requesting")
+			ops.Requesting = false
 		}
 		return nil, nil
 	}
