@@ -109,7 +109,6 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 	var doneGroup sync.WaitGroup
 	ctx = context.WithValue(ctx, psrWaitGroupKey, &syncGroup)
 	errorCh := make(chan error)
-	fmt.Println("Starting")
 	doneGroup.Add(1)
 	go func() {
 		defer doneGroup.Done()

@@ -244,8 +244,9 @@ func RequestData(ctx context.Context) error {
 		return err
 	}
 	i := 2
-
+	fmt.Println("requesting data1")
 	for asInt.Cmp(big.NewInt(0)) == 0{
+		fmt.Println("requesting data2")
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			return err
@@ -278,7 +279,7 @@ func RequestData(ctx context.Context) error {
 		}
 	
 		fmt.Printf("tx sent: %s", tx.Hash().Hex())
-		time.Sleep(60 * time.Second)
+		time.Sleep(30 * time.Second)
 
 		requestID, err := DB.Get(db.RequestIdKey)
 		if err != nil {

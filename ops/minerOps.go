@@ -60,8 +60,10 @@ func (ops *MinerOps) Start(ctx context.Context) {
 			case _ = <-ticker.C:
 				{
 					if !ops.Requesting{
+						fmt.Println("Building new Cycle...")
 						cycle, err := ops.buildNextCycle(ctx)
 						if err == nil && cycle != nil {
+							fmt.Println("Checking Cycle")
 							if (cycle.oldChallenge == nil || bytes.Compare(cycle.oldChallenge,cycle.challenge) != 0)  && !ops.miner.IsMining() {
 								cycle.oldChallenge = cycle.challenge
 								ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
@@ -132,8 +134,8 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		if cfg.RequestData > 0 {
 			fmt.Println("Requesting Data")
 			ops.Requesting = true
-			pow.RequestData(ctx)
-			fmt.Println("Done Requesting")
+			err= pow.RequestData(ctx)
+			fmt.Println("Done Requesting", err)
 			ops.Requesting = false
 		}
 		return nil, nil
