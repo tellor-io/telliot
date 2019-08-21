@@ -86,6 +86,7 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 
 	cfg, err := config.GetConfig()
 	if err != nil {
+		fmt.Println("Couldn't get config")
 		return nil, err
 	}
 
