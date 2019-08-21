@@ -179,8 +179,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				ops.lastChallenge = cycle
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
 				pow.SubmitSolution(ctx, cycle.challenge, nonce, priceValue, cycle.requestID)
-			}
-			else{
+			}else{
 				ops.log.Info("Price is nil, check API and/or PSR value")
 				cycle.oldChallenge = nil
 				return
