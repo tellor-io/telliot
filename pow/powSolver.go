@@ -39,10 +39,6 @@ func randInt() string {
 	if err != nil {
 		//error handling
 	}
-	//n := big.NewInt(9000)
-	//String representation of n in base 16
-	//n.Text(16)
-	//n = big.NewInt(7140296)
 	return n.String()
 }
 
@@ -79,7 +75,6 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 	fmt.Println("thisChallenge", fmt.Sprintf("%x", challenge))
 	fmt.Println("Solving for difficulty: ", _difficulty)
 	i := 0
-	//To fix...we need a way to stop this if a new challenge comes down the pipe
 	for{
 		if bytes.Compare(thisChallenge,p.Challenge) != 0{
 			fmt.Println("Challenge has changed")
@@ -87,7 +82,7 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 			return ""
 		}
 		i++
-		if i % 1000000000 == 0{
+		if i % 100000000 == 0{
 			fmt.Println("Still Mining")
 		}
 		if !p.canMine {
@@ -251,9 +246,7 @@ func RequestData(ctx context.Context) error {
 		return err
 	}
 	i := 2
-	fmt.Println("requesting data1")
 	for asInt.Cmp(big.NewInt(0)) == 0{
-		fmt.Println("requesting data2")
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			return err

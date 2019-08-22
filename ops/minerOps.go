@@ -68,12 +68,8 @@ func (ops *MinerOps) Start(ctx context.Context) {
 								ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 								go ops.mine(ctx, cycle)
 							}else{
-								fmt.Println(ops.lastChallenge,cycle.challenge)
 								fmt.Println("Miner is Mining : ",ops.miner.IsMining())
 							}
-						}else{
-							fmt.Println("Miner is Mining : ",ops.miner.IsMining())
-							fmt.Println("Error Building Cycle",err)
 						}
 					}else{
 						fmt.Println("Miner is requesting Data")
@@ -98,12 +94,6 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		ops.log.Error("Problem reading challenge in miner run loop: %v\n", err)
 		return nil, err
 	}
-	// if ops.lastChallenge != nil && bytes.Compare(currentChallenge, ops.lastChallenge) == 0 {
-	// 	fmt.Println(currentChallenge)
-	// 	fmt.Println("Challeng being grabbed")
-	// 	return nil, nil
-	// }
-
 	diff, err := DB.Get(db.DifficultyKey)
 	if err != nil {
 		ops.log.Error("Problem reading difficult from DB: %v\n", err)
