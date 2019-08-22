@@ -19,7 +19,6 @@ import (
 //miningCycle holds all details for the current mining challenge and fields needed to submit a result
 type miningCycle struct {
 	challenge  []byte
-	oldChallenge []byte
 	difficulty *big.Int
 	nonce      string
 	requestID  *big.Int
@@ -31,8 +30,9 @@ type MinerOps struct {
 	exitCh        chan os.Signal
 	log           *util.Logger
 	Running       bool
-	lastChallenge *miningCycle
+	lastChallenge []byte
 	miner         *pow.PoWSolver
+	Requesting	bool
 }
 
 //CreateMinerOps creates a new miner operation ready to start run loop
@@ -45,6 +45,7 @@ func CreateMinerOps(ctx context.Context, exitCh chan os.Signal) (*MinerOps, erro
 func (ops *MinerOps) Start(ctx context.Context) {
 	ops.Running = true
 	ops.log.Info("Starting miner")
+	ops.lastChallenge = nil
 	go func() {
 		ticker := time.NewTicker(35 * time.Second)
 		for {
@@ -58,16 +59,20 @@ func (ops *MinerOps) Start(ctx context.Context) {
 				}
 			case _ = <-ticker.C:
 				{
-					//FIXME: we need to stop mining if there's a new challenge
-					cycle, err := ops.buildNextCycle(ctx)
-					if err == nil && cycle != nil {
-						if (cycle.oldChallenge == nil || bytes.Compare(cycle.oldChallenge,cycle.challenge) != 0)  && !ops.miner.IsMining() {
-							cycle.oldChallenge = cycle.challenge
-							ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
-							go ops.mine(ctx, cycle)
-						}else{
-							fmt.Println("Miner is Mining : ",ops.miner.IsMining())
+					if !ops.Requesting{
+						fmt.Println("Building new Cycle...")
+						cycle, err := ops.buildNextCycle(ctx)
+						if err == nil && cycle != nil {
+							fmt.Println("Checking Cycle")
+							if (ops.lastChallenge == nil || bytes.Compare(ops.lastChallenge,cycle.challenge) != 0)  && !ops.miner.IsMining() {
+								ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
+								go ops.mine(ctx, cycle)
+							}else{
+								fmt.Println("Miner is Mining : ",ops.miner.IsMining())
+							}
 						}
+					}else{
+						fmt.Println("Miner is requesting Data")
 					}
 				}
 			}
@@ -79,6 +84,7 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 
 	cfg, err := config.GetConfig()
 	if err != nil {
+		fmt.Println("Couldn't get config")
 		return nil, err
 	}
 
@@ -88,10 +94,6 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		ops.log.Error("Problem reading challenge in miner run loop: %v\n", err)
 		return nil, err
 	}
-	if ops.lastChallenge != nil && bytes.Compare(currentChallenge, ops.lastChallenge.challenge) == 0 {
-		return nil, nil
-	}
-
 	diff, err := DB.Get(db.DifficultyKey)
 	if err != nil {
 		ops.log.Error("Problem reading difficult from DB: %v\n", err)
@@ -102,7 +104,6 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		ops.log.Error("Problem reading miningStatus from DB: %v\n", err)
 		return nil, err
 	}
-	fmt.Println("mining status")
 	if bytes.Compare(miningStatus, []byte{1}) == 0 {
 		fmt.Println("Already Mined")
 		return nil, nil
@@ -127,7 +128,10 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		fmt.Println("RequestID is zero")
 		if cfg.RequestData > 0 {
 			fmt.Println("Requesting Data")
-			pow.RequestData(ctx)
+			ops.Requesting = true
+			err= pow.RequestData(ctx)
+			fmt.Println("Done Requesting", err)
+			ops.Requesting = false
 		}
 		return nil, nil
 	}
@@ -142,7 +146,7 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 			ops.log.Error("Problem decoding price value: %v\n", err)
 			return nil, err
 		}
-		return &miningCycle{challenge: currentChallenge,oldChallenge: nil, difficulty: difficulty, nonce: "", requestID: asInt, value: value}, nil
+		return &miningCycle{challenge: currentChallenge, difficulty: difficulty, nonce: "", requestID: asInt, value: value}, nil
 	}
 	ops.log.Warn("No price data found for request id: %d\n", asInt.Uint64())
 	return nil, nil
@@ -152,9 +156,13 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 	lastCycle := ops.lastChallenge
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	if !ops.Running {
+		ops.miner.Challenge = nil
+		ops.lastChallenge = nil
 		return
 	}
-	if lastCycle == nil || bytes.Compare(lastCycle.challenge, cycle.challenge) != 0 {
+	if lastCycle == nil || bytes.Compare(lastCycle, cycle.challenge) != 0 {
+		ops.miner.Challenge = cycle.challenge
+		ops.lastChallenge = cycle.challenge
 		ops.log.Info("Mining for PoW nonce...")
 		nonce := ops.miner.SolveChallenge(cycle.challenge, cycle.difficulty)
 		ops.log.Info("Mined nonce", nonce)
@@ -164,26 +172,36 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 			if err != nil {
 				ops.log.Error("Problem reading price data from DB: %v. Using last known value: %v\n", err, cycle.value)
 				priceValue = cycle.value
-			} else {
+			} else if val != nil{
 				priceValue, err = hexutil.DecodeBig(string(val))
 				if err != nil {
 					ops.log.Error("Problem decoding price value from DB data: %v\n", err)
 					priceValue = nil
 				}
+			}else{
+				ops.log.Info("Price is nil, check API and/or PSR value")
+				ops.lastChallenge=nil
+				return
 			}
 			if priceValue != nil {
-				ops.lastChallenge = cycle
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
-				//pow.SubmitTransaction(nonce, priceValue, cycle.requestID)
 				pow.SubmitSolution(ctx, cycle.challenge, nonce, priceValue, cycle.requestID)
-				//pow.SubmitSolution(ctx, nonce, big.NewInt(221000), big.NewInt(1))
+				return
+			}else{
+				ops.log.Info("Price is nil, check API and/or PSR value")
+				ops.lastChallenge=nil
+				return
 			}
 		}else{
 			ops.log.Info("Nonce is nil")
-			cycle.oldChallenge = nil
+			ops.lastChallenge=nil
 			return
 		}
 
+	}else{
+		fmt.Println("Challenge has changed")
+
 	}
+
 
 }

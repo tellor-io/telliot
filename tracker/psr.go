@@ -109,7 +109,6 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 	var doneGroup sync.WaitGroup
 	ctx = context.WithValue(ctx, psrWaitGroupKey, &syncGroup)
 	errorCh := make(chan error)
-	fmt.Println("Starting")
 	doneGroup.Add(1)
 	go func() {
 		defer doneGroup.Done()
@@ -154,8 +153,6 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 	for i := 0; i < len(r.APIs); i++ {
 		api := r.APIs[i]
 		url, args := util.ParseQueryString(api)
-		psrLog.Info("Made it to here", url,args)
-		psrLog.Info(args[0])
 		reqs[i] = &FetchRequest{queryURL: url, timeout: timeout}
 		argGroups[i] = args
 	}
@@ -167,7 +164,6 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 			vals[i] = -1
 			continue
 		}
-
 		v, err := util.ParsePayload(payloads[i], r.Granularity, argGroups[i])
 		if err != nil {
 			errorCh <- err
@@ -176,7 +172,6 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 		}
 		vals[i] = v
 	}
-
 	res, err := computeTransformation(r.Transformation, vals)
 	if err != nil {
 		errorCh <- err
@@ -198,7 +193,6 @@ func computeTransformation(name string, params ...interface{}) (result reflect.V
 		in[k] = reflect.ValueOf(param)
 	}
 	result = f.Call(in)[0]
-	//fmt.Println("Result", result)
 	return result, nil
 }
 
