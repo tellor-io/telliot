@@ -70,6 +70,7 @@ func (ops *MinerOps) Start(ctx context.Context) {
 								ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 								go ops.mine(ctx, cycle)
 							}else{
+								fmt.Println(ops.lastChallenge,cycle.challenge)
 								fmt.Println("Miner is Mining : ",ops.miner.IsMining())
 							}
 						}else{
@@ -167,6 +168,8 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 	lastCycle := ops.lastChallenge
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	if !ops.Running {
+		ops.miner.Challenge = nil
+		ops.lastChallenge = nil
 		return
 	}
 	if lastCycle == nil || bytes.Compare(lastCycle, cycle.challenge) != 0 {
@@ -205,6 +208,10 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 			return
 		}
 
+	}else{
+		fmt.Println("Challenge has changed")
+
 	}
+
 
 }
