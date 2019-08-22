@@ -99,11 +99,11 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		ops.log.Error("Problem reading challenge in miner run loop: %v\n", err)
 		return nil, err
 	}
-	if ops.lastChallenge != nil && bytes.Compare(currentChallenge, ops.lastChallenge) == 0 {
-		fmt.Println(currentChallenge)
-		fmt.Println("Challeng being grabbed")
-		return nil, nil
-	}
+	// if ops.lastChallenge != nil && bytes.Compare(currentChallenge, ops.lastChallenge) == 0 {
+	// 	fmt.Println(currentChallenge)
+	// 	fmt.Println("Challeng being grabbed")
+	// 	return nil, nil
+	// }
 
 	diff, err := DB.Get(db.DifficultyKey)
 	if err != nil {
