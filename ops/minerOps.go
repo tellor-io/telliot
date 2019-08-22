@@ -65,8 +65,6 @@ func (ops *MinerOps) Start(ctx context.Context) {
 						if err == nil && cycle != nil {
 							fmt.Println("Checking Cycle")
 							if (ops.lastChallenge == nil || bytes.Compare(ops.lastChallenge,cycle.challenge) != 0)  && !ops.miner.IsMining() {
-								ops.miner.Challenge = cycle.challenge
-								ops.lastChallenge = cycle.challenge
 								ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 								go ops.mine(ctx, cycle)
 							}else{
@@ -173,6 +171,8 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 		return
 	}
 	if lastCycle == nil || bytes.Compare(lastCycle, cycle.challenge) != 0 {
+		ops.miner.Challenge = cycle.challenge
+		ops.lastChallenge = cycle.challenge
 		ops.log.Info("Mining for PoW nonce...")
 		nonce := ops.miner.SolveChallenge(cycle.challenge, cycle.difficulty)
 		ops.log.Info("Mined nonce", nonce)
