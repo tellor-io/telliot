@@ -73,6 +73,7 @@ func (ops *MinerOps) Start(ctx context.Context) {
 								fmt.Println("Miner is Mining : ",ops.miner.IsMining())
 							}
 						}else{
+							fmt.Println("Miner is Mining : ",ops.miner.IsMining())
 							fmt.Println("Error Building Cycle",err)
 						}
 					}else{
