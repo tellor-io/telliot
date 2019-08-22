@@ -45,6 +45,7 @@ func CreateMinerOps(ctx context.Context, exitCh chan os.Signal) (*MinerOps, erro
 func (ops *MinerOps) Start(ctx context.Context) {
 	ops.Running = true
 	ops.log.Info("Starting miner")
+	ops.lastChallenge = nil
 	go func() {
 		ticker := time.NewTicker(35 * time.Second)
 		for {
@@ -98,6 +99,7 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		return nil, err
 	}
 	if ops.lastChallenge != nil && bytes.Compare(currentChallenge, ops.lastChallenge) == 0 {
+		fmt.Println(currentChallenge)
 		fmt.Println("Challeng being grabbed")
 		return nil, nil
 	}
