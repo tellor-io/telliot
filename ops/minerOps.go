@@ -64,6 +64,7 @@ func (ops *MinerOps) Start(ctx context.Context) {
 						if err == nil && cycle != nil {
 							fmt.Println("Checking Cycle")
 							if (ops.lastChallenge == nil || bytes.Compare(ops.lastChallenge,cycle.challenge) != 0)  && !ops.miner.IsMining() {
+								ops.miner.Challenge = cycle.challenge
 								ops.lastChallenge = cycle.challenge
 								ops.log.Info("Requesting mining cycle with vars: %+v\n", cycle)
 								go ops.mine(ctx, cycle)
@@ -189,6 +190,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 			if priceValue != nil {
 				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
 				pow.SubmitSolution(ctx, cycle.challenge, nonce, priceValue, cycle.requestID)
+				return
 			}else{
 				ops.log.Info("Price is nil, check API and/or PSR value")
 				ops.lastChallenge=nil

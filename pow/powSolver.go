@@ -27,6 +27,7 @@ import (
 type PoWSolver struct {
 	canMine bool
 	mining  bool
+	Challenge []byte
 }
 
 func randInt() string {
@@ -61,6 +62,7 @@ func CreateMiner() *PoWSolver {
 
 //SolveChallenge performs PoW
 func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) string {
+	thisChallenge := challenge
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -79,6 +81,11 @@ func (p *PoWSolver) SolveChallenge(challenge []byte, _difficulty *big.Int) strin
 	i := 0
 	//To fix...we need a way to stop this if a new challenge comes down the pipe
 	for{
+		if bytes.Compare(thisChallenge,p.Challenge) != 0{
+			fmt.Println("Challenge has changed")
+			p.mining=false
+			return ""
+		}
 		i++
 		if i % 1000000000 == 0{
 			fmt.Println("Still Mining")
