@@ -268,7 +268,10 @@ func RequestData(ctx context.Context) error {
 		auth.Nonce = big.NewInt(int64(nonce))
 		auth.Value = big.NewInt(0)      // in wei
 		auth.GasLimit = uint64(200000) // in units
-		auth.GasPrice = gasPrice.Add(gasPrice,big.NewInt(int64(i)))
+		gasPrice1 := gasPrice.Mul(gasPrice,big.NewInt(int64(i*11)))
+		gasPrice1 = gasPrice1.Div(gasPrice,big.NewInt(int64(100)))
+		auth.GasPrice = gasPrice.Add(gasPrice,gasPrice1)
+
 	
 		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 	
