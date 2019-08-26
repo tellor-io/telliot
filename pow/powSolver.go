@@ -246,7 +246,7 @@ func RequestData(ctx context.Context) error {
 		return err
 	}
 	i := 2
-	for asInt.Cmp(big.NewInt(0)) == 0{
+	for asInt.Cmp(big.NewInt(0)) == 0 && i < 12{
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			return err
@@ -268,7 +268,7 @@ func RequestData(ctx context.Context) error {
 		auth.Nonce = big.NewInt(int64(nonce))
 		auth.Value = big.NewInt(0)      // in wei
 		auth.GasLimit = uint64(200000) // in units
-		auth.GasPrice = gasPrice.Mul(gasPrice,big.NewInt(int64(i)))
+		auth.GasPrice = gasPrice.Add(gasPrice,big.NewInt(int64(i)))
 	
 		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 	
@@ -291,6 +291,7 @@ func RequestData(ctx context.Context) error {
 		}
 		i++
 	}
+	fmt.Println("Not Requesting : ",i)
 	return nil
 
 }
