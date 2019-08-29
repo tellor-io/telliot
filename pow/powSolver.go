@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"strings"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -18,6 +19,7 @@ import (
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	tellor1 "github.com/tellor-io/TellorMiner/contracts1"
+	"github.com/tellor-io/TellorMiner/contracts"
 	"github.com/tellor-io/TellorMiner/rpc"
 	"golang.org/x/crypto/ripemd160"
 	"github.com/tellor-io/TellorMiner/db"
@@ -186,7 +188,11 @@ func SubmitSolution(ctx context.Context, challenge []byte, solution string, valu
 		//FIXME: notify someone that we're out of funds!
 		return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
 	}
-	myStatus, err := instance.DidMine(nil, thisChallenge, fromAddress)
+	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+	instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
+	cChallenge := [32]byte{}
+	copy(cChallenge[:],thisChallenge)
+	myStatus, err := instance2.DidMine(nil, cChallenge, fromAddress)
 	if err != nil {
 		fmt.Println("My Status Retrieval Error")
 		return err
@@ -200,7 +206,7 @@ func SubmitSolution(ctx context.Context, challenge []byte, solution string, valu
 		auth.GasLimit = uint64(1000000) // in units
 		auth.GasPrice = gasPrice
 
-		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+		
 
 		fmt.Printf("Calling contract with vars: %v, %v, %v, %v\n", auth, solution, requestId, value)
 		fmt.Printf("%T\n", solution)
@@ -218,7 +224,12 @@ func SubmitSolution(ctx context.Context, challenge []byte, solution string, valu
 				return nil;
 			}
 		}
-
+		time.Sleep(20 * time.Second)
+		myStatus, err = instance2.DidMine(nil, cChallenge, fromAddress)
+		if err != nil {
+			fmt.Println("My Status Retrieval Error")
+			return err
+		}
 		fmt.Printf("tx sent: %s", tx.Hash().Hex())
 		i++
 	}
@@ -287,8 +298,9 @@ func RequestData(ctx context.Context) error {
 		auth.Nonce = big.NewInt(IntNonce)
 		auth.Value = big.NewInt(0)      // in wei
 		auth.GasLimit = uint64(200000) // in units
-		gasPrice1 := gasPrice.Mul(gasPrice,big.NewInt(int64(i*11)))
-		gasPrice1 = gasPrice1.Div(gasPrice,big.NewInt(int64(100)))
+		gasPrice1 := big.NewInt(0)
+		gasPrice1.Mul(gasPrice,big.NewInt(int64(i*11)))
+		gasPrice1.Div(gasPrice1,big.NewInt(int64(100)))
 		auth.GasPrice = gasPrice.Add(gasPrice,gasPrice1)
 
 	

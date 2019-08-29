@@ -108,6 +108,8 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 			return err
 		}
 	}
+	err := fn(&wTo)
+	return err
 }
 
 func (c *clientInstance) Close() {
@@ -212,7 +214,7 @@ func (c *clientInstance) PendingNonceAt(ctx context.Context, address common.Addr
 func (c *clientInstance) NonceAt(ctx context.Context, address common.Address) (uint64, error) {
 	var res uint64
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
-		r, e := c.ethClient.NonceAt(*_ctx, address)
+		r, e := c.ethClient.NonceAt(*_ctx, address,nil)
 		res = r
 		return e
 	})

@@ -288,6 +288,10 @@ func (c *mockClient) PendingNonceAt(ctx context.Context, address common.Address)
 	return c.nonce, nil
 }
 
+func (c *mockClient) NonceAt(ctx context.Context, address common.Address) (uint64, error) {
+	return c.nonce, nil
+}
+
 func (c *mockClient) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
 	return 0, nil
 }
