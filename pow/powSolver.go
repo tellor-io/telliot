@@ -149,10 +149,11 @@ func SubmitSolution(ctx context.Context, challenge []byte, solution string, valu
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	nonce, err := client.NonceAt(context.Background(), fromAddress)
 	if err != nil {
 		return err
 	}
+
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -185,25 +186,42 @@ func SubmitSolution(ctx context.Context, challenge []byte, solution string, valu
 		//FIXME: notify someone that we're out of funds!
 		return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
 	}
-
-
-	auth := bind.NewKeyedTransactor(privateKey)
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)      // in wei
-	auth.GasLimit = uint64(1000000) // in units
-	auth.GasPrice = gasPrice
-
-	instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
-
-	fmt.Printf("Calling contract with vars: %v, %v, %v, %v\n", auth, solution, requestId, value)
-	fmt.Printf("%T\n", solution)
-	tx, err := instance.SubmitMiningSolution(auth, solution, requestId, value)
+	myStatus, err := instance.DidMine(nil, thisChallenge, fromAddress)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("My Status Retrieval Error")
 		return err
 	}
+	i := 0
+	IntNonce := int64(nonce)
+	for !myStatus && i < 5{
+		auth := bind.NewKeyedTransactor(privateKey)
+		auth.Nonce = big.NewInt(IntNonce)
+		auth.Value = big.NewInt(0)      // in wei
+		auth.GasLimit = uint64(1000000) // in units
+		auth.GasPrice = gasPrice
 
-	fmt.Printf("tx sent: %s", tx.Hash().Hex())
+		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+
+		fmt.Printf("Calling contract with vars: %v, %v, %v, %v\n", auth, solution, requestId, value)
+		fmt.Printf("%T\n", solution)
+		tx, err := instance.SubmitMiningSolution(auth, solution, requestId, value)
+		if err != nil {
+			if strings.Contains(err.Error(), "nonce too low") {
+				fmt.Println("nonce too low",err)
+				IntNonce = IntNonce + 1
+			}else if strings.Contains(err.Error(), "replacement transaction underpriced"){
+				fmt.Print("replacement transaction underpriced")
+				gasPrice1 := gasPrice.Mul(gasPrice,big.NewInt(int64(i*11)))
+				gasPrice = gasPrice1.Div(gasPrice,big.NewInt(int64(100)))
+			} else{
+				log.Fatal(err)
+				return nil;
+			}
+		}
+
+		fmt.Printf("tx sent: %s", tx.Hash().Hex())
+		i++
+	}
 
 	return nil
 }
@@ -229,7 +247,7 @@ func RequestData(ctx context.Context) error {
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	nonce, err := client.NonceAt(context.Background(), fromAddress)
 	if err != nil {
 		return err
 	}
@@ -246,7 +264,8 @@ func RequestData(ctx context.Context) error {
 		return err
 	}
 	i := 2
-	for asInt.Cmp(big.NewInt(0)) == 0 && i < 12{
+	IntNonce := int64(nonce)
+	for asInt.Cmp(big.NewInt(0)) == 0 && i < 5{
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			return err
@@ -265,7 +284,7 @@ func RequestData(ctx context.Context) error {
 		}
 	
 		auth := bind.NewKeyedTransactor(privateKey)
-		auth.Nonce = big.NewInt(int64(nonce))
+		auth.Nonce = big.NewInt(IntNonce)
 		auth.Value = big.NewInt(0)      // in wei
 		auth.GasLimit = uint64(200000) // in units
 		gasPrice1 := gasPrice.Mul(gasPrice,big.NewInt(int64(i*11)))
@@ -277,8 +296,14 @@ func RequestData(ctx context.Context) error {
 	
 		tx, err := instance.AddTip(auth, big.NewInt(int64(cfg.RequestData)), big.NewInt(0))
 		if err != nil {
-			log.Fatal(err)
-			return err
+			if strings.Contains(err.Error(), "nonce too low") {
+				IntNonce = IntNonce + 1
+			}else if strings.Contains(err.Error(), "replacement transaction underpriced"){
+				fmt.Print("replacement transaction underpriced")
+			} else{
+				log.Fatal(err)
+				return nil;
+			}
 		}
 	
 		fmt.Printf("tx sent: %s", tx.Hash().Hex())
