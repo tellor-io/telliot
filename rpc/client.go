@@ -31,7 +31,7 @@ type ETHClient interface {
 	// ContractCall executes an Ethereum contract call with the specified data as the
 	// input.
 	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
-
+	NonceAt(ctx context.Context, address common.Address) (uint64, error)
 	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
 
 	// PendingCodeAt returns the code of the given account in the pending state.
@@ -82,13 +82,16 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 	defer cancel()
 	tryCount := 0
 	nextTick := time.Now().Add(errorPrintTick)
-	for {
+	for tryCount < 20{
 		err := fn(&wTo)
 		if err == nil {
 			return nil
 		}
 		if strings.Contains(err.Error(), "nonce too low") {
-			return nil
+			return err
+		}
+		if strings.Contains(err.Error(), "replacement transaction underpriced"){
+			return err
 		}
 		c.log.Debug("Problem in calling eth client: %v", err)
 		//pause for a bit and try again
@@ -105,6 +108,8 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 			return err
 		}
 	}
+	err := fn(&wTo)
+	return err
 }
 
 func (c *clientInstance) Close() {
@@ -200,6 +205,16 @@ func (c *clientInstance) PendingNonceAt(ctx context.Context, address common.Addr
 	var res uint64
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.PendingNonceAt(*_ctx, address)
+		res = r
+		return e
+	})
+	return res, _err
+}
+
+func (c *clientInstance) NonceAt(ctx context.Context, address common.Address) (uint64, error) {
+	var res uint64
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.NonceAt(*_ctx, address,nil)
 		res = r
 		return e
 	})

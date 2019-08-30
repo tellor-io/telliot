@@ -16,3 +16,5 @@ pkg/darwin_amd64
 
 /myconfig.json
 */myconfig.json
+
+/dist
