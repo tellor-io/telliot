@@ -53,6 +53,7 @@ func dumpJSON(v interface{}, kn string,args []string) (float64,error){
 		Finished = false
 		Res = 0
 		FRes = 0
+		Bi = 0
 	}
 	iterMap := func(x map[string]interface{}, root string,args []string) (float64,bool){
 		Bi++
@@ -91,21 +92,24 @@ func dumpJSON(v interface{}, kn string,args []string) (float64,error){
 		} else {
 			knf = "%s:[%d]"
 		}
-		for k, v := range x {
-			i2,_ := strconv.ParseInt(args[Bi-1], 10, 64)
-			if k == int(i2){
-					dumpJSON(v, fmt.Sprintf(knf, root, k),args)
-					if len(args) == Bi {
-						res, err := converter(v)
-						if err !=nil{
-							fmt.Println(err)
+		for k, v := range x{
+			if Bi-1 <= len(args) && len(args) > 0{//Just added this, we need to check that our numbers are still correct...Still not fixed
+				fmt.Println(args,Bi)
+				i2,_ := strconv.ParseInt(args[Bi-1], 10, 64)
+				if k == int(i2){
+						dumpJSON(v, fmt.Sprintf(knf, root, k),args)
+						if len(args) == Bi {
+							res, err := converter(v)
+							if err !=nil{
+								fmt.Println(err)
+								return 0,false
+							}
+							if res != 1 {
+								return res,true
+							}
 							return 0,false
 						}
-						if res != 1 {
-							return res,true
-						}
-						return 0,false
-					}
+				}
 			}
 		}
 	}

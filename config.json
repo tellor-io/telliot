@@ -9,6 +9,7 @@
     "ethClientTimeout": 3000,
     "trackerCycle": 10,
     "requestData":1,
+    "gasMax":10,
  "trackers": [
         "balance",
         "currentVariables",

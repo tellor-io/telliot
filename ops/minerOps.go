@@ -130,7 +130,6 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 			fmt.Println("Requesting Data")
 			ops.Requesting = true
 			err= pow.RequestData(ctx)
-			fmt.Println("Done Requesting", err)
 			ops.Requesting = false
 		}
 		return nil, nil
@@ -184,8 +183,11 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 				return
 			}
 			if priceValue != nil {
-				ops.log.Info("Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
-				pow.SubmitSolution(ctx, cycle.challenge, nonce, priceValue, cycle.requestID)
+				ops.log.Info("**Submitting solution: %v, %v, %v", nonce, priceValue, cycle.requestID)
+				err = ops.miner.SubmitSolution(ctx, cycle.challenge, nonce, priceValue, cycle.requestID)
+				if err != nil {
+					ops.log.Error("Problem submitting Solution: %v\n", err)
+				}
 				return
 			}else{
 				ops.log.Info("Price is nil, check API and/or PSR value")
@@ -199,7 +201,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 		}
 
 	}else{
-		fmt.Println("Challenge has changed")
+		ops.log.Info("Challenge has changed")
 
 	}
 

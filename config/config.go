@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"sync"
-
 	"github.com/tellor-io/TellorMiner/cli"
 	"github.com/tellor-io/TellorMiner/util"
 )
@@ -25,6 +24,7 @@ type Config struct {
 	FetchTimeout      uint     `json:"fetchTimeout"`
 	RequestData       uint    `json:"requestData"`
 	GasMultiplier     uint     `json:"gasMultiplier"`
+	GasMax			  uint     `json:"gasMax"`
 	logger            *util.Logger
 	mux               sync.Mutex
 }

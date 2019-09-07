@@ -129,10 +129,8 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 		psrLog.Info("Fetching PSR with id: %v\n", p.RequestID)
 		go p.fetch(ctx, errorCh)
 	}
-	psrLog.Info("Waiting for PSR's to complete...")
 	syncGroup.Wait()
 	errorCh <- nil
-	psrLog.Info("Waiting for exit on error reader...")
 	doneGroup.Wait()
 	psrLog.Info("PSR Tracker cycle complete")
 	return nil
