@@ -94,7 +94,6 @@ func dumpJSON(v interface{}, kn string,args []string) (float64,error){
 		}
 		for k, v := range x{
 			if Bi-1 <= len(args) && len(args) > 0{//Just added this, we need to check that our numbers are still correct...Still not fixed
-				fmt.Println(args,Bi)
 				i2,_ := strconv.ParseInt(args[Bi-1], 10, 64)
 				if k == int(i2){
 						dumpJSON(v, fmt.Sprintf(knf, root, k),args)
