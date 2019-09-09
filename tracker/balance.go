@@ -41,15 +41,12 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	//convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 
-	fmt.Printf("Retrieving balance for %v\n", _fromAddress)
-
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)
 
 	if err != nil {
 		fmt.Println("balance Error, balance.go")
 		return err
 	}
-	fmt.Printf("Balance retrieved: %v\n", balance)
 	enc := hexutil.EncodeBig(balance)
 	log.Printf("Balance: %v", enc)
 	return DB.Put(db.BalanceKey, []byte(enc))
