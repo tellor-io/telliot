@@ -168,7 +168,7 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 		if nonce != "" {
 			//Hot PSR fix
 			val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, cycle.requestID.Uint64()))
-			if cycle.requestID.Uint64() > 5{
+			if cycle.requestID.Uint64() > 5 && cycle.requestID.Uint64() <51 {
 				val, err = DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix,1))
 			}
 			var priceValue *big.Int
