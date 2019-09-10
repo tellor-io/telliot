@@ -135,6 +135,9 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		return nil, nil
 	}
 	val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, asInt.Uint64()))
+	if asInt.Uint64() > 5 && asInt.Uint64() <51 {
+		val, err = DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix,1))
+	}
 	if err != nil {
 		ops.log.Error("Problem reading price data from DB: %v\n", err)
 		return nil, err
@@ -147,7 +150,6 @@ func (ops *MinerOps) buildNextCycle(ctx context.Context) (*miningCycle, error) {
 		}
 		return &miningCycle{challenge: currentChallenge, difficulty: difficulty, nonce: "", requestID: asInt, value: value}, nil
 	}
-	ops.log.Warn("No price data found for request id: %d\n", asInt.Uint64())
 	return nil, nil
 }
 
