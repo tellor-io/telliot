@@ -166,7 +166,11 @@ func (ops *MinerOps) mine(ctx context.Context, cycle *miningCycle) {
 		nonce := ops.miner.SolveChallenge(cycle.challenge, cycle.difficulty)
 		ops.log.Info("Mined nonce", nonce)
 		if nonce != "" {
+			//Hot PSR fix
 			val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, cycle.requestID.Uint64()))
+			if cycle.requestID.Uint64() > 5{
+				val, err = DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix,1))
+			}
 			var priceValue *big.Int
 			if err != nil {
 				ops.log.Error("Problem reading price data from DB: %v. Using last known value: %v\n", err, cycle.value)
