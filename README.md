@@ -45,8 +45,9 @@ Join our Discord or Telegram:
 [<img src="./public/telegram.png" width="24" height="24">](https://t.me/tellor)
 [<img src="./public/discord.png" width="24" height="24">](https://discord.gg/zFcM3G)
 
-#### DISCLAIMER
+### DISCLAIMER
 
+'''
 Mine at your own risk.  
 
 Mining requires you deposit 1000 Tellor Tributes.  These are a security deposity.  If you are a malicious actor (aka submit a bad value), the community can vote to slash your 1000 tokens.  
@@ -60,7 +61,7 @@ There is no guaruntee of profit from mining.
 There is no promise that Tellor Tributes currently hold or will ever hold any value. 
 
 Please join our Discord for more information and community updates.  
-
+'''
 
 #### Contributors<a name="contributors"> </a>
 
