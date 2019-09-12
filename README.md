@@ -47,21 +47,21 @@ Join our Discord or Telegram:
 
 ### DISCLAIMER
 
-'''
-Mine at your own risk.  
 
-Mining requires you deposit 1000 Tellor Tributes.  These are a security deposity.  If you are a malicious actor (aka submit a bad value), the community can vote to slash your 1000 tokens.  
+    Mine at your own risk.  
 
-Mining also requires submitting on-chain transactions on Ethereum.  These transactions cost gas (ETH) and can sometimes be signifiant if the cost of gas on EThereum is high (i.e. the network is clogged).  Please reach out to the community to find the best tips for keeping gas costs under control or at least being aware of the costs. 
+    Mining requires you deposit 1000 Tellor Tributes.  These are a security deposity.  If you are a malicious actor (aka submit a bad value), the community can vote to slash your 1000 tokens.  
 
-If you are building a competing client, please contact us.  A lot of the miner specifications are off-chain and a significant portion of the mining process hinges on the consensus of the Tellor community to determine what proper values are.  Competing clients that change different pieces run the risk of being disputed by the commmunity.  
+    Mining also requires submitting on-chain transactions on Ethereum.  These transactions cost gas (ETH) and can sometimes be signifiant if the cost of gas on EThereum is high (i.e. the network is clogged).  Please reach out to the community to find the best tips for keeping gas costs under control or at least being aware of the costs. 
 
-There is no guaruntee of profit from mining. 
+    If you are building a competing client, please contact us.  A lot of the miner specifications are off-chain and a significant portion of the mining process hinges on the consensus of the Tellor community to determine what proper values are.  Competing clients that change different pieces run the risk of being disputed by the commmunity.  
 
-There is no promise that Tellor Tributes currently hold or will ever hold any value. 
+    There is no guaruntee of profit from mining. 
 
-Please join our Discord for more information and community updates.  
-'''
+    There is no promise that Tellor Tributes currently hold or will ever hold any value. 
+
+Please join our Discord for more information and community updates. 
+
 
 #### Contributors<a name="contributors"> </a>
 
