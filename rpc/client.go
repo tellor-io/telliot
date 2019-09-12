@@ -82,7 +82,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 	defer cancel()
 	tryCount := 0
 	nextTick := time.Now().Add(errorPrintTick)
-	for tryCount < 20{
+	for tryCount < 20 {
 		err := fn(&wTo)
 		if err == nil {
 			return nil
@@ -90,7 +90,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if strings.Contains(err.Error(), "nonce too low") {
 			return err
 		}
-		if strings.Contains(err.Error(), "replacement transaction underpriced"){
+		if strings.Contains(err.Error(), "replacement transaction underpriced") {
 			return err
 		}
 		c.log.Debug("Problem in calling eth client: %v", err)
@@ -119,7 +119,7 @@ func (c *clientInstance) Close() {
 
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
-		c.log.Debug("Sending txn on-chain: %v\n", tx)
+		c.log.Info("Sending txn on-chain: %v\n", tx)
 		fmt.Println("TX SENT CLIENT", fmt.Sprintf("%x", tx))
 		e := c.ethClient.SendTransaction(*_ctx, tx)
 		return e
@@ -214,7 +214,7 @@ func (c *clientInstance) PendingNonceAt(ctx context.Context, address common.Addr
 func (c *clientInstance) NonceAt(ctx context.Context, address common.Address) (uint64, error) {
 	var res uint64
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
-		r, e := c.ethClient.NonceAt(*_ctx, address,nil)
+		r, e := c.ethClient.NonceAt(*_ctx, address, nil)
 		res = r
 		return e
 	})

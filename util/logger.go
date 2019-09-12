@@ -41,7 +41,7 @@ func NewLogger(pkg string, component string) *Logger {
 	ll := xlateLevel(level)
 	log := logrus.New()
 	log.SetLevel(ll)
-	log.SetFormatter(&logrus.TextFormatter{ForceColors: true, PadLevelText: true})
+	log.SetFormatter(&logrus.TextFormatter{ForceColors: true})
 
 	e := log.WithFields(logrus.Fields{"component": component, "package": pkg})
 	return &Logger{pkg: pkg, component: component, log: e}

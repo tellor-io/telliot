@@ -4,32 +4,39 @@ import (
 	"encoding/json"
 	"os"
 	"sync"
+	"time"
+
 	"github.com/tellor-io/TellorMiner/cli"
 	"github.com/tellor-io/TellorMiner/util"
 )
 
 //Config holds global config info derived from config.json
 type Config struct {
-	ContractAddress   string   `json:"contractAddress"`
-	NodeURL           string   `json:"nodeURL"`
-	PrivateKey        string   `json:"privateKey"`
-	DatabaseURL       string   `json:"databaseURL"`
-	PublicAddress     string   `json:"publicAddress"`
-	EthClientTimeout  uint     `json:"ethClientTimeout"`
-	TrackerSleepCycle uint     `json:"trackerCycle"` //in seconds
-	Trackers          []string `json:"trackers"`
-	DBFile            string   `json:"dbFile"`
-	ServerHost        string   `json:"serverHost"`
-	ServerPort        uint     `json:"serverPort"`
-	FetchTimeout      uint     `json:"fetchTimeout"`
-	RequestData       uint    `json:"requestData"`
-	GasMultiplier     uint     `json:"gasMultiplier"`
-	GasMax			  uint     `json:"gasMax"`
-	logger            *util.Logger
-	mux               sync.Mutex
+	ContractAddress              string        `json:"contractAddress"`
+	NodeURL                      string        `json:"nodeURL"`
+	PrivateKey                   string        `json:"privateKey"`
+	DatabaseURL                  string        `json:"databaseURL"`
+	PublicAddress                string        `json:"publicAddress"`
+	EthClientTimeout             uint          `json:"ethClientTimeout"`
+	TrackerSleepCycle            uint          `json:"trackerCycle"` //in seconds
+	Trackers                     []string      `json:"trackers"`
+	DBFile                       string        `json:"dbFile"`
+	ServerHost                   string        `json:"serverHost"`
+	ServerPort                   uint          `json:"serverPort"`
+	FetchTimeout                 uint          `json:"fetchTimeout"`
+	RequestData                  uint          `json:"requestData"`
+	RequestDataInterval          time.Duration `json:"requestDataInterval"`          //in seconds
+	MiningInterruptCheckInterval time.Duration `json:"miningInterruptCheckInterval"` //in seconds
+	GasMultiplier                uint          `json:"gasMultiplier"`
+	GasMax                       uint          `json:"gasMax"`
+	logger                       *util.Logger
+	mux                          sync.Mutex
 }
 
 const defaultTimeout = 30 //30 second fetch timeout
+
+const defaultRequestInterval = 30 //30 seconds between data requests (0-value tipping)
+const defaultMiningInterrupt = 15 //every 15 seconds, check for new challenges that could interrupt current mining
 
 var (
 	config *Config
@@ -54,6 +61,12 @@ func ParseConfig(path string) (*Config, error) {
 	config.logger = util.NewLogger("config", "Config")
 	if config.FetchTimeout == 0 {
 		config.FetchTimeout = defaultTimeout
+	}
+	if config.RequestDataInterval == 0 {
+		config.RequestDataInterval = defaultRequestInterval
+	}
+	if config.MiningInterruptCheckInterval == 0 {
+		config.MiningInterruptCheckInterval = defaultMiningInterrupt
 	}
 	config.logger.Info("config: %+v", config)
 	return config, nil

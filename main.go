@@ -56,7 +56,8 @@ func main() {
 	}
 
 	var ds *ops.DataServerOps
-	var miner *ops.MinerOps
+	//var miner *ops.MinerOps
+	var miner *ops.MiningMgr
 
 	//create a context to use for ops
 	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, db)
@@ -85,7 +86,8 @@ func main() {
 		if cli.Miner {
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
-			miner, err = ops.CreateMinerOps(ctx, ch)
+			//miner, err = ops.CreateMinerOps(ctx, ch)
+			miner, err = ops.CreateMiningManager(ctx, ch, ops.NewSubmitter())
 			if err != nil {
 				log.Fatal(err)
 			}
