@@ -85,8 +85,8 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 
 		auth := bind.NewKeyedTransactor(privateKey)
 		auth.Nonce = big.NewInt(IntNonce)
-		auth.Value = big.NewInt(0)     // in weiF
-		auth.GasLimit = uint64(200000) // in units
+		auth.Value = big.NewInt(0)      // in weiF
+		auth.GasLimit = uint64(1000000) // in units
 		gasPrice1 := big.NewInt(0)
 		gasPrice1.Mul(gasPrice, big.NewInt(int64(i*11)))
 		gasPrice1.Div(gasPrice1, big.NewInt(int64(100)))
