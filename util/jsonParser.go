@@ -2,17 +2,17 @@ package util
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
-	"errors"
 )
 
 //QueryStruct holds query result fields as a map
 type QueryStruct struct {
-	Order []int
-	Arrays interface{} `json:"-"`
+	Order     []int
+	Arrays    interface{}            `json:"-"`
 	Arguments map[string]interface{} `json:"-"`
 }
 
@@ -37,25 +37,36 @@ func ParsePayload(payload []byte, _granularity uint, args []string) (int, error)
 		fmt.Println(err)
 	}
 	Bi = 0
-	result,err := dumpJSON(f, "root",args[1:])
-	if err != nil{
-		fmt.Println("ERROR",err)
+	result, err := dumpJSON(f, "root", args[1:])
+	if err != nil {
+		fmt.Println("ERROR", err)
 	}
 	s, _ := strconv.ParseFloat(fmt.Sprintf("%v", result), 64)
 	return int(s * float64(_granularity)), nil
 }
+
 var Bi = 0
 var Res float64
 var FRes float64
 var Finished bool
-func dumpJSON(v interface{}, kn string,args []string) (float64,error){
-	if kn =="root"{
+
+func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
+	if kn == "root" {
 		Finished = false
 		Res = 0
 		FRes = 0
 		Bi = 0
 	}
-	iterMap := func(x map[string]interface{}, root string,args []string) (float64,bool){
+
+	iterMap := func(x map[string]interface{}, root string, args []string) (val float64, status bool) {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Problem parsing response", r)
+				val = 0
+				status = false
+			}
+		}()
+
 		Bi++
 		var knf string
 		if root == "root" {
@@ -64,55 +75,63 @@ func dumpJSON(v interface{}, kn string,args []string) (float64,error){
 			knf = "%s:%q"
 		}
 		for k, v := range x {
-			if k == args[Bi-1]{
-					dumpJSON(v, fmt.Sprintf(knf, root, k),args)
-					if len(args) == Bi {
+			if k == args[Bi-1] {
+				dumpJSON(v, fmt.Sprintf(knf, root, k), args)
+				if len(args) == Bi {
 					res, err := converter(v)
-					if err !=nil{
+					if err != nil {
 						fmt.Println(err)
-						return 0,false
+						return 0, false
 					}
 					if res != 1 {
-						return res,true
+						return res, true
 					}
-					return 0,false
+					return 0, false
 				}
 			}
 
 		}
-		return 0,false
+		return 0, false
 	}
 
-	iterSlice := func(x []interface{}, root string,args []string) (float64,bool) {
+	iterSlice := func(x []interface{}, root string, args []string) (val float64, status bool) {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Problem with parsing response", r)
+				val = 0
+				status = false
+			}
+		}()
+
 		Bi++
-		if !Finished{
-		var knf string
-		if root == "root" {
-			knf = "%q:[%d]"
-		} else {
-			knf = "%s:[%d]"
-		}
-		for k, v := range x{
-			if Bi-1 <= len(args) && len(args) > 0{//Just added this, we need to check that our numbers are still correct...Still not fixed
-				i2,_ := strconv.ParseInt(args[Bi-1], 10, 64)
-				if k == int(i2){
-						dumpJSON(v, fmt.Sprintf(knf, root, k),args)
+		if !Finished {
+			var knf string
+			if root == "root" {
+				knf = "%q:[%d]"
+			} else {
+				knf = "%s:[%d]"
+			}
+			for k, v := range x {
+				if Bi-1 <= len(args) && len(args) > 0 { //Just added this, we need to check that our numbers are still correct...Still not fixed
+					i2, _ := strconv.ParseInt(args[Bi-1], 10, 64)
+					if k == int(i2) {
+						dumpJSON(v, fmt.Sprintf(knf, root, k), args)
 						if len(args) == Bi {
 							res, err := converter(v)
-							if err !=nil{
+							if err != nil {
 								fmt.Println(err)
-								return 0,false
+								return 0, false
 							}
 							if res != 1 {
-								return res,true
+								return res, true
 							}
-							return 0,false
+							return 0, false
 						}
+					}
 				}
 			}
 		}
-	}
-		return 0,false
+		return 0, false
 	}
 
 	switch vv := v.(type) {
@@ -123,45 +142,45 @@ func dumpJSON(v interface{}, kn string,args []string) (float64,error){
 	case int:
 		fmt.Printf("%s => (int) %f\n", kn, vv)
 	case map[string]interface{}:
-		Res,Finished = iterMap(vv, kn,args)
-		if Finished{
+		Res, Finished = iterMap(vv, kn, args)
+		if Finished {
 			FRes = Res
-			return Res,nil
+			return Res, nil
 		}
 	case []interface{}:
-		Res,Finished = iterSlice(vv, kn,args)
-		if Finished{
+		Res, Finished = iterSlice(vv, kn, args)
+		if Finished {
 			FRes = Res
-			return Res,nil
+			return Res, nil
 		}
 	}
 	return FRes, nil
 }
 
-func converter(v interface{}) (float64,error){
+func converter(v interface{}) (float64, error) {
 	switch vv := v.(type) {
 	case string:
-		i, _ := strconv.ParseFloat(normalizeAmerican(vv),64)
-		return i,nil
+		i, _ := strconv.ParseFloat(normalizeAmerican(vv), 64)
+		return i, nil
 	case bool:
-		return 1,nil
+		return 1, nil
 	case float64:
-		return float64(vv),nil
+		return float64(vv), nil
 	case int:
-		return float64(vv),nil
+		return float64(vv), nil
 	case int64:
-		return float64(vv),nil
+		return float64(vv), nil
 	case map[string]interface{}:
-		return 1,nil
+		return 1, nil
 	case []interface{}:
-		return 1,nil
+		return 1, nil
 	case interface{}:
-		return 2,nil
+		return 2, nil
 	default:
 		return 0, errors.New("emit macho dwarf: elf header corrupted")
 	}
 }
 
 func normalizeAmerican(old string) string {
-    return strings.Replace(old, ",", "", -1)
+	return strings.Replace(old, ",", "", -1)
 }

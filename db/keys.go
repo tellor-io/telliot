@@ -11,6 +11,7 @@ const QueryStringKey = "current_query_string"
 const GranularityKey = "current_granularity"
 const TotalTipKey = "current_total_tip"
 const MiningStatusKey = "mining_status"
+const PendingChallengeKey = "pending_challenge"
 
 //Gas
 const GasKey = "wei_gas_price"

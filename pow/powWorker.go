@@ -11,11 +11,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/contracts"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/util"
 	"golang.org/x/crypto/ripemd160"
@@ -124,12 +126,71 @@ func (w *Worker) stopMining() {
 
 func (w *Worker) alreadyMined(ctx context.Context) (bool, error) {
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	didIMine, err := DB.Get(db.MiningStatusKey)
+	//if there is a pending challenge and it matches the current one, we already worked it.
+	currentChallenge, err := DB.Get(db.CurrentChallengeKey)
 	if err != nil {
-		w.log.Error("Problem reading whether this miner mined from DB: %v\n", err)
+		w.log.Error("Problem reading current challenge from DB", err)
 		return false, err
 	}
-	if bytes.Compare(didIMine, []byte{1}) == 0 {
+
+	requestID, err := DB.Get(db.RequestIdKey)
+	if err != nil {
+		w.log.Error("Problem reading request id from DB: %v\n", err)
+		return false, err
+	}
+	if len(requestID) == 0 {
+		w.log.Debug("No requestID stored, nothing to mine")
+		return true, nil
+	}
+
+	asInt, err := hexutil.DecodeBig(string(requestID))
+	if err != nil {
+		w.log.Error("Problem decoding request id as big int: %v\n", err)
+		return false, err
+	}
+
+	if asInt.Cmp(big.NewInt(0)) == 0 {
+		w.log.Info("No current challenge, marking as already mined")
+		return true, nil
+	}
+
+	pendingChallenge, err := DB.Get(db.PendingChallengeKey)
+	if err != nil {
+		w.log.Error("Problem reading pending challenge from DB", err)
+		return false, err
+	}
+	if bytes.Compare(pendingChallenge, currentChallenge) == 0 {
+		//we've already done it
+		w.log.Info("Miner has pending txn for current challenge, already mined")
+		return true, nil
+	} else {
+		//if it's not the same, we don't care if it's pending anymore...we just care
+		//that we new have work to do
+		DB.Delete(db.PendingChallengeKey)
+	}
+
+	cfg, err := config.GetConfig()
+	if err != nil {
+		w.log.Error("Could not get configuration while checking mining status", err)
+		return false, err
+	}
+
+	//get address from config
+	_fromAddress := cfg.PublicAddress
+
+	//convert to address
+	fromAddress := common.HexToAddress(_fromAddress)
+
+	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
+	var asBytes32 [32]byte
+	copy(asBytes32[:], currentChallenge)
+	didIMine, err := instance.DidMine(nil, asBytes32, fromAddress)
+	if err != nil {
+		w.log.Error("Problem reading whether this miner mined from on-chain: %v\n", err)
+		return false, err
+	}
+	if didIMine {
+		w.log.Info("Already mined according to on-chain contract status")
 		return true, nil
 	}
 	return false, nil
@@ -293,6 +354,19 @@ func (w *Worker) txnGenerator(ctx context.Context, contract tellorCommon.Contrac
 		return nil, nil
 	}
 
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	pending, err := DB.Get(db.PendingChallengeKey)
+	if err != nil {
+		w.log.Error("Problem reading pending challenge from DB: %v", err)
+		return nil, err
+	}
+
+	if bytes.Compare(pending, w.currentRequest.challenge) == 0 {
+		//we've already submitted a solution!
+		w.log.Error("Already submitted solution for challenge. Pending txn should have been checked already")
+		return nil, nil
+	}
+
 	cChallenge := [32]byte{}
 	copy(cChallenge[:], w.currentRequest.challenge)
 	mined, err := contract.DidMine(cChallenge)
@@ -305,7 +379,12 @@ func (w *Worker) txnGenerator(ctx context.Context, contract tellorCommon.Contrac
 		return nil, nil
 	}
 
-	return contract.SubmitSolution(w.currentRequest.nonce, w.currentRequest.requestID, w.currentRequest.value)
+	txn, err := contract.SubmitSolution(w.currentRequest.nonce, w.currentRequest.requestID, w.currentRequest.value)
+	e2 := DB.Put(db.PendingChallengeKey, w.currentRequest.challenge)
+	if e2 != nil {
+		w.log.Error("Problem storing pending challenge: %v", e2)
+	}
+	return txn, err
 }
 
 func (w *Worker) submitSolution(ctx context.Context) {
