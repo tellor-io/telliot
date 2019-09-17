@@ -69,11 +69,19 @@ func main() {
 
 	if cli.Transfer {
 		ops.Transfer(cli.ToAddress, cli.Amount, ctx)
-
-	} else if cli.Deposit {
+	}else if cli.Deposit {
 		ops.Deposit(ctx)
-
-	} else {
+	}else if cli.Approve{
+		ops.Approve(cli.ToAddress,cli.Amount,ctx)
+	}else if cli.Dispute{
+		ops.Dispute(cli.RequestId,cli.Timestamp,cli.MinerIndex,ctx)
+	}else if cli.RequestStakingWithdraw{
+		ops.RequestStakingWithdraw(ctx)
+	}else if cli.WithdrawStake{
+		ops.WithdrawStake(ctx)
+	}else if cli.Vote{
+		ops.Vote(cli.DisputeId,cli.SupportsDispute,ctx)
+	}else {
 		if cli.DataServer {
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
