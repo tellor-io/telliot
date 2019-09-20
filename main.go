@@ -65,23 +65,32 @@ func main() {
 	ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 	ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
 
+	//Issue #55, halt if client is still syncing with Ethereum network
+	s, err := client.IsSyncing(ctx)
+	if err != nil {
+		log.Fatalf("Could not determine if Ethereum client is syncing: %v\n", err)
+	}
+	if s {
+		log.Fatal("Ethereum node is still sycning with the network")
+	}
+
 	exitChannels := make([]*chan os.Signal, 0)
 
 	if cli.Transfer {
 		ops.Transfer(cli.ToAddress, cli.Amount, ctx)
-	}else if cli.Deposit {
+	} else if cli.Deposit {
 		ops.Deposit(ctx)
-	}else if cli.Approve{
-		ops.Approve(cli.ToAddress,cli.Amount,ctx)
-	}else if cli.Dispute{
-		ops.Dispute(cli.RequestId,cli.Timestamp,cli.MinerIndex,ctx)
-	}else if cli.RequestStakingWithdraw{
+	} else if cli.Approve {
+		ops.Approve(cli.ToAddress, cli.Amount, ctx)
+	} else if cli.Dispute {
+		ops.Dispute(cli.RequestId, cli.Timestamp, cli.MinerIndex, ctx)
+	} else if cli.RequestStakingWithdraw {
 		ops.RequestStakingWithdraw(ctx)
-	}else if cli.WithdrawStake{
+	} else if cli.WithdrawStake {
 		ops.WithdrawStake(ctx)
-	}else if cli.Vote{
-		ops.Vote(cli.DisputeId,cli.SupportsDispute,ctx)
-	}else {
+	} else if cli.Vote {
+		ops.Vote(cli.DisputeId, cli.SupportsDispute, ctx)
+	} else {
 		if cli.DataServer {
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)

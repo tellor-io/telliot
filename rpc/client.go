@@ -46,6 +46,7 @@ type ETHClient interface {
 	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
 	BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error)
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
+	IsSyncing(ctx context.Context) (bool, error)
 }
 
 //clientInstance is the concrete implementation of the ETHClient
@@ -263,4 +264,14 @@ func (c *clientInstance) BalanceAt(ctx context.Context, address common.Address, 
 		return e
 	})
 	return res, _err
+}
+
+func (c *clientInstance) IsSyncing(ctx context.Context) (bool, error) {
+	var syncing bool
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.SyncProgress(*_ctx)
+		syncing = r != nil
+		return e
+	})
+	return syncing, _err
 }

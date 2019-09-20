@@ -319,6 +319,10 @@ func (c *mockClient) PendingCallContract(ctx context.Context, call ethereum.Call
 	return nil, nil
 }
 
+func (c *mockClient) IsSyncing(ctx context.Context) (bool, error) {
+	return false, nil
+}
+
 func paddedRLP(w *bytes.Buffer, val interface{}) error {
 	b, err := rlp.EncodeToBytes(val)
 	if err != nil {

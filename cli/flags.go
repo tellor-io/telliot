@@ -2,6 +2,9 @@ package cli
 
 import (
 	"flag"
+	"log"
+	"os"
+	"path/filepath"
 )
 
 const configPath = "config"
@@ -24,28 +27,27 @@ const voteArg = "vote"
 const disputeIdArg = "disputeId"
 const supportsDisputeArg = "supportsDispute"
 
-
 //Flags holds all command line options
 type Flags struct {
-	ConfigPath        string
-	LoggingConfigPath string
-	PSRPath           string
-	Miner             bool
-	DataServer        bool
-	Transfer          bool
-	ToAddress         string
-	Amount            string
-	Deposit           bool
-	Approve 		  bool
-	Dispute			  bool
-	RequestId 		  string
-	Timestamp 		  string
-	MinerIndex 		  string
+	ConfigPath             string
+	LoggingConfigPath      string
+	PSRPath                string
+	Miner                  bool
+	DataServer             bool
+	Transfer               bool
+	ToAddress              string
+	Amount                 string
+	Deposit                bool
+	Approve                bool
+	Dispute                bool
+	RequestId              string
+	Timestamp              string
+	MinerIndex             string
 	RequestStakingWithdraw bool
-	WithdrawStake 	  bool
-	Vote 			  bool
-	DisputeId 		  string
-	SupportsDispute   bool
+	WithdrawStake          bool
+	Vote                   bool
+	DisputeId              string
+	SupportsDispute        bool
 }
 
 var (
@@ -60,9 +62,14 @@ func init() {
 func GetFlags() *Flags {
 	if sharedFlags == nil {
 		f := &Flags{}
+		p, e := os.Getwd()
+		if e != nil {
+			log.Fatal("Could not get the base file path for app", e)
+		}
+		pwd := filepath.Base(p)
 		path := flag.String(configPath, "", "Path to the primary JSON config file")
-		logPath := flag.String(loggingConfigPath, "", "Path to a JSON logging config file")
-		psr := flag.String(psrPath, "", "Path to the psr.json file for pre-specified requests")
+		logPath := flag.String(loggingConfigPath, filepath.Join(pwd, "loggingConfig.json"), "Path to a JSON logging config file")
+		psr := flag.String(psrPath, filepath.Join(pwd, "psr.json"), "Path to the psr.json file for pre-specified requests")
 		miner := flag.Bool(minerArg, false, "Whether to run the miner")
 		dataServer := flag.Bool(dataServerArg, false, "Whether to run the data server")
 		transfer := flag.Bool(transferArg, false, "Whether to transfer funds")
@@ -76,7 +83,7 @@ func GetFlags() *Flags {
 		minerIndex := flag.String(minerIndexArg, "6", "minerIndex to dispute")
 		requestStakingWithdraw := flag.Bool(requestStakingWithdrawArg, false, "Whether to request a staking withdraw")
 		withdrawStake := flag.Bool(withdrawStakeArg, false, "Whether to withdrawstake")
-		vote :=  flag.Bool(voteArg, false, "Whether to vote")
+		vote := flag.Bool(voteArg, false, "Whether to vote")
 		disputeId := flag.String(disputeIdArg, "0", "dispute id to vote on")
 		supportsDispute := flag.Bool(supportsDisputeArg, false, "Whether to withdrawstake")
 		flag.Parse()
