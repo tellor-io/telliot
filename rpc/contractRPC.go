@@ -10,12 +10,19 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/contracts"
+
 	tellor1 "github.com/tellor-io/TellorMiner/contracts1"
+	"github.com/tellor-io/TellorMiner/db"
+)
+
+var (
+	GWEI = int64(1000000000)
 )
 
 //contractWrapper is internal wrapper of contract instance for calling common contract functions
@@ -48,6 +55,7 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 
 	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 	if err != nil {
+		fmt.Println("Problem decoding private key", err)
 		return err
 	}
 
@@ -60,13 +68,39 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := client.NonceAt(context.Background(), fromAddress)
 	if err != nil {
+		fmt.Println("Problem getting nonce for miner address", err)
 		return err
 	}
 
-	i := 0
+	i := 1
 	IntNonce := int64(nonce)
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	gp, err := DB.Get(db.GasKey)
+	if err != nil {
+		fmt.Println("Problem reading gas price from DB", err)
+		return err
+	}
+	var gasPrice *big.Int
+
+	if len(gp) == 0 {
+		fmt.Println("Missing gas price from DB, falling back to client suggested gas price")
+		gasPrice, err = client.SuggestGasPrice(context.Background())
+	} else {
+
+		gasPrice, err = hexutil.DecodeBig(string(gp))
+		if err != nil {
+			fmt.Printf("Problem decoding stored gas price: %v\n", err)
+			gasPrice, err = client.SuggestGasPrice(context.Background())
+		}
+	}
+	if err != nil {
+		fmt.Println("Could not determine gas price to submit txn", err)
+		return err
+	}
+
 	for i < 5 {
-		gasPrice, err := client.SuggestGasPrice(context.Background())
+		//
+
 		if err != nil {
 			return err
 		}
@@ -76,8 +110,8 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 			return err
 		}
 
-		cost := new(big.Int)
-		cost.Mul(gasPrice, big.NewInt(200000))
+		cost := big.NewInt(1)
+		cost = cost.Mul(gasPrice, big.NewInt(200000))
 		if balance.Cmp(cost) < 0 {
 			//FIXME: notify someone that we're out of funds!
 			return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
@@ -87,18 +121,26 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 		auth.Nonce = big.NewInt(IntNonce)
 		auth.Value = big.NewInt(0)      // in weiF
 		auth.GasLimit = uint64(1000000) // in units
-		gasPrice1 := big.NewInt(0)
-		gasPrice1.Mul(gasPrice, big.NewInt(int64(i*11)))
-		gasPrice1.Div(gasPrice1, big.NewInt(int64(100)))
-		auth.GasPrice = gasPrice.Add(gasPrice, gasPrice1)
-		mult := cfg.GasMax
-		res := big.NewInt(1000000000)
-		if mult > 0 {
-			res = res.Mul(res, big.NewInt(int64(mult)))
+		if i > 1 {
+			gasPrice1 := big.NewInt(1)
+			gasPrice1.Mul(gasPrice, big.NewInt(int64(i*11))).Div(gasPrice1, big.NewInt(int64(100)))
+			auth.GasPrice = gasPrice1.Add(gasPrice, gasPrice1)
 		} else {
-			res = res.Mul(res, big.NewInt(int64(100)))
+			//first time, try base gas price
+			auth.GasPrice = gasPrice
 		}
-		if auth.GasPrice.Cmp(res) < 0 {
+
+		max := cfg.GasMax
+		var maxGasPrice *big.Int
+		gasPrice1 := big.NewInt(GWEI)
+		if max > 0 {
+			maxGasPrice = gasPrice1.Mul(gasPrice1, big.NewInt(int64(max)))
+		} else {
+			maxGasPrice = gasPrice1.Mul(gasPrice1, big.NewInt(int64(100)))
+		}
+
+		if auth.GasPrice.Cmp(maxGasPrice) < 0 {
+			fmt.Println("Using gas price", gasPrice)
 			//create a wrapper to callback the actual txn generator fn
 			instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 			instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)

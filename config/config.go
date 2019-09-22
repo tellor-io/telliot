@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -68,6 +69,8 @@ func ParseConfig(path string) (*Config, error) {
 	if config.MiningInterruptCheckInterval == 0 {
 		config.MiningInterruptCheckInterval = defaultMiningInterrupt
 	}
+	config.PrivateKey = strings.ReplaceAll(config.PrivateKey, "0x", "")
+	config.PublicAddress = strings.ReplaceAll(config.PublicAddress, "0x", "")
 	config.logger.Info("config: %+v", config)
 	return config, nil
 }
