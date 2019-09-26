@@ -134,7 +134,6 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 	for i := 0; i < len(psr.Requests); i++ {
 		p := psr.Requests[i]
 		syncGroup.Add(1)
-		psrLog.Info("Fetching PSR with id: %v\n", p.RequestID)
 		go p.fetch(ctx, errorCh)
 	}
 	syncGroup.Wait()

@@ -2,9 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
-	"os"
-	"path/filepath"
 )
 
 const configPath = "config"
@@ -62,13 +59,16 @@ func init() {
 func GetFlags() *Flags {
 	if sharedFlags == nil {
 		f := &Flags{}
-		home, e := os.UserHomeDir()
-		if e != nil {
-			log.Fatal("Could not get the base file path for app", e)
-		}
-		logConfigPath := filepath.Join(home, "LoggingConfig.json")
-		psrConfigPath := filepath.Join(home, "psr.json")
-		cfgPath := filepath.Join(home, "config.json")
+		// home, e := os.UserHomeDir()
+		// if e != nil {
+		// 	log.Fatal("Could not get the base file path for app", e)
+		// }
+		// logConfigPath := filepath.Join(home, "LoggingConfig.json")
+		// psrConfigPath := filepath.Join(home, "psr.json")
+		// cfgPath := filepath.Join(home, "config.json")
+		logConfigPath := "./loggingConfig.json"
+		psrConfigPath := "./psr.json"
+		cfgPath := "./config.json"
 
 		path := flag.String(configPath, cfgPath, "Path to the primary JSON config file")
 		logPath := flag.String(loggingConfigPath, logConfigPath, "Path to a JSON logging config file")

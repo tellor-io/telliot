@@ -229,9 +229,9 @@
         },
         {
             "requestID":26,
-            "symbol":"TRXTUSD - Binance",
+            "symbol":"RCN/BTC - Binance",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=TRXTUSD&interval=1d&limit=1).0.4"
+                "json(https://api.binance.com/api/v1/klines?symbol=RCNBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
             "granularity" : 1000000
@@ -301,9 +301,9 @@
         },
         {
             "requestID":34,
-            "symbol":"DOGE/BTC - Binance",
+            "symbol":"ZRX/USDT - Binance",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=DOGEBTC&interval=1d&limit=1).0.4"
+                "json(https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
             "granularity" : 1000000
@@ -364,9 +364,9 @@
         },
         {
             "requestID":41,
-            "symbol":"ZIL/BTC - Binance",
+            "symbol":"LINK/USDT - Binance",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=ZILBTC&interval=1d&limit=1).0.4"
+                "json(https://api.binance.com/api/v1/klines?symbol=LINKUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
             "granularity" : 1000000
@@ -400,18 +400,18 @@
         },
         {
             "requestID":45,
-            "symbol":"XLM/USDT - Binance",
+            "symbol":"ATOM/USDT - Binance",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=XLMUSDT&interval=1d&limit=1).0.4"
+                "json(https://api.binance.com/api/v1/klines?symbol=ATOMUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":46,
-            "symbol":"DCR/BNB - Binance",
+            "symbol":"ONT/USDT - Binance",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=DCRBNB&interval=1d&limit=1).0.4"
+                "json(https://api.binance.com/api/v1/klines?symbol=ONTUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
             "granularity" : 1000000
