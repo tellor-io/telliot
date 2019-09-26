@@ -47,6 +47,7 @@ type ETHClient interface {
 	BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error)
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 	IsSyncing(ctx context.Context) (bool, error)
+	NetworkID(ctx context.Context) (*big.Int, error)
 }
 
 //clientInstance is the concrete implementation of the ETHClient
@@ -274,4 +275,14 @@ func (c *clientInstance) IsSyncing(ctx context.Context) (bool, error) {
 		return e
 	})
 	return syncing, _err
+}
+
+func (c *clientInstance) NetworkID(ctx context.Context) (*big.Int, error) {
+	var id *big.Int
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.NetworkID(*_ctx)
+		id = r
+		return e
+	})
+	return id, _err
 }

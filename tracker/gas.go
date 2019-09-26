@@ -35,29 +35,34 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	/*
-		type FetchRequest struct {
-			queryURL string
-			timeout  time.Duration
-		}
-	*/
-	url := "https://ethgasstation.info/json/ethgasAPI.json"
-	req := &FetchRequest{queryURL: url, timeout: time.Duration(15 * time.Second)}
-	payload, err := fetchWithRetries(req)
-	var gasPrice *big.Int
+	netId, err := client.NetworkID(context.Background())
 	if err != nil {
-		gasPrice, err = client.SuggestGasPrice(context.Background())
-	} else {
-		gpModel := GasPriceModel{}
-		err = json.Unmarshal(payload, &gpModel)
+		fmt.Println(err)
+		return err
+	}
+
+	var gasPrice *big.Int
+
+	if big.NewInt(1).Cmp(netId) == 0 {
+		url := "https://ethgasstation.info/json/ethgasAPI.json"
+		req := &FetchRequest{queryURL: url, timeout: time.Duration(15 * time.Second)}
+		payload, err := fetchWithRetries(req)
 		if err != nil {
-			log.Printf("Problem with ETH gas station json: %v\n", err)
 			gasPrice, err = client.SuggestGasPrice(context.Background())
 		} else {
-			gasPrice = big.NewInt(int64(gpModel.Average / 10))
-			gasPrice = gasPrice.Mul(gasPrice, big.NewInt(GWEI))
-			log.Println("Using ETHGasStation average price: ", gasPrice)
+			gpModel := GasPriceModel{}
+			err = json.Unmarshal(payload, &gpModel)
+			if err != nil {
+				log.Printf("Problem with ETH gas station json: %v\n", err)
+				gasPrice, err = client.SuggestGasPrice(context.Background())
+			} else {
+				gasPrice = big.NewInt(int64(gpModel.Average / 10))
+				gasPrice = gasPrice.Mul(gasPrice, big.NewInt(GWEI))
+				log.Println("Using ETHGasStation average price: ", gasPrice)
+			}
 		}
+	} else {
+		gasPrice, err = client.SuggestGasPrice(context.Background())
 	}
 
 	//gasPrice, err := client.SuggestGasPrice(context.Background())

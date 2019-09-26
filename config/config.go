@@ -31,6 +31,7 @@ type Config struct {
 	MiningInterruptCheckInterval time.Duration `json:"miningInterruptCheckInterval"` //in seconds
 	GasMultiplier                float32       `json:"gasMultiplier"`
 	GasMax                       uint          `json:"gasMax"`
+	NumProcessors                int           `json:"numProcessors"`
 	logger                       *util.Logger
 	mux                          sync.Mutex
 }
@@ -39,6 +40,7 @@ const defaultTimeout = 30 //30 second fetch timeout
 
 const defaultRequestInterval = 30 //30 seconds between data requests (0-value tipping)
 const defaultMiningInterrupt = 15 //every 15 seconds, check for new challenges that could interrupt current mining
+const defaultCores = 2
 
 var (
 	config *Config
@@ -78,8 +80,13 @@ func ParseConfig(path string) (*Config, error) {
 	if config.MiningInterruptCheckInterval == 0 {
 		config.MiningInterruptCheckInterval = defaultMiningInterrupt
 	}
+	if config.NumProcessors == 0 {
+		config.NumProcessors = defaultCores
+	}
+
 	config.PrivateKey = strings.ReplaceAll(config.PrivateKey, "0x", "")
 	config.PublicAddress = strings.ReplaceAll(config.PublicAddress, "0x", "")
+
 	config.logger.Info("config: %+v", config)
 	return config, nil
 }

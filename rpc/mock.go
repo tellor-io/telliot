@@ -323,6 +323,10 @@ func (c *mockClient) IsSyncing(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
+func (c *mockClient) NetworkID(ctx context.Context) (*big.Int, error) {
+	return big.NewInt(1), nil
+}
+
 func paddedRLP(w *bytes.Buffer, val interface{}) error {
 	b, err := rlp.EncodeToBytes(val)
 	if err != nil {

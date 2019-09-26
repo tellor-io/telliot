@@ -89,6 +89,7 @@ func GetFlags() *Flags {
 		vote := flag.Bool(voteArg, false, "Whether to vote")
 		disputeId := flag.String(disputeIdArg, "0", "dispute id to vote on")
 		supportsDispute := flag.Bool(supportsDisputeArg, false, "Whether to withdrawstake")
+
 		flag.Parse()
 		//log.Printf("Path: %s, LogPath: %s, PSRPath: %s, Args: %v", *path, *logPath, *psr, flag.Args())
 		f.ConfigPath = *path

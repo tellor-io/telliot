@@ -18,13 +18,20 @@ type MiningMgr struct {
 	log     *util.Logger
 	Running bool
 
-	miningWorker *pow.Worker
+	miners []*WorkerWrapper
+
 	//miner's exit channel
-	minerExit chan os.Signal
+	//minerExit chan os.Signal
 
 	dataRequester *DataRequester
 	//data requester's exit channel
 	requesterExit chan os.Signal
+}
+
+//WorkerWrapper allows us to stand up multiple mining workers, one per cpu
+type WorkerWrapper struct {
+	miner  *pow.Worker
+	exitCh chan os.Signal
 }
 
 //CreateMiningManager creates a new manager that mananges mining and data requests
@@ -33,27 +40,49 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 	if err != nil {
 		return nil, err
 	}
+	var miners []*WorkerWrapper
+	miners = make([]*WorkerWrapper, cfg.NumProcessors, cfg.NumProcessors)
+	for i := 0; i < cfg.NumProcessors; i++ {
+		mExit := make(chan os.Signal)
+		miner := pow.CreateWorker(mExit, i, submitter, cfg.MiningInterruptCheckInterval)
+		miners[i] = &WorkerWrapper{miner: miner, exitCh: mExit}
+	}
 
-	mExit := make(chan os.Signal)
 	rExit := make(chan os.Signal)
-	miner := pow.CreateWorker(mExit, submitter, cfg.MiningInterruptCheckInterval)
+
 	dataRequester := CreateDataRequester(rExit, submitter, cfg.RequestDataInterval)
 	log := util.NewLogger("ops", "MiningMgr")
 
-	return &MiningMgr{exitCh: exitCh, log: log, Running: false, miningWorker: miner, minerExit: mExit, dataRequester: dataRequester, requesterExit: rExit}, nil
+	return &MiningMgr{exitCh: exitCh, log: log, Running: false, miners: miners, dataRequester: dataRequester,
+		requesterExit: rExit}, nil
 }
 
 //Start will start the mining run loop
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.log.Info("Starting mining operations")
-	mgr.miningWorker.Start(ctx)
+	for _, m := range mgr.miners {
+		m.miner.Start(ctx)
+	}
+	//mgr.miningWorker.Start(ctx)
+
 	mgr.dataRequester.Start(ctx)
 	go func() {
 		<-mgr.exitCh
 		mgr.log.Info("Stopping mining worker and data requester")
-		mgr.minerExit <- os.Interrupt
+		//mgr.minerExit <- os.Interrupt
+		running := false
+		for _, m := range mgr.miners {
+			m.exitCh <- os.Interrupt
+		}
 		mgr.requesterExit <- os.Interrupt
 		time.Sleep(1 * time.Second)
-		mgr.Running = mgr.miningWorker.CanMine() || mgr.dataRequester.IsRunning()
+		for _, m := range mgr.miners {
+			if m.miner.CanMine() {
+				//at least one can mine
+				running = true
+			}
+		}
+
+		mgr.Running = running || mgr.dataRequester.IsRunning()
 	}()
 }

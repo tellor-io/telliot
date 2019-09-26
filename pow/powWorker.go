@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -33,6 +34,7 @@ type miningRequest struct {
 
 //Worker state for mining operation
 type Worker struct {
+	id             int
 	mining         bool
 	canMine        bool
 	checkInterval  time.Duration
@@ -45,16 +47,16 @@ type Worker struct {
 }
 
 //CreateWorker creates a new worker instance
-func CreateWorker(exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter, checkIntervalSeconds time.Duration) *Worker {
+func CreateWorker(exitCh chan os.Signal, id int, submitter tellorCommon.TransactionSubmitter, checkIntervalSeconds time.Duration) *Worker {
 	if checkIntervalSeconds == 0 {
 		checkIntervalSeconds = 15
 	}
-	return &Worker{canMine: true, mining: false, submitter: submitter, checkInterval: checkIntervalSeconds, exitCh: exitCh, log: util.NewLogger("pow", "MiningWorker")}
+	return &Worker{canMine: true, id: id, mining: false, submitter: submitter, checkInterval: checkIntervalSeconds, exitCh: exitCh, log: util.NewLogger("pow", "MiningWorker-"+strconv.Itoa(id))}
 }
 
 //Start kicks of go routines to check for challenge changes, mine, and submit solutions
 func (w *Worker) Start(ctx context.Context) {
-	w.log.Info("Starting mining worker")
+	w.log.Info("Starting mining worker", w.id)
 	ticker := time.NewTicker(w.checkInterval * time.Second)
 	//run immediately
 	w.checkForChallengeChanges(ctx)
@@ -63,7 +65,7 @@ func (w *Worker) Start(ctx context.Context) {
 			select {
 			case _ = <-w.exitCh:
 				{
-					w.log.Info("Shutting down miner")
+					w.log.Info("Shutting down miner", w.id)
 					w.stopMining()
 					ticker.Stop()
 					return
@@ -112,7 +114,12 @@ func (w *Worker) checkForChallengeChanges(ctx context.Context) {
 			w.log.Info("Challenge has not changed. Will wait for next cycle to mine again")
 		}
 	} else if mined {
-		w.log.Info("Miner already mined the current challenge. Will wait for next cycle to mine again")
+		if w.mining {
+			w.log.Warn("Another thread mined solution, stopping miner and will wait for next challenge")
+			w.stopMining()
+		} else {
+			w.log.Info("Miner already mined the current challenge. Will wait for next cycle to mine again")
+		}
 	}
 }
 
@@ -287,6 +294,7 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 	w.log.Info("Mining on challenge: %x", challenge)
 	w.log.Info("Solving for difficulty: %d", _difficulty)
 	i := 0
+	startTime := time.Now()
 	for {
 
 		i++
@@ -318,7 +326,8 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 		x := new(big.Int)
 		x.Mod(numHash, _difficulty)
 		if x.Cmp(big.NewInt(0)) == 0 {
-			w.log.Info("Solution Found: %s", nn)
+			diff := time.Now().Sub(startTime)
+			w.log.Info("Solution Found: %s in %f secs", nn, diff.Seconds())
 			w.currentRequest.nonce = nn
 			w.submitSolution(ctx)
 			return

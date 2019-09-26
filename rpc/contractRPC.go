@@ -141,34 +141,36 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 			maxGasPrice = gasPrice1.Mul(gasPrice1, big.NewInt(int64(100)))
 		}
 
-		if auth.GasPrice.Cmp(maxGasPrice) < 0 {
-			fmt.Println("Using gas price", gasPrice)
-			//create a wrapper to callback the actual txn generator fn
-			instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
-			instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
+		if auth.GasPrice.Cmp(maxGasPrice) > 0 {
+			fmt.Printf("%s Gas Prices Too high! Attempted gas price: %v is higher than max: %v.  Will default to max\n", ctxName, auth.GasPrice, maxGasPrice)
+			auth.GasPrice = maxGasPrice
+		}
 
-			wrapper := contractWrapper{options: auth, contract: instance, contract2: instance2, fromAddress: fromAddress}
-			tx, err := callback(ctx, wrapper)
+		fmt.Println("Using gas price", gasPrice)
+		//create a wrapper to callback the actual txn generator fn
+		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+		instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
 
-			if err != nil {
-				if strings.Contains(err.Error(), "nonce too low") {
-					IntNonce = IntNonce + 1
-				} else if strings.Contains(err.Error(), "replacement transaction underpriced") {
-					fmt.Println("replacement transaction underpriced")
-				} else {
-					fmt.Println("Unspecified Request Data  Error ", err)
-					return nil
-				}
+		wrapper := contractWrapper{options: auth, contract: instance, contract2: instance2, fromAddress: fromAddress}
+		tx, err := callback(ctx, wrapper)
+
+		if err != nil {
+			if strings.Contains(err.Error(), "nonce too low") {
+				IntNonce = IntNonce + 1
+			} else if strings.Contains(err.Error(), "replacement transaction underpriced") {
+				fmt.Println("replacement transaction underpriced")
 			} else {
-				if tx != nil {
-					fmt.Printf("%s tx sent: %s", ctxName, tx.Hash().Hex())
-				}
-
+				fmt.Println("Unspecified Request Data  Error ", err)
 				return nil
 			}
 		} else {
-			fmt.Printf("%s Gas Prices Too high! Submitted gas price: %v is higher than max: %v\n", ctxName, auth.GasPrice, maxGasPrice)
+			if tx != nil {
+				fmt.Printf("%s tx sent: %s", ctxName, tx.Hash().Hex())
+			}
+
+			return nil
 		}
+
 		//wait a bit and try again
 		time.Sleep(5 * time.Second)
 		i++

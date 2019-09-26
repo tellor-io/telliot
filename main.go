@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -22,6 +23,7 @@ import (
 var mainLog = util.NewLogger("main", "Main")
 
 func main() {
+
 	//create os kill sig listener
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
@@ -31,6 +33,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	runtime.GOMAXPROCS(cfg.NumProcessors)
 
 	//see what args are passed in
 	cli := cli.GetFlags()
