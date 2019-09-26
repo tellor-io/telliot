@@ -29,7 +29,7 @@ type Config struct {
 	RequestData                  uint          `json:"requestData"`
 	RequestDataInterval          time.Duration `json:"requestDataInterval"`          //in seconds
 	MiningInterruptCheckInterval time.Duration `json:"miningInterruptCheckInterval"` //in seconds
-	GasMultiplier                uint          `json:"gasMultiplier"`
+	GasMultiplier                float32       `json:"gasMultiplier"`
 	GasMax                       uint          `json:"gasMax"`
 	logger                       *util.Logger
 	mux                          sync.Mutex
