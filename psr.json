@@ -46,6 +46,411 @@
             ],
             "transformation" : "value",
             "granularity" : 1000000
+        },
+        {
+            "requestID":6,
+            "symbol":"BNB/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=BNBBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":7,
+            "symbol":"BNB/ETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=BNBETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":8,
+            "symbol":"ETH/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":9,
+            "symbol":"LINK/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=LINKBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":10,
+            "symbol":"ETC/ETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ETCETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":11,
+            "symbol":"ZEC/ETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ZECETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":12,
+            "symbol":"TRX/ETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=TRXETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":13,
+            "symbol":"XRP/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=XRPBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":14,
+            "symbol":"XMR/ETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=XMRETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":15,
+            "symbol":"XLM/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=XLMBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":16,
+            "symbol":"LTC/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=LTCUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":17,
+            "symbol":"WAVES/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=WAVESBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":18,
+            "symbol":"REP/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=REPBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":19,
+            "symbol":"TUSDETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=TUSDETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":20,
+            "symbol":"EOS/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=EOSUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":21,
+            "symbol":"IOTA/USDT- Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=IOTAUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":22,
+            "symbol":"ETC/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ETCUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":23,
+            "symbol":"ETH/PAX - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ETHPAX&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":24,
+            "symbol":"ETH/USDC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":25,
+            "symbol":"USDC/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=USDCUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":26,
+            "symbol":"TRXTUSD - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=TRXTUSD&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":27,
+            "symbol":"LINK/USDC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=LINKUSDC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":28,
+            "symbol":"ZRX/BNB - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ZRXBNB&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":29,
+            "symbol":"ZEC/USDC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ZECUSDC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":30,
+            "symbol":"DASH/BNB - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=DASHBNB&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":31,
+            "symbol":"MATIC/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=MATICUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":32,
+            "symbol":"BATUSDC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=BATUSDC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":33,
+            "symbol":"ALGO/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":34,
+            "symbol":"DOGE/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=DOGEBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":35,
+            "symbol":"COS/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=COSUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":36,
+            "symbol":"STORJ/ETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=STORJETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":37,
+            "symbol":"NEO/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=NEOUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":38,
+            "symbol":"ADA/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ADABTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":39,
+            "symbol":"XLM/ETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=XLMETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":40,
+            "symbol":"STEEM/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=STEEMBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":41,
+            "symbol":"ZIL/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ZILBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":42,
+            "symbol":"WAN/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=WANBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":43,
+            "symbol":"GNT/ETH - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=GNTETH&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":44,
+            "symbol":"LOOM/BTC - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=LOOMBTC&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":45,
+            "symbol":"XLM/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=XLMUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":46,
+            "symbol":"DCR/BNB - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=DCRBNB&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":47,
+            "symbol":"EOS/TUSD - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=EOSTUSD&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":48,
+            "symbol":"LINK/PAX - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=LINKPAX&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":49,
+            "symbol":"BTC/USDS - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=BTCUSDS&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":50,
+            "symbol":"FET/USDT - Binance",
+            "apis":[
+                "json(https://api.binance.com/api/v1/klines?symbol=FETUSDT&interval=1d&limit=1).0.4"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
         }
         
     ]
