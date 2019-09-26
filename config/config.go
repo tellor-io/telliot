@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -52,6 +53,14 @@ func ParseConfig(path string) (*Config, error) {
 			panic("Invalid config path. Not provided and not a command line option")
 		}
 	}
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		log.Fatalf("Invalid ConfigPath setting: %s", path)
+	}
+	if info.IsDir() {
+		log.Fatalf("ConfigPath is a directory: %s", path)
+	}
+
 	configFile, err := os.Open(path)
 	defer configFile.Close()
 	if err != nil {

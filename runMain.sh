@@ -1,10 +1,11 @@
 #!/bin/sh
-PSR=`pwd`/psr.json
+#PSR=`pwd`/psr.json
 #CFG=`pwd`/../../../../localConfig.json
 CFG=`pwd`/myconfig.json
-LOG=`pwd`/loggingConfig.json
+#LOG=`pwd`/loggingConfig.json
 echo "Starting TellorMiner main"
-go run . -psrPath="${PSR}" -config="${CFG}" -logConfig="${LOG}" "$@"
+#go run . -psrPath="${PSR}" -config="${CFG}" -logConfig="${LOG}" "$@"
+go run . -config="${CFG}" "$@"
 
 
 # ./TellorMiner -miner -dataServer -psrPath=./psr.json -config=./config.json -logConfig=./loggingconfig.json

@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 
 	"github.com/tellor-io/TellorMiner/cli"
@@ -30,6 +31,14 @@ func ParseLoggingConfig(file string) (*LogConfig, error) {
 	}
 	if sharedConfig != nil {
 		return sharedConfig, nil
+	}
+
+	info, err := os.Stat(file)
+	if os.IsNotExist(err) {
+		log.Fatalf("LoggingConfigPath references an invalid file at: %s", file)
+	}
+	if info.IsDir() {
+		log.Fatalf("Logging config file %s is a directory", file)
 	}
 
 	if len(file) > 0 {
