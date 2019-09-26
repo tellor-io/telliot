@@ -122,13 +122,15 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 		auth.Value = big.NewInt(0)      // in weiF
 		auth.GasLimit = uint64(1000000) // in units
 		if i > 1 {
-			gasPrice1 := big.NewInt(1)
-			gasPrice1.Mul(gasPrice, big.NewInt(int64(i*11))).Div(gasPrice1, big.NewInt(int64(100)))
+			gasPrice1 := new(big.Int).Set(gasPrice)
+			gasPrice1.Mul(gasPrice1, big.NewInt(int64(i*11))).Div(gasPrice1, big.NewInt(int64(100)))
 			auth.GasPrice = gasPrice1.Add(gasPrice, gasPrice1)
 		} else {
 			//first time, try base gas price
 			auth.GasPrice = gasPrice
 		}
+
+		fmt.Printf("Attempting to use gas price: %v\n", auth.GasPrice)
 
 		max := cfg.GasMax
 		var maxGasPrice *big.Int
@@ -165,7 +167,7 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 				return nil
 			}
 		} else {
-			fmt.Printf("%s Gas Prices Too high!!!\n", ctxName)
+			fmt.Printf("%s Gas Prices Too high! Submitted gas price: %v is higher than max: %v\n", ctxName, auth.GasPrice, maxGasPrice)
 		}
 		//wait a bit and try again
 		time.Sleep(5 * time.Second)

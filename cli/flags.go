@@ -62,14 +62,17 @@ func init() {
 func GetFlags() *Flags {
 	if sharedFlags == nil {
 		f := &Flags{}
-		p, e := os.Getwd()
+		home, e := os.UserHomeDir()
 		if e != nil {
 			log.Fatal("Could not get the base file path for app", e)
 		}
-		pwd := filepath.Base(p)
-		path := flag.String(configPath, "", "Path to the primary JSON config file")
-		logPath := flag.String(loggingConfigPath, filepath.Join(pwd, "loggingConfig.json"), "Path to a JSON logging config file")
-		psr := flag.String(psrPath, filepath.Join(pwd, "psr.json"), "Path to the psr.json file for pre-specified requests")
+		logConfigPath := filepath.Join(home, "LoggingConfig.json")
+		psrConfigPath := filepath.Join(home, "psr.json")
+		cfgPath := filepath.Join(home, "config.json")
+
+		path := flag.String(configPath, cfgPath, "Path to the primary JSON config file")
+		logPath := flag.String(loggingConfigPath, logConfigPath, "Path to a JSON logging config file")
+		psr := flag.String(psrPath, psrConfigPath, "Path to the psr.json file for pre-specified requests")
 		miner := flag.Bool(minerArg, false, "Whether to run the miner")
 		dataServer := flag.Bool(dataServerArg, false, "Whether to run the data server")
 		transfer := flag.Bool(transferArg, false, "Whether to transfer funds")

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/big"
 	"os"
 	"reflect"
@@ -76,6 +77,13 @@ func (psr *PSRTracker) init() error {
 	//Loop through all PSRs
 	psrPath := cli.GetFlags().PSRPath
 	psrLog.Info("Opening PSR config file at: %s\n", psrPath)
+	info, err := os.Stat(psrPath)
+	if os.IsNotExist(err) {
+		log.Fatalf("Invalid PSRPath file path: %s", psrPath)
+	}
+	if info.IsDir() {
+		log.Fatalf("PSRPath setting is a directory: %s", psrPath)
+	}
 
 	configFile, err := os.Open(psrPath)
 
