@@ -50,12 +50,11 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	}
 
 	balance, err := instance.BalanceOf(nil, fromAddress)
-	log.Printf("Balance: %v\n", balance)
+	log.Printf("Tribute Balance: %v\n", balance)
 	if err != nil {
 		fmt.Println("Balance Retrieval Error - Tribute Balance")
 		return err
 	}
 	enc := hexutil.EncodeBig(balance)
-	log.Printf("Balance: %v", enc)
 	return DB.Put(db.TributeBalanceKey, []byte(enc))
 }

@@ -94,7 +94,6 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 
 func (r *Runner) callTrackers(ctx context.Context, trackers *[]Tracker) error {
 	for _, t := range *trackers {
-		runnerLog.Info("Calling tracker: %v\n", t)
 		err := t.Exec(ctx)
 		if err != nil {
 			runnerLog.Error("Problem in tracker: %v\n", err)

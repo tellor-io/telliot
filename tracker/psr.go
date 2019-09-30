@@ -125,7 +125,6 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 			if e != nil {
 				psrLog.Error("Problem in PSR fetch: %v]\n", e)
 			} else {
-				psrLog.Info("Finishing PSR tracker run...")
 				return
 			}
 		}

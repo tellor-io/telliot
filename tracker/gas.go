@@ -100,6 +100,5 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 	}
 
 	enc := hexutil.EncodeBig(gasPrice)
-	log.Printf("GasKey: %v", enc)
 	return DB.Put(db.GasKey, []byte(enc))
 }

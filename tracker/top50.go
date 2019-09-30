@@ -38,8 +38,6 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 		return err
 	}
 	rIDs := []byte{}
-	top50Logger.Info("Retrieved %d IDs from on-chain request", len(top50))
-
 	for i := range top50 {
 		reqID := top50[i]
 		if reqID.Cmp(zero) == 0 {

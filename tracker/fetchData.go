@@ -97,8 +97,6 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	fetchLog.Info("Pulled Top50 IDs from DB: %v\n", v)
-
 	//for each top50 request id
 	for i := 0; i < len(v); i++ {
 
@@ -140,13 +138,11 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 			go fetchAPI(ctx, uint(id), uint(meta.Granularity), meta.QueryString, dbChan, errChan)
 		}
 	}
-	fetchLog.Info("Waiting for all %v data fetches to complete...\n", len(v))
 	syncGroup.Wait()
 	errChan <- nil
 	dbChan <- nil
-	fetchLog.Info("Waiting for channel readers to complete...")
 	doneGroup.Wait()
-	fetchLog.Info("All done")
+	fetchLog.Info("All done fetching Data")
 	return nil
 }
 
