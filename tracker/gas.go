@@ -56,9 +56,9 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 				log.Printf("Problem with ETH gas station json: %v\n", err)
 				gasPrice, err = client.SuggestGasPrice(context.Background())
 			} else {
-				gasPrice = big.NewInt(int64(gpModel.Average / 10))
+				gasPrice = big.NewInt(int64(gpModel.Fast / 10))
 				gasPrice = gasPrice.Mul(gasPrice, big.NewInt(GWEI))
-				log.Println("Using ETHGasStation average price: ", gasPrice)
+				log.Println("Using ETHGasStation fast price: ", gasPrice)
 			}
 		}
 	} else {
