@@ -24,6 +24,7 @@ var mainLog = util.NewLogger("main", "Main")
 
 func main() {
 
+	os.RemoveAll("/tmp/tellor/")
 	//create os kill sig listener
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
