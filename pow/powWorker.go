@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -293,8 +294,20 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 
 	w.log.Info("Mining on challenge: %x", challenge)
 	w.log.Info("Solving for difficulty: %d", _difficulty)
-	i := 0
+
+
+	//Generaete random start for worker
+	rand.Seed(time.Now().UnixNano())
+	i := rand.Int()
+
+	//i := 0
 	startTime := time.Now()
+	
+	// Constructors for loop objects
+	numHash := new(big.Int)
+	x := new(big.Int)
+	compare_zero := big.NewInt(0)
+    
 	for {
 
 		i++
@@ -306,26 +319,35 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 			return
 		}
 
-		nn := randInt() //do we need to use big number?
+		//nn := randInt() //do we need to use big number?
+		nn := strconv.Itoa(i)
+		
 		nonce := fmt.Sprintf("%x", nn)
+		
 		_string := fmt.Sprintf("%x", challenge) + cfg.PublicAddress + nonce
+		
 		hash := solsha3.SoliditySHA3(
 			solsha3.Bytes32(decodeHex(_string)),
 		)
+
 		hasher := ripemd160.New()
+		//Consider moving hasher constructor outside loop and replacing with hasher.Reset()
+		
 		hasher.Write([]byte(hash))
 		hash1 := hasher.Sum(nil)
 		n := sha256.Sum256(hash1)
 		q := fmt.Sprintf("%x", n)
-		numHash := new(big.Int)
+		
+		
 		numHash, ok := numHash.SetString(q, 16)
 		if !ok {
 			w.log.Error("!!!!!SetString: error")
 			return
 		}
-		x := new(big.Int)
+
 		x.Mod(numHash, _difficulty)
-		if x.Cmp(big.NewInt(0)) == 0 {
+		
+		if x.Cmp(compare_zero) == 0 {
 			diff := time.Now().Sub(startTime)
 			w.log.Info("Solution Found: %s in %f secs", nn, diff.Seconds())
 			w.currentRequest.nonce = nn
