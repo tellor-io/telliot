@@ -1,6 +1,7 @@
 package tracker
 
 import (
+	"fmt"
 	"context"
 	"math/big"
 	"os"
@@ -37,7 +38,9 @@ func TestTributeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("Tribute Balance stored: %v\n", string(v))
+	t.Logf("Tribute Balance stored: %v\n", b)
+	fmt.Println(b,startBal)
+	fmt.Println(b.Cmp(startBal))
 	if b.Cmp(startBal) != 0 {
 		t.Fatalf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)
 	}

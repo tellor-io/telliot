@@ -32,7 +32,7 @@ func TestCurrentVariables(t *testing.T) {
 		Difficulty: big.NewInt(500), QueryString: queryStr,
 		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
-		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, CurrentChallenge: chal}
+		TokenBalance: big.NewInt(0), MiningStatus:true,Top50Requests: []*big.Int{}, CurrentChallenge: chal}
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_currentVariables"))

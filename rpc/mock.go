@@ -5,7 +5,7 @@ import (
 	"context"
 	"math/big"
 	"time"
-
+	"fmt"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/tellor-io/TellorMiner/util"
 
@@ -23,6 +23,7 @@ const (
 	currentVarsFN   = "0xa22e407a"
 	disputeStatusFN = "0x733bdef0"
 	getRequestVars  = "0xe1eee6d6"
+	didMineFN		= "0x63bb82ad"
 )
 
 var mockClientLog = util.NewLogger("rpc", "mockClient")
@@ -46,6 +47,7 @@ type MockQueryMeta struct {
 //MockOptions are config options for the mock client
 type MockOptions struct {
 	ETHBalance       *big.Int
+	MiningStatus	 bool
 	Nonce            uint64
 	GasPrice         *big.Int
 	TokenBalance     *big.Int
@@ -58,6 +60,7 @@ type MockOptions struct {
 type mockClient struct {
 	balance          *big.Int
 	nonce            uint64
+	miningStatus	  bool
 	gasPrice         *big.Int
 	tokenBalance     *big.Int
 	top50Requests    []*big.Int
@@ -78,8 +81,8 @@ func NewMockClientWithValues(opts *MockOptions) ETHClient {
 	if err != nil {
 		panic(err)
 	}
-
-	return &mockClient{balance: opts.ETHBalance, nonce: opts.Nonce,
+	fmt.Println("Mining Status",opts.MiningStatus)
+	return &mockClient{balance: opts.ETHBalance, miningStatus:opts.MiningStatus ,nonce: opts.Nonce,
 		gasPrice: opts.GasPrice, tokenBalance: opts.TokenBalance,
 		top50Requests: opts.Top50Requests, currentChallenge: opts.CurrentChallenge,
 		disputeStatus: opts.DisputeStatus, mockQueryMeta: opts.QueryMetadata, abiCodec: codec}
@@ -113,6 +116,11 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 			return meth.Outputs.Pack(c.tokenBalance)
 			//mockClientLog.Debug("Getting balance from contract")
 			//return math.PaddedBigBytes(math.U256(c.tokenBalance), 32), nil
+		}
+	case didMineFN:
+		{
+		    fmt.Println("getting Mining Status",c.miningStatus)
+			return meth.Outputs.Pack(c.miningStatus)
 		}
 	case top50FN:
 		{

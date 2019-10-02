@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -38,7 +39,7 @@ func TestRunner(t *testing.T) {
 		Difficulty: big.NewInt(500), QueryString: queryStr,
 		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
-		TokenBalance: big.NewInt(0), Top50Requests:top50, CurrentChallenge: chal,DisputeStatus: big.NewInt(1)}
+		TokenBalance: big.NewInt(0),MiningStatus:true, Top50Requests:top50, CurrentChallenge: chal,DisputeStatus: big.NewInt(1),QueryMetadata: paramsMap}
 	client := rpc.NewMockClientWithValues(opts)
 	
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_leveldb"))
@@ -50,7 +51,8 @@ func TestRunner(t *testing.T) {
 
 	ctx := context.Background()
 	runner.Start(ctx, exitCh)
+	fmt.Println("runner done")
 	time.Sleep(2 * time.Second)
-	exitCh <- 1
+	close(exitCh)
 	time.Sleep(1 * time.Second)
 }
