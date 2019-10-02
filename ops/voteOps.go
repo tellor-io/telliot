@@ -41,19 +41,16 @@ func Vote(_disputeId string,_supportsDispute bool,ctx context.Context) error {
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := client.NonceAt(context.Background(), fromAddress)
 	if err != nil {
-		fmt.Println("Problem getting pending nonce: %+v", err)
 		return err
 	}
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		fmt.Println("Problem getting gas price: %+v", err)
 		return err
 	}
 
 	balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
 	if err != nil {
-		fmt.Println("Problem getting balance: %+v", err)
 		return err
 	}
 
@@ -81,7 +78,6 @@ func Vote(_disputeId string,_supportsDispute bool,ctx context.Context) error {
 		return err
 	}
 
-	fmt.Println("Vote tx sent: %s", tx.Hash().Hex())
-
+	fmt.Println("Vote tx sent: ", tx.Hash().Hex())
 	return nil
 }

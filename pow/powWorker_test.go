@@ -14,6 +14,10 @@ import (
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/tellor-io/TellorMiner/rpc"
+	tellor "github.com/tellor-io/TellorMiner/contracts"
 )
 
 var (
@@ -53,6 +57,23 @@ func (t testSubmit) PrepareTransaction(ctx context.Context, ctxName string, fn t
 
 func TestWorker(t *testing.T) {
 	exitCh := make(chan os.Signal)
+
+	startBal := big.NewInt(356000)
+
+	hash := math.PaddedBigBytes(big.NewInt(256), 32)
+	var b32 [32]byte
+	for i, v := range hash {
+		b32[i] = v
+	}
+	queryStr := "json(https://coinbase.com)"
+	chal := &rpc.CurrentChallenge{ChallengeHash: b32, RequestID: big.NewInt(1),
+		Difficulty: big.NewInt(500), QueryString: queryStr,
+		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}
+	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
+		TokenBalance: big.NewInt(0), MiningStatus:false,Top50Requests: []*big.Int{}, CurrentChallenge: chal}
+	client := rpc.NewMockClientWithValues(opts)
+
+
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -74,8 +95,18 @@ func TestWorker(t *testing.T) {
 	con := &testContract{didMine: false}
 	submitter := &testSubmit{contract: con}
 
-	worker := CreateWorker(exitCh, submitter, 2)
+	worker := CreateWorker(exitCh,1, submitter, 2)
 	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, DB)
+	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
+	if masterInstance == nil {
+		contractAddress := common.HexToAddress(cfg.ContractAddress)
+		masterInstance, err = tellor.NewTellorMaster(contractAddress,client)
+		if err != nil {
+			return
+		}
+		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
+	}
+
 	worker.Start(ctx)
 	//mining check starts immediately, just let it get setup and check
 	time.Sleep(300 * time.Millisecond)
