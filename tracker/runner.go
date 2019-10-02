@@ -65,7 +65,6 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	if ctx.Value(tellorCommon.DBContextKey) == nil {
 		ctx = context.WithValue(ctx, tellorCommon.DBContextKey, r.db)
 	}
-
 	go func() {
 		r.callTrackers(ctx, &trackers)
 		//after first run, let others know that tracker output data is ready for use
@@ -93,11 +92,13 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 }
 
 func (r *Runner) callTrackers(ctx context.Context, trackers *[]Tracker) error {
+	i := 0
 	for _, t := range *trackers {
 		err := t.Exec(ctx)
 		if err != nil {
 			runnerLog.Error("Problem in tracker: %v\n", err)
 		}
+		i++
 	}
 	return nil
 }

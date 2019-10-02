@@ -7,10 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"github.com/ethereum/go-ethereum/common"
+	tellorCommon "github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/config"
+	tellor "github.com/tellor-io/TellorMiner/contracts"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
 )
@@ -36,9 +39,26 @@ func TestCurrentVariables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	cfg, err := config.GetConfig()
+	if err != nil {
+		runnerLog.Error("Problem getting config", err)
+		return
+	}
 	tracker := &CurrentVariablesTracker{}
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	ctx = context.WithValue(ctx, common.DBContextKey, DB)
+	ctx := context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
+	ctx = context.WithValue(ctx, tellorCommon.DBContextKey, DB)
+
+	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
+	if masterInstance == nil {
+		contractAddress := common.HexToAddress(cfg.ContractAddress)
+		masterInstance, err = tellor.NewTellorMaster(contractAddress,client)
+		if err != nil {
+			runnerLog.Error("Problem creating tellor master instance: %v\n", err)
+			return
+		}
+		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
+	}
+	
 	fmt.Println("Working to Line 41")
 	err = tracker.Exec(ctx)
 	if err != nil {

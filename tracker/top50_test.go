@@ -25,7 +25,7 @@ func TestTop50(t *testing.T) {
 	}
 
 	top50 := make([]*big.Int, 51)
-	mockQueryParams := &rpc.MockQueryMeta{QueryString: "json(https://api.gdax.com/products/ETH-USD/ticker).price", Granularity: 1000}
+	mockQueryParams := &rpc.MockQueryMeta{QueryString: "json(https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1).0.4", Granularity: 1000}
 	paramsMap := make(map[uint]*rpc.MockQueryMeta)
 	for i := range top50 {
 		top50[i] = big.NewInt(int64(i + 51))

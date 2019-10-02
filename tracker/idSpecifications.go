@@ -39,6 +39,5 @@ func GetSpecs(ctx context.Context, requestID uint) (*IDSpecifications, error) {
 		fmt.Println("query Error, IDspecs")
 		return nil, err
 	}
-
 	return &IDSpecifications{requestID, queryString, int(granularity.Uint64())}, nil
 }

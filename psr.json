@@ -4,7 +4,7 @@
             "requestID":1,
             "symbol":"ETH/USD - GDAX",
             "apis":[
-                "json(https://api.gdax.com/products/ETH-USD/ticker).price"
+                "json(https://api.pro.coinbase.com/products/ETH-USD/ticker).price"
             ],
             "transformation" : "value",
             "granularity" : 1000
@@ -31,7 +31,7 @@
             "requestID":4,
             "symbol":"BTC/USD", 
             "apis":[
-                "json(https://api.gdax.com/products/BTC-USD/ticker).price",
+                "json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price",
                 "json(https://api.binance.com/api/v1/klines?symbol=BTCUSDT&interval=1d&limit=1).0.4",
                 "json(https://api.coindesk.com/v1/bpi/currentprice.json).bpi.USD.rate"
             ],

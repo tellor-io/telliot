@@ -18,13 +18,14 @@ import (
 )
 
 func TestFetchData(t *testing.T) {
+	os.RemoveAll("/tmp/test_fetchData/")
 	cfg, err := config.GetConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 	startBal := big.NewInt(456000)
 	top50 := make([]*big.Int, 51)
-	mockQueryParams := &rpc.MockQueryMeta{QueryString: "json(https://api.gdax.com/products/ETH-USD/ticker).price", Granularity: 1000}
+	mockQueryParams := &rpc.MockQueryMeta{QueryString:"json(https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1).0.4", Granularity: 1000}
 	paramsMap := make(map[uint]*rpc.MockQueryMeta)
 	for i := range top50 {
 		top50[i] = big.NewInt(int64(i + 51))
@@ -55,7 +56,8 @@ func TestFetchData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	
+	fmt.Println("Done with setting top50")
 	tracker := &RequestDataTracker{}
 	ctx := context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 	ctx = context.WithValue(ctx, tellorCommon.DBContextKey, DB)

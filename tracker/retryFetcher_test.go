@@ -6,7 +6,7 @@ import (
 )
 
 func TestFetchRetry(t *testing.T) {
-	req := &FetchRequest{queryURL: "https://api.gdax.com/products/ETH-USD/ticker", timeout: time.Duration(5 * time.Second)}
+	req := &FetchRequest{queryURL:"https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1", timeout: time.Duration(5 * time.Second)}
 
 	res, err := fetchWithRetries(req)
 	if err != nil {
