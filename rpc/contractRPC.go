@@ -165,7 +165,7 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 			}
 		} else {
 			if tx != nil {
-				fmt.Printf("%s tx sent: %s", ctxName, tx.Hash().Hex())
+				fmt.Printf("%s tx sent: %s\n", ctxName, tx.Hash().Hex())
 			}
 
 			return nil

@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"math/rand"
 	"os"
 	"strconv"
 	"sync"
 	"time"
-	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -47,6 +47,10 @@ type Worker struct {
 	pendingRequest *miningRequest
 }
 
+var (
+	submitMutex sync.Mutex
+)
+
 //CreateWorker creates a new worker instance
 func CreateWorker(exitCh chan os.Signal, id int, submitter tellorCommon.TransactionSubmitter, checkIntervalSeconds time.Duration) *Worker {
 	if checkIntervalSeconds == 0 {
@@ -57,7 +61,7 @@ func CreateWorker(exitCh chan os.Signal, id int, submitter tellorCommon.Transact
 
 //Start kicks of go routines to check for challenge changes, mine, and submit solutions
 func (w *Worker) Start(ctx context.Context) {
-	w.log.Info("Starting mining worker", w.id)
+	w.log.Info("Starting mining worker %d", w.id)
 	ticker := time.NewTicker(w.checkInterval * time.Second)
 	//run immediately
 	w.checkForChallengeChanges(ctx)
@@ -66,7 +70,7 @@ func (w *Worker) Start(ctx context.Context) {
 			select {
 			case _ = <-w.exitCh:
 				{
-					w.log.Info("Shutting down miner", w.id)
+					w.log.Info("Shutting down miner %d", w.id)
 					w.stopMining()
 					ticker.Stop()
 					return
@@ -86,14 +90,39 @@ func (w *Worker) CanMine() bool {
 	return w.canMine
 }
 
+func (w *Worker) readProxyData(ctx context.Context, keys []string) (map[string][]byte, error) {
+	proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
+	if proxy == nil {
+		return nil, fmt.Errorf("Could not find data proxy in context")
+	}
+	return proxy.BatchGet(keys)
+}
+
+func (w *Worker) readNeededData(ctx context.Context) (map[string][]byte, error) {
+
+	keys := []string{
+		db.DifficultyKey,
+		db.CurrentChallengeKey,
+		db.RequestIdKey,
+	}
+	return w.readProxyData(ctx, keys)
+}
+
 func (w *Worker) checkForChallengeChanges(ctx context.Context) {
+	neededData, err := w.readNeededData(ctx)
+
+	if err != nil {
+		w.log.Error("Problem reading data from proxy: %v", err)
+		return
+	}
+
 	//check whether we should start mining a new request
 	w.log.Info("Checking for mining challenge changes")
-	mined, err := w.alreadyMined(ctx)
+	mined, err := w.alreadyMined(ctx, neededData)
 	if err != nil {
 		w.log.Error("Problem reading if already mined: %v\n", err)
 	} else if !mined {
-		changed, err := w.challengeChanged(ctx)
+		changed, err := w.challengeChanged(ctx, neededData)
 
 		if err != nil {
 			w.log.Error("Problem determining if challenge changed: %v\n", err)
@@ -132,33 +161,30 @@ func (w *Worker) stopMining() {
 	}
 }
 
-func (w *Worker) alreadyMined(ctx context.Context) (bool, error) {
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	//if there is a pending challenge and it matches the current one, we already worked it.
-	currentChallenge, err := DB.Get(db.CurrentChallengeKey)
-	if err != nil {
-		w.log.Error("Problem reading current challenge from DB", err)
-		return false, err
+func (w *Worker) isZeroOrEmpty(num []byte) (bool, *big.Int, error) {
+	if len(num) == 0 {
+		return false, nil, nil
 	}
-
-	requestID, err := DB.Get(db.RequestIdKey)
-	if err != nil {
-		w.log.Error("Problem reading request id from DB: %v\n", err)
-		return false, err
-	}
-	if len(requestID) == 0 {
-		w.log.Debug("No requestID stored, nothing to mine")
-		return true, nil
-	}
-
-	asInt, err := hexutil.DecodeBig(string(requestID))
+	asInt, err := hexutil.DecodeBig(string(num))
 	if err != nil {
 		w.log.Error("Problem decoding request id as big int: %v\n", err)
+		return false, asInt, err
+	}
+	return asInt.Cmp(big.NewInt(0)) == 0, asInt, nil
+}
+
+func (w *Worker) alreadyMined(ctx context.Context, neededData map[string][]byte) (bool, error) {
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	currentChallenge := neededData[db.CurrentChallengeKey]
+	requestID := neededData[db.RequestIdKey]
+
+	zero, _, err := w.isZeroOrEmpty(requestID)
+	if err != nil {
+		w.log.Error("Problem decoding requestID: %v", err)
 		return false, err
 	}
-
-	if asInt.Cmp(big.NewInt(0)) == 0 {
-		w.log.Info("No current challenge, marking as already mined")
+	if zero {
+		w.log.Info("No requestID stored, nothing to mine")
 		return true, nil
 	}
 
@@ -202,9 +228,123 @@ func (w *Worker) alreadyMined(ctx context.Context) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+
+	/*
+		//if there is a pending challenge and it matches the current one, we already worked it.
+		currentChallenge, err := DB.Get(db.CurrentChallengeKey)
+		if err != nil {
+			w.log.Error("Problem reading current challenge from DB", err)
+			return false, err
+		}
+
+		requestID, err := DB.Get(db.RequestIdKey)
+		if err != nil {
+			w.log.Error("Problem reading request id from DB: %v\n", err)
+			return false, err
+		}
+		if len(requestID) == 0 {
+			w.log.Debug("No requestID stored, nothing to mine")
+			return true, nil
+		}
+
+		asInt, err := hexutil.DecodeBig(string(requestID))
+		if err != nil {
+			w.log.Error("Problem decoding request id as big int: %v\n", err)
+			return false, err
+		}
+
+		if asInt.Cmp(big.NewInt(0)) == 0 {
+			w.log.Info("No current challenge, marking as already mined")
+			return true, nil
+		}
+
+		pendingChallenge, err := DB.Get(db.PendingChallengeKey)
+		if err != nil {
+			w.log.Error("Problem reading pending challenge from DB", err)
+			return false, err
+		}
+		if bytes.Compare(pendingChallenge, currentChallenge) == 0 {
+			//we've already done it
+			w.log.Info("Miner has pending txn for current challenge, already mined")
+			return true, nil
+		} else {
+			//if it's not the same, we don't care if it's pending anymore...we just care
+			//that we new have work to do
+			DB.Delete(db.PendingChallengeKey)
+		}
+
+		cfg, err := config.GetConfig()
+		if err != nil {
+			w.log.Error("Could not get configuration while checking mining status", err)
+			return false, err
+		}
+
+		//get address from config
+		_fromAddress := cfg.PublicAddress
+
+		//convert to address
+		fromAddress := common.HexToAddress(_fromAddress)
+
+		instance := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
+		var asBytes32 [32]byte
+		copy(asBytes32[:], currentChallenge)
+		didIMine, err := instance.DidMine(nil, asBytes32, fromAddress)
+		if err != nil {
+			w.log.Error("Problem reading whether this miner mined from on-chain: %v\n", err)
+			return false, err
+		}
+		if didIMine {
+			w.log.Info("Already mined according to on-chain contract status")
+			return true, nil
+		}
+		return false, nil
+	*/
 }
 
-func (w *Worker) challengeChanged(ctx context.Context) (bool, error) {
+func (w *Worker) challengeChanged(ctx context.Context, neededData map[string][]byte) (bool, error) {
+	currentChallenge := neededData[db.CurrentChallengeKey]
+	if len(currentChallenge) == 0 {
+		w.log.Debug("No current challenge stored, nothing to mine")
+		return false, nil
+	}
+
+	diff := neededData[db.DifficultyKey]
+	if len(diff) == 0 {
+		w.log.Debug("No difficulty stored, nothing to mine")
+		return false, nil
+	}
+	difficulty, err := hexutil.DecodeBig(string(diff))
+	if err != nil {
+		w.log.Error("Problem decoding difficulty: %v\n", err)
+		return false, err
+	}
+	requestID := neededData[db.RequestIdKey]
+	zero, asInt, err := w.isZeroOrEmpty(requestID)
+	if err != nil {
+		return false, err
+	}
+	if zero {
+		w.log.Debug("No requestID stored, nothing to mine")
+		return false, nil
+	}
+
+	value, err := w.readAndDecodeLatestValue(ctx, asInt)
+	if err != nil {
+		w.log.Error("Problem reading latest price value for request: %v. %v\n", requestID, err)
+		return false, err
+	}
+	if value == nil {
+		w.log.Warn("Tracker has not fetched price data for request %v yet", asInt)
+		return false, nil
+	}
+
+	if w.currentRequest == nil || bytes.Compare(w.currentRequest.challenge, currentChallenge) != 0 {
+		w.pendingRequest = &miningRequest{challenge: currentChallenge, difficulty: difficulty, requestID: asInt, nonce: "", value: value}
+		return true, nil
+	}
+	return false, nil
+
+	/**
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	currentChallenge, err := DB.Get(db.CurrentChallengeKey)
 	if err != nil {
@@ -268,6 +408,7 @@ func (w *Worker) challengeChanged(ctx context.Context) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+	*/
 }
 
 //SolveChallenge performs PoW
@@ -295,19 +436,18 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 	w.log.Info("Mining on challenge: %x", challenge)
 	w.log.Info("Solving for difficulty: %d", _difficulty)
 
-
 	//Generaete random start for worker
 	rand.Seed(time.Now().UnixNano())
 	i := rand.Int()
 
 	//i := 0
 	startTime := time.Now()
-	
+
 	// Constructors for loop objects
 	numHash := new(big.Int)
 	x := new(big.Int)
 	compare_zero := big.NewInt(0)
-    
+
 	for {
 
 		i++
@@ -321,24 +461,23 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 
 		//nn := randInt() //do we need to use big number?
 		nn := strconv.Itoa(i)
-		
+
 		nonce := fmt.Sprintf("%x", nn)
-		
+
 		_string := fmt.Sprintf("%x", challenge) + cfg.PublicAddress + nonce
-		
+
 		hash := solsha3.SoliditySHA3(
 			solsha3.Bytes32(decodeHex(_string)),
 		)
 
 		hasher := ripemd160.New()
 		//Consider moving hasher constructor outside loop and replacing with hasher.Reset()
-		
+
 		hasher.Write([]byte(hash))
 		hash1 := hasher.Sum(nil)
 		n := sha256.Sum256(hash1)
 		q := fmt.Sprintf("%x", n)
-		
-		
+
 		numHash, ok := numHash.SetString(q, 16)
 		if !ok {
 			w.log.Error("!!!!!SetString: error")
@@ -346,7 +485,7 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 		}
 
 		x.Mod(numHash, _difficulty)
-		
+
 		if x.Cmp(compare_zero) == 0 {
 			diff := time.Now().Sub(startTime)
 			w.log.Info("Solution Found: %s in %f secs", nn, diff.Seconds())
@@ -358,6 +497,30 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 }
 
 func (w *Worker) readAndDecodeLatestValue(ctx context.Context, requestID *big.Int) (*big.Int, error) {
+	idKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID.Uint64())
+	defaultIDKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, 1)
+	var keys []string
+	if requestID.Uint64() > 5 && requestID.Uint64() < 51 {
+		keys = []string{defaultIDKey}
+	} else {
+		keys = []string{idKey}
+	}
+	vals, err := w.readProxyData(ctx, keys)
+
+	val := vals[keys[0]]
+
+	if len(val) == 0 {
+		w.log.Warn("Have not retrieved requestID value. Will wait for next tracker cycle to complete before mining")
+		return nil, nil
+	}
+	value, err := hexutil.DecodeBig(string(val))
+	if err != nil {
+		w.log.Error("Problem decoding price value: %v\n", err)
+		return nil, err
+	}
+	return value, nil
+
+	/**
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID.Uint64()))
 	if requestID.Uint64() > 5 && requestID.Uint64() < 51 {
@@ -377,6 +540,18 @@ func (w *Worker) readAndDecodeLatestValue(ctx context.Context, requestID *big.In
 		return nil, err
 	}
 	return value, nil
+	*/
+}
+
+func (w *Worker) checkSubmittedSolution(ctx context.Context) (bool, error) {
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	pending, err := DB.Get(db.PendingChallengeKey)
+	if err != nil {
+		w.log.Error("Problem reading pending challenge from DB: %v", err)
+		return false, err
+	}
+
+	return bytes.Compare(pending, w.currentRequest.challenge) == 0, nil
 }
 
 func (w *Worker) txnGenerator(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
@@ -386,13 +561,11 @@ func (w *Worker) txnGenerator(ctx context.Context, contract tellorCommon.Contrac
 	}
 
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	pending, err := DB.Get(db.PendingChallengeKey)
+	solved, err := w.checkSubmittedSolution(ctx)
 	if err != nil {
-		w.log.Error("Problem reading pending challenge from DB: %v", err)
 		return nil, err
 	}
-
-	if bytes.Compare(pending, w.currentRequest.challenge) == 0 {
+	if solved {
 		//we've already submitted a solution!
 		w.log.Error("Already submitted solution for challenge. Pending txn should have been checked already")
 		return nil, nil
@@ -419,6 +592,19 @@ func (w *Worker) txnGenerator(ctx context.Context, contract tellorCommon.Contrac
 }
 
 func (w *Worker) submitSolution(ctx context.Context) {
+	submitMutex.Lock()
+	defer submitMutex.Unlock()
+
+	solved, err := w.checkSubmittedSolution(ctx)
+	if err != nil {
+		w.log.Error("Problem checking solution: %v", err)
+		return
+	}
+	if solved {
+		//we've already submitted a solution!
+		w.log.Error("Another thread already submitted solution for challenge. Will not submit another one")
+	}
+
 	value, err := w.readAndDecodeLatestValue(ctx, w.currentRequest.requestID)
 	if err != nil {
 		w.log.Info("Could not read price data for current request %v, using last known value: %v", w.currentRequest.requestID, w.currentRequest.value)

@@ -8,7 +8,6 @@ import (
 
 	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
-	"github.com/tellor-io/TellorMiner/rest/routes"
 	"github.com/tellor-io/TellorMiner/util"
 )
 
@@ -16,28 +15,25 @@ var serverLog = util.NewLogger("rest", "Server")
 
 //Server wraps http server with pre-configured paths
 type Server struct {
-	server *http.Server
+	server    *http.Server
+	dataProxy db.DataServerProxy
 }
 
 //Create a new server instance for the given host/port
 func Create(ctx context.Context, host string, port uint) (*Server, error) {
+	proxy := ctx.Value(common.DataProxyKey).(db.DataServerProxy)
 	srv := &http.Server{Addr: fmt.Sprintf("%s:%d", host, port)}
-	DB := ctx.Value(common.DBContextKey).(db.DB)
-	router := routes.NewRouter(DB)
-	router.AddRoute("/balance", &routes.BalanceHandler{})
-	router.AddRoute("/currentChallenge", &routes.CurrentChallengeHandler{})
-	router.AddRoute("/requestId", &routes.RequestIdHandler{})
-	router.AddRoute("/difficulty", &routes.DifficultyHandler{})
-	router.AddRoute("/queryString", &routes.QueryStringHandler{})
-	router.AddRoute("/granularity", &routes.GranularityHandler{})
-	router.AddRoute("/totalTip", &routes.TotalTipHandler{})
-	router.AddRoute("/gas", &routes.GasHandler{})
-	router.AddRoute("/top50", &routes.Top50Handler{})
-	router.AddRoute("/tributeBalance", &routes.TributeBalanceHandler{})
-	router.AddRoute("/disputeStatus", &routes.DisputeStatusHandler{})
-	router.AddRoute("/miningStatus", &routes.MiningStatusHandler{})
-	http.Handle("/", router)
-	return &Server{server: srv}, nil
+
+	remoteHandler, err := CreateRemoteProxy(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if remoteHandler == nil {
+		return nil, fmt.Errorf("Could not create a remote proxy")
+	}
+
+	http.Handle("/", remoteHandler)
+	return &Server{server: srv, dataProxy: proxy}, nil
 }
 
 //Start the server listening for incoming requests

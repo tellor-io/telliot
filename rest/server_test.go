@@ -2,17 +2,15 @@ package rest
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 )
 
@@ -25,8 +23,41 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	DB.Put(db.BalanceKey, []byte(hexutil.EncodeBig(big.NewInt(350000))))
+	balInt := big.NewInt(350000)
+	DB.Put(db.BalanceKey, []byte(hexutil.EncodeBig(balInt)))
+	proxy, err := db.OpenRemoteDB(DB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.GetConfig()
+	ctx := context.WithValue(context.Background(), common.DBContextKey, DB)
+	ctx = context.WithValue(ctx, common.DataProxyKey, proxy)
+	srv, err := Create(ctx, cfg.ServerHost, cfg.ServerPort)
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	srv.Start()
+	defer srv.Stop()
+
+	data, err := proxy.Get(db.BalanceKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) == 0 {
+		t.Fatal("Expected data to be returned")
+	}
+	asInt, err := hexutil.DecodeBig(string(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if asInt.Cmp(balInt) != 0 {
+		t.Fatalf("Expected %v but received %v as balance", balInt, asInt)
+	}
+
+	t.Logf("Retrieved balance from server: %+v\n", asInt)
+
+	/***
 	ctx := context.WithValue(context.Background(), common.DBContextKey, DB)
 	srv, err := Create(ctx, "localhost", 5000)
 	if err != nil {
@@ -48,5 +79,6 @@ func TestServer(t *testing.T) {
 	} else {
 		t.Logf("Retrieved balance from server: %+v\n", bal)
 	}
+	**/
 
 }

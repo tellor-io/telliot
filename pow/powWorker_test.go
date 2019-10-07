@@ -9,15 +9,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/db"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/tellor-io/TellorMiner/rpc"
 	tellor "github.com/tellor-io/TellorMiner/contracts"
+	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/rest"
+	"github.com/tellor-io/TellorMiner/rpc"
 )
 
 var (
@@ -55,7 +56,84 @@ func (t testSubmit) PrepareTransaction(ctx context.Context, ctxName string, fn t
 	return err
 }
 
+func setupDataProxy(DB db.DB, asLocal bool) (db.DataServerProxy, *rest.Server, error) {
+	if asLocal {
+		proxy, err := db.OpenLocalProxy(DB)
+		return proxy, nil, err
+	}
+
+	proxy, err := db.OpenRemoteDB(DB)
+	if err != nil {
+		return nil, nil, err
+	}
+	cfg, err := config.GetConfig()
+	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, DB)
+	ctx = context.WithValue(ctx, tellorCommon.DataProxyKey, proxy)
+	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
+	if err != nil {
+		return nil, nil, err
+	}
+	srv.Start()
+	return proxy, srv, nil
+}
+
 func TestWorker(t *testing.T) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(cfg.DBFile) == 0 {
+		log.Fatal("Missing dbFile config setting")
+	}
+
+	DB, err := db.Open(cfg.DBFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	proxy, server, err := setupDataProxy(DB, true)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	runTest(t, DB, proxy, server)
+}
+
+func TestWorkerRemoteProxy(t *testing.T) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(cfg.DBFile) == 0 {
+		log.Fatal("Missing dbFile config setting")
+	}
+
+	DB, err := db.Open(cfg.DBFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	proxy, server, err := setupDataProxy(DB, false)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	runTest(t, DB, proxy, server)
+}
+
+func runTest(t *testing.T, DB db.DB, proxy db.DataServerProxy, server *rest.Server) {
+
+	if server != nil {
+		defer server.Stop()
+	}
+
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	exitCh := make(chan os.Signal)
 
 	startBal := big.NewInt(356000)
@@ -70,22 +148,9 @@ func TestWorker(t *testing.T) {
 		Difficulty: big.NewInt(500), QueryString: queryStr,
 		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
-		TokenBalance: big.NewInt(0), MiningStatus:false,Top50Requests: []*big.Int{}, CurrentChallenge: chal}
+		TokenBalance: big.NewInt(0), MiningStatus: false, Top50Requests: []*big.Int{}, CurrentChallenge: chal}
 	client := rpc.NewMockClientWithValues(opts)
 
-
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if len(cfg.DBFile) == 0 {
-		log.Fatal("Missing dbFile config setting")
-	}
-
-	DB, err := db.Open(cfg.DBFile)
-	if err != nil {
-		log.Fatal(err)
-	}
 	DB.Delete(db.CurrentChallengeKey)
 	DB.Delete(db.RequestIdKey)
 	DB.Delete(db.DifficultyKey)
@@ -95,12 +160,13 @@ func TestWorker(t *testing.T) {
 	con := &testContract{didMine: false}
 	submitter := &testSubmit{contract: con}
 
-	worker := CreateWorker(exitCh,1, submitter, 2)
+	worker := CreateWorker(exitCh, 1, submitter, 2)
 	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, DB)
+	ctx = context.WithValue(ctx, tellorCommon.DataProxyKey, proxy)
 	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
 	if masterInstance == nil {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		masterInstance, err = tellor.NewTellorMaster(contractAddress,client)
+		masterInstance, err = tellor.NewTellorMaster(contractAddress, client)
 		if err != nil {
 			return
 		}

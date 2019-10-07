@@ -2,8 +2,10 @@ package tracker
 
 import (
 	"context"
-	"log"
 	"fmt"
+	"log"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -50,7 +52,22 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	}
 
 	balance, err := instance.BalanceOf(nil, fromAddress)
-	log.Printf("Tribute Balance: %v\n", balance)
+	balanceInTributes, ok := big.NewFloat(1).SetString(balance.String())
+	if !ok {
+		fmt.Println("Problem converting tributes.")
+		balanceInTributes = big.NewFloat(0)
+	}
+	decimals, ok := big.NewFloat(1).SetString("1000000000000000000")
+	if !ok {
+		fmt.Println("Could not create tribute float for computing tributes")
+		balanceInTributes = big.NewFloat(0)
+	}
+	if decimals != nil {
+		balanceInTributes = balanceInTributes.Quo(balanceInTributes, decimals)
+	}
+
+	//numTributes, _ := balanceInTributes.Float64()
+	log.Printf("Tribute Balance: %v (%v tributes)\n", balance, balanceInTributes)
 	if err != nil {
 		fmt.Println("Balance Retrieval Error - Tribute Balance")
 		return err

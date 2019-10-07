@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.vscode
 bin
 pkg/darwin_amd64
 */vendor

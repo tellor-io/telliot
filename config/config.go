@@ -32,6 +32,7 @@ type Config struct {
 	GasMultiplier                float32       `json:"gasMultiplier"`
 	GasMax                       uint          `json:"gasMax"`
 	NumProcessors                int           `json:"numProcessors"`
+	ServerWhitelist              []string      `json:"serverWhitelist"`
 	logger                       *util.Logger
 	mux                          sync.Mutex
 }
