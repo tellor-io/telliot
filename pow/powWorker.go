@@ -199,7 +199,7 @@ func (w *Worker) alreadyMined(ctx context.Context, neededData map[string][]byte)
 		return true, nil
 	} else {
 		//if it's not the same, we don't care if it's pending anymore...we just care
-		//that we new have work to do
+		//that we now have work to do
 		DB.Delete(db.PendingChallengeKey)
 	}
 
@@ -228,77 +228,6 @@ func (w *Worker) alreadyMined(ctx context.Context, neededData map[string][]byte)
 		return true, nil
 	}
 	return false, nil
-
-	/*
-		//if there is a pending challenge and it matches the current one, we already worked it.
-		currentChallenge, err := DB.Get(db.CurrentChallengeKey)
-		if err != nil {
-			w.log.Error("Problem reading current challenge from DB", err)
-			return false, err
-		}
-
-		requestID, err := DB.Get(db.RequestIdKey)
-		if err != nil {
-			w.log.Error("Problem reading request id from DB: %v\n", err)
-			return false, err
-		}
-		if len(requestID) == 0 {
-			w.log.Debug("No requestID stored, nothing to mine")
-			return true, nil
-		}
-
-		asInt, err := hexutil.DecodeBig(string(requestID))
-		if err != nil {
-			w.log.Error("Problem decoding request id as big int: %v\n", err)
-			return false, err
-		}
-
-		if asInt.Cmp(big.NewInt(0)) == 0 {
-			w.log.Info("No current challenge, marking as already mined")
-			return true, nil
-		}
-
-		pendingChallenge, err := DB.Get(db.PendingChallengeKey)
-		if err != nil {
-			w.log.Error("Problem reading pending challenge from DB", err)
-			return false, err
-		}
-		if bytes.Compare(pendingChallenge, currentChallenge) == 0 {
-			//we've already done it
-			w.log.Info("Miner has pending txn for current challenge, already mined")
-			return true, nil
-		} else {
-			//if it's not the same, we don't care if it's pending anymore...we just care
-			//that we new have work to do
-			DB.Delete(db.PendingChallengeKey)
-		}
-
-		cfg, err := config.GetConfig()
-		if err != nil {
-			w.log.Error("Could not get configuration while checking mining status", err)
-			return false, err
-		}
-
-		//get address from config
-		_fromAddress := cfg.PublicAddress
-
-		//convert to address
-		fromAddress := common.HexToAddress(_fromAddress)
-
-		instance := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
-		var asBytes32 [32]byte
-		copy(asBytes32[:], currentChallenge)
-		didIMine, err := instance.DidMine(nil, asBytes32, fromAddress)
-		if err != nil {
-			w.log.Error("Problem reading whether this miner mined from on-chain: %v\n", err)
-			return false, err
-		}
-		if didIMine {
-			w.log.Info("Already mined according to on-chain contract status")
-			return true, nil
-		}
-		return false, nil
-	*/
 }
 
 func (w *Worker) challengeChanged(ctx context.Context, neededData map[string][]byte) (bool, error) {
