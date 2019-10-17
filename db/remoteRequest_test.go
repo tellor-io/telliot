@@ -1,9 +1,14 @@
 package db
 
 import (
+	"bytes"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/tellor-io/TellorMiner/config"
 )
 
 func setup() (DataServerProxy, DB, error) {
@@ -24,7 +29,7 @@ func TestRemoteRequestCodec(t *testing.T) {
 	defer DB.Close()
 
 	keys := []string{RequestIdKey, DifficultyKey}
-	req, err := createRequest(keys, remote)
+	req, err := createRequest(keys, nil, remote.(*remoteImpl))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +47,7 @@ func TestRemoteRequestCodec(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	decReq, err := decodeRequest(encoded, remote)
+	decReq, err := decodeRequest(encoded, remote.(*remoteImpl))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +71,7 @@ func TestRequestReplayAttack(t *testing.T) {
 	defer DB.Close()
 
 	keys := []string{RequestIdKey, DifficultyKey}
-	req, err := createRequest(keys, remote)
+	req, err := createRequest(keys, nil, remote.(*remoteImpl))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +89,7 @@ func TestRequestReplayAttack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = decodeRequest(encoded, remote)
+	_, err = decodeRequest(encoded, remote.(*remoteImpl))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +97,7 @@ func TestRequestReplayAttack(t *testing.T) {
 	//that simulated a call that was decoded. Now we'll wait for timeout on request
 	time.Sleep((_validityThreshold * 1500) * time.Millisecond)
 
-	_, err = decodeRequest(encoded, remote)
+	_, err = decodeRequest(encoded, remote.(*remoteImpl))
 	if err == nil {
 		t.Fatal("Expected failure when decoding request as a replay after expiration period")
 	}
@@ -115,7 +120,7 @@ func TestRequestForData(t *testing.T) {
 		t.Fatal(err)
 	}
 	keys := []string{RequestIdKey, DifficultyKey}
-	req, err := createRequest(keys, remote)
+	req, err := createRequest(keys, nil, remote.(*remoteImpl))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +133,7 @@ func TestRequestForData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := decodeResponse(data, remote)
+	resp, err := decodeResponse(data, remote.(*remoteImpl))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,6 +147,51 @@ func TestRequestForData(t *testing.T) {
 	}
 	if diff != "2" {
 		t.Fatalf("Expected difficulty to be mapped to '2': %v", resp.dbVals)
+	}
+
+}
+
+func TestRequestPut(t *testing.T) {
+	remote, DB, err := setup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer DB.Close()
+	cfg, err := config.GetConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	//get address from config
+	_fromAddress := cfg.PublicAddress
+
+	//convert to address
+	fromAddress := common.HexToAddress(_fromAddress)
+	pubKey := strings.ToLower(fromAddress.Hex())
+	dbKey := pubKey + "-" + CurrentChallengeKey
+	vals := make([][]byte, 1)
+	vals[0] = []byte("TEST_CHALLENGE")
+	req, err := createRequest([]string{dbKey}, vals, remote.(*remoteImpl))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = DB.Delete(dbKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bts, err := encodeRequest(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = remote.IncomingRequest(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := DB.Get(dbKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Compare(data, vals[0]) != 0 {
+		t.Fatalf("DB bytes did not match expected put request data")
 	}
 
 }

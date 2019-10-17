@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -33,12 +34,14 @@ var rdbLog *util.Logger
 ***************************************************************************************/
 
 type remoteImpl struct {
-	privateKey *ecdsa.PrivateKey
-	localDB    DB
-	whitelist  map[string]bool
-	postURL    string
-	log        *util.Logger
-	wlHistory  map[string]*lru.ARCCache
+	privateKey    *ecdsa.PrivateKey
+	publicAddress string
+	localDB       DB
+	whitelist     map[string]bool
+	postURL       string
+	log           *util.Logger
+	wlHistory     map[string]*lru.ARCCache
+	rwLock        sync.RWMutex
 }
 
 //OpenRemoteDB establishes a proxy to a remote data server
@@ -54,6 +57,11 @@ func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
 		fmt.Println("Problem decoding private key", err)
 		return nil, err
 	}
+	//get address from config
+	_fromAddress := cfg.PublicAddress
+
+	//convert to address
+	fromAddress := common.HexToAddress(_fromAddress)
 
 	whitelist := cfg.ServerWhitelist
 	wlMap := make(map[string]bool)
@@ -70,9 +78,29 @@ func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
 	}
 
 	url := "http://" + cfg.ServerHost + ":" + strconv.Itoa(int(cfg.ServerPort))
-	i := &remoteImpl{privateKey: privateKey, localDB: localDB, postURL: url, whitelist: wlMap, wlHistory: wlLRU, log: util.NewLogger("db", "RemoteDB")}
+	i := &remoteImpl{
+		privateKey:    privateKey,
+		publicAddress: strings.ToLower(fromAddress.Hex()),
+		localDB:       localDB,
+		postURL:       url,
+		whitelist:     wlMap,
+		wlHistory:     wlLRU,
+		log:           util.NewLogger("db", "RemoteDB"),
+	}
 	i.log.Info("Created Remote data proxy connector for %s:%d\n", cfg.ServerHost, cfg.ServerPort)
 	return i, nil
+}
+
+//check whether an incoming storage request key is prefixed by one of our known miner
+//keys. Otherwise, we have to reject the request as invalid or not coming from this
+//codebase
+func (i *remoteImpl) hasAddressPrefix(key string) bool {
+	for k := range i.whitelist {
+		if strings.HasPrefix(key, k) {
+			return true
+		}
+	}
+	return false
 }
 
 func (i *remoteImpl) IncomingRequest(data []byte) ([]byte, error) {
@@ -94,11 +122,42 @@ func (i *remoteImpl) IncomingRequest(data []byte) ([]byte, error) {
 		return errorResponse("Missing localDB instance!")
 	}
 
+	if req.dbValues != nil && len(req.dbValues) > 0 {
+
+		//lock out other threads from reading/writing until the write is done
+		i.rwLock.Lock()
+
+		//make sure we unlock when we leave so next thread can get in
+		defer i.rwLock.Unlock()
+
+		//if we're writing values to the DB
+		if len(req.dbKeys) != len(req.dbValues) {
+			return errorResponse("Keys and values must have the same array dimensions")
+		}
+
+		//request to write data locally
+		for idx, k := range req.dbKeys {
+			//make sure key is prefixed with address
+			if !i.hasAddressPrefix(k) {
+				return errorResponse("All remote data storage request keys must be prefixed with miner public Ethereum address")
+			}
+			v := req.dbValues[idx]
+			if err := i.localDB.Put(k, v); err != nil {
+				return errorResponse(err.Error())
+			}
+		}
+
+	} else {
+		//we're not writing, so we just need a read lock
+		i.rwLock.RLock()
+		defer i.rwLock.RUnlock()
+	}
+
 	i.log.Info("Getting remote request for keys: %v", req.dbKeys)
 
 	outMap := map[string][]byte{}
 	for _, k := range req.dbKeys {
-		if !isKnownKey(k) {
+		if req.dbValues == nil && !isKnownKey(k) {
 			return errorResponse("Invalid lookup key: " + k)
 		}
 		rdbLog.Debug("Looking up local DB key: %v", k)
@@ -126,8 +185,16 @@ func (i *remoteImpl) Get(key string) ([]byte, error) {
 	return res[key], nil
 }
 
+func (i *remoteImpl) Put(key string, value []byte) (map[string][]byte, error) {
+	//every key must be prefixed with miner's address
+
+	keys := []string{key}
+	vals := [][]byte{value}
+	return i.BatchPut(keys, vals)
+}
+
 func (i *remoteImpl) BatchGet(keys []string) (map[string][]byte, error) {
-	req, err := createRequest(keys, i)
+	req, err := createRequest(keys, nil, i)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +208,45 @@ func (i *remoteImpl) BatchGet(keys []string) (map[string][]byte, error) {
 	if err != nil {
 		//return nil, err
 		log.Fatalf("Could not retrieve data after retries. Cannot do anything without access to data server: %v", err)
+	}
+	remResp, err := decodeResponse(respData, i)
+	if err != nil {
+		return nil, err
+	}
+	if len(remResp.errorMsg) > 0 {
+		return nil, fmt.Errorf(remResp.errorMsg)
+	}
+	return remResp.dbVals, nil
+}
+
+func (i *remoteImpl) BatchPut(keys []string, values [][]byte) (map[string][]byte, error) {
+	//must prefix all keys with public address
+	dbKeys := make([]string, len(keys))
+	for idx, k := range keys {
+		if !strings.HasPrefix(k, i.publicAddress) {
+			dbKeys[idx] = i.publicAddress + "-" + k
+		} else {
+			dbKeys[idx] = k
+		}
+	}
+	req, err := createRequest(dbKeys, values, i)
+	if err != nil {
+		return nil, err
+	}
+	data, err := encodeRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	httpReq := &util.HTTPFetchRequest{
+		Method:   util.POST,
+		QueryURL: i.postURL,
+		Payload:  data,
+		Timeout:  time.Duration(10 * time.Second),
+	}
+	respData, err := util.HTTPWithRetries(httpReq)
+	if err != nil {
+		//return nil, err
+		log.Fatalf("Could not put data after retries. Cannot do anything without access to data server: %v", err)
 	}
 	remResp, err := decodeResponse(respData, i)
 	if err != nil {

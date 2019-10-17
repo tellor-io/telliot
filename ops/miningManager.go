@@ -2,11 +2,13 @@ package ops
 
 import (
 	"context"
+	"log"
 	"os"
 	"time"
 
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/pow"
 	"github.com/tellor-io/TellorMiner/util"
 )
@@ -30,8 +32,7 @@ type MiningMgr struct {
 
 //WorkerWrapper allows us to stand up multiple mining workers, one per cpu
 type WorkerWrapper struct {
-	miner  *pow.Worker
-	exitCh chan os.Signal
+	miner *pow.Worker
 }
 
 //CreateMiningManager creates a new manager that mananges mining and data requests
@@ -41,11 +42,14 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		return nil, err
 	}
 	var miners []*WorkerWrapper
+	proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 	miners = make([]*WorkerWrapper, cfg.NumProcessors, cfg.NumProcessors)
 	for i := 0; i < cfg.NumProcessors; i++ {
-		mExit := make(chan os.Signal)
-		miner := pow.CreateWorker(mExit, i, submitter, cfg.MiningInterruptCheckInterval)
-		miners[i] = &WorkerWrapper{miner: miner, exitCh: mExit}
+		miner, err := pow.CreateWorker(i, submitter, cfg.MiningInterruptCheckInterval, proxy)
+		if err != nil {
+			log.Fatal(err)
+		}
+		miners[i] = &WorkerWrapper{miner: miner}
 	}
 
 	rExit := make(chan os.Signal)
@@ -72,7 +76,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		//mgr.minerExit <- os.Interrupt
 		running := false
 		for _, m := range mgr.miners {
-			m.exitCh <- os.Interrupt
+			m.miner.Stop(ctx)
 		}
 		mgr.requesterExit <- os.Interrupt
 		time.Sleep(1 * time.Second)

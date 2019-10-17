@@ -45,6 +45,26 @@ func (l *localProxy) BatchGet(keys []string) (map[string][]byte, error) {
 	return outMap, nil
 }
 
+func (l *localProxy) Put(key string, value []byte) (map[string][]byte, error) {
+	values := make([][]byte, 1)
+	values[0] = value
+	return l.BatchPut([]string{key}, values)
+}
+func (l *localProxy) BatchPut(keys []string, values [][]byte) (map[string][]byte, error) {
+
+	if len(values) > 0 && len(keys) != len(values) {
+		return nil, fmt.Errorf("Keys and values must have same array dimensions")
+	}
+	for idx, k := range keys {
+		err := l.localDB.Put(k, values[idx])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return l.BatchGet(keys)
+}
+
 func (l *localProxy) IncomingRequest(data []byte) ([]byte, error) {
 	return nil, fmt.Errorf("Local proxy should never be called with incoming requests")
 }

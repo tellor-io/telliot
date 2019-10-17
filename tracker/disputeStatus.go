@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -69,5 +70,23 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	if status.Cmp(big.NewInt(1)) != 0 {
 		log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
 	}
+
+	//add all whitelisted miner addresses as well since they will be coming in
+	//asking for dispute status
+	for _, addr := range cfg.ServerWhitelist {
+		address := common.HexToAddress(addr)
+		//fmt.Println("Getting staker info for address", addr)
+		status, _, err := instance.GetStakerInfo(nil, address)
+		if err != nil {
+			fmt.Printf("Could not get staker dispute status for miner address %s: %v\n", addr, err)
+		}
+		fmt.Printf("Whitelisted Miner %s Dispute Status: %v\n", addr, status)
+		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.DisputeStatusKey)
+		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
+		if err != nil {
+			fmt.Printf("Problem storing staker dispute status: %v\n", err)
+		}
+	}
+	//fmt.Println("Finished updated dispute status")
 	return nil
 }
