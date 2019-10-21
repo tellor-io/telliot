@@ -319,36 +319,36 @@
         },
         {
             "requestID":36,
-            "symbol":"STORJ/ETH - Binance",
+            "symbol":"BCH/USD - Kraken",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=STORJETH&interval=1d&limit=1).0.4"
+                "json(https://api.kraken.com/0/public/Ticker?pair=BCHUSD).result.BCHUSD.p.0"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":37,
-            "symbol":"NEO/USDT - Binance",
+            "symbol":"REP/USD - CoinGecko",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=NEOUSDT&interval=1d&limit=1).0.4"
+                "json(https://api.coingecko.com/api/v3/simple/price?ids=augur&vs_currencies=usd).augur.usd"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":38,
-            "symbol":"ADA/BTC - Binance",
+            "symbol":"GNO/USD - Kraken",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=ADABTC&interval=1d&limit=1).0.4"
+                "json(https://api.kraken.com/0/public/Ticker?pair=GNOUSD).result.GNOUSD.p.0"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":39,
-            "symbol":"XLM/ETH - Binance",
+            "symbol":"DAI/USD - Kraken",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=XLMETH&interval=1d&limit=1).0.4"
+                "json(https://api.kraken.com/0/public/Ticker?pair=DAIUSD).result.DAIUSD.p.0"
             ],
             "transformation" : "value",
             "granularity" : 1000000
@@ -391,67 +391,75 @@
         },
         {
             "requestID":44,
-            "symbol":"LOOM/BTC - Binance",
+            "symbol":"BTC/USD - Bitfinex",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=LOOMBTC&interval=1d&limit=1).0.4"
+                "json(https://api-pub.bitfinex.com/v2/ticker/tBTCUSD).6"
+            ],
+            "transformation" : "value",
+            "granularity" : 1000000
+        },
+        {
+            "requestID":44,
+            "symbol":"BTC/USD - Bitfinex",
+            "apis":[
+                "json(https://api-pub.bitfinex.com/v2/ticker/tBTCUSD).6"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":45,
-            "symbol":"ATOM/USDT - Binance",
+            "symbol":"BTC/USD - CoinGecko",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=ATOMUSDT&interval=1d&limit=1).0.4"
+                "json(https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd).bitcoin.usd"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":46,
-            "symbol":"ONT/USDT - Binance",
+            "symbol":"ETH/USD - CoinGecko",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=ONTUSDT&interval=1d&limit=1).0.4"
+                "json(https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd).ethereum.usd"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":47,
-            "symbol":"EOS/TUSD - Binance",
+            "symbol":"LTC/USD - CoinGecko",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=EOSTUSD&interval=1d&limit=1).0.4"
+                "json(https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd).litecoin.usd"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":48,
-            "symbol":"LINK/PAX - Binance",
+            "symbol":"Maker/USD - CoinGecko",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=LINKPAX&interval=1d&limit=1).0.4"
+                "json(https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd).maker.usd"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":49,
-            "symbol":"BTC/USDS - Binance",
+            "symbol":"EOS/USD - CoinGecko",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=BTCUSDS&interval=1d&limit=1).0.4"
+                "json(https://api.coingecko.com/api/v3/simple/price?ids=eos&vs_currencies=usd).eos.usd"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":50,
-            "symbol":"FET/USDT - Binance",
+            "symbol":"TRB/USD - CoinGecko",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=FETUSDT&interval=1d&limit=1).0.4"
+                "json(https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd).tellor.usd"
             ],
             "transformation" : "value",
             "granularity" : 1000000
         }
-        
     ]
 }

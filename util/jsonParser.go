@@ -39,7 +39,8 @@ func ParsePayload(payload []byte, _granularity uint, args []string) (int, error)
 	Bi = 0
 	result, err := dumpJSON(f, "root", args[1:])
 	if err != nil {
-		fmt.Println("ERROR", err)
+		//fmt.Println("ERROR", err)
+		return 0,errors.New("JSON Parsing error")
 	}
 	s, _ := strconv.ParseFloat(fmt.Sprintf("%v", result), 64)
 	return int(s * float64(_granularity)), nil
@@ -47,6 +48,7 @@ func ParsePayload(payload []byte, _granularity uint, args []string) (int, error)
 
 var Bi = 0
 var Res float64
+var Good bool
 var FRes float64
 var Finished bool
 
@@ -58,12 +60,13 @@ func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
 		Bi = 0
 	}
 
-	iterMap := func(x map[string]interface{}, root string, args []string) (val float64, status bool) {
+	iterMap := func(x map[string]interface{}, root string, args []string) (val float64, status bool, good bool) {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("Problem parsing response", r)
+				//fmt.Println("Problem parsing response", r)
 				val = 0
 				status = false
+				good = false
 			}
 		}()
 
@@ -81,25 +84,26 @@ func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
 					res, err := converter(v)
 					if err != nil {
 						fmt.Println(err)
-						return 0, false
+						return 0, false,true
 					}
 					if res != 1 {
-						return res, true
+						return res, true,true
 					}
-					return 0, false
+					return 0, false,true
 				}
 			}
 
 		}
-		return 0, false
+		return 0, false,false
 	}
 
-	iterSlice := func(x []interface{}, root string, args []string) (val float64, status bool) {
+	iterSlice := func(x []interface{}, root string, args []string) (val float64, status bool, good bool) {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("Problem with parsing response", r)
+				//fmt.Println("Problem with parsing response", r)
 				val = 0
 				status = false
+				good = false
 			}
 		}()
 
@@ -120,35 +124,41 @@ func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
 							res, err := converter(v)
 							if err != nil {
 								fmt.Println(err)
-								return 0, false
+								return 0, false,true
 							}
 							if res != 1 {
-								return res, true
+								return res, true,true
 							}
-							return 0, false
+							return 0, false,true
 						}
 					}
 				}
 			}
 		}
-		return 0, false
+		return 0, false,false
 	}
 
 	switch vv := v.(type) {
 	case bool:
-		fmt.Printf("%s => (bool) %v\n", kn, vv)
+		//fmt.Printf("%s => (bool) %v\n", kn, vv)
 	case float64:
-		fmt.Printf("%s => (float64) %f\n", kn, vv)
+		//fmt.Printf("%s => (float64) %f\n", kn, vv)
 	case int:
-		fmt.Printf("%s => (int) %f\n", kn, vv)
+		//fmt.Printf("%s => (int) %f\n", kn, vv)
 	case map[string]interface{}:
-		Res, Finished = iterMap(vv, kn, args)
+		Res, Finished,Good = iterMap(vv, kn, args)
+		if !Good{
+			return 0,errors.New("Itermap Error")
+		}
 		if Finished {
 			FRes = Res
 			return Res, nil
 		}
 	case []interface{}:
-		Res, Finished = iterSlice(vv, kn, args)
+		Res, Finished,Good = iterSlice(vv, kn, args)
+		if !Good{
+			return 0,errors.New("IterSlice Error")
+		}
 		if Finished {
 			FRes = Res
 			return Res, nil

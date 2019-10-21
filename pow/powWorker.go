@@ -360,9 +360,9 @@ func (w *Worker) solveChallenge(ctx context.Context) {
 func (w *Worker) readAndDecodeLatestValue(ctx context.Context, requestID *big.Int) (*big.Int, error) {
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	val, err := DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID.Uint64()))
-	if requestID.Uint64() > 5 && requestID.Uint64() < 51 {
-		val, err = DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, 1))
-	}
+	// if requestID.Uint64() > 5 && requestID.Uint64() < 51 {
+	// 	val, err = DB.Get(fmt.Sprintf("%s%d", db.QueriedValuePrefix, 1))
+	// }
 	if err != nil {
 		w.log.Error("Problem reading price data from DB: %v\n", err)
 		return nil, err

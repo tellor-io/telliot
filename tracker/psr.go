@@ -162,28 +162,44 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 	}
 	payloads, err := batchFetchWithRetries(reqs)
 	vals := make([]int, len(payloads))
+	errs := 0
 	for i := 0; i < len(vals); i++ {
 		pl := payloads[i]
 		if pl == nil {
-			vals[i] = -1
+			errs += 1
+			newlen := len(payloads) - errs
+			nn := vals[i:newlen]
+			vals := make([]int,newlen)
+			copy(vals,nn)
 			continue
 		}
 		v, err := util.ParsePayload(payloads[i], r.Granularity, argGroups[i])
 		if err != nil {
-			errorCh <- err
-			vals[i] = -1
+			errs += 1
+			newlen := len(payloads) - errs
+			nn := vals[i:newlen]
+			vals := make([]int,newlen)
+			copy(vals,nn)
 			continue
+		}else{
+			vals[i] = v
 		}
-		vals[i] = v
+
 	}
-	res, err := computeTransformation(r.Transformation, vals)
-	if err != nil {
-		errorCh <- err
-	} else {
-		y := res.Interface().(uint)
-		enc := hexutil.EncodeBig(big.NewInt(int64(y)))
-		DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, r.RequestID), []byte(enc))
+	if len(vals) > errs {
+		res, err := computeTransformation(r.Transformation, vals)
+		if err != nil {
+			fmt.Println("computeTransError")
+			errorCh <- err
+		} else {
+			y := res.Interface().(uint)
+			enc := hexutil.EncodeBig(big.NewInt(int64(y)))
+			DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, r.RequestID), []byte(enc))
+		}
+	}else{
+		fmt.Println("No value stored this round -- ID : ", r.RequestID)
 	}
+
 }
 
 func computeTransformation(name string, params ...interface{}) (result reflect.Value, err error) {
