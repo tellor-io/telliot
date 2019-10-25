@@ -5,13 +5,12 @@ import (
 	"math/big"
 	"os"
 	"time"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/util"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 //DataRequester responsible for submitting tips to request data periodically if configured to do so
@@ -20,15 +19,22 @@ type DataRequester struct {
 	exitCh             chan os.Signal
 	log                *util.Logger
 	checkInterval      time.Duration
+	proxy              db.DataServerProxy
 	submitter          tellorCommon.TransactionSubmitter
 }
 
+const (
+	statusWaitNext = iota + 1
+	statusFailure
+	statusSuccess
+)
+
 //CreateDataRequester creates a requester instance
-func CreateDataRequester(exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter, checkIntervalSeconds time.Duration) *DataRequester {
+func CreateDataRequester(exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter, checkIntervalSeconds time.Duration,proxy db.DataServerProxy) *DataRequester {
 	if checkIntervalSeconds == 0 {
 		checkIntervalSeconds = 30
 	}
-	return &DataRequester{exitCh: exitCh, submitter: submitter, checkInterval: checkIntervalSeconds * time.Second, log: util.NewLogger("ops", "DataRequester")}
+	return &DataRequester{exitCh: exitCh, submitter: submitter, proxy: proxy,checkInterval: checkIntervalSeconds * time.Second, log: util.NewLogger("ops", "DataRequester")}
 }
 
 //Start kicks of go routines to periodically submit tips if configured to do so
@@ -82,22 +88,24 @@ func (r *DataRequester) reqDataCallback(ctx context.Context, contract tellorComm
 		return nil, nil
 	}
 
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	requestID, err := DB.Get(db.RequestIdKey)
-	if err != nil {
-		r.log.Error("Problem reading request ID from db")
-		return nil, err
-	}
-	if len(requestID) == 0 {
-		r.log.Info("No request ID stored yet. Will wait for next cycle before attempting to submit data request")
-		return nil, nil
+	keys := []string{
+		db.RequestIdKey,
 	}
 
-	asInt, err := hexutil.DecodeBig(string(requestID))
+	m, err := r.proxy.BatchGet(keys)
 	if err != nil {
-		return nil, err
+		r.log.Error("Could not get data from data proxy, cannot continue at all")
+		return nil,nil
 	}
-	if asInt.Cmp(big.NewInt(0)) != 0 {
+	r.log.Debug("Received data: %v", m)
+
+	reqID, stat := r.getInt(m[db.RequestIdKey])
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil,nil
+	}
+
+
+	if reqID.Cmp(big.NewInt(0)) != 0 {
 		r.log.Info("There is a challenge being mined right now so will not request data")
 		return nil, nil
 	}
@@ -112,4 +120,17 @@ func (r *DataRequester) maybeRequestData(ctx context.Context) {
 		r.log.Error("Problem preparing contract transaction: %v\n", err)
 	}
 	r.log.Info("Finished checking whether to submit data")
+}
+
+func (r *DataRequester) getInt(data []byte) (*big.Int, int) {
+	if data == nil || len(data) == 0 {
+		return nil, statusWaitNext
+	}
+
+	val, err := hexutil.DecodeBig(string(data))
+	if err != nil {
+		r.log.Error("Problem decoding int: %v", err)
+		return nil, statusFailure
+	}
+	return val, statusSuccess
 }

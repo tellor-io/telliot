@@ -54,7 +54,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 
 	rExit := make(chan os.Signal)
 
-	dataRequester := CreateDataRequester(rExit, submitter, cfg.RequestDataInterval)
+	dataRequester := CreateDataRequester(rExit, submitter, cfg.RequestDataInterval,proxy)
 	log := util.NewLogger("ops", "MiningMgr")
 
 	return &MiningMgr{exitCh: exitCh, log: log, Running: false, miners: miners, dataRequester: dataRequester,
