@@ -6,6 +6,7 @@
     "publicAddress": "e037ec8ec9ec423826750853899394dexxxxxxxxxxxxxxxe",
     "serverHost": "localhost",
     "serverPort": 5000,
+    "serverWhitelist": ["0xe037ec8ec9ec423826750853899394de7f024fee"],
     "ethClientTimeout": 3000,
     "trackerCycle": 10,
     "requestData":1,

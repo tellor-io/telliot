@@ -86,6 +86,14 @@ func ParseConfig(path string) (*Config, error) {
 		config.NumProcessors = defaultCores
 	}
 
+	if len(config.ServerWhitelist) == 0{
+		if strings.Contains(config.PublicAddress, "0x") {
+			config.ServerWhitelist = append(config.ServerWhitelist,config.PublicAddress)
+		}else{
+			config.ServerWhitelist = append(config.ServerWhitelist,"0x" + config.PublicAddress)
+		}
+	}
+
 	config.PrivateKey = strings.ReplaceAll(config.PrivateKey, "0x", "")
 	config.PublicAddress = strings.ReplaceAll(config.PublicAddress, "0x", "")
 
