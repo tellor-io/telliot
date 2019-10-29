@@ -28,6 +28,7 @@ type Config struct {
 	FetchTimeout                 uint          `json:"fetchTimeout"`
 	RequestData                  uint          `json:"requestData"`
 	RequestDataInterval          time.Duration `json:"requestDataInterval"`          //in seconds
+	RequestTips					 int64          `json: "requestTips"`
 	MiningInterruptCheckInterval time.Duration `json:"miningInterruptCheckInterval"` //in seconds
 	GasMultiplier                float32       `json:"gasMultiplier"`
 	GasMax                       uint          `json:"gasMax"`

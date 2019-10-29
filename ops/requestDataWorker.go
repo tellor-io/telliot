@@ -90,6 +90,7 @@ func (r *DataRequester) reqDataCallback(ctx context.Context, contract tellorComm
 
 	keys := []string{
 		db.RequestIdKey,
+		db.TributeBalanceKey,
 	}
 
 	m, err := r.proxy.BatchGet(keys)
@@ -103,14 +104,25 @@ func (r *DataRequester) reqDataCallback(ctx context.Context, contract tellorComm
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil,nil
 	}
+	trbBalance, stat := r.getInt(m[db.TributeBalanceKey])
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil,nil
+	}
 
+	b, _ := new(big.Int).SetString("1000000000000000000000", 10)
+    c := big.NewInt(0).Sub(trbBalance, b)
+
+	if c.Cmp(big.NewInt(cfg.RequestTips)) <= 0 {
+		r.log.Info("Not enough tributes to requestData with this tip")
+		return nil,nil
+	}
 
 	if reqID.Cmp(big.NewInt(0)) != 0 {
 		r.log.Info("There is a challenge being mined right now so will not request data")
 		return nil, nil
 	}
 	r.log.Info("Submitting tip for requestID: %v\n", cfg.RequestData)
-	return contract.AddTip(big.NewInt(int64(cfg.RequestData)), big.NewInt(0))
+	return contract.AddTip(big.NewInt(int64(cfg.RequestData)), big.NewInt(cfg.RequestTips))
 }
 
 func (r *DataRequester) maybeRequestData(ctx context.Context) {
