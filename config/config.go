@@ -33,6 +33,7 @@ type Config struct {
 	GasMultiplier                float32       `json:"gasMultiplier"`
 	GasMax                       uint          `json:"gasMax"`
 	NumProcessors                int           `json:"numProcessors"`
+	Heartbeat                    int           `json:"heartbeat"`
 	ServerWhitelist              []string      `json:"serverWhitelist"`
 	logger                       *util.Logger
 	mux                          sync.Mutex
@@ -43,6 +44,8 @@ const defaultTimeout = 30 //30 second fetch timeout
 const defaultRequestInterval = 30 //30 seconds between data requests (0-value tipping)
 const defaultMiningInterrupt = 15 //every 15 seconds, check for new challenges that could interrupt current mining
 const defaultCores = 2
+
+const defaultHeartbeat = 10000000 //check miner speed every 10 ^ 7 cycles
 
 var (
 	config *Config
@@ -84,6 +87,10 @@ func ParseConfig(path string) (*Config, error) {
 	}
 	if config.NumProcessors == 0 {
 		config.NumProcessors = defaultCores
+	}
+
+	if config.Heartbeat == 0 {
+		config.Heartbeat = defaultHeartbeat
 	}
 
 	if len(config.ServerWhitelist) == 0{
