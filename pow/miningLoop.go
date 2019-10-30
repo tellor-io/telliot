@@ -170,7 +170,7 @@ func (ml *miningLoop) solveChallenge() {
 	x := new(big.Int)
 	compareZero := big.NewInt(0)
 
-        // Variables for measuring hashrate
+	// Variables for measuring hashrate
 	j := i
 	sampleTime := startTime
 	heartbeat:= cfg.Heartbeat
