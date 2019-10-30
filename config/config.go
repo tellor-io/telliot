@@ -45,7 +45,7 @@ const defaultRequestInterval = 30 //30 seconds between data requests (0-value ti
 const defaultMiningInterrupt = 15 //every 15 seconds, check for new challenges that could interrupt current mining
 const defaultCores = 2
 
-const defaultHeartbeat = 10000000 //check miner speed every 10 ^ 7 cycles
+const defaultHeartbeat = 100000000 //check miner speed every 10 ^ 8 cycles
 
 var (
 	config *Config
