@@ -170,11 +170,20 @@ func (ml *miningLoop) solveChallenge() {
 	x := new(big.Int)
 	compareZero := big.NewInt(0)
 
+	// Variables for measuring hashrate
+	j := i
+	sampleTime := startTime
+	heartbeat:= cfg.Heartbeat
 	for {
 
 		i++
-		if i%100000000 == 0 {
+		if i % heartbeat == 0 {
 			ml.log.Info("Still Mining")
+			timeDelta := time.Now().Sub(sampleTime)
+			sampleTime = time.Now()
+			iDelta := i - j
+			j = i
+			ml.log.Info("Hashrate: %v ", float64(iDelta) / timeDelta.Seconds())
 		}
 		if !ml.canMine {
 			ml.log.Info("Stopping computation loop since asked to stop mining")
