@@ -65,13 +65,25 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	if ctx.Value(tellorCommon.DBContextKey) == nil {
 		ctx = context.WithValue(ctx, tellorCommon.DBContextKey, r.db)
 	}
-	go func() {
+
+	ready := make(chan bool)
+	callTrackers := func() {
 		r.callTrackers(ctx, &trackers)
+		ready <- true
+	}
+
+	go func() {
+		//r.callTrackers(ctx, &trackers)
+		go callTrackers()
 		//after first run, let others know that tracker output data is ready for use
-		r.readyChannel <- true
+		//r.readyChannel <- true
 		for {
 			runnerLog.Info("Waiting for next tracker run cycle...")
 			select {
+			case _ = <-ready:
+				{
+					r.readyChannel <- true
+				}
 			case _ = <-exitCh:
 				{
 					runnerLog.Info("Exiting run loop")

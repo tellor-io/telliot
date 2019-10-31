@@ -28,10 +28,13 @@ type Config struct {
 	FetchTimeout                 uint          `json:"fetchTimeout"`
 	RequestData                  uint          `json:"requestData"`
 	RequestDataInterval          time.Duration `json:"requestDataInterval"`          //in seconds
+	RequestTips					 int64          `json: "requestTips"`
 	MiningInterruptCheckInterval time.Duration `json:"miningInterruptCheckInterval"` //in seconds
 	GasMultiplier                float32       `json:"gasMultiplier"`
 	GasMax                       uint          `json:"gasMax"`
 	NumProcessors                int           `json:"numProcessors"`
+	Heartbeat                    int           `json:"heartbeat"`
+	ServerWhitelist              []string      `json:"serverWhitelist"`
 	logger                       *util.Logger
 	mux                          sync.Mutex
 }
@@ -41,6 +44,8 @@ const defaultTimeout = 30 //30 second fetch timeout
 const defaultRequestInterval = 30 //30 seconds between data requests (0-value tipping)
 const defaultMiningInterrupt = 15 //every 15 seconds, check for new challenges that could interrupt current mining
 const defaultCores = 2
+
+const defaultHeartbeat = 10000000 //check miner speed every 10 ^ 8 cycles
 
 var (
 	config *Config
@@ -82,6 +87,18 @@ func ParseConfig(path string) (*Config, error) {
 	}
 	if config.NumProcessors == 0 {
 		config.NumProcessors = defaultCores
+	}
+
+	if config.Heartbeat == 0 {
+		config.Heartbeat = defaultHeartbeat
+	}
+
+	if len(config.ServerWhitelist) == 0{
+		if strings.Contains(config.PublicAddress, "0x") {
+			config.ServerWhitelist = append(config.ServerWhitelist,config.PublicAddress)
+		}else{
+			config.ServerWhitelist = append(config.ServerWhitelist,"0x" + config.PublicAddress)
+		}
 	}
 
 	config.PrivateKey = strings.ReplaceAll(config.PrivateKey, "0x", "")

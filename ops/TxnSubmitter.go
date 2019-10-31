@@ -5,6 +5,7 @@ import (
 
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/rpc"
+	"github.com/tellor-io/TellorMiner/db"
 )
 
 //TxnSubmitter just concrete type for txn submitter
@@ -17,6 +18,6 @@ func NewSubmitter() TxnSubmitter {
 }
 
 //PrepareTransaction relies on rpc package to prepare and submit transactions
-func (s TxnSubmitter) PrepareTransaction(ctx context.Context, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
-	return rpc.PrepareContractTxn(ctx, ctxName, callback)
+func (s TxnSubmitter) PrepareTransaction(ctx context.Context,proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
+	return rpc.PrepareContractTxn(ctx,proxy, ctxName, callback)
 }

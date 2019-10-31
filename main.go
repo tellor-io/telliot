@@ -23,8 +23,6 @@ import (
 var mainLog = util.NewLogger("main", "Main")
 
 func main() {
-
-	os.RemoveAll("/tmp/tellor/")
 	//create os kill sig listener
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
@@ -39,9 +37,10 @@ func main() {
 
 	//see what args are passed in
 	cli := cli.GetFlags()
-
+	os.RemoveAll(cfg.DBFile)
+	
 	//create a db instance
-	db, err := db.Open(cfg.DBFile)
+	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,11 +63,27 @@ func main() {
 	//var miner *ops.MinerOps
 	var miner *ops.MiningMgr
 
+	var dataProxy db.DataServerProxy
+	if cli.DataServer && cli.Miner {
+		proxy, err := db.OpenLocalProxy(DB)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dataProxy = proxy
+	} else {
+		proxy, err := db.OpenRemoteDB(DB)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dataProxy = proxy
+	}
+
 	//create a context to use for ops
-	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, db)
+	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, DB)
 	ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, client)
 	ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 	ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
+	ctx = context.WithValue(ctx, tellorCommon.DataProxyKey, dataProxy)
 
 	//Issue #55, halt if client is still syncing with Ethereum network
 	s, err := client.IsSyncing(ctx)

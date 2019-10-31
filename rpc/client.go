@@ -121,7 +121,7 @@ func (c *clientInstance) Close() {
 
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
-		c.log.Info("Sending txn on-chain: %v\n", tx)
+		//c.log.Info("Sending txn on-chain: %v\n", tx)
 		fmt.Println("TX SENT CLIENT", fmt.Sprintf("%x", tx))
 		e := c.ethClient.SendTransaction(*_ctx, tx)
 		return e
@@ -232,15 +232,6 @@ func (c *clientInstance) SuggestGasPrice(ctx context.Context) (*big.Int, error) 
 	})
 	if _err != nil {
 		return nil, _err
-	}
-
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return res, _err
-	}
-	mult := cfg.GasMultiplier
-	if mult > 0 {
-		res = res.Mul(res, big.NewInt(int64(mult)))
 	}
 	return res, _err
 }
