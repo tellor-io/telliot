@@ -171,7 +171,7 @@ func (s *solutionHandler) handleSolution(ctx context.Context, sol *miningSolutio
 	}
 
 	s.log.Info("Submitting solution to contract...")
-	err = s.submitter.PrepareTransaction(ctx, "submitSolution", s.submit)
+	err = s.submitter.PrepareTransaction(ctx, s.proxy,"submitSolution", s.submit)
 	if err != nil {
 		s.log.Error("Problem submitting txn. Will remove pending txn from data server; however, "+
 			"this could result in multiple nonce submissions if running multiple miners: %v", err)

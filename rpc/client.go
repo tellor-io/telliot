@@ -233,15 +233,6 @@ func (c *clientInstance) SuggestGasPrice(ctx context.Context) (*big.Int, error) 
 	if _err != nil {
 		return nil, _err
 	}
-
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return res, _err
-	}
-	mult := cfg.GasMultiplier
-	if mult > 0 {
-		res = res.Mul(res, big.NewInt(int64(mult)))
-	}
 	return res, _err
 }
 

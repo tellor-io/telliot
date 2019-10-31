@@ -183,7 +183,7 @@ func (ml *miningLoop) solveChallenge() {
 			sampleTime = time.Now()
 			iDelta := i - j
 			j = i
-			ml.log.Info("Hashrate: %v ", float64(iDelta) / timeDelta.Seconds())
+			ml.log.Info("Hashrate: %v  per second", fmt.Sprintf("%.2f",float64(iDelta) / timeDelta.Seconds()))
 		}
 		if !ml.canMine {
 			ml.log.Info("Stopping computation loop since asked to stop mining")

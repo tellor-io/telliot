@@ -45,7 +45,7 @@ func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
 	return c.contract2.DidMine(nil, challenge, c.fromAddress)
 }
 
-func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
+func PrepareContractTxn(ctx context.Context,proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
 
 	cfg, err := config.GetConfig()
 	if err != nil {
@@ -71,33 +71,29 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 		fmt.Println("Problem getting nonce for miner address", err)
 		return err
 	}
-
-	i := 1
 	IntNonce := int64(nonce)
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	gp, err := DB.Get(db.GasKey)
-	if err != nil {
-		fmt.Println("Problem reading gas price from DB", err)
-		return err
+	i := 1
+	keys := []string{
+		db.GasKey,
 	}
-	var gasPrice *big.Int
-
-	if len(gp) == 0 {
+	m, err := proxy.BatchGet(keys)
+	if err != nil {
+		return nil
+	}
+	gasPrice := getInt(m[db.GasKey])
+	if gasPrice.Cmp(big.NewInt(0)) == 0 {
 		fmt.Println("Missing gas price from DB, falling back to client suggested gas price")
 		gasPrice, err = client.SuggestGasPrice(context.Background())
-	} else {
-
-		gasPrice, err = hexutil.DecodeBig(string(gp))
 		if err != nil {
-			fmt.Printf("Problem decoding stored gas price: %v\n", err)
-			gasPrice, err = client.SuggestGasPrice(context.Background())
+			fmt.Println("Could not determine gas price to submit txn", err)
+			return err
 		}
+	} 
+	mul := cfg.GasMultiplier
+	if mul > 0 {
+		fmt.Println("using gas multiplier : ", mul)
+		gasPrice = gasPrice.Mul(gasPrice,big.NewInt(int64(mul)));
 	}
-	if err != nil {
-		fmt.Println("Could not determine gas price to submit txn", err)
-		return err
-	}
-
 	for i < 5 {
 		//
 
@@ -121,6 +117,9 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 		auth.Nonce = big.NewInt(IntNonce)
 		auth.Value = big.NewInt(0)      // in weiF
 		auth.GasLimit = uint64(1000000) // in units
+		if gasPrice.Cmp(big.NewInt(0)) == 0 {
+			gasPrice = big.NewInt(100)
+		}
 		if i > 1 {
 			gasPrice1 := new(big.Int).Set(gasPrice)
 			gasPrice1.Mul(gasPrice1, big.NewInt(int64(i*11))).Div(gasPrice1, big.NewInt(int64(100)))
@@ -129,9 +128,6 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 			//first time, try base gas price
 			auth.GasPrice = gasPrice
 		}
-
-		fmt.Printf("Attempting to use gas price: %v\n", auth.GasPrice)
-
 		max := cfg.GasMax
 		var maxGasPrice *big.Int
 		gasPrice1 := big.NewInt(GWEI)
@@ -172,9 +168,21 @@ func PrepareContractTxn(ctx context.Context, ctxName string, callback tellorComm
 		}
 
 		//wait a bit and try again
-		time.Sleep(5 * time.Second)
+		time.Sleep(15 * time.Second)
 		i++
 	}
 	fmt.Printf("%s Could not submit txn after 5 attempts\n", ctxName)
 	return nil
+}
+
+func getInt(data []byte) (*big.Int) {
+	if data == nil || len(data) == 0 {
+		return nil
+	}
+
+	val, err := hexutil.DecodeBig(string(data))
+	if err != nil {
+		return nil
+	}
+	return val
 }
