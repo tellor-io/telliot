@@ -31,13 +31,13 @@ Rinkeby - [0x724d1b69a7ba352f11d73fdbdeb7ff869cb22e19](https://rinkeby.etherscan
 ### Instructions for deployment
 
 
-[Tellor Deployment Instructions](https://github.com/tellor-io/TellorMiner/wiki/Launching-the-Miner---Technical)
+[Tellor Deployment Instructions](https://tellor.readthedocs.io/en/latest/MinerSetupTechnical/)
 
 
-[Tellor Deployment Instructions -- For the Non-Technical Miner](https://github.com/tellor-io/TellorMiner/wiki/Launching-the-Miner---Non-Technical)
+[Tellor Deployment Instructions -- For the Non-Technical Miner](https://tellor.readthedocs.io/en/latest/MinerSetupNonTechnical/)
 
 
-[Tellor Deployment Instructions -- From Source](https://github.com/tellor-io/TellorMiner/wiki/Launching-the-Miner---From-Source)
+[Tellor Deployment Instructions -- From Source](https://tellor.readthedocs.io/en/latest/MinerSetupFromSource/)
 
 
 #### How to Contribute<a name="how2contribute"> </a>  
