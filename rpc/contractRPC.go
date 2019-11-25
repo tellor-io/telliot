@@ -116,7 +116,7 @@ func PrepareContractTxn(ctx context.Context,proxy db.DataServerProxy, ctxName st
 		auth := bind.NewKeyedTransactor(privateKey)
 		auth.Nonce = big.NewInt(IntNonce)
 		auth.Value = big.NewInt(0)      // in weiF
-		auth.GasLimit = uint64(2000000) // in units
+		auth.GasLimit = uint64(1500000) // in units
 		if gasPrice.Cmp(big.NewInt(0)) == 0 {
 			gasPrice = big.NewInt(100)
 		}
