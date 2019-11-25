@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"runtime"
 	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/TellorMiner/cli"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
