@@ -112,11 +112,10 @@ func (r *DataRequester) reqDataCallback(ctx context.Context, contract tellorComm
 	b, _ := new(big.Int).SetString("1000000000000000000000", 10)
     c := big.NewInt(0).Sub(trbBalance, b)
 
-	if c.Cmp(big.NewInt(cfg.RequestTips)) <= 0 {
+	if c.Cmp(big.NewInt(cfg.RequestTips)) < 0 {
 		r.log.Info("Not enough tributes to requestData with this tip")
 		return nil,nil
 	}
-
 	if reqID.Cmp(big.NewInt(0)) != 0 {
 		r.log.Info("There is a challenge being mined right now so will not request data")
 		return nil, nil
