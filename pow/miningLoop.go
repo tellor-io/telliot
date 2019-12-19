@@ -55,6 +55,7 @@ type exitChannel chan os.Signal
 //miningLoop represents the main mining loop to response to external channel signals
 type miningLoop struct {
 	id               int
+	start			 uint64
 	mining           bool
 	canMine          bool
 	exitCh           chan os.Signal
@@ -67,9 +68,21 @@ type miningLoop struct {
 	log              *util.Logger
 }
 
+
 func createMiningLoop(id int) (*miningLoop, error) {
+	rand.Seed(time.Now().UnixNano())
+	//this guarantees we won't overflow this variable later
+	//since Int63() always returns a number between [0,2^63-1]
+	//uint64 has a range [0,2^64-1]
+	//the mining loop can therefore run for 2^63 iterations before overflowing
+	start := uint64(rand.Int63())
+	return createMiningLoopWithStart(id, start)
+}
+
+func createMiningLoopWithStart(id int, start uint64) (*miningLoop, error) {
 	return &miningLoop{
 		id:         id,
+		start:		start,
 		log:        util.NewLogger("pow", "MiningWorker-"+strconv.Itoa(id)),
 		exitCh:     make(exitChannel),
 		taskCh:     make(taskChannel),
@@ -77,6 +90,7 @@ func createMiningLoop(id int) (*miningLoop, error) {
 		solutionCh: make(solutionChannel),
 	}, nil
 }
+
 
 func (ml *miningLoop) Start(ctx context.Context) {
 	ml.log.Info("Starting mining loop %d", ml.id)
@@ -158,31 +172,30 @@ func (ml *miningLoop) solveChallenge() {
 	ml.log.Info("Mining on challenge: %x", challenge)
 	ml.log.Info("Solving for difficulty: %d", _difficulty)
 
-	//Generaete random start for worker
-	rand.Seed(time.Now().UnixNano())
-	i := rand.Int()
+	index := ml.start
 
-	//i := 0
 	startTime := time.Now()
 
-	// Constructors for loop objects
-	numHash := new(big.Int)
-	x := new(big.Int)
-	compareZero := big.NewInt(0)
-
 	// Variables for measuring hashrate
-	j := i
+	lastIndex := index
 	sampleTime := startTime
-	heartbeat:= cfg.Heartbeat
+	nextHeartbeat := index + uint64(cfg.Heartbeat)
+
+	//create the hash bytes prefix
+	_string := fmt.Sprintf("%x", challenge) + cfg.PublicAddress
+	bytes := decodeHex(_string)
+
+	//check this many hashes at a time
+	stepSize := uint64(1000)
 	for {
 
-		i++
-		if i % heartbeat == 0 {
-			ml.log.Info("Still Mining")
-			timeDelta := time.Now().Sub(sampleTime)
-			sampleTime = time.Now()
-			iDelta := i - j
-			j = i
+		if index >= nextHeartbeat {
+			now := time.Now()
+			timeDelta := now.Sub(sampleTime)
+			sampleTime = now
+			iDelta := index - lastIndex
+			lastIndex = index
+			nextHeartbeat = index + uint64(cfg.Heartbeat)
 			ml.log.Info("Hashrate: %v  per second", fmt.Sprintf("%.2f",float64(iDelta) / timeDelta.Seconds()))
 		}
 		if !ml.canMine {
@@ -190,39 +203,14 @@ func (ml *miningLoop) solveChallenge() {
 			return
 		}
 
-		//nn := randInt() //do we need to use big number?
-		nn := strconv.Itoa(i)
-
-		nonce := fmt.Sprintf("%x", nn)
-
-		_string := fmt.Sprintf("%x", challenge) + cfg.PublicAddress + nonce
-
-		hash := solsha3.SoliditySHA3(
-			solsha3.Bytes32(decodeHex(_string)),
-		)
-
-		hasher := ripemd160.New()
-		//Consider moving hasher constructor outside loop and replacing with hasher.Reset()
-
-		hasher.Write([]byte(hash))
-		hash1 := hasher.Sum(nil)
-		n := sha256.Sum256(hash1)
-		q := fmt.Sprintf("%x", n)
-
-		numHash, ok := numHash.SetString(q, 16)
-		if !ok {
-			ml.log.Error("Could not set string on numHash")
-			return
-		}
-
-		x.Mod(numHash, _difficulty)
-
-		if x.Cmp(compareZero) == 0 {
+		sol := checkRange(bytes, _difficulty, index, stepSize)
+		index += stepSize
+		if sol != "" {
 			diff := time.Now().Sub(startTime)
-			ml.log.Info("Solution Found: %s in %f secs", nn, diff.Seconds())
+			ml.log.Info("Solution Found: %s in %f secs", sol, diff.Seconds())
 			sol := &miningSolution{
 				challenge: ml.currentChallenge,
-				nonce:     nn,
+				nonce:     sol,
 			}
 			ml.currentChallenge = nil
 			ml.solutionCh <- sol
@@ -230,4 +218,39 @@ func (ml *miningLoop) solveChallenge() {
 			return
 		}
 	}
+}
+
+func checkRange(base []byte, difficulty *big.Int,  start uint64, n uint64) string {
+	baseLen := len(base)
+
+	numHash := new(big.Int)
+	x := new(big.Int)
+	compareZero := big.NewInt(0)
+
+	for i := start; i < (start + n); i++ {
+		nn := strconv.FormatUint(i, 10)
+		base = base[:baseLen]
+		base = append(base, []byte(nn)...)
+		hash(base, numHash)
+		x.Mod(numHash, difficulty)
+		if x.Cmp(compareZero) == 0 {
+			return nn
+		}
+	}
+	return ""
+}
+
+func hash(data []byte, result *big.Int) {
+
+	hash := solsha3.SoliditySHA3(
+		solsha3.Bytes32(data),
+	)
+
+	//Consider moving hasher constructor outside loop and replacing with hasher.Reset()
+	hasher := ripemd160.New()
+
+	hasher.Write([]byte(hash))
+	hash1 := hasher.Sum(nil)
+	n := sha256.Sum256(hash1)
+	result.SetBytes(n[:])
 }
