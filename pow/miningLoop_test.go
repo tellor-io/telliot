@@ -3,6 +3,7 @@ package pow
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"os"
@@ -12,10 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 )
 
-func createChallenge(difficulty int64) *miningChallenge {
-	rand.Seed(time.Now().UnixNano())
-	i := rand.Int()
-	hash := math.PaddedBigBytes(big.NewInt(int64(i)), 32)
+func createChallenge(id int, difficulty int64) *miningChallenge {
+	hash := math.PaddedBigBytes(big.NewInt(int64(id)), 32)
 	var b32 [32]byte
 	for i, v := range hash {
 		b32[i] = v
@@ -26,6 +25,13 @@ func createChallenge(difficulty int64) *miningChallenge {
 		difficulty: big.NewInt(difficulty),
 		requestID:  big.NewInt(1),
 	}
+}
+
+
+func createRandomChallenge(difficulty int64) *miningChallenge {
+	rand.Seed(time.Now().UnixNano())
+	i := rand.Int()
+	return createChallenge(i, difficulty)
 }
 
 func TestBasicMiningLoop(t *testing.T) {
@@ -39,7 +45,7 @@ func TestBasicMiningLoop(t *testing.T) {
 	if miner.mining {
 		t.Fatal("Should not be mining after start without challenge issued")
 	}
-	challenge := createChallenge(1000000)
+	challenge := createRandomChallenge(1000000)
 
 	var receivedSolution *miningSolution
 	go func() {
@@ -62,33 +68,35 @@ func TestBasicMiningLoop(t *testing.T) {
 }
 
 func TestCompletedMiningLoop(t *testing.T) {
-	miner, err := createMiningLoop(1)
+	miner, err := createMiningLoopWithStart(1, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
 	miner.Start(ctx)
 
-	var receivedSolution *miningSolution
-	go func() {
-		receivedSolution = <-miner.solutionCh
-	}()
-	challenge := createChallenge(500)
-	miner.taskCh <- challenge
-	start := time.Now()
-	expiration := time.Now().Add(5 * time.Second)
-	for {
-		if start.After(expiration) {
-			t.Fatal("Expected mining to finish within 5 seconds")
+	testVectors := make(map[int]string)
+	testVectors[0] = "19"
+	testVectors[1] = "133"
+	testVectors[2] = "8"
+	testVectors[3] = "442"
+	testVectors[4] = "528"
+	for k,v := range testVectors {
+		challenge := createChallenge(k, 500)
+		miner.taskCh <- challenge
+		timeout := time.Millisecond * 50
+		select {
+		case sol := <-miner.solutionCh:
+			if sol == nil {
+				t.Fatal("Expected a mining solution in the end")
+			}
+			if sol.nonce != v {
+				t.Fatal("expected a different number of hashes before finding solution")
+			}
+		case <-time.After(timeout):
+			t.Fatalf("Expected mining to finish within %s", timeout.String())
 		}
-		time.Sleep(1 * time.Second)
-		if !miner.mining {
-			break
-		}
-	}
 
-	if receivedSolution == nil {
-		t.Fatal("Expected a mining solution in the end")
 	}
 }
 
@@ -104,8 +112,8 @@ func TestMiningLoopNewChallengeInterrupt(t *testing.T) {
 	go func() {
 		receivedSolution = <-miner.solutionCh
 	}()
-	challenge := createChallenge(1000000)
-	challenge2 := createChallenge(500)
+	challenge := createRandomChallenge(1000000)
+	challenge2 := createRandomChallenge(500)
 	miner.taskCh <- challenge
 	time.Sleep(10 * time.Millisecond)
 	if receivedSolution == nil {
@@ -128,7 +136,7 @@ func TestMiningLoopStop(t *testing.T) {
 	ctx := context.Background()
 	miner.Start(ctx)
 
-	challenge := createChallenge(1000000)
+	challenge := createRandomChallenge(1000000)
 	miner.taskCh <- challenge
 	time.Sleep(10 * time.Millisecond)
 	if miner.mining {
@@ -154,7 +162,7 @@ func TestMiningLoopOSInterrupt(t *testing.T) {
 	ctx := context.Background()
 	miner.Start(ctx)
 
-	challenge := createChallenge(1000000)
+	challenge := createRandomChallenge(1000000)
 	miner.taskCh <- challenge
 	time.Sleep(10 * time.Millisecond)
 	if miner.mining {
@@ -171,3 +179,41 @@ func TestMiningLoopOSInterrupt(t *testing.T) {
 		}
 	}
 }
+
+func TestHashFunction(t *testing.T) {
+
+	challenge := createChallenge(734561, 500)
+
+	testVectors := make(map[int]string)
+	testVectors[46] = "7a29a4ea30744b40ff70d9a3ef8e6cc1ec8aa0a80a8a914ad4c0e9c9ea781b7"
+	testVectors[3751] = "94c7bbe18751463f8e84a433c3414602b3d569b840e403c92bae8e5b81726c6d"
+	testVectors[982879] = "866db7221f0bfcd36efd3e00da593a081c8519995659f8abcf97f189ecba6c64"
+	testVectors[5] = "acb584c01027480cc06a039f9dba9b1d834efa9b34fa41da95245956bcf353a1"
+	testVectors[0] = "b864b47407a9f328a3d5eee5c1996ea048ac35e2f3a96396c34555aa7ea4ff4a"
+	testVectors[1] = "6ad05c010b7ec871d7d72a7e8d12ad69f00f73ada2553ad517185fbfc1e3da82"
+
+	result := new(big.Int)
+	for k,v := range testVectors {
+		nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", k))
+		_string := fmt.Sprintf("%x", challenge.challenge) + "abcd0123" + nonce
+		bytes := decodeHex(_string)
+		hash(bytes, result)
+		if result.Text(16) != v {
+			t.Fatalf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16))
+		}
+	}
+}
+
+func BenchmarkHashFunction(b *testing.B) {
+	challenge := createChallenge(0, 500)
+	result := new(big.Int)
+	nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", 10))
+	_string := fmt.Sprintf("%x", challenge.challenge) + "abcd0123" + nonce
+	bytes := decodeHex(_string)
+
+	for i := 0; i < b.N; i++ {
+		hash(bytes, result)
+	}
+}
+
+
