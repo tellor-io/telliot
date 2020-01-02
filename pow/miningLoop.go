@@ -3,7 +3,6 @@ package pow
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"log"
 	"math/big"
@@ -13,10 +12,8 @@ import (
 	"sync"
 	"time"
 
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/util"
-	"golang.org/x/crypto/ripemd160"
 )
 
 /**
@@ -27,6 +24,18 @@ import (
  * channel is for nonce solutions. Something downstream handles post-nonce verification
  * and submission on-chain
  */
+
+// interface for all mining implementations
+type Hasher interface {
+	//base is a 56 byte slice containing the challenge and public address
+	// the guessed nonce is appended to this slice and used as input to the first hash fn
+	// returns a valid nonce, or empty string if none was found
+	CheckRange(base []byte, difficulty *big.Int,  start uint64, n uint64) (string, error)
+
+	//number of hashes this backend checks at a time
+	StepSize() uint64
+}
+
 
 //miningChallenge holds information about a PoW challenge
 type miningChallenge struct {
@@ -66,20 +75,21 @@ type miningLoop struct {
 	pendingChallenge *miningChallenge
 	miningCycle      sync.WaitGroup
 	log              *util.Logger
+	backend			 Hasher
 }
 
 
-func createMiningLoop(id int) (*miningLoop, error) {
+func createMiningLoop(id int, impl Hasher) (*miningLoop, error) {
 	rand.Seed(time.Now().UnixNano())
 	//this guarantees we won't overflow this variable later
 	//since Int63() always returns a number between [0,2^63-1]
 	//uint64 has a range [0,2^64-1]
 	//the mining loop can therefore run for 2^63 iterations before overflowing
 	start := uint64(rand.Int63())
-	return createMiningLoopWithStart(id, start)
+	return createMiningLoopWithStart(id, start, impl)
 }
 
-func createMiningLoopWithStart(id int, start uint64) (*miningLoop, error) {
+func createMiningLoopWithStart(id int, start uint64, impl Hasher) (*miningLoop, error) {
 	return &miningLoop{
 		id:         id,
 		start:		start,
@@ -88,6 +98,7 @@ func createMiningLoopWithStart(id int, start uint64) (*miningLoop, error) {
 		taskCh:     make(taskChannel),
 		cancelCh:   make(cancelChannel),
 		solutionCh: make(solutionChannel),
+		backend:	impl,
 	}, nil
 }
 
@@ -181,12 +192,12 @@ func (ml *miningLoop) solveChallenge() {
 	sampleTime := startTime
 	nextHeartbeat := index + uint64(cfg.Heartbeat)
 
-	//create the hash bytes prefix
+	//create the hash prefix
 	_string := fmt.Sprintf("%x", challenge) + cfg.PublicAddress
-	bytes := decodeHex(_string)
+	hashPrefix := decodeHex(_string)
 
 	//check this many hashes at a time
-	stepSize := uint64(1000)
+	stepSize := ml.backend.StepSize()
 	for {
 
 		if index >= nextHeartbeat {
@@ -203,7 +214,11 @@ func (ml *miningLoop) solveChallenge() {
 			return
 		}
 
-		sol := checkRange(bytes, _difficulty, index, stepSize)
+		sol, err := ml.backend.CheckRange(hashPrefix, _difficulty, index, stepSize)
+		if err != nil {
+			ml.log.Error("Mining backend failed: %s", err.Error())
+			return
+		}
 		index += stepSize
 		if sol != "" {
 			diff := time.Now().Sub(startTime)
@@ -220,37 +235,3 @@ func (ml *miningLoop) solveChallenge() {
 	}
 }
 
-func checkRange(base []byte, difficulty *big.Int,  start uint64, n uint64) string {
-	baseLen := len(base)
-
-	numHash := new(big.Int)
-	x := new(big.Int)
-	compareZero := big.NewInt(0)
-
-	for i := start; i < (start + n); i++ {
-		nn := strconv.FormatUint(i, 10)
-		base = base[:baseLen]
-		base = append(base, []byte(nn)...)
-		hash(base, numHash)
-		x.Mod(numHash, difficulty)
-		if x.Cmp(compareZero) == 0 {
-			return nn
-		}
-	}
-	return ""
-}
-
-func hash(data []byte, result *big.Int) {
-
-	hash := solsha3.SoliditySHA3(
-		solsha3.Bytes32(data),
-	)
-
-	//Consider moving hasher constructor outside loop and replacing with hasher.Reset()
-	hasher := ripemd160.New()
-
-	hasher.Write([]byte(hash))
-	hash1 := hasher.Sum(nil)
-	n := sha256.Sum256(hash1)
-	result.SetBytes(n[:])
-}

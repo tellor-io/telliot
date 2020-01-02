@@ -52,7 +52,7 @@ type testSubmit struct {
 	contract *testContract
 }
 
-func (t testSubmit) PrepareTransaction(ctx context.Context, ctxName string, fn tellorCommon.TransactionGeneratorFN) error {
+func (t testSubmit) PrepareTransaction(ctx context.Context, proxy db.DataServerProxy,ctxName string, fn tellorCommon.TransactionGeneratorFN) error {
 	_, err := fn(ctx, *t.contract)
 	return err
 }
@@ -188,7 +188,7 @@ func runTest(t *testing.T, DB db.DB, proxy db.DataServerProxy, server *rest.Serv
 
 	workers := make([]*Worker, minerCount)
 	for i := 0; i < minerCount; i++ {
-		w, err := CreateWorker(i+1, submitter, 2, proxy)
+		w, err := CreateWorker(i+1, submitter, 2, proxy, NewCpuMiner(50e3))
 		if err != nil {
 			t.Fatal(err)
 		}

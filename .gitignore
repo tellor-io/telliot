@@ -19,3 +19,5 @@ pkg/darwin_amd64
 */myconfig.json
 
 /dist
+
+./GPUMiner2

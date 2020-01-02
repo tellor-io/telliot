@@ -28,11 +28,13 @@ func CreateWorker(
 	id int,
 	submitter tellorCommon.TransactionSubmitter,
 	checkIntervalSeconds time.Duration,
-	proxy db.DataServerProxy) (*Worker, error) {
+	proxy db.DataServerProxy,
+	backend Hasher,
+) (*Worker, error) {
 	if checkIntervalSeconds == 0 {
 		checkIntervalSeconds = 15
 	}
-	loop, err := createMiningLoop(id)
+	loop, err := createMiningLoop(id, backend)
 	if err != nil {
 		return nil, err
 	}

@@ -122,7 +122,6 @@ func main() {
 		if cli.Miner {
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
-			//miner, err = ops.CreateMinerOps(ctx, ch)
 			miner, err = ops.CreateMiningManager(ctx, ch, ops.NewSubmitter())
 			if err != nil {
 				log.Fatal(err)
