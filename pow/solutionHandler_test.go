@@ -36,7 +36,7 @@ type testSolutionSubmit struct {
 	contract *solutionContract
 }
 
-func (s *testSolutionSubmit) PrepareTransaction(ctx context.Context, ctxName string, fn tellorCommon.TransactionGeneratorFN) error {
+func (s *testSolutionSubmit) PrepareTransaction(ctx context.Context, proxy db.DataServerProxy, ctxName string, fn tellorCommon.TransactionGeneratorFN) error {
 	_, err := fn(ctx, *s.contract)
 	return err
 }

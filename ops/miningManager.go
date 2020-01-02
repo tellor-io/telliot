@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"time"
+	"fmt"
 
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -44,14 +45,37 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 	var miners []*WorkerWrapper
 	proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 	miners = make([]*WorkerWrapper, cfg.NumProcessors, cfg.NumProcessors)
-	for i := 0; i < cfg.NumProcessors; i++ {
-		miner, err := pow.CreateWorker(i, submitter, cfg.MiningInterruptCheckInterval, proxy)
+	fmt.Println("USE GPUS = ",cfg.UseGPU)
+	if !cfg.UseGPU{
+		fmt.Println("Using the CPUMiner, processors: ",cfg.NumProcessors)
+		for i := 0; i < cfg.NumProcessors; i++ {
+			miner, err := pow.CreateWorker(i, submitter, cfg.MiningInterruptCheckInterval, proxy, pow.NewCpuMiner(10e3))
+			if err != nil {
+				log.Fatal(err)
+			}
+			miners[i] = &WorkerWrapper{miner: miner}
+		}
+	}else{
+		gpus, err := pow.GetOpenCLGPUs()
+		fmt.Println("Using GPU's!! ",len(gpus))
 		if err != nil {
+			fmt.Println("Number of GPU's: ",gpus)
 			log.Fatal(err)
 		}
-		miners[i] = &WorkerWrapper{miner: miner}
+		miners = make([]*WorkerWrapper, len(gpus), len(gpus))
+		for i:=0; i< len(gpus);i++{
+			thisMiner,err := pow.NewGpuMiner(gpus[i])
+			if err != nil {
+				fmt.Println("Error in GPU: ",i)
+				log.Fatal(err)
+			}
+			miner, err := pow.CreateWorker(i, submitter, cfg.MiningInterruptCheckInterval, proxy, thisMiner)
+			if err != nil {
+				log.Fatal(err)
+			}
+			miners[i] = &WorkerWrapper{miner: miner}
+		}
 	}
-
 	rExit := make(chan os.Signal)
 
 	dataRequester := CreateDataRequester(rExit, submitter, cfg.RequestDataInterval,proxy)

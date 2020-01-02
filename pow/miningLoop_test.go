@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/tellor-io/TellorMiner/config"
 	"math/big"
 	"math/rand"
 	"os"
@@ -35,7 +36,7 @@ func createRandomChallenge(difficulty int64) *miningChallenge {
 }
 
 func TestBasicMiningLoop(t *testing.T) {
-	miner, err := createMiningLoop(1)
+	miner, err := createMiningLoop(1, NewCpuMiner(50e3))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,32 +68,42 @@ func TestBasicMiningLoop(t *testing.T) {
 	}
 }
 
-func TestCompletedMiningLoop(t *testing.T) {
-	miner, err := createMiningLoopWithStart(1, 0)
+func CheckSolution(t *testing.T, challenge *miningChallenge, nonce string) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_string := fmt.Sprintf("%x", challenge.challenge) + cfg.PublicAddress
+	hashIn := decodeHex(_string)
+	hashIn = append(hashIn, []byte(nonce)...)
+	a := new(big.Int)
+	hash(hashIn, a)
+
+	a.Mod(a, challenge.difficulty)
+	if !a.IsUint64() || a.Uint64() != 0 {
+		t.Fatalf("nonce: %s remainder: %s\n", string(hashIn[52:]), a.Text(10))
+	}
+}
+
+func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
+	miner, err := createMiningLoopWithStart(1, 0, impl)
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
 	miner.Start(ctx)
 
-	testVectors := make(map[int]string)
-	testVectors[0] = "19"
-	testVectors[1] = "133"
-	testVectors[2] = "8"
-	testVectors[3] = "442"
-	testVectors[4] = "528"
-	for k,v := range testVectors {
-		challenge := createChallenge(k, 500)
+	testVectors := []int{19, 133, 8, 442, 1231}
+	for _,v := range testVectors {
+		challenge := createChallenge(v, diff)
 		miner.taskCh <- challenge
-		timeout := time.Millisecond * 50
+		timeout := time.Millisecond * 100
 		select {
 		case sol := <-miner.solutionCh:
 			if sol == nil {
 				t.Fatal("Expected a mining solution in the end")
 			}
-			if sol.nonce != v {
-				t.Fatal("expected a different number of hashes before finding solution")
-			}
+			CheckSolution(t, challenge, sol.nonce)
 		case <-time.After(timeout):
 			t.Fatalf("Expected mining to finish within %s", timeout.String())
 		}
@@ -100,8 +111,26 @@ func TestCompletedMiningLoop(t *testing.T) {
 	}
 }
 
+func TestCpuMiner(t *testing.T) {
+	impl := NewCpuMiner(10e3)
+	DoCompleteMiningLoop(t, impl, 100)
+}
+
+func TestGpuMiner(t *testing.T) {
+	gpus, err := GetOpenCLGPUs()
+	if err != nil {
+		fmt.Println(gpus)
+		t.Fatal(err)
+	}
+	impl, err := NewGpuMiner(gpus[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	DoCompleteMiningLoop(t, impl, 1000)
+}
+
 func TestMiningLoopNewChallengeInterrupt(t *testing.T) {
-	miner, err := createMiningLoop(1)
+	miner, err := createMiningLoop(1, NewCpuMiner(50e3))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +158,7 @@ func TestMiningLoopNewChallengeInterrupt(t *testing.T) {
 }
 
 func TestMiningLoopStop(t *testing.T) {
-	miner, err := createMiningLoop(1)
+	miner, err := createMiningLoop(1, NewCpuMiner(50e3))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +184,7 @@ func TestMiningLoopStop(t *testing.T) {
 }
 
 func TestMiningLoopOSInterrupt(t *testing.T) {
-	miner, err := createMiningLoop(1)
+	miner, err := createMiningLoop(1, NewCpuMiner(50e3))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"encoding/json"
 	"log"
 	"os"
@@ -35,6 +36,7 @@ type Config struct {
 	NumProcessors                int           `json:"numProcessors"`
 	Heartbeat                    int           `json:"heartbeat"`
 	ServerWhitelist              []string      `json:"serverWhitelist"`
+	UseGPU					     bool 	       `json:"useGPU"`
 	logger                       *util.Logger
 	mux                          sync.Mutex
 }
@@ -76,6 +78,9 @@ func ParseConfig(path string) (*Config, error) {
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
 	config.logger = util.NewLogger("config", "Config")
+	if config.UseGPU == false {
+		fmt.Println("Not using GPU's, check config file")
+	}
 	if config.FetchTimeout == 0 {
 		config.FetchTimeout = defaultTimeout
 	}
