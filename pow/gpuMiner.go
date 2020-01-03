@@ -1,15 +1,16 @@
 package pow
 
+//this command generates a go file containing the complete opencl source as a string constant
+//allows the opencl sources to be burned into the miner executable
+//AND fixes the problem with nvidia's compute cache not respecting #include statements
+//go:generate go run generate_opencl.go
+
+
 import (
 	"fmt"
 	"github.com/jgillich/go-opencl/cl"
-	"io/ioutil"
 	"math/big"
-	"os"
-	"path"
-	"path/filepath"
 	"reflect"
-	"runtime"
 	"unsafe"
 )
 
@@ -49,31 +50,9 @@ func GetOpenCLGPUs() ([]*cl.Device, error) {
 
 //prepare an openCL device for work
 func NewGpuMiner(device *cl.Device) (*GpuMiner, error) {
-	curr, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	defer os.Chdir(curr)
-
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return nil, fmt.Errorf("couldn't find opencl source directory")
-	}
-	err = os.Chdir(filepath.Dir(filename) + "/opencl_sources")
-	if err != nil {
-		return nil, fmt.Errorf("couldn't cd into opencl sources: %s", err.Error())
-	}
-	fmt.Printf("Filename : %q, Dir : %q\n", filename, path.Dir(filename))
-
-	kernelSourceFile := "kernel.cl"
-	bytes, err := ioutil.ReadFile(kernelSourceFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read kernel source file %s: %s\n", kernelSourceFile, err.Error())
-	}
-	kernelSource := string(bytes)
-
 
 	var g GpuMiner
+	var err error
 	g.count = 512
 	g.localSize = 64
 	g.globalSize = 64*g.localSize
@@ -85,7 +64,7 @@ func NewGpuMiner(device *cl.Device) (*GpuMiner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("CreateCommandQueue failed: %+v", err)
 	}
-	program, err := g.context.CreateProgramWithSource([]string{kernelSource})
+	program, err := g.context.CreateProgramWithSource([]string{KernelSource})
 	if err != nil {
 		return nil, fmt.Errorf("CreateProgramWithSource failed: %+v", err)
 	}
