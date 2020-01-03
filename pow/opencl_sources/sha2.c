@@ -15,7 +15,7 @@
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTOR(S) ``AS IS'' AND
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTOR(S) ''AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTOR(S) BE LIABLE
@@ -28,7 +28,58 @@
  * SUCH DAMAGE.
  */
 
-#include "sha2.h"
+#ifndef __SHA2_H__
+#define __SHA2_H__
+
+
+#define SHA256_BLOCK_LENGTH		64
+#define SHA256_DIGEST_LENGTH		32
+#define SHA256_DIGEST_STRING_LENGTH	(SHA256_DIGEST_LENGTH * 2 + 1)
+
+typedef struct _SHA256_CTX {
+	uint32_t	state[8];
+	uint64_t	bitcount;
+	uint32_t	buffer[SHA256_BLOCK_LENGTH/sizeof(uint32_t)];
+} SHA256_CTX;
+
+/*** ENDIAN REVERSAL MACROS *******************************************/
+#ifndef LITTLE_ENDIAN
+#define LITTLE_ENDIAN 1234
+#define BIG_ENDIAN    4321
+#endif
+
+#ifndef BYTE_ORDER
+#define BYTE_ORDER LITTLE_ENDIAN
+#endif
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+#define REVERSE32(w,x)	{ \
+	uint32_t tmp = (w); \
+	tmp = (tmp >> 16) | (tmp << 16); \
+	(x) = ((tmp & 0xff00ff00UL) >> 8) | ((tmp & 0x00ff00ffUL) << 8); \
+}
+#define REVERSE64(w,x)	{ \
+	uint64_t tmp = (w); \
+	tmp = (tmp >> 32) | (tmp << 32); \
+	tmp = ((tmp & 0xff00ff00ff00ff00ULL) >> 8) | \
+	      ((tmp & 0x00ff00ff00ff00ffULL) << 8); \
+	(x) = ((tmp & 0xffff0000ffff0000ULL) >> 16) | \
+	      ((tmp & 0x0000ffff0000ffffULL) << 16); \
+}
+#endif /* BYTE_ORDER == LITTLE_ENDIAN */
+
+extern constant uint32_t sha256_initial_hash_value[8];
+
+
+void sha256_Transform(const uint32_t* state_in, const uint32_t* data, uint32_t* state_out);
+void sha256_Init(SHA256_CTX *);
+void sha256_Update(SHA256_CTX*, const uint8_t*, size_t);
+void sha256_Final(SHA256_CTX*, uint8_t*);
+void sha256_Raw(const uint8_t*, size_t, uint8_t*);
+char* sha256_Data(const uint8_t*, size_t, char[SHA256_DIGEST_STRING_LENGTH]);
+
+
+#endif
 
 /*
  * ASSERT NOTE:

@@ -1,23 +1,4 @@
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-typedef unsigned long uint64_t;
-typedef unsigned long long uint128_t;
-
-
-// NOTE - if you are editing the opencl code, and change these includes *WITHOUT* changing this file itself
-// cuda's terrible caching will give you the OLD version (lol)
-// if you are developing, you can delete ~/.nv/ComputeCache to reset the cache
-// see https://stackoverflow.com/questions/31338520/
-#include "memstuff.c"
-#include "ripemd160.c"
-#include "sha2.c"
-#include "mul32.c"
-#include "keccak.cl"
-
-constant char hex[] = "0123456789abcdef";
-
 
 __kernel void tellor(
     //challenge + public address
