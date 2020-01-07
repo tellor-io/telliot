@@ -2,10 +2,10 @@ package ops
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
-	"fmt"
 
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -31,10 +31,10 @@ type MiningMgr struct {
 	requesterExit chan os.Signal
 }
 
-//WorkerWrapper allows us to stand up multiple mining workers, one per cpu
-type WorkerWrapper struct {
-	miner *pow.Worker
-}
+////WorkerWrapper allows us to stand up multiple mining workers, one per cpu
+//type WorkerWrapper struct {
+//	miner *pow.Worker
+//}
 
 //CreateMiningManager creates a new manager that mananges mining and data requests
 func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter) (*MiningMgr, error) {
@@ -42,43 +42,41 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 	if err != nil {
 		return nil, err
 	}
-	var miners []*WorkerWrapper
+
 	proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
-	miners = make([]*WorkerWrapper, cfg.NumProcessors, cfg.NumProcessors)
-	fmt.Println("USE GPUS = ",cfg.UseGPU)
-	if !cfg.UseGPU{
-		fmt.Println("Using the CPUMiner, processors: ",cfg.NumProcessors)
+	var foo []pow.Hasher
+	if !cfg.UseGPU {
+		fmt.Printf("Using %d CPUMiners\n", cfg.NumProcessors)
 		for i := 0; i < cfg.NumProcessors; i++ {
-			miner, err := pow.CreateWorker(i, submitter, cfg.MiningInterruptCheckInterval, proxy, pow.NewCpuMiner(10e3))
-			if err != nil {
-				log.Fatal(err)
-			}
-			miners[i] = &WorkerWrapper{miner: miner}
+			foo = append(foo, pow.NewCpuMiner(10e3))
 		}
-	}else{
+	} else {
 		gpus, err := pow.GetOpenCLGPUs()
-		fmt.Println("Using GPU's!! ",len(gpus))
+		fmt.Printf("Using %d GPUMiners\n", len(gpus))
 		if err != nil {
-			fmt.Println("Number of GPU's: ",gpus)
 			log.Fatal(err)
 		}
-		miners = make([]*WorkerWrapper, len(gpus), len(gpus))
-		for i:=0; i< len(gpus);i++{
-			thisMiner,err := pow.NewGpuMiner(gpus[i])
+		for _, gpu := range gpus {
+			thisMiner, err := pow.NewGpuMiner(gpu)
 			if err != nil {
-				fmt.Println("Error in GPU: ",i)
+				fmt.Printf("Error initializing GPU %s: %s", gpu.Name(), err.Error())
 				log.Fatal(err)
 			}
-			miner, err := pow.CreateWorker(i, submitter, cfg.MiningInterruptCheckInterval, proxy, thisMiner)
-			if err != nil {
-				log.Fatal(err)
-			}
-			miners[i] = &WorkerWrapper{miner: miner}
+			foo = append(foo, thisMiner)
 		}
 	}
+	miners = make([]*WorkerWrapper, len(foo), len(foo))
+	for i, miner := range foo {
+		thisMiner, err := pow.CreateWorker(i, submitter, cfg.MiningInterruptCheckInterval, proxy, miner)
+		if err != nil {
+			log.Fatal(err)
+		}
+		miners[i] = &WorkerWrapper{miner: thisMiner}
+	}
+
 	rExit := make(chan os.Signal)
 
-	dataRequester := CreateDataRequester(rExit, submitter, cfg.RequestDataInterval,proxy)
+	dataRequester := CreateDataRequester(rExit, submitter, cfg.RequestDataInterval, proxy)
 	log := util.NewLogger("ops", "MiningMgr")
 
 	return &MiningMgr{exitCh: exitCh, log: log, Running: false, miners: miners, dataRequester: dataRequester,

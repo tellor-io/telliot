@@ -39,11 +39,11 @@ const (
  */
 
 type miningTasker struct {
-	exitCh           exitChannel
+	//exitCh           exitChannel
 	running          bool
 	id               int
-	taskCh           taskChannel
-	cancelCh         cancelChannel
+	//taskCh           taskChannel
+	//cancelCh         cancelChannel
 	log              *util.Logger
 	checkInterval    time.Duration
 	proxy            db.DataServerProxy
@@ -52,8 +52,8 @@ type miningTasker struct {
 }
 
 func createTasker(id int,
-	taskCh taskChannel,
-	cancelCh cancelChannel,
+	//taskCh taskChannel,
+	//cancelCh cancelChannel,
 	checkInterval time.Duration,
 	proxy db.DataServerProxy) (*miningTasker, error) {
 
@@ -76,9 +76,9 @@ func createTasker(id int,
 
 	return &miningTasker{
 		id:            id,
-		taskCh:        taskCh,
-		cancelCh:      cancelCh,
-		exitCh:        make(exitChannel),
+		//taskCh:        taskCh,
+		//cancelCh:      cancelCh,
+		//exitCh:        make(exitChannel),
 		checkInterval: checkInterval,
 		proxy:         proxy,
 		pubKey:        pubKey,
@@ -98,13 +98,13 @@ func (mt *miningTasker) Start(ctx context.Context) {
 		mt.log.Info("Starting mining tasker loop")
 		for {
 			select {
-			case _ = <-mt.exitCh:
-				{
-					mt.log.Info("Stopping mining tasker on OS interrupt")
-					ticker.Stop()
-					mt.running = false
-					return
-				}
+			//case _ = <-mt.exitCh:
+			//	{
+			//		mt.log.Info("Stopping mining tasker on OS interrupt")
+			//		ticker.Stop()
+			//		mt.running = false
+			//		return
+			//	}
 			case _ = <-ticker.C:
 				{
 					mt.pullUpdates()
@@ -140,7 +140,7 @@ func (mt *miningTasker) pullUpdates() {
 
 	if mt.hasPendingTxn(m[pendingKey], m[db.CurrentChallengeKey]) {
 		mt.log.Info("Already have a pending solution for the challenge, stopping any ongoing mining")
-		mt.cancelCh <- true
+		//mt.cancelCh <- true
 		return
 	}
 
@@ -174,7 +174,7 @@ func (mt *miningTasker) pullUpdates() {
 
 	if mt.isEmptyChallenge(newChallenge) {
 		mt.log.Info("Current challenge is empty, cancelling any ongoing mining threads")
-		mt.cancelCh <- true
+		//mt.cancelCh <- true
 		return
 	}
 
@@ -185,7 +185,7 @@ func (mt *miningTasker) pullUpdates() {
 	mt.currentChallenge = newChallenge
 
 	//and send to output
-	mt.taskCh <- newChallenge
+	//mt.taskCh <- newChallenge
 
 	mt.log.Info("Challenge submitted for mining")
 }

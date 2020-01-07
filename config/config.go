@@ -34,7 +34,7 @@ type Config struct {
 	GasMultiplier                float32       `json:"gasMultiplier"`
 	GasMax                       uint          `json:"gasMax"`
 	NumProcessors                int           `json:"numProcessors"`
-	Heartbeat                    int           `json:"heartbeat"`
+	Heartbeat                    time.Duration `json:"heartbeat"`
 	ServerWhitelist              []string      `json:"serverWhitelist"`
 	UseGPU					     bool 	       `json:"useGPU"`
 	logger                       *util.Logger

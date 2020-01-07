@@ -2,6 +2,7 @@ package pow
 
 import (
 	"crypto/sha256"
+	"fmt"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	"golang.org/x/crypto/ripemd160"
 	"math/big"
@@ -10,19 +11,25 @@ import (
 
 
 
-type CpuMiner uint64
+type CpuMiner int64
 
-func NewCpuMiner(step uint64) *CpuMiner {
-	x := CpuMiner(step)
+func NewCpuMiner(id int64) *CpuMiner {
+	x := CpuMiner(id)
 	return &x
 }
 
 func (c *CpuMiner)StepSize() uint64 {
-	return uint64(*c)
+	return 1
 }
 
-func (c *CpuMiner)CheckRange(base []byte, difficulty *big.Int,  start uint64, n uint64) (string, error) {
-	baseLen := len(base)
+func (c *CpuMiner)Name() string {
+	return fmt.Sprintf("CPU %d", *c)
+}
+
+func (c *CpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (string, error) {
+	baseLen := len(hash.prefix)
+	hashInput := make([]byte, len(hash.prefix), len(hash.prefix))
+	copy(hashInput, hash.prefix)
 
 	numHash := new(big.Int)
 	x := new(big.Int)
@@ -30,10 +37,10 @@ func (c *CpuMiner)CheckRange(base []byte, difficulty *big.Int,  start uint64, n 
 
 	for i := start; i < (start + n); i++ {
 		nn := strconv.FormatUint(i, 10)
-		base = base[:baseLen]
-		base = append(base, []byte(nn)...)
-		hash(base, numHash)
-		x.Mod(numHash, difficulty)
+		hashInput = hashInput[:baseLen]
+		hashInput = append(hashInput, []byte(nn)...)
+		hashFn(hashInput, numHash)
+		x.Mod(numHash, hash.difficulty)
 		if x.Cmp(compareZero) == 0 {
 			return nn, nil
 		}
@@ -41,7 +48,7 @@ func (c *CpuMiner)CheckRange(base []byte, difficulty *big.Int,  start uint64, n 
 	return "", nil
 }
 
-func hash(data []byte, result *big.Int) {
+func hashFn(data []byte, result *big.Int) {
 
 	hash := solsha3.SoliditySHA3(data)
 
