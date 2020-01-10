@@ -2,7 +2,6 @@ typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 typedef unsigned long uint64_t;
-typedef unsigned long long uint128_t;
 
 
 constant char hex[] = "0123456789abcdef";
@@ -34,7 +33,6 @@ void *memset(void * dest, int c, size_t n)
     k = -(uintptr_t)s & 3;
     s += k;
     n -= k;
-    n &= -4;
     n /= 4;
 
     uint32_t *ws = (uint32_t *)s;
@@ -59,8 +57,9 @@ void * memcpy(void *dst0, const void *src0, size_t length)
 	const char *src = src0;
 	size_t t;
 
-	if (length == 0 || dst == src)		/* nothing to do */
-		goto done;
+	if (length == 0 || dst == src) {		/* nothing to do */
+		return dst0;
+	}
 
 	/*
 	 * Macros: loop-t-times; and loop-t-times, t>0
@@ -114,6 +113,5 @@ void * memcpy(void *dst0, const void *src0, size_t length)
 		t = length & wmask;
 		TLOOP(*--dst = *--src);
 	}
-done:
-	return (dst0);
+	return dst0;
 }
