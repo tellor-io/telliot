@@ -48,29 +48,6 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	pendingChallenge, err := DB.Get(db.PendingChallengeKey)
-	if err != nil {
-		fmt.Println("Problem retrieving pending challenge", err)
-		return err
-	}
-	if len(pendingChallenge) > 0 {
-		var asBytes32 [32]byte
-		copy(asBytes32[:], pendingChallenge)
-		didMine, err := instance.DidMine(nil, asBytes32, fromAddress)
-		if err != nil {
-			fmt.Println("Problem checking pending txn for mining status", err)
-			return err
-		}
-		if didMine {
-			fmt.Println("Removing now-confirmed pending challenge from DB")
-			err = DB.Delete(db.PendingChallengeKey)
-			if err != nil {
-				fmt.Println("Could not delete pending challenge txn", err)
-				return err
-			}
-		}
-	}
-
 	//if we've mined it, don't save it
 	myStatus, err := instance.DidMine(nil, currentChallenge, fromAddress)
 	if err != nil {

@@ -149,9 +149,9 @@ func main() {
 			*ch <- os.Interrupt
 		}
 		cnt := 0
+		start := time.Now()
 		for {
 			cnt++
-			start := time.Now()
 			dsStopped := false
 			minerStopped := false
 
