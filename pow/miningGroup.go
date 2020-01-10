@@ -191,6 +191,8 @@ func (g *MiningGroup)Mine(input chan *Work, output chan *Result) {
 		case work := <-input:
 			if work == nil {
 				shouldRun = false
+				currWork = nil
+				currHashSettings = nil
 				break
 			}
 			sent = 0

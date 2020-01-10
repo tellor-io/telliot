@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/tellor-io/TellorMiner/config"
 	"math/big"
-	"math/rand"
 	"testing"
 	"time"
 
@@ -25,46 +24,6 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 	}
 }
 
-
-func createRandomChallenge(difficulty int64) *MiningChallenge {
-	rand.Seed(time.Now().UnixNano())
-	i := rand.Int()
-	return createChallenge(i, difficulty)
-}
-
-//func TestBasicMiningLoop(t *testing.T) {
-//	miner, err := createMiningLoop(1, NewCpuMiner(50e3))
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	ctx := context.Background()
-//	miner.Start(ctx)
-//	time.Sleep(300 * time.Millisecond)
-//	if miner.mining {
-//		t.Fatal("Should not be mining after start without challenge issued")
-//	}
-//	challenge := createRandomChallenge(1000000)
-//
-//	var receivedSolution *miningSolution
-//	go func() {
-//		receivedSolution = <-miner.solutionCh
-//	}()
-//	miner.taskCh <- challenge
-//	time.Sleep(10 * time.Millisecond)
-//	if !miner.mining {
-//		t.Fatal("Expected miner to start mining once issued a challenge")
-//	}
-//	miner.taskCh <- challenge
-//	if !miner.mining && receivedSolution == nil {
-//		t.Fatal("Duplicate task should interrupt mining")
-//	}
-//	miner.cancelCh <- true
-//	time.Sleep(10 * time.Millisecond)
-//	if miner.mining {
-//		t.Fatal("Expected miner to stop mining on cancel")
-//	}
-//}
-
 func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	cfg, err := config.GetConfig()
 	if err != nil {
@@ -82,32 +41,44 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	}
 }
 
-
-
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
-
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	group := NewMiningGroup([]Hasher{impl})
 
+	timeout := time.Millisecond * 200
 
-	timeout := time.Millisecond * 100
+	input := make(chan *Work)
+	output := make(chan *Result)
+
+	go group.Mine(input, output)
 
 	testVectors := []int{19, 133, 8, 442, 1231}
 	for _,v := range testVectors {
 		challenge := createChallenge(v, diff)
-		settings := NewHashSettings(challenge, cfg.PublicAddress)
-		sol, err := group.Mine(settings, 0, 1e6, timeout)
-		if err != nil {
-			t.Fatal(err)
+		input <- &Work{Challenge:challenge, Start:0, N:math.MaxInt64}
+
+		//wait for a solution to be found
+		select {
+		case result := <- output:
+			if result == nil {
+				t.Fatalf("nil result for challenge %d", v)
+			}
+			CheckSolution(t, challenge, result.Nonce)
+		case _ = <-time.After(timeout):
+			t.Fatalf("Expected result for challenge in less than %s", timeout.String())
 		}
-		if sol == "" {
-			t.Fatal("Expected a mining solution in the end")
+	}
+	//tell the mining group to close
+	input <- nil
+
+	//wait for it to close
+	select {
+	case result := <- output:
+		if result != nil {
+			t.Fatalf("expected nil result when closing mining group")
 		}
-		CheckSolution(t, challenge, sol)
+	case _ = <-time.After(timeout):
+		t.Fatalf("Expected mining group to close in less than %s", timeout.String())
 	}
 }
 
@@ -149,22 +120,24 @@ func TestMulti(t *testing.T) {
 		}
 		hashers = append(hashers, impl)
 	}
-
 	fmt.Printf("Using %d hashers\n", len(hashers))
 
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	group := NewMiningGroup(hashers)
+	input := make(chan *Work)
+	output := make(chan *Result)
+	go group.Mine(input, output)
 
 	challenge := createChallenge(0, math.MaxInt64)
-	settings := NewHashSettings(challenge, cfg.PublicAddress)
-	group := NewMiningGroup(hashers)
-	_, err = group.Mine(settings, 0, 1e12, 1000*time.Millisecond)
-	if err != nil {
-		t.Fatal(err)
+	input <- &Work{Challenge:challenge, Start:0, N:math.MaxInt64}
+	time.Sleep(1 * time.Second)
+	input <- nil
+	timeout := 200 * time.Millisecond
+	select {
+		case _ = <-output:
+			group.PrintHashRateSummary()
+		case _ = <-time.After(timeout):
+			t.Fatalf("mining group didn't quit before %s", timeout.String())
 	}
-	group.PrintHashRateSummary()
 }
 
 func TestHashFunction(t *testing.T) {

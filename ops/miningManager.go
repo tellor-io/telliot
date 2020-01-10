@@ -78,6 +78,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 
 		ticker := time.NewTicker(cfg.MiningInterruptCheckInterval.Duration)
 
+		//if you make these buffered, think about the effects on synchronization!
 		input := make(chan *pow.Work)
 		output := make(chan *pow.Result)
 
