@@ -5,6 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/tellor-io/TellorMiner/cli"
+	tellorCommon "github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/util"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -12,14 +18,6 @@ import (
 	"reflect"
 	"sort"
 	"sync"
-	"time"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/TellorMiner/cli"
-	tellorCommon "github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/db"
-	"github.com/tellor-io/TellorMiner/util"
 )
 
 //PSRTracker keeps track of pre-specified requests
@@ -151,13 +149,12 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 		errorCh <- err
 		return
 	}
-	timeout := time.Duration(time.Duration(cfg.FetchTimeout) * time.Second)
 	reqs := make([]*FetchRequest, len(r.APIs))
 	argGroups := make([][]string, len(r.APIs))
 	for i := 0; i < len(r.APIs); i++ {
 		api := r.APIs[i]
 		url, args := util.ParseQueryString(api)
-		reqs[i] = &FetchRequest{queryURL: url, timeout: timeout}
+		reqs[i] = &FetchRequest{queryURL: url, timeout: cfg.FetchTimeout.Duration}
 		argGroups[i] = args
 	}
 	payloads, err := batchFetchWithRetries(reqs)

@@ -156,9 +156,8 @@ func fetchAPI(ctx context.Context, reqID uint, _granularity uint, queryString st
 		return
 	}
 
-	timeout := time.Duration(time.Duration(cfg.FetchTimeout) * time.Second)
 	url, args := util.ParseQueryString(queryString)
-	req := &FetchRequest{queryURL: url, timeout: timeout}
+	req := &FetchRequest{queryURL: url, timeout: cfg.FetchTimeout.Duration}
 	fetchLog.Debug("Fetching price data from: %s\n", url)
 	payload, err := fetchWithRetries(req)
 	if err != nil {

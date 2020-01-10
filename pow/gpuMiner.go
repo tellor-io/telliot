@@ -134,7 +134,6 @@ func (g *GpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (strin
 		}
 
 		if results[0] != 0 {
-			fmt.Println("solution found with GPU!!")
 			return string(results), nil
 		}
 		start += g.StepSize()

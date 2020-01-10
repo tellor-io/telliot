@@ -1,16 +1,11 @@
 package pow
 
 import (
-	"bytes"
-	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"log"
 	"math/big"
-	"strconv"
 	"strings"
-	"time"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -38,34 +33,13 @@ const (
  * - Otherwise, push new challenge to output channel
  */
 
-type miningTasker struct {
-	//exitCh           exitChannel
-	running          bool
-	id               int
-	//taskCh           taskChannel
-	//cancelCh         cancelChannel
+type MiningTasker struct {
 	log              *util.Logger
-	checkInterval    time.Duration
 	proxy            db.DataServerProxy
-	currentChallenge *miningChallenge
 	pubKey           string
 }
 
-func createTasker(id int,
-	//taskCh taskChannel,
-	//cancelCh cancelChannel,
-	checkInterval time.Duration,
-	proxy db.DataServerProxy) (*miningTasker, error) {
-
-	if checkInterval == 0 {
-		checkInterval = 5
-	}
-
-	cfg, err := config.GetConfig()
-	if err != nil {
-		fmt.Printf("Problem getting config, can't proceed at all: %v\n", err)
-		log.Fatal(err)
-	}
+func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 
 	//get address from config
 	_fromAddress := cfg.PublicAddress
@@ -74,56 +48,21 @@ func createTasker(id int,
 	fromAddress := common.HexToAddress(_fromAddress)
 	pubKey := strings.ToLower(fromAddress.Hex())
 
-	return &miningTasker{
-		id:            id,
-		//taskCh:        taskCh,
-		//cancelCh:      cancelCh,
-		//exitCh:        make(exitChannel),
-		checkInterval: checkInterval,
+	return &MiningTasker{
 		proxy:         proxy,
 		pubKey:        pubKey,
-		log:           util.NewLogger("pow", "MiningTasker-"+strconv.Itoa(id)),
-	}, nil
+		log:           util.NewLogger("pow", "MiningTasker"),
+	}
 }
 
-func (mt *miningTasker) Start(ctx context.Context) {
-	mt.log.Info("Starting mining tasker")
-	mt.running = true
-	ticker := time.NewTicker(mt.checkInterval * time.Second)
-
-	//then start run loop
-	go func() {
-		//pull latest updates
-		mt.pullUpdates()
-		mt.log.Info("Starting mining tasker loop")
-		for {
-			select {
-			//case _ = <-mt.exitCh:
-			//	{
-			//		mt.log.Info("Stopping mining tasker on OS interrupt")
-			//		ticker.Stop()
-			//		mt.running = false
-			//		return
-			//	}
-			case _ = <-ticker.C:
-				{
-					mt.pullUpdates()
-				}
-			}
-		}
-	}()
-}
-
-func (mt *miningTasker) pullUpdates() {
+func (mt *MiningTasker) PullUpdates() *miningChallenge {
 	mt.log.Info("Pulling current data from data server...")
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
-	pendingKey := mt.pubKey + "-" + db.PendingChallengeKey
 	keys := []string{
 		db.DifficultyKey,
 		db.CurrentChallengeKey,
 		db.RequestIdKey,
 		dispKey,
-		pendingKey,
 	}
 
 	m, err := mt.proxy.BatchGet(keys)
@@ -135,35 +74,29 @@ func (mt *miningTasker) pullUpdates() {
 	mt.log.Debug("Received data: %v", m)
 
 	if stat := mt.checkDispute(m[dispKey]); stat == statusWaitNext {
-		return
-	}
-
-	if mt.hasPendingTxn(m[pendingKey], m[db.CurrentChallengeKey]) {
-		mt.log.Info("Already have a pending solution for the challenge, stopping any ongoing mining")
-		//mt.cancelCh <- true
-		return
+		return nil
 	}
 
 	diff, stat := mt.getInt(m[db.DifficultyKey])
 	if stat == statusWaitNext || stat == statusFailure {
-		return
+		return nil
 	}
 
 	reqID, stat := mt.getInt(m[db.RequestIdKey])
 	if stat == statusWaitNext || stat == statusFailure {
-		return
+		return nil
 	}
 
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqID.Uint64())
 	m2, err := mt.proxy.BatchGet([]string{valKey})
 	if err != nil {
 		mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
-		return
+		return nil
 	}
 	val := m2[valKey]
 	if val == nil || len(val) == 0 {
 		mt.log.Info("Pricing data not available for request %d, cannot mine yet", reqID.Uint64())
-		return
+		return nil
 	}
 
 	newChallenge := &miningChallenge{
@@ -171,26 +104,10 @@ func (mt *miningTasker) pullUpdates() {
 		difficulty: diff,
 		requestID:  reqID,
 	}
-
-	if mt.isEmptyChallenge(newChallenge) {
-		mt.log.Info("Current challenge is empty, cancelling any ongoing mining threads")
-		//mt.cancelCh <- true
-		return
-	}
-
-	//means we have a valid challenge
-	mt.log.Info("Issuing presumably good challenge")
-
-	//remember it for next cycle
-	mt.currentChallenge = newChallenge
-
-	//and send to output
-	//mt.taskCh <- newChallenge
-
-	mt.log.Info("Challenge submitted for mining")
+	return newChallenge
 }
 
-func (mt *miningTasker) checkDispute(disp []byte) int {
+func (mt *MiningTasker) checkDispute(disp []byte) int {
 	disputed, stat := mt.getInt(disp)
 	if stat == statusWaitNext || stat == statusFailure {
 		if stat == statusWaitNext {
@@ -208,25 +125,7 @@ func (mt *miningTasker) checkDispute(disp []byte) int {
 	return statusSuccess
 }
 
-func (mt *miningTasker) hasPendingTxn(pendingChallenge []byte, currentChallenge []byte) bool {
-	mt.log.Info("Checking whether miner has a pending txn for current challenge...")
-
-	//if the pending challenge is the same as the current challenge, it means we've
-	//already sent a txn for the challenge, and thus we have a pending (or confirmed) txn
-	//for the current challenge and we shouldn't do anything
-	if pendingChallenge != nil && len(pendingChallenge) > 0 {
-		if bytes.Compare(pendingChallenge, currentChallenge) == 0 {
-			return true
-		}
-	}
-
-	mt.log.Info("No pending challenge matches current challenge, continuing")
-	//otherwise, we either have a new challenge that doesn't match our old one, no pending
-	//txn, or an empty new challenge that indicates that we should stop anyway
-	return false
-}
-
-func (mt *miningTasker) isEmptyChallenge(challenge *miningChallenge) bool {
+func (mt *MiningTasker) isEmptyChallenge(challenge *miningChallenge) bool {
 	mt.log.Info("Checking whether current challenge is empty")
 	if challenge.requestID.Cmp(big.NewInt(0)) == 0 {
 		mt.log.Info("Current challenge has 0-value request ID, Cancelling any ongoing mining since previous challenge is complete")
@@ -241,7 +140,7 @@ func (mt *miningTasker) isEmptyChallenge(challenge *miningChallenge) bool {
 	return false
 }
 
-func (mt *miningTasker) getInt(data []byte) (*big.Int, int) {
+func (mt *MiningTasker) getInt(data []byte) (*big.Int, int) {
 	if data == nil || len(data) == 0 {
 		return nil, statusWaitNext
 	}

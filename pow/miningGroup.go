@@ -56,12 +56,12 @@ func NewHashSettings(challenge *miningChallenge, publicAddr string) *HashSetting
 // right now 50ms seems like a good default. This could perhaps be made configurable, but I don't see much benefit
 const targetChunkTime = 50 * time.Millisecond
 
-type miningGroup struct {
+type MiningGroup struct {
 	Backends []*Backend
 }
 
-func NewMiningGroup(hashers []Hasher) *miningGroup {
-	group := &miningGroup{
+func NewMiningGroup(hashers []Hasher) *MiningGroup {
+	group := &MiningGroup{
 		Backends: make([]*Backend, len(hashers), len(hashers)),
 	}
 	for i,hasher := range hashers {
@@ -99,23 +99,13 @@ func (b *Backend)doWork(hash *HashSettings, start uint64, n uint64, resultCh cha
 	}
 }
 
-//dispatches a chunk and returns the number of hashes chosen
-func (b *Backend)dispatchWork(hash *HashSettings, start uint64, resultCh chan *result) uint64 {
-	target := b.HashRateEstimate * targetChunkTime.Seconds()
-	step := b.StepSize()
-	nsteps := uint64(math.Round(target /float64(step)))
-	if nsteps == 0 {
-		nsteps = 1
-	}
-	n := nsteps * step
-	//fmt.Printf("dispatching %d hashes to %s\n", n, b.Name())
-	go b.doWork(hash, start, n, resultCh)
-	return n
-}
 
 func formatHashRate(rate float64) string {
 	letters := " KMGTQ"
 	i := 0
+	//purposely made this 10k instead of 1k. That way you won't get single digit rates
+	//this function could instead just always return 3 significant digits, but then it gets hard to visually
+	//see the differences between different devices when formatted into columns
 	for rate > 10000 {
 		rate /= 1000
 		i++
@@ -123,7 +113,7 @@ func formatHashRate(rate float64) string {
 	return fmt.Sprintf("%.0f %cH/s", rate, letters[i])
 }
 
-func (g *miningGroup)PrintHashRateSummary() {
+func (g *MiningGroup)PrintHashRateSummary() {
 	totalHashrate := 0.0
 	for _,b := range g.Backends {
 		totalHashrate += b.HashRateEstimate
@@ -134,7 +124,21 @@ func (g *miningGroup)PrintHashRateSummary() {
 	}
 }
 
-func (g *miningGroup)Mine(hash *HashSettings, start uint64, n uint64, timeout time.Duration) (string, error) {
+//dispatches a chunk and returns the number of hashes chosen
+func (b *Backend)dispatchWork(hash *HashSettings, start uint64, resultCh chan *result) uint64 {
+	target := b.HashRateEstimate * targetChunkTime.Seconds()
+	step := b.StepSize()
+	nsteps := uint64(math.Round(target /float64(step)))
+	if nsteps == 0 {
+		nsteps = 1
+	}
+	n := nsteps * step
+	go b.doWork(hash, start, n, resultCh)
+	return n
+}
+
+
+func (g *MiningGroup)Mine(hash *HashSettings, start uint64, n uint64, timeout time.Duration) (string, error) {
 	sent := uint64(0)
 	recv := uint64(0)
 	timeStarted := time.Now()
@@ -142,43 +146,53 @@ func (g *miningGroup)Mine(hash *HashSettings, start uint64, n uint64, timeout ti
 	resultChannel := make(chan *result, len(g.Backends)*2)
 	elapsed := time.Duration(0)
 
+	//keep track of how many miner threads there are
+	nrunning := 0
+
 	//send 1 chunk to each miner
 	for _,b := range g.Backends {
 		//dispatch work
-		sent += b.dispatchWork(hash, start +sent, resultChannel)
+		sent += b.dispatchWork(hash, start + sent, resultChannel)
+		nrunning++
 	}
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	nextHeartbeat := cfg.Heartbeat * time.Second
+	nextHeartbeat := cfg.Heartbeat.Duration
 
-	// now loop until we either run out of time or finish all the work
-	// each time a hasher finishes a chunk, give it a new one to work on
-	for recv < n && elapsed < timeout {
+	// now loop until we either run out of time, finish the requested number of hashes, or find solution
+	// each time a hasher finishes a chunk, give it a new one to work on.
+	// always waits for all miners to finish their chunks before returning (thread safety with OpenCL)
+	// EXCEPT in the case of an error, but then the app is almost certainly just quitting anyways!
+	sol := ""
+	for (recv < n && elapsed < timeout && sol == "") || (nrunning > 0) {
 		if elapsed > nextHeartbeat {
 			g.PrintHashRateSummary()
-			nextHeartbeat += cfg.Heartbeat * time.Second
+			nextHeartbeat += cfg.Heartbeat.Duration
 		}
 		result := <-resultChannel
-		//fmt.Printf("result: %+v\n", result)
+		nrunning--
 		if result.err != nil {
 			return "", fmt.Errorf("hasher failed: %s", result.err.Error())
 		} else {
 			result.backend.TotalHashes += result.n
 			recv += result.n
 			if result.nonce != "" {
-				fmt.Printf("found solution: %s\n", result.nonce)
-				return result.nonce, nil
+				sol = result.nonce
 			}
 			//only update the hashRateEstimate if we didn't find a solution - otherwise the rate could be wrong
 			result.backend.HashRateEstimate = float64(result.n)/(result.finished.Sub(result.started).Seconds())
 
-			sent += result.backend.dispatchWork(hash, start +sent, resultChannel)
+			if sent < n && elapsed < timeout {
+				sent += result.backend.dispatchWork(hash, start + sent, resultChannel)
+				nrunning++
+			}
 		}
 		elapsed = time.Now().Sub(timeStarted)
 	}
-	return "", nil
+
+	return sol, nil
 }
 
 
