@@ -25,7 +25,7 @@ type SolutionHandler struct {
 	log             *util.Logger
 	pubKey          string
 	proxy           db.DataServerProxy
-	currentChallenge *miningChallenge
+	currentChallenge *MiningChallenge
 	currentNonce 	string
 	currentValue    *big.Int
 	submitter       tellorCommon.TransactionSubmitter
@@ -51,7 +51,7 @@ func CreateSolutionHandler(
 	}
 }
 
-func (s *SolutionHandler) HandleSolution(ctx context.Context, challenge *miningChallenge, nonce string) {
+func (s *SolutionHandler) HandleSolution(ctx context.Context, challenge *MiningChallenge, nonce string) {
 
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.requestID.Uint64())
 	s.log.Info("Getting pending txn and value from data server...")

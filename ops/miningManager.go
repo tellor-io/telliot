@@ -12,6 +12,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"time"
 )
 
 //MiningMgr holds items for mining and requesting data
@@ -74,24 +75,43 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			log.Fatal(err)
 		}
 
-		start := uint64(rand.Int63())
+
+		ticker := time.NewTicker(cfg.MiningInterruptCheckInterval.Duration)
+
+		input := make(chan *pow.Work)
+		output := make(chan *pow.Result)
+
+		//start the mining group
+		go mgr.group.Mine(input, output)
+
+		// sends work to the mining group
+		sendWork := func () {
+			//if its nil, nothing new to report
+			challenge := mgr.tasker.PullUpdates()
+			if challenge != nil {
+				input <-&pow.Work{Challenge:challenge, Start:uint64(rand.Int63()), N:math.MaxInt64}
+			}
+		}
+		//send the initial challenge
+		sendWork()
 		for {
 			select {
-				case <-mgr.exitCh:
-					//exit
-					return
-				default:
-					//continue
-			}
-			challenge := mgr.tasker.PullUpdates()
-			hashSettings := pow.NewHashSettings(challenge, cfg.PublicAddress)
+			//boss wants us to quit for the day
+			case <-mgr.exitCh:
+				//exit
+				input <- nil
 
-			nonce, err := mgr.group.Mine(hashSettings, start, math.MaxInt64, cfg.MiningInterruptCheckInterval.Duration)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if nonce != "" {
-				mgr.solHandler.HandleSolution(ctx, challenge, nonce)
+			//found a solution
+			case result := <- output:
+				if result == nil {
+					mgr.Running = false
+					return
+				}
+				mgr.solHandler.HandleSolution(ctx, result.Work.Challenge, result.Nonce)
+
+			//time to check for a new challenge
+			case _ = <-ticker.C:
+				sendWork()
 			}
 		}
 	}(ctx)

@@ -34,14 +34,14 @@ type Backend struct {
 	HashRateEstimate float64
 }
 
-//miningChallenge holds information about a PoW challenge
-type miningChallenge struct {
+//MiningChallenge holds information about a PoW challenge
+type MiningChallenge struct {
 	challenge  []byte
 	difficulty *big.Int
 	requestID  *big.Int
 }
 
-func NewHashSettings(challenge *miningChallenge, publicAddr string) *HashSettings {
+func NewHashSettings(challenge *MiningChallenge, publicAddr string) *HashSettings {
 	_string := fmt.Sprintf("%x", challenge.challenge) + publicAddr
 	hashPrefix := decodeHex(_string)
 	return &HashSettings{
@@ -73,7 +73,8 @@ func NewMiningGroup(hashers []Hasher) *MiningGroup {
 }
 
 
-type result struct {
+type backendResult struct {
+	hash *HashSettings
 	nonce string
 	err error
 	started time.Time
@@ -83,14 +84,15 @@ type result struct {
 }
 
 // do some work and write the result back to a channel
-func (b *Backend)doWork(hash *HashSettings, start uint64, n uint64, resultCh chan *result) {
+func (b *Backend)doWork(hash *HashSettings, start uint64, n uint64, resultCh chan *backendResult) {
 	timeStarted := time.Now()
 	sol, err := b.CheckRange(hash, start, n)
 	if err != nil {
-		resultCh <- &result{err: err}
+		resultCh <- &backendResult{err: err}
 		return
 	}
-	resultCh <- &result{
+	resultCh <- &backendResult{
+		hash: hash,
 		nonce: sol,
 		started: timeStarted,
 		finished: time.Now(),
@@ -124,8 +126,19 @@ func (g *MiningGroup)PrintHashRateSummary() {
 	}
 }
 
+type Work struct {
+	Challenge *MiningChallenge
+	Start uint64
+	N uint64
+}
+
+type Result struct {
+	Work *Work
+	Nonce string
+}
+
 //dispatches a chunk and returns the number of hashes chosen
-func (b *Backend)dispatchWork(hash *HashSettings, start uint64, resultCh chan *result) uint64 {
+func (b *Backend)dispatchWork(hash *HashSettings, start uint64, resultCh chan *backendResult) uint64 {
 	target := b.HashRateEstimate * targetChunkTime.Seconds()
 	step := b.StepSize()
 	nsteps := uint64(math.Round(target /float64(step)))
@@ -138,22 +151,20 @@ func (b *Backend)dispatchWork(hash *HashSettings, start uint64, resultCh chan *r
 }
 
 
-func (g *MiningGroup)Mine(hash *HashSettings, start uint64, n uint64, timeout time.Duration) (string, error) {
+func (g *MiningGroup)Mine(input chan *Work, output chan *Result) {
 	sent := uint64(0)
 	recv := uint64(0)
 	timeStarted := time.Now()
 
-	resultChannel := make(chan *result, len(g.Backends)*2)
-	elapsed := time.Duration(0)
+	resultChannel := make(chan *backendResult, len(g.Backends)*2)
 
-	//keep track of how many miner threads there are
-	nrunning := 0
+	//queue of miners waiting for work
+	idleWorkers := make(chan *Backend, len(g.Backends))
 
-	//send 1 chunk to each miner
+	//add all available miners to the idleWorkers queue
 	for _,b := range g.Backends {
 		//dispatch work
-		sent += b.dispatchWork(hash, start + sent, resultChannel)
-		nrunning++
+		idleWorkers <- b
 	}
 	cfg, err := config.GetConfig()
 	if err != nil {
@@ -161,38 +172,71 @@ func (g *MiningGroup)Mine(hash *HashSettings, start uint64, n uint64, timeout ti
 	}
 	nextHeartbeat := cfg.Heartbeat.Duration
 
-	// now loop until we either run out of time, finish the requested number of hashes, or find solution
+	var currHashSettings *HashSettings
+	var currWork *Work
+
+	// mine until we recieve a null challenge
 	// each time a hasher finishes a chunk, give it a new one to work on.
 	// always waits for all miners to finish their chunks before returning (thread safety with OpenCL)
 	// EXCEPT in the case of an error, but then the app is almost certainly just quitting anyways!
-	sol := ""
-	for (recv < n && elapsed < timeout && sol == "") || (nrunning > 0) {
+	shouldRun := true
+	for shouldRun || (len(idleWorkers) < len(g.Backends)) {
+		elapsed := time.Now().Sub(timeStarted)
 		if elapsed > nextHeartbeat {
 			g.PrintHashRateSummary()
-			nextHeartbeat += cfg.Heartbeat.Duration
+			nextHeartbeat = elapsed + cfg.Heartbeat.Duration
 		}
-		result := <-resultChannel
-		nrunning--
-		if result.err != nil {
-			return "", fmt.Errorf("hasher failed: %s", result.err.Error())
-		} else {
+		select {
+		//read in a new work block
+		case work := <-input:
+			if work == nil {
+				shouldRun = false
+				break
+			}
+			sent = 0
+			recv = 0
+			currWork = work
+			currHashSettings = NewHashSettings(work.Challenge, cfg.PublicAddress)
+
+		//read in a result from one of the miners
+		case result := <-resultChannel:
+			if result.err != nil {
+				log.Fatalf("hasher failed: %s", result.err.Error())
+			}
+			idleWorkers <- result.backend
+
+			//update the backend statistics no matter what
 			result.backend.TotalHashes += result.n
-			recv += result.n
-			if result.nonce != "" {
-				sol = result.nonce
-			}
-			//only update the hashRateEstimate if we didn't find a solution - otherwise the rate could be wrong
-			result.backend.HashRateEstimate = float64(result.n)/(result.finished.Sub(result.started).Seconds())
 
-			if sent < n && elapsed < timeout {
-				sent += result.backend.dispatchWork(hash, start + sent, resultChannel)
-				nrunning++
+			//only update the hashRateEstimate if we didn't find a solution - otherwise the rate could be wrong
+			// due to returning early
+			if result.nonce == "" {
+				result.backend.HashRateEstimate = float64(result.n)/(result.finished.Sub(result.started).Seconds())
+			}
+
+			//ignore out of date results
+			if result.hash != currHashSettings {
+				break
+			}
+
+			recv += result.n
+
+			//did we finish the job?
+			if result.nonce != "" || recv >= currWork.N {
+				output <- &Result{Work:currWork, Nonce:result.nonce}
+				currWork = nil
+				currHashSettings = nil
 			}
 		}
-		elapsed = time.Now().Sub(timeStarted)
+		if currWork != nil {
+			for sent < currWork.N && len(idleWorkers) > 0 {
+				worker := <-idleWorkers
+				sent += worker.dispatchWork(currHashSettings, currWork.Start + sent, resultChannel)
+			}
+		}
 	}
-
-	return sol, nil
+	//send a nil value to signal that we're done
+	output <- nil
 }
 
 

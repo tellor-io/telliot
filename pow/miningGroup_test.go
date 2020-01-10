@@ -11,14 +11,14 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 )
 
-func createChallenge(id int, difficulty int64) *miningChallenge {
+func createChallenge(id int, difficulty int64) *MiningChallenge {
 	hash := math.PaddedBigBytes(big.NewInt(int64(id)), 32)
 	var b32 [32]byte
 	for i, v := range hash {
 		b32[i] = v
 	}
 
-	return &miningChallenge{
+	return &MiningChallenge{
 		challenge:  b32[:],
 		difficulty: big.NewInt(difficulty),
 		requestID:  big.NewInt(1),
@@ -26,7 +26,7 @@ func createChallenge(id int, difficulty int64) *miningChallenge {
 }
 
 
-func createRandomChallenge(difficulty int64) *miningChallenge {
+func createRandomChallenge(difficulty int64) *MiningChallenge {
 	rand.Seed(time.Now().UnixNano())
 	i := rand.Int()
 	return createChallenge(i, difficulty)
@@ -65,7 +65,7 @@ func createRandomChallenge(difficulty int64) *miningChallenge {
 //	}
 //}
 
-func CheckSolution(t *testing.T, challenge *miningChallenge, nonce string) {
+func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		t.Fatal(err)

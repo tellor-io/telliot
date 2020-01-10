@@ -1,6 +1,7 @@
 package pow
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"log"
@@ -37,6 +38,7 @@ type MiningTasker struct {
 	log              *util.Logger
 	proxy            db.DataServerProxy
 	pubKey           string
+	currChallenge 	*MiningChallenge
 }
 
 func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
@@ -55,7 +57,7 @@ func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 	}
 }
 
-func (mt *MiningTasker) PullUpdates() *miningChallenge {
+func (mt *MiningTasker) PullUpdates() *MiningChallenge {
 	mt.log.Info("Pulling current data from data server...")
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
@@ -99,11 +101,19 @@ func (mt *MiningTasker) PullUpdates() *miningChallenge {
 		return nil
 	}
 
-	newChallenge := &miningChallenge{
+	newChallenge := &MiningChallenge{
 		challenge:  m[db.CurrentChallengeKey],
 		difficulty: diff,
 		requestID:  reqID,
 	}
+
+	//if we already sent this challenge out, don't do it again
+	if mt.currChallenge != nil {
+		if bytes.Compare(newChallenge.challenge, mt.currChallenge.challenge) == 0 {
+			return nil
+		}
+	}
+	mt.currChallenge = newChallenge
 	return newChallenge
 }
 
@@ -125,7 +135,7 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 	return statusSuccess
 }
 
-func (mt *MiningTasker) isEmptyChallenge(challenge *miningChallenge) bool {
+func (mt *MiningTasker) isEmptyChallenge(challenge *MiningChallenge) bool {
 	mt.log.Info("Checking whether current challenge is empty")
 	if challenge.requestID.Cmp(big.NewInt(0)) == 0 {
 		mt.log.Info("Current challenge has 0-value request ID, Cancelling any ongoing mining since previous challenge is complete")
