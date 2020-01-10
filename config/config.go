@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"encoding/json"
 	"log"
 	"os"
@@ -12,40 +13,69 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
+//unfortunate hack to enable json parsing of human readable time strings
+//see https://github.com/golang/go/issues/10275
+//code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations
+type Duration struct {
+	time.Duration
+}
+
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	switch value := v.(type) {
+	case float64:
+		d.Duration = time.Duration(value * float64(time.Second))
+		return nil
+	case string:
+		dur, err := time.ParseDuration(value)
+		if err != nil {
+			return err
+		}
+		d.Duration = dur
+		return nil
+	default:
+		return fmt.Errorf("invalid duration")
+	}
+}
+
+
 //Config holds global config info derived from config.json
 type Config struct {
 	ContractAddress              string        `json:"contractAddress"`
 	NodeURL                      string        `json:"nodeURL"`
 	PrivateKey                   string        `json:"privateKey"`
-	DatabaseURL                  string        `json:"databaseURL"`
-	PublicAddress                string        `json:"publicAddress"`
-	EthClientTimeout             uint          `json:"ethClientTimeout"`
-	TrackerSleepCycle            uint          `json:"trackerCycle"` //in seconds
-	Trackers                     []string      `json:"trackers"`
-	DBFile                       string        `json:"dbFile"`
-	ServerHost                   string        `json:"serverHost"`
-	ServerPort                   uint          `json:"serverPort"`
-	FetchTimeout                 uint          `json:"fetchTimeout"`
-	RequestData                  uint          `json:"requestData"`
-	RequestDataInterval          time.Duration `json:"requestDataInterval"`          //in seconds
-	RequestTips					 int64          `json: "requestTips"`
-	MiningInterruptCheckInterval time.Duration `json:"miningInterruptCheckInterval"` //in seconds
-	GasMultiplier                float32       `json:"gasMultiplier"`
-	GasMax                       uint          `json:"gasMax"`
-	NumProcessors                int           `json:"numProcessors"`
-	Heartbeat                    int           `json:"heartbeat"`
-	ServerWhitelist              []string      `json:"serverWhitelist"`
+	DatabaseURL                  string   `json:"databaseURL"`
+	PublicAddress                string   `json:"publicAddress"`
+	EthClientTimeout             uint     `json:"ethClientTimeout"`
+	TrackerSleepCycle            Duration     `json:"trackerCycle"` //in seconds
+	Trackers                     []string `json:"trackers"`
+	DBFile                       string   `json:"dbFile"`
+	ServerHost                   string   `json:"serverHost"`
+	ServerPort                   uint     `json:"serverPort"`
+	FetchTimeout                 Duration `json:"fetchTimeout"`
+	RequestData                  uint     `json:"requestData"`
+	RequestDataInterval          Duration `json:"requestDataInterval"` //in seconds
+	RequestTips                  int64    `json: "requestTips"`
+	MiningInterruptCheckInterval Duration `json:"miningInterruptCheckInterval"` //in seconds
+	GasMultiplier                float32  `json:"gasMultiplier"`
+	GasMax                       uint     `json:"gasMax"`
+	NumProcessors                int      `json:"numProcessors"`
+	Heartbeat                    Duration `json:"heartbeat"`
+	ServerWhitelist              []string `json:"serverWhitelist"`
+	UseGPU                       bool     `json:"useGPU"`
 	logger                       *util.Logger
-	mux                          sync.Mutex
 }
 
-const defaultTimeout = 30 //30 second fetch timeout
+const defaultTimeout = 30 * time.Second //30 second fetch timeout
 
-const defaultRequestInterval = 30 //30 seconds between data requests (0-value tipping)
-const defaultMiningInterrupt = 15 //every 15 seconds, check for new challenges that could interrupt current mining
+const defaultRequestInterval = 30 * time.Second //30 seconds between data requests (0-value tipping)
+const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for new challenges that could interrupt current mining
 const defaultCores = 2
 
-const defaultHeartbeat = 10000000 //check miner speed every 10 ^ 8 cycles
+const defaultHeartbeat = 15 * time.Second //check miner speed every 10 ^ 8 cycles
 
 var (
 	config *Config
@@ -76,21 +106,24 @@ func ParseConfig(path string) (*Config, error) {
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
 	config.logger = util.NewLogger("config", "Config")
-	if config.FetchTimeout == 0 {
-		config.FetchTimeout = defaultTimeout
+	if config.UseGPU == false {
+		fmt.Println("Not using GPU's, check config file")
 	}
-	if config.RequestDataInterval == 0 {
-		config.RequestDataInterval = defaultRequestInterval
+	if config.FetchTimeout.Seconds() == 0 {
+		config.FetchTimeout.Duration = defaultTimeout
 	}
-	if config.MiningInterruptCheckInterval == 0 {
-		config.MiningInterruptCheckInterval = defaultMiningInterrupt
+	if config.RequestDataInterval.Seconds() == 0 {
+		config.RequestDataInterval.Duration = defaultRequestInterval
+	}
+	if config.MiningInterruptCheckInterval.Seconds() == 0 {
+		config.MiningInterruptCheckInterval.Duration = defaultMiningInterrupt
 	}
 	if config.NumProcessors == 0 {
 		config.NumProcessors = defaultCores
 	}
 
-	if config.Heartbeat == 0 {
-		config.Heartbeat = defaultHeartbeat
+	if config.Heartbeat.Seconds() == 0 {
+		config.Heartbeat.Duration = defaultHeartbeat
 	}
 
 	if len(config.ServerWhitelist) == 0{

@@ -9,9 +9,10 @@
     "serverWhitelist": ["0xe037ec8ec9ec423826750853899394de7f024fee"],
     "ethClientTimeout": 3000,
     "trackerCycle": 10,
-    "requestData":1,
+    "requestData":0,
     "gasMultiplier": 1,
     "gasMax":10,
+    "useGPU":false,
  "trackers": [
         "balance",
         "currentVariables",

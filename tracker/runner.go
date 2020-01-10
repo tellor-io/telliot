@@ -34,7 +34,6 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		runnerLog.Error("Problem getting config", err)
 		return err
 	}
-	sleep := cfg.TrackerSleepCycle
 	trackerNames := cfg.Trackers
 	trackers := make([]Tracker, len(trackerNames))
 	for i := 0; i < len(trackers); i++ {
@@ -56,9 +55,8 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 	}
 
-	sleepTime := time.Duration(sleep) * time.Second
-	runnerLog.Info("Trackers will run every %v\n", sleepTime)
-	ticker := time.NewTicker(sleepTime)
+	runnerLog.Info("Trackers will run every %v\n", cfg.TrackerSleepCycle)
+	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration)
 	if ctx.Value(tellorCommon.ClientContextKey) == nil {
 		ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)
 	}

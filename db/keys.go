@@ -14,7 +14,6 @@ const (
 	GranularityKey      = "current_granularity"
 	TotalTipKey         = "current_total_tip"
 	MiningStatusKey     = "mining_status"
-	PendingChallengeKey = "pending_challenge"
 
 	//GasKey
 	GasKey = "wei_gas_price"
@@ -48,7 +47,6 @@ func initKeyLook() {
 		GranularityKey:      true,
 		TotalTipKey:         true,
 		MiningStatusKey:     true,
-		PendingChallengeKey: true,
 		GasKey:              true,
 		Top50Key:            true,
 		TributeBalanceKey:   true,
