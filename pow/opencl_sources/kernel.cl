@@ -5,8 +5,11 @@ __kernel void tellor(
    constant uint64_t *prefix,
 
    //pre-computed mulitiplier for remainder test
-   // two 512 bit constants
+   // two constants
    constant uint32_t *mulDivisor,
+
+//    //size in 32 bit words of the two constants
+//   uint32_t mulDivisorSize,
 
    //found nonce saved here
    __global uint32_t *output,
@@ -46,7 +49,7 @@ __kernel void tellor(
         //works by multiplying by a constant and then checking against another constant
         //see https://lemire.me/blog/2019/02/08/faster-remainders-when-the-divisor-is-a-constant-beating-compilers-and-libdivide/
         uint32_t *b = (uint32_t*)&hashResult;
-        int result = divisible(b, &mulDivisor[0], &mulDivisor[16]);
+        int result = divisible(b, &mulDivisor[0], &mulDivisor[MUL_CONSTANT_SIZE]);
         if (result != 0) {
             output[0] = ((uint32_t*)nonce)[0];
             output[1] = ((uint32_t*)nonce)[1];

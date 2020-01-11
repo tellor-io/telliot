@@ -18,9 +18,9 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 	}
 
 	return &MiningChallenge{
-		challenge:  b32[:],
-		difficulty: big.NewInt(difficulty),
-		requestID:  big.NewInt(1),
+		Challenge:  b32[:],
+		Difficulty: big.NewInt(difficulty),
+		RequestID:  big.NewInt(1),
 	}
 }
 
@@ -29,13 +29,13 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_string := fmt.Sprintf("%x", challenge.challenge) + cfg.PublicAddress
+	_string := fmt.Sprintf("%x", challenge.Challenge) + cfg.PublicAddress
 	hashIn := decodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
 	a := new(big.Int)
 	hashFn(hashIn, a)
 
-	a.Mod(a, challenge.difficulty)
+	a.Mod(a, challenge.Difficulty)
 	if !a.IsUint64() || a.Uint64() != 0 {
 		t.Fatalf("nonce: %s remainder: %s\n", string(hashIn[52:]), a.Text(10))
 	}
@@ -155,7 +155,7 @@ func TestHashFunction(t *testing.T) {
 	result := new(big.Int)
 	for k,v := range testVectors {
 		nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", k))
-		_string := fmt.Sprintf("%x", challenge.challenge) + "abcd0123" + nonce
+		_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
 		bytes := decodeHex(_string)
 		hashFn(bytes, result)
 		if result.Text(16) != v {
@@ -168,7 +168,7 @@ func BenchmarkHashFunction(b *testing.B) {
 	challenge := createChallenge(0, 500)
 	result := new(big.Int)
 	nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", 10))
-	_string := fmt.Sprintf("%x", challenge.challenge) + "abcd0123" + nonce
+	_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
 	bytes := decodeHex(_string)
 
 	for i := 0; i < b.N; i++ {
