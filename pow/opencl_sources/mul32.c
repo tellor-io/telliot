@@ -57,18 +57,28 @@ uint32_t addMulVVW(uint32_t *z, uint32_t n, constant uint32_t *x, uint32_t y) {
 	return c;
 }
 
+uint32_t addMulVVWZero(uint32_t *z, uint32_t n, constant uint32_t *x, uint32_t y) {
+	uint32_t c = 0;
+	for (int i = 0; i < n; i++) {
+		uint32_t z0;
+		uint32_t z1 = mulAddWWW(x[i], y, 0, &z0);
+		c = addWW(z0, c, 0, &z[i]);
+		c += z1;
+	}
+	return c;
+}
 
 //p has len 512 bits
 //x has len 512 bits (16 words)
 //y has len 256 bits (8 words)
 //p = x * y
 void basicMul(uint32_t *p, constant uint32_t *x, uint32_t *y) {
-	memset(p, 0, 64);
-	for (int i = 0; i < 8; i++) {
-		uint32_t d = y[i];
-		if (d != 0) {
-			addMulVVW(&p[i], 16-i, x, d);
-		}
+    uint32_t d = y[7];
+    addMulVVWZero(&p[0], 16-0, x, d);
+
+	for (int i = 1; i < 8; i++) {
+		uint32_t d = y[7-i];
+		addMulVVW(&p[i], 16-i, x, d);
 	}
 }
 
