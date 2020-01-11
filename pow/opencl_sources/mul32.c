@@ -78,7 +78,7 @@ void basicMul(uint32_t *p, constant uint32_t *x, uint32_t *y) {
 
 	for (int i = 1; i < 8; i++) {
 		uint32_t d = y[7-i];
-		addMulVVW(&p[i], 16-i, x, d);
+        addMulVVW(&p[i], 16-i, x, d);
 	}
 }
 
