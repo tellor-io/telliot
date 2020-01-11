@@ -100,15 +100,15 @@ constant uint32_t k_sha256[64] =
 
 #define SHIFT_RIGHT_32(x,n) ((x) >> (n))
 
-#define SHA256_S0_S(x) (hc_rotl32_S ((x), 25u) ^ hc_rotl32_S ((x), 14u) ^ SHIFT_RIGHT_32 ((x),  3u))
-#define SHA256_S1_S(x) (hc_rotl32_S ((x), 15u) ^ hc_rotl32_S ((x), 13u) ^ SHIFT_RIGHT_32 ((x), 10u))
-#define SHA256_S2_S(x) (hc_rotl32_S ((x), 30u) ^ hc_rotl32_S ((x), 19u) ^ hc_rotl32_S ((x), 10u))
-#define SHA256_S3_S(x) (hc_rotl32_S ((x), 26u) ^ hc_rotl32_S ((x), 21u) ^ hc_rotl32_S ((x),  7u))
+#define SHA256_S0_S(x) (rotate ((x), 25u) ^ rotate ((x), 14u) ^ SHIFT_RIGHT_32 ((x),  3u))
+#define SHA256_S1_S(x) (rotate ((x), 15u) ^ rotate ((x), 13u) ^ SHIFT_RIGHT_32 ((x), 10u))
+#define SHA256_S2_S(x) (rotate ((x), 30u) ^ rotate ((x), 19u) ^ rotate ((x), 10u))
+#define SHA256_S3_S(x) (rotate ((x), 26u) ^ rotate ((x), 21u) ^ rotate ((x),  7u))
 
-#define SHA256_S0(x) (hc_rotl32 ((x), 25u) ^ hc_rotl32 ((x), 14u) ^ SHIFT_RIGHT_32 ((x),  3u))
-#define SHA256_S1(x) (hc_rotl32 ((x), 15u) ^ hc_rotl32 ((x), 13u) ^ SHIFT_RIGHT_32 ((x), 10u))
-#define SHA256_S2(x) (hc_rotl32 ((x), 30u) ^ hc_rotl32 ((x), 19u) ^ hc_rotl32 ((x), 10u))
-#define SHA256_S3(x) (hc_rotl32 ((x), 26u) ^ hc_rotl32 ((x), 21u) ^ hc_rotl32 ((x),  7u))
+#define SHA256_S0(x) (rotate ((x), 25u) ^ rotate ((x), 14u) ^ SHIFT_RIGHT_32 ((x),  3u))
+#define SHA256_S1(x) (rotate ((x), 15u) ^ rotate ((x), 13u) ^ SHIFT_RIGHT_32 ((x), 10u))
+#define SHA256_S2(x) (rotate ((x), 30u) ^ rotate ((x), 19u) ^ rotate ((x), 10u))
+#define SHA256_S3(x) (rotate ((x), 26u) ^ rotate ((x), 21u) ^ rotate ((x),  7u))
 
 #define SHA256_F0(x,y,z)  (((x) & (y)) | ((z) & ((x) ^ (y))))
 #define SHA256_F1(x,y,z)  ((z) ^ ((x) & ((y) ^ (z))))

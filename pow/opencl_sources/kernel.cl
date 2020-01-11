@@ -37,10 +37,8 @@ __kernel void tellor(
 
         //run the tellor hash algo
         keccak(prefix, (uint32_t*)nonce, (uint64_t*)hashResult);
-//        ripemd160(hashResult, sizeof(hashResult), hashResult);
         uint8_t ripe160Result[20];
         ripemd160_transform_vector(hashResult, ripe160Result);
-//        sha256_Raw(ripe160Result, 20,hashResult);
         sha2_fast(ripe160Result,hashResult);
 
 
@@ -49,7 +47,6 @@ __kernel void tellor(
         //see https://lemire.me/blog/2019/02/08/faster-remainders-when-the-divisor-is-a-constant-beating-compilers-and-libdivide/
         uint32_t *b = (uint32_t*)&hashResult;
         int result = divisible(b, &mulDivisor[0], &mulDivisor[16]);
-//        int result = (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0);
         if (result != 0) {
             output[0] = ((uint32_t*)nonce)[0];
             output[1] = ((uint32_t*)nonce)[1];
