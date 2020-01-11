@@ -36,17 +36,17 @@ type Backend struct {
 
 //MiningChallenge holds information about a PoW challenge
 type MiningChallenge struct {
-	challenge  []byte
-	difficulty *big.Int
-	requestID  *big.Int
+	Challenge  []byte
+	Difficulty *big.Int
+	RequestID  *big.Int
 }
 
 func NewHashSettings(challenge *MiningChallenge, publicAddr string) *HashSettings {
-	_string := fmt.Sprintf("%x", challenge.challenge) + publicAddr
+	_string := fmt.Sprintf("%x", challenge.Challenge) + publicAddr
 	hashPrefix := decodeHex(_string)
 	return &HashSettings{
 		prefix:     hashPrefix,
-		difficulty: challenge.difficulty,
+		difficulty: challenge.Difficulty,
 	}
 }
 
@@ -55,6 +55,8 @@ func NewHashSettings(challenge *MiningChallenge, publicAddr string) *HashSetting
 // if you make it too high, the miner won't respond quickly to commands (stop, change challenge, etc)
 // right now 50ms seems like a good default. This could perhaps be made configurable, but I don't see much benefit
 const targetChunkTime = 50 * time.Millisecond
+
+const rateInitialGuess = 100e3
 
 type MiningGroup struct {
 	Backends []*Backend
@@ -66,7 +68,7 @@ func NewMiningGroup(hashers []Hasher) *MiningGroup {
 	}
 	for i,hasher := range hashers {
 		//start with a small estimate for hash rate, much faster to increase the gusses rather than decrease
-		group.Backends[i] = &Backend{Hasher:hasher, HashRateEstimate:100e3}
+		group.Backends[i] = &Backend{Hasher:hasher, HashRateEstimate:rateInitialGuess}
 	}
 
 	return group
@@ -213,7 +215,14 @@ func (g *MiningGroup)Mine(input chan *Work, output chan *Result) {
 			//only update the hashRateEstimate if we didn't find a solution - otherwise the rate could be wrong
 			// due to returning early
 			if result.nonce == "" {
-				result.backend.HashRateEstimate = float64(result.n)/(result.finished.Sub(result.started).Seconds())
+				newEst := float64(result.n)/(result.finished.Sub(result.started).Seconds())
+				if result.backend.HashRateEstimate == rateInitialGuess {
+					result.backend.HashRateEstimate = newEst
+				} else {
+					memory := 0.2
+					result.backend.HashRateEstimate *= 1-memory
+					result.backend.HashRateEstimate += memory*newEst
+				}
 			}
 
 			//ignore out of date results
@@ -221,9 +230,8 @@ func (g *MiningGroup)Mine(input chan *Work, output chan *Result) {
 				break
 			}
 
-			recv += result.n
-
 			//did we finish the job?
+			recv += result.n
 			if result.nonce != "" || recv >= currWork.N {
 				output <- &Result{Work:currWork, Nonce:result.nonce}
 				currWork = nil

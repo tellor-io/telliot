@@ -155,59 +155,35 @@ void sha2_fast(uint32_t *w0, uint32_t *digest) {
     digest[6] = SHA256M_G;
     digest[7] = SHA256M_H;
 
-  uint32_t a = digest[0];
-  uint32_t b = digest[1];
-  uint32_t c = digest[2];
-  uint32_t d = digest[3];
-  uint32_t e = digest[4];
-  uint32_t f = digest[5];
-  uint32_t g = digest[6];
-  uint32_t h = digest[7];
+    uint32_t a = digest[0];
+    uint32_t b = digest[1];
+    uint32_t c = digest[2];
+    uint32_t d = digest[3];
+    uint32_t e = digest[4];
+    uint32_t f = digest[5];
+    uint32_t g = digest[6];
+    uint32_t h = digest[7];
+
+    uint32_t w0_t = EndianSwap(w0[0]);
+    uint32_t w1_t = EndianSwap(w0[1]);
+    uint32_t w2_t = EndianSwap(w0[2]);
+    uint32_t w3_t = EndianSwap(w0[3]);
+    uint32_t w4_t = EndianSwap(w0[4]);
+    uint32_t w5_t = EndianSwap((uint32_t)(0x80));
+    uint32_t w6_t = 0;
+    uint32_t w7_t = 0;
+    uint32_t w8_t = 0;
+    uint32_t w9_t = 0;
+    uint32_t wa_t = 0;
+    uint32_t wb_t = 0;
+    uint32_t wc_t = 0;
+    uint32_t wd_t = 0;
+    uint32_t we_t = 0;
+    uint32_t wf_t = 20*8;
 
 
-    // for(int i = 0; i < 16; i++) {
-    //     in[i] = EndianSwap(in[i]);
-    // }
-    // in[5] = EndianSwap(0x80);
-    // in[15] = 20*8;
-
-  uint32_t w0_t = EndianSwap(w0[0]);
-  uint32_t w1_t = EndianSwap(w0[1]);
-  uint32_t w2_t = EndianSwap(w0[2]);
-  uint32_t w3_t = EndianSwap(w0[3]);
-  uint32_t w4_t = EndianSwap(w0[4]);
-  uint32_t w5_t = EndianSwap((uint32_t)(0x80));
-  uint32_t w6_t = 0;
-  uint32_t w7_t = 0;
-  uint32_t w8_t = 0;
-  uint32_t w9_t = 0;
-  uint32_t wa_t = 0;
-  uint32_t wb_t = 0;
-  uint32_t wc_t = 0;
-  uint32_t wd_t = 0;
-  uint32_t we_t = 0;
-  uint32_t wf_t = 20*8;
-
-  // uint32_t w0_t = w0[0];
-  // uint32_t w1_t = w0[1];
-  // uint32_t w2_t = w0[2];
-  // uint32_t w3_t = w0[3];
-  // uint32_t w4_t = w0[4];
-  // uint32_t w5_t = w0[5];
-  // uint32_t w6_t = w0[6];
-  // uint32_t w7_t = w0[7];
-  // uint32_t w8_t = w0[8];
-  // uint32_t w9_t = w0[9];
-  // uint32_t wa_t = w0[10];
-  // uint32_t wb_t = w0[11];
-  // uint32_t wc_t = w0[12];
-  // uint32_t wd_t = w0[13];
-  // uint32_t we_t = w0[14];
-  // uint32_t wf_t = w0[15];
-
-
-  #define ROUND_EXPAND()                            \
-  {                                                 \
+    #define ROUND_EXPAND()                            \
+    {                                                 \
     w0_t = SHA256_EXPAND (we_t, w9_t, w1_t, w0_t);  \
     w1_t = SHA256_EXPAND (wf_t, wa_t, w2_t, w1_t);  \
     w2_t = SHA256_EXPAND (w0_t, wb_t, w3_t, w2_t);  \
@@ -224,10 +200,10 @@ void sha2_fast(uint32_t *w0, uint32_t *digest) {
     wd_t = SHA256_EXPAND (wb_t, w6_t, we_t, wd_t);  \
     we_t = SHA256_EXPAND (wc_t, w7_t, wf_t, we_t);  \
     wf_t = SHA256_EXPAND (wd_t, w8_t, w0_t, wf_t);  \
-  }
+    }
 
-  #define ROUND_STEP(i)                                                                   \
-  {                                                                                       \
+    #define ROUND_STEP(i)                                                                   \
+    {                                                                                       \
     SHA256_STEP (SHA256_F0o, SHA256_F1o, a, b, c, d, e, f, g, h, w0_t, k_sha256[i +  0]); \
     SHA256_STEP (SHA256_F0o, SHA256_F1o, h, a, b, c, d, e, f, g, w1_t, k_sha256[i +  1]); \
     SHA256_STEP (SHA256_F0o, SHA256_F1o, g, h, a, b, c, d, e, f, w2_t, k_sha256[i +  2]); \
@@ -244,32 +220,26 @@ void sha2_fast(uint32_t *w0, uint32_t *digest) {
     SHA256_STEP (SHA256_F0o, SHA256_F1o, d, e, f, g, h, a, b, c, wd_t, k_sha256[i + 13]); \
     SHA256_STEP (SHA256_F0o, SHA256_F1o, c, d, e, f, g, h, a, b, we_t, k_sha256[i + 14]); \
     SHA256_STEP (SHA256_F0o, SHA256_F1o, b, c, d, e, f, g, h, a, wf_t, k_sha256[i + 15]); \
-  }
+    }
 
-  ROUND_STEP (0);
+    ROUND_STEP (0);
 
-  #ifdef _unroll
-  #pragma unroll
-  #endif
-  for (int i = 16; i < 64; i += 16)
-  {
-    ROUND_EXPAND (); ROUND_STEP (i);
-  }
+    #ifdef _unroll
+    #pragma unroll
+    #endif
+    for (int i = 16; i < 64; i += 16) {
+        ROUND_EXPAND (); ROUND_STEP (i);
+    }
 
-  #undef ROUND_EXPAND
-  #undef ROUND_STEP
+    #undef ROUND_EXPAND
+    #undef ROUND_STEP
 
-  digest[0] += a;
-  digest[1] += b;
-  digest[2] += c;
-  digest[3] += d;
-  digest[4] += e;
-  digest[5] += f;
-  digest[6] += g;
-  digest[7] += h;
-
-//    for(int i = 0; i < 8; i++) {
-//        digest[i] = EndianSwap(digest[i]);
-//    }
-
+    digest[0] += a;
+    digest[1] += b;
+    digest[2] += c;
+    digest[3] += d;
+    digest[4] += e;
+    digest[5] += f;
+    digest[6] += g;
+    digest[7] += h;
 }

@@ -8,31 +8,12 @@
 #define _M2 (_B2 - 1U)  // half digit mask
 
 
-// z1<<_W + z0 = x*y
-// Adapted from Warren, Hacker's Delight, p. 132.
-uint32_t mulWW(uint32_t x, uint32_t y, uint32_t *z0) {
-	uint32_t x0 = x & _M2;
-	uint32_t x1 = x >> _W2;
-	uint32_t y0 = y & _M2;
-	uint32_t y1 = y >> _W2;
-	uint32_t w0 = x0 * y0;
-	uint32_t t = x1*y0 + (w0>>_W2);
-	uint32_t w1 = t & _M2;
-	uint32_t w2 = t >> _W2;
-	w1 += x0 * y1;
-	*z0 = x * y;
-	return x1*y1 + w2 + (w1>>_W2);
-}
-
 // z1<<_W + z0 = x*y + c
 uint32_t mulAddWWW(uint32_t x,uint32_t y, uint32_t c, uint32_t *z0) {
-	uint32_t zz0;
-	uint32_t z1 = mulWW(x, y, &zz0);
+	uint32_t zz0 = x * y;
 	*z0 = zz0 + c;
-	if (*z0 < zz0) {
-		z1++;
-	}
-	return z1;
+	uint32_t c1 = !!(*z0 < zz0);
+	return mad_hi(x, y, c1);
 }
 
 uint32_t addWW(uint32_t x, uint32_t y, uint32_t c, uint32_t *z0) {
@@ -44,7 +25,6 @@ uint32_t addWW(uint32_t x, uint32_t y, uint32_t c, uint32_t *z0) {
 	}
 	return z1;
 }
-
 
 uint32_t addMulVVW(uint32_t *z, uint32_t n, constant uint32_t *x, uint32_t y) {
 	uint32_t c = 0;
@@ -68,24 +48,25 @@ uint32_t addMulVVWZero(uint32_t *z, uint32_t n, constant uint32_t *x, uint32_t y
 	return c;
 }
 
+
 //p has len 512 bits
 //x has len 512 bits (16 words)
 //y has len 256 bits (8 words)
 //p = x * y
 void basicMul(uint32_t *p, constant uint32_t *x, uint32_t *y) {
     uint32_t d = y[7];
-    addMulVVWZero(&p[0], 16-0, x, d);
+    addMulVVWZero(&p[0], MUL_CONSTANT_SIZE-0, x, d);
 
 	for (int i = 1; i < 8; i++) {
 		uint32_t d = y[7-i];
-        addMulVVW(&p[i], 16-i, x, d);
+        addMulVVW(&p[i], MUL_CONSTANT_SIZE-i, x, d);
 	}
 }
 
 int divisible(uint32_t *x, constant uint32_t *c, constant uint32_t *cSub1) {
 	uint32_t p[16];
 	basicMul(p, c, x);
-	int i = 15;
+	int i = MUL_CONSTANT_SIZE-1;
 	while(i > 0 && p[i] == cSub1[i]) {
 		i--;
 	}

@@ -7,23 +7,24 @@ import (
 
 func SetupMiningGroup(cfg *config.Config) (*MiningGroup, error) {
 	var hashers []Hasher
-	if !cfg.UseGPU {
+	if len(cfg.GPUConfig) == 0 {
 		fmt.Printf("Using %d CPUMiners\n", cfg.NumProcessors)
 		for i := 0; i < cfg.NumProcessors; i++ {
-			hashers = append(hashers, NewCpuMiner(10e3))
+			hashers = append(hashers, NewCpuMiner(int64(i)))
 		}
 	} else {
 		gpus, err := GetOpenCLGPUs()
-		fmt.Printf("Using %d GPUMiners\n", len(gpus))
+		fmt.Printf("Using %d GPUs:\n", len(gpus))
 		if err != nil {
 			return nil, err
 		}
 		for _, gpu := range gpus {
-			thisMiner, err := NewGpuMiner(gpu)
+			thisMiner, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()])
 			if err != nil {
 				return nil, fmt.Errorf("Error initializing GPU %s: %s", gpu.Name(), err.Error())
 			}
 			hashers = append(hashers, thisMiner)
+			fmt.Printf("%-20s groupSize:%d groups:%d count:%d\n", thisMiner.Name(), thisMiner.GroupSize, thisMiner.Groups, thisMiner.Count)
 		}
 	}
 	return NewMiningGroup(hashers), nil
