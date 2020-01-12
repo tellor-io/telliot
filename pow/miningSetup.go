@@ -21,7 +21,7 @@ func SetupMiningGroup(cfg *config.Config) (*MiningGroup, error) {
 		for _, gpu := range gpus {
 			thisMiner, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()])
 			if err != nil {
-				return nil, fmt.Errorf("Error initializing GPU %s: %s", gpu.Name(), err.Error())
+				return nil, fmt.Errorf("error initializing GPU %s: %s", gpu.Name(), err.Error())
 			}
 			hashers = append(hashers, thisMiner)
 			fmt.Printf("%-20s groupSize:%d groups:%d count:%d\n", thisMiner.Name(), thisMiner.GroupSize, thisMiner.Groups, thisMiner.Count)

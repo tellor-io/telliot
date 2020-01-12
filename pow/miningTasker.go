@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"log"
-	"math/big"
-	"strings"
-
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/util"
+	"log"
+	"math"
+	"math/big"
+	"math/rand"
 )
 
 const (
@@ -43,21 +42,21 @@ type MiningTasker struct {
 
 func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 
-	//get address from config
-	_fromAddress := cfg.PublicAddress
-
-	//convert to address
-	fromAddress := common.HexToAddress(_fromAddress)
-	pubKey := strings.ToLower(fromAddress.Hex())
+	////get address from config
+	//_fromAddress := cfg.PublicAddress
+	//
+	////convert to address
+	//fromAddress := common.HexToAddress(_fromAddress)
+	//pubKey := strings.ToLower(fromAddress.Hex())
 
 	return &MiningTasker{
 		proxy:         proxy,
-		pubKey:        pubKey,
+		pubKey:        "0x" + cfg.PublicAddress,
 		log:           util.NewLogger("pow", "MiningTasker"),
 	}
 }
 
-func (mt *MiningTasker) PullUpdates() *MiningChallenge {
+func (mt *MiningTasker) GetWork() *Work {
 	mt.log.Info("Pulling current data from data server...")
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
@@ -114,7 +113,7 @@ func (mt *MiningTasker) PullUpdates() *MiningChallenge {
 		}
 	}
 	mt.currChallenge = newChallenge
-	return newChallenge
+	return &Work{Challenge:newChallenge, PublicAddr:mt.pubKey[2:], Start:uint64(rand.Int63()), N:math.MaxInt64}
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {

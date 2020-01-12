@@ -51,8 +51,9 @@ func CreateSolutionHandler(
 	}
 }
 
-func (s *SolutionHandler) HandleSolution(ctx context.Context, challenge *MiningChallenge, nonce string) {
-
+func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
+	challenge := result.Work.Challenge
+	nonce := result.Nonce
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
 	s.log.Info("Getting pending txn and value from data server...")
 	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.RequestIdKey, valKey})
