@@ -42,6 +42,10 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 }
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	group := NewMiningGroup([]Hasher{impl})
 
@@ -55,7 +59,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	testVectors := []int{19, 133, 8, 442, 1231}
 	for _,v := range testVectors {
 		challenge := createChallenge(v, diff)
-		input <- &Work{Challenge:challenge, Start:0, N:math.MaxInt64}
+		input <- &Work{Challenge:challenge, Start:0, PublicAddr:cfg.PublicAddress, N:math.MaxInt64}
 
 		//wait for a solution to be found
 		select {
@@ -93,7 +97,12 @@ func TestGpuMiner(t *testing.T) {
 		fmt.Println(gpus)
 		t.Fatal(err)
 	}
-	impl, err := NewGpuMiner(gpus[0])
+	cfg, err := config.GetConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,6 +113,11 @@ func TestMulti(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
+	cfg, err := config.GetConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var hashers []Hasher
 	for i := 0; i < 4; i++ {
 		hashers = append(hashers, NewCpuMiner(int64(i)))
@@ -114,7 +128,7 @@ func TestMulti(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _,gpu := range gpus {
-		impl, err := NewGpuMiner(gpu)
+		impl, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()])
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -128,7 +142,7 @@ func TestMulti(t *testing.T) {
 	go group.Mine(input, output)
 
 	challenge := createChallenge(0, math.MaxInt64)
-	input <- &Work{Challenge:challenge, Start:0, N:math.MaxInt64}
+	input <- &Work{Challenge:challenge, Start:0, PublicAddr:cfg.PublicAddress, N:math.MaxInt64}
 	time.Sleep(1 * time.Second)
 	input <- nil
 	timeout := 200 * time.Millisecond

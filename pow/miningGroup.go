@@ -130,6 +130,7 @@ func (g *MiningGroup)PrintHashRateSummary() {
 
 type Work struct {
 	Challenge *MiningChallenge
+	PublicAddr string
 	Start uint64
 	N uint64
 }
@@ -200,7 +201,7 @@ func (g *MiningGroup)Mine(input chan *Work, output chan *Result) {
 			sent = 0
 			recv = 0
 			currWork = work
-			currHashSettings = NewHashSettings(work.Challenge, cfg.PublicAddress)
+			currHashSettings = NewHashSettings(work.Challenge, work.PublicAddr)
 
 		//read in a result from one of the miners
 		case result := <-resultChannel:
