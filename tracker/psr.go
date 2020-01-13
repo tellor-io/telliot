@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/TellorMiner/cli"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
@@ -73,7 +72,8 @@ func (psr *PSRTracker) String() string {
 
 func (psr *PSRTracker) init() error {
 	//Loop through all PSRs
-	psrPath := cli.GetFlags().PSRPath
+	cfg, _ := config.GetConfig()
+	psrPath := cfg.PSRPath
 	psrLog.Info("Opening PSR config file at: %s\n", psrPath)
 	info, err := os.Stat(psrPath)
 	if os.IsNotExist(err) {

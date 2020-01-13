@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-
-	"github.com/tellor-io/TellorMiner/cli"
 )
 
 //Entry holds specific component log level
@@ -25,13 +23,6 @@ var (
 
 //ParseLoggingConfig parses the given JSON log level config file for use in log configuration
 func ParseLoggingConfig(file string) (*LogConfig, error) {
-	if len(file) == 0 {
-		lCfg := cli.GetFlags()
-		file = lCfg.LoggingConfigPath
-	}
-	if sharedConfig != nil {
-		return sharedConfig, nil
-	}
 
 	info, err := os.Stat(file)
 	if os.IsNotExist(err) {
@@ -71,12 +62,6 @@ func ParseLoggingConfig(file string) (*LogConfig, error) {
 
 //GetLoggingConfig retrieves a shared logging config
 func GetLoggingConfig() (*LogConfig, error) {
-	if sharedConfig == nil {
-		_, err := ParseLoggingConfig("")
-		if err != nil {
-			return nil, err
-		}
-	}
 	return sharedConfig, nil
 }
 

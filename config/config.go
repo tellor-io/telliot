@@ -7,10 +7,8 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/tellor-io/TellorMiner/cli"
 	"github.com/tellor-io/TellorMiner/util"
 )
 
@@ -79,6 +77,7 @@ type Config struct {
 	GPUConfig				     map[string]*GPUConfig  `json:"gpuConfig"`
 	EnablePoolWorker             bool     `json:"enablePoolWorker"`
 	PoolURL                      string   `json:"poolURL"`
+	PSRPath						 string `json:"psrPath"`
 	logger                       *util.Logger
 }
 
@@ -92,17 +91,10 @@ const defaultHeartbeat = 15 * time.Second //check miner speed every 10 ^ 8 cycle
 
 var (
 	config *Config
-	mux    sync.Mutex
 )
 
 //ParseConfig and set a shared config entry
 func ParseConfig(path string) (*Config, error) {
-	if len(path) == 0 {
-		path = cli.GetFlags().ConfigPath
-		if len(path) == 0 {
-			panic("Invalid config path. Not provided and not a command line option")
-		}
-	}
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		log.Fatalf("Invalid ConfigPath setting: %s", path)
@@ -204,15 +196,5 @@ func validateConfig(cfg *Config) error {
 
 //GetConfig returns a shared instance of config
 func GetConfig() (*Config, error) {
-	if config == nil {
-		mux.Lock()
-		defer mux.Unlock()
-		if config == nil {
-			_, err := ParseConfig("")
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 	return config, nil
 }

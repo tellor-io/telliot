@@ -41,7 +41,7 @@ type MiningTasker struct {
 }
 
 func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
-	
+
 	return &MiningTasker{
 		proxy:         proxy,
 		pubKey:        "0x" + cfg.PublicAddress,

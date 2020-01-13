@@ -71,7 +71,7 @@ func NewClient(url string) (ETHClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	timeout := time.Duration(time.Duration(cfg.EthClientTimeout) * time.Second)
+	timeout := time.Duration(cfg.EthClientTimeout) * time.Second
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err

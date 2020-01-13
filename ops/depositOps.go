@@ -97,8 +97,7 @@ func Deposit(ctx context.Context) error {
 	amt := big.NewInt(1000)
 	if balance.Cmp(amt) < 0 {
 		depositLog.Error("Insufficient token balance: %+v", balance)
-		fmt.Println("You must have the amount you want to send")
-		return nil
+		return fmt.Errorf("insufficient balance (%s), mining stake requires 1000 TRB", balance.Text(10))
 	}
 
 	instance2 := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
@@ -106,9 +105,9 @@ func Deposit(ctx context.Context) error {
 	tx, err := instance2.DepositStake(auth)
 	if err != nil {
 		depositLog.Error("Could not deposit stake: %+v", err)
-		return err
+		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-
+	fmt.Printf("Stake depositied with txn %x\n", tx.Hash().Hex())
 	depositLog.Info("tx sent: %s", tx.Hash().Hex())
 
 	return nil
