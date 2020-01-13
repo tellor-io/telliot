@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"log"
-	"math/big"
-	"strings"
-
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/util"
+	"log"
+	"math"
+	"math/big"
+	"math/rand"
 )
 
 const (
@@ -42,22 +41,15 @@ type MiningTasker struct {
 }
 
 func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
-
-	//get address from config
-	_fromAddress := cfg.PublicAddress
-
-	//convert to address
-	fromAddress := common.HexToAddress(_fromAddress)
-	pubKey := strings.ToLower(fromAddress.Hex())
-
+	
 	return &MiningTasker{
 		proxy:         proxy,
-		pubKey:        pubKey,
+		pubKey:        "0x" + cfg.PublicAddress,
 		log:           util.NewLogger("pow", "MiningTasker"),
 	}
 }
 
-func (mt *MiningTasker) PullUpdates() *MiningChallenge {
+func (mt *MiningTasker) GetWork() *Work {
 	mt.log.Info("Pulling current data from data server...")
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
@@ -102,19 +94,19 @@ func (mt *MiningTasker) PullUpdates() *MiningChallenge {
 	}
 
 	newChallenge := &MiningChallenge{
-		challenge:  m[db.CurrentChallengeKey],
-		difficulty: diff,
-		requestID:  reqID,
+		Challenge:  m[db.CurrentChallengeKey],
+		Difficulty: diff,
+		RequestID:  reqID,
 	}
 
 	//if we already sent this challenge out, don't do it again
 	if mt.currChallenge != nil {
-		if bytes.Compare(newChallenge.challenge, mt.currChallenge.challenge) == 0 {
+		if bytes.Compare(newChallenge.Challenge, mt.currChallenge.Challenge) == 0 {
 			return nil
 		}
 	}
 	mt.currChallenge = newChallenge
-	return newChallenge
+	return &Work{Challenge:newChallenge, PublicAddr:mt.pubKey[2:], Start:uint64(rand.Int63()), N:math.MaxInt64}
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {
@@ -137,11 +129,11 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 
 func (mt *MiningTasker) isEmptyChallenge(challenge *MiningChallenge) bool {
 	mt.log.Info("Checking whether current challenge is empty")
-	if challenge.requestID.Cmp(big.NewInt(0)) == 0 {
+	if challenge.RequestID.Cmp(big.NewInt(0)) == 0 {
 		mt.log.Info("Current challenge has 0-value request ID, Cancelling any ongoing mining since previous challenge is complete")
 		return true
 	}
-	if challenge.challenge == nil || len(challenge.challenge) == 0 {
+	if challenge.Challenge == nil || len(challenge.Challenge) == 0 {
 		mt.log.Info("Current challenge has empty nonce. Cancelling any ongoing mining since previous challenge is complete")
 		return true
 	}

@@ -1,8 +1,9 @@
 package config
 
 import (
-	"fmt"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -42,6 +43,16 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 
+type GPUConfig struct {
+	//number of threads in a workgroup
+	GroupSize int `json:"groupSize"`
+	//total number of threads
+	Groups int`json:"groups"`
+	//number of iterations within a thread
+	Count uint32 `json:"count"`
+}
+
+
 //Config holds global config info derived from config.json
 type Config struct {
 	ContractAddress              string        `json:"contractAddress"`
@@ -65,7 +76,7 @@ type Config struct {
 	NumProcessors                int      `json:"numProcessors"`
 	Heartbeat                    Duration `json:"heartbeat"`
 	ServerWhitelist              []string `json:"serverWhitelist"`
-	UseGPU                       bool     `json:"useGPU"`
+	GPUConfig				     map[string]*GPUConfig  `json:"gpuConfig"`
 	logger                       *util.Logger
 }
 
@@ -105,8 +116,11 @@ func ParseConfig(path string) (*Config, error) {
 	}
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
+	if err != nil {
+		return nil, err
+	}
 	config.logger = util.NewLogger("config", "Config")
-	if config.UseGPU == false {
+	if len(config.GPUConfig) == 0  {
 		fmt.Println("Not using GPU's, check config file")
 	}
 	if config.FetchTimeout.Seconds() == 0 {
@@ -134,11 +148,51 @@ func ParseConfig(path string) (*Config, error) {
 		}
 	}
 
-	config.PrivateKey = strings.ReplaceAll(config.PrivateKey, "0x", "")
-	config.PublicAddress = strings.ReplaceAll(config.PublicAddress, "0x", "")
+	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
+	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
+
+	err = validateConfig(config)
+	if err != nil {
+		return nil, err
+	}
 
 	config.logger.Info("config: %+v", config)
 	return config, nil
+}
+
+
+
+func validateConfig(cfg *Config) error {
+	b, err := hex.DecodeString(cfg.PublicAddress)
+	if err != nil || len(b) != 20 {
+		return fmt.Errorf("expecting 40 hex character public address, got %s", cfg.PublicAddress)
+	}
+	b, err = hex.DecodeString(cfg.PrivateKey)
+	if err != nil || len(b) != 32 {
+		return fmt.Errorf("expecting 64 hex character private key, got %s", cfg.PublicAddress)
+	}
+	b, err = hex.DecodeString(cfg.ContractAddress[2:])
+	if err != nil || len(b) != 20 {
+		return fmt.Errorf("expecting 40 hex character contract address, got %s", cfg.ContractAddress)
+	}
+
+	if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
+		return fmt.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
+	}
+
+	for name,gpuConfig := range cfg.GPUConfig {
+		if gpuConfig.Count == 0 {
+			return fmt.Errorf("gpu %s requires 'count' > 0", name)
+		}
+		if gpuConfig.GroupSize == 0 {
+			return fmt.Errorf("gpu %s requires 'groupSize' > 0", name)
+		}
+		if gpuConfig.Groups == 0 {
+			return fmt.Errorf("gpu %s requires 'groups' > 0", name)
+		}
+	}
+
+	return nil
 }
 
 //GetConfig returns a shared instance of config

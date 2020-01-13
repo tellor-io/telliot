@@ -9,11 +9,17 @@ import (
 	"github.com/tellor-io/TellorMiner/pow"
 	"github.com/tellor-io/TellorMiner/util"
 	"log"
-	"math"
-	"math/rand"
 	"os"
 	"time"
 )
+
+type WorkSource interface {
+	GetWork() *pow.Work
+}
+
+type SolutionSink interface {
+	Submit(context.Context, *pow.Result)
+}
 
 //MiningMgr holds items for mining and requesting data
 type MiningMgr struct {
@@ -23,8 +29,8 @@ type MiningMgr struct {
 	Running bool
 
 	group  *pow.MiningGroup
-	tasker *pow.MiningTasker
-	solHandler *pow.SolutionHandler
+	tasker WorkSource
+	solHandler SolutionSink
 
 	proxy db.DataServerProxy
 
@@ -88,9 +94,9 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		// sends work to the mining group
 		sendWork := func () {
 			//if its nil, nothing new to report
-			challenge := mgr.tasker.PullUpdates()
-			if challenge != nil {
-				input <-&pow.Work{Challenge:challenge, Start:uint64(rand.Int63()), N:math.MaxInt64}
+			work := mgr.tasker.GetWork()
+			if work != nil {
+				input <- work
 			}
 		}
 		//send the initial challenge
@@ -108,7 +114,8 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 					mgr.Running = false
 					return
 				}
-				mgr.solHandler.HandleSolution(ctx, result.Work.Challenge, result.Nonce)
+				mgr.solHandler.Submit(ctx, result)
+				sendWork()
 
 			//time to check for a new challenge
 			case _ = <-ticker.C:

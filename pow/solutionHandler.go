@@ -51,9 +51,10 @@ func CreateSolutionHandler(
 	}
 }
 
-func (s *SolutionHandler) HandleSolution(ctx context.Context, challenge *MiningChallenge, nonce string) {
-
-	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.requestID.Uint64())
+func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
+	challenge := result.Work.Challenge
+	nonce := result.Nonce
+	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
 	s.log.Info("Getting pending txn and value from data server...")
 	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.RequestIdKey, valKey})
 
@@ -65,7 +66,7 @@ func (s *SolutionHandler) HandleSolution(ctx context.Context, challenge *MiningC
 
 	val := m[valKey]
 	if val == nil || len(val) == 0 {
-		s.log.Warn("Have not retrieved price data for requestId %d. We can't submit solution until we've received value at least once", challenge.requestID.Uint64())
+		s.log.Warn("Have not retrieved price data for requestId %d. We can't submit solution until we've received value at least once", challenge.RequestID.Uint64())
 		return
 	}
 
@@ -92,7 +93,7 @@ func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.Cont
 
 	txn, err := contract.SubmitSolution(
 		s.currentNonce,
-		s.currentChallenge.requestID,
+		s.currentChallenge.RequestID,
 		s.currentValue)
 	if err != nil {
 		s.log.Error("Problem submitting solution: %v", err)
