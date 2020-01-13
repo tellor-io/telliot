@@ -53,24 +53,33 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 
 	proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 
-	tasker := pow.CreateTasker(cfg, proxy)
-	solHandler := pow.CreateSolutionHandler(cfg, submitter, proxy)
-
 	rExit := make(chan os.Signal)
 
 	dataRequester := CreateDataRequester(rExit, submitter, cfg.RequestDataInterval.Duration, proxy)
 	log := util.NewLogger("ops", "MiningMgr")
 
-	return &MiningMgr{
+	mng := &MiningMgr{
 		exitCh:  exitCh,
 		log:     log,
 		Running: false,
 		group:   group,
 		proxy:   proxy,
-		tasker:  tasker,
-		solHandler: solHandler,
+		tasker:  nil,
+		solHandler: nil,
 		dataRequester: dataRequester,
-		requesterExit: rExit}, nil
+		requesterExit: rExit}
+
+
+	if cfg.EnablePoolWorker {
+		pool := pow.CreatePool(cfg)
+		mng.tasker = pool
+		mng.solHandler = pool
+	} else {
+		mng.tasker = pow.CreateTasker(cfg, proxy)
+		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, proxy)
+	}
+
+	return mng, nil
 }
 
 //Start will start the mining run loop

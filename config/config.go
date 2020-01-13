@@ -77,6 +77,8 @@ type Config struct {
 	Heartbeat                    Duration `json:"heartbeat"`
 	ServerWhitelist              []string `json:"serverWhitelist"`
 	GPUConfig				     map[string]*GPUConfig  `json:"gpuConfig"`
+	EnablePoolWorker             bool     `json:"enablePoolWorker"`
+	PoolURL                      string   `json:"poolURL"`
 	logger                       *util.Logger
 }
 
