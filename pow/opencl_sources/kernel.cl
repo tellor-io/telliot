@@ -41,8 +41,8 @@ __kernel void tellor(
         //run the tellor hash algo
         keccak(prefix, (uint32_t*)nonce, (uint64_t*)hashResult);
         uint8_t ripe160Result[20];
-        ripemd160_transform_vector(hashResult, ripe160Result);
-        sha2_fast(ripe160Result,hashResult);
+        ripemd160_transform_vector((uint32_t*)hashResult, (uint32_t*)ripe160Result);
+        sha2_fast((uint32_t*)ripe160Result,(uint32_t*)hashResult);
 
 
         //test if result is divisible by target difficulty

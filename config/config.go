@@ -148,8 +148,8 @@ func ParseConfig(path string) (*Config, error) {
 		}
 	}
 
-	config.PrivateKey = strings.ReplaceAll(config.PrivateKey, "0x", "")
-	config.PublicAddress = strings.ReplaceAll(config.PublicAddress, "0x", "")
+	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
+	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
 	err = validateConfig(config)
 	if err != nil {
