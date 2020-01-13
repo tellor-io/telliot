@@ -11,6 +11,7 @@ import (
 type Command struct {
 	Cmd     func(context.Context) error
 	Options *flag.FlagSet
+	RequiresDB bool
 }
 
 var Commands = map[string]Command{}
@@ -24,15 +25,25 @@ func init() {
 }
 
 func depositCmd() Command {
-	flags := flag.NewFlagSet("deposit", flag.ContinueOnError)
+	flags := new(flag.FlagSet)
+	_ = flags.Uint64("bar", 10, "a foo bar")
 	return Command{
 		Options: flags,
-		Cmd: func(ctx context.Context) error {
-			return ops.Deposit(ctx)
-		},
+		Cmd: ops.Deposit,
 	}
 }
 
+func withdrawCmd() Command {
+	flags := flag.NewFlagSet("withdraw", flag.ContinueOnError)
+	return Command{
+		Options: flags,
+		Cmd: ops.WithdrawStake,
+	}
+}
+
+//func HelpCmd() Command {
+//
+//}
 
 func Help(ctx context.Context) error {
 	fmt.Fprintf(os.Stderr, "TellorMiner commands\n")

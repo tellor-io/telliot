@@ -18,10 +18,7 @@ import (
 
 func TestDataServer(t *testing.T) {
 	exitCh := make(chan int)
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
+	cfg := config.GetConfig()
 	if len(cfg.DBFile) == 0 {
 		log.Fatal("Missing dbFile config setting")
 	}

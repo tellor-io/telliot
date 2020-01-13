@@ -19,4 +19,11 @@ var (
 
 	//DataProxyKey used to access the local or remote data server proxy
 	DataProxyKey = util.NewKey("common", "DataServerProxy")
+
+	//Ethereum wallet private key
+	PrivateKey = util.NewKey("common", "PrivateKey")
+
+	//Ethereum wallet public address
+	PublicAddress = util.NewKey("common", "PublicAddress")
+
 )

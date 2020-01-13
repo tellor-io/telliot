@@ -157,11 +157,9 @@ func TestRequestPut(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer DB.Close()
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	//get address from config
+	cfg := config.GetConfig()
 	_fromAddress := cfg.PublicAddress
 
 	//convert to address

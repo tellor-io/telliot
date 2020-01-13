@@ -150,11 +150,7 @@ func fetchAPI(ctx context.Context, reqID uint, _granularity uint, queryString st
 	syncGroup := ctx.Value(waitGroupKey).(*sync.WaitGroup)
 	defer syncGroup.Done()
 
-	cfg, err := config.GetConfig()
-	if err != nil {
-		errorChan <- err
-		return
-	}
+	cfg := config.GetConfig()
 
 	url, args := util.ParseQueryString(queryString)
 	req := &FetchRequest{queryURL: url, timeout: cfg.FetchTimeout.Duration}

@@ -39,10 +39,7 @@ func CreateDataRequester(exitCh chan os.Signal, submitter tellorCommon.Transacti
 
 //Start kicks of go routines to periodically submit tips if configured to do so
 func (r *DataRequester) Start(ctx context.Context) error {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return err
-	}
+	cfg := config.GetConfig()
 
 	//if we're not configured to request anything.
 	if cfg.RequestData == 0 {
@@ -77,10 +74,7 @@ func (r *DataRequester) IsRunning() bool {
 }
 
 func (r *DataRequester) reqDataCallback(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
+	cfg := config.GetConfig()
 
 	//if we're not configured to request anything.
 	if cfg.RequestData == 0 {

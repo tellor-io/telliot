@@ -184,10 +184,7 @@ func (g *MiningGroup)Mine(input chan *Work, output chan *Result) {
 		//dispatch work
 		idleWorkers <- b
 	}
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
+	cfg := config.GetConfig()
 	nextHeartbeat := cfg.Heartbeat.Duration
 
 	var currHashSettings *HashSettings

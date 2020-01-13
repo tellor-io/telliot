@@ -75,11 +75,7 @@ func allActivityLaterThan(instance *tellor.TellorMaster,reqId int, earliest time
 }
 
 func Activity(ctx context.Context) error {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		depositLog.Error("Problem getting config: %+v", err)
-		return err
-	}
+	cfg := config.GetConfig()
 
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
@@ -92,9 +88,7 @@ func Activity(ctx context.Context) error {
 
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
 	if err != nil {
-		depositLog.Error("Problem creating contract: %+v", err)
-		//log.Fatal(err)
-		return err
+		return fmt.Errorf("problem creating contract: %s", err.Error())
 	}
 
 	//earliest time we can file a dispute for

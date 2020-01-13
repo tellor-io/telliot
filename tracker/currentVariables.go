@@ -3,8 +3,6 @@ package tracker
 import (
 	"context"
 	"fmt"
-	"log"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -29,11 +27,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	//cast client using type assertion since context holds generic interface{}
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	//get the single config instance
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
+	cfg := config.GetConfig()
 
 	//get address from config
 	_fromAddress := cfg.PublicAddress

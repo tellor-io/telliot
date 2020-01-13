@@ -72,7 +72,7 @@ func (psr *PSRTracker) String() string {
 
 func (psr *PSRTracker) init() error {
 	//Loop through all PSRs
-	cfg, _ := config.GetConfig()
+	cfg := config.GetConfig()
 	psrPath := cfg.PSRPath
 	psrLog.Info("Opening PSR config file at: %s\n", psrPath)
 	info, err := os.Stat(psrPath)
@@ -144,11 +144,7 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 	syncGroup := ctx.Value(psrWaitGroupKey).(*sync.WaitGroup)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	defer syncGroup.Done()
-	cfg, err := config.GetConfig()
-	if err != nil {
-		errorCh <- err
-		return
-	}
+	cfg := config.GetConfig()
 	reqs := make([]*FetchRequest, len(r.APIs))
 	argGroups := make([][]string, len(r.APIs))
 	for i := 0; i < len(r.APIs); i++ {
@@ -157,7 +153,7 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 		reqs[i] = &FetchRequest{queryURL: url, timeout: cfg.FetchTimeout.Duration}
 		argGroups[i] = args
 	}
-	payloads, err := batchFetchWithRetries(reqs)
+	payloads, _ := batchFetchWithRetries(reqs)
 	vals := make([]int, len(payloads))
 	errs := 0
 	for i := 0; i < len(vals); i++ {

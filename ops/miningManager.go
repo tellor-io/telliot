@@ -8,7 +8,6 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/pow"
 	"github.com/tellor-io/TellorMiner/util"
-	"log"
 	"os"
 	"time"
 )
@@ -39,10 +38,7 @@ type MiningMgr struct {
 
 //CreateMiningManager creates a new manager that mananges mining and data requests
 func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter) (*MiningMgr, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
+	cfg := config.GetConfig()
 
 	group, err := pow.SetupMiningGroup(cfg)
 	if err != nil {
@@ -77,11 +73,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.Running = true
 	go func(ctx context.Context) {
-		cfg, err := config.GetConfig()
-		if err != nil {
-			log.Fatal(err)
-		}
-
+		cfg := config.GetConfig()
 
 		ticker := time.NewTicker(cfg.MiningInterruptCheckInterval.Duration)
 

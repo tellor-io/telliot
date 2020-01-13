@@ -39,11 +39,7 @@ func TestCurrentVariables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := config.GetConfig()
-	if err != nil {
-		runnerLog.Error("Problem getting config", err)
-		return
-	}
+	cfg := config.GetConfig()
 	tracker := &CurrentVariablesTracker{}
 	ctx := context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 	ctx = context.WithValue(ctx, tellorCommon.DBContextKey, DB)

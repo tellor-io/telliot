@@ -67,10 +67,7 @@ var (
 
 //NewClient creates a new client instance
 func NewClient(url string) (ETHClient, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
+	cfg := config.GetConfig()
 	timeout := time.Duration(cfg.EthClientTimeout) * time.Second
 	client, err := ethclient.Dial(url)
 	if err != nil {

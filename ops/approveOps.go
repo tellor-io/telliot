@@ -20,10 +20,7 @@ import (
  */
 
 func Approve(_spender string, amount string,ctx context.Context) (error) {
-   cfg, err := config.GetConfig()
-   if err != nil {
-	   return err
-   }
+   cfg := config.GetConfig()
    client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
    privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)

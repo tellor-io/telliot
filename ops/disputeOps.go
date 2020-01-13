@@ -26,11 +26,7 @@ var (
 )
 
 func Dispute(_requestId string,_timestamp string,_minerIndex string,ctx context.Context) error {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		disputeLog.Error("Problem getting config: %+v", err)
-		return err
-	}
+	cfg := config.GetConfig()
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
 	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)

@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -94,29 +93,26 @@ var (
 )
 
 //ParseConfig and set a shared config entry
-func ParseConfig(path string) (*Config, error) {
+func ParseConfig(path string) error {
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		log.Fatalf("Invalid ConfigPath setting: %s", path)
+		return fmt.Errorf("Invalid ConfigPath setting: %s", path)
 	}
 	if info.IsDir() {
-		log.Fatalf("ConfigPath is a directory: %s", path)
+		return fmt.Errorf("ConfigPath is a directory: %s", path)
 	}
 
 	configFile, err := os.Open(path)
 	defer configFile.Close()
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("couldn't open %s: %s", path, err)
 	}
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
 	config.logger = util.NewLogger("config", "Config")
-	if len(config.GPUConfig) == 0  {
-		fmt.Println("Not using GPU's, check config file")
-	}
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout
 	}
@@ -152,11 +148,11 @@ func ParseConfig(path string) (*Config, error) {
 
 	err = validateConfig(config)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("validation failed: %s", err)
 	}
 
-	config.logger.Info("config: %+v", config)
-	return config, nil
+	//config.logger.Info("config: %+v", config)
+	return nil
 }
 
 
@@ -195,6 +191,6 @@ func validateConfig(cfg *Config) error {
 }
 
 //GetConfig returns a shared instance of config
-func GetConfig() (*Config, error) {
-	return config, nil
+func GetConfig() *Config {
+	return config
 }
