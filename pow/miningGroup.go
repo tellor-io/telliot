@@ -117,11 +117,26 @@ func formatHashRate(rate float64) string {
 	return fmt.Sprintf("%.0f %cH/s", rate, letters[i])
 }
 
-func (g *MiningGroup)PrintHashRateSummary() {
+func (g *MiningGroup)HashRateEstimate() float64 {
 	totalHashrate := 0.0
 	for _,b := range g.Backends {
 		totalHashrate += b.HashRateEstimate
 	}
+	return totalHashrate
+}
+
+func (g *MiningGroup)PreferredWorkMultiple() uint64 {
+	largest := uint64(0)
+	for _,b := range g.Backends {
+		if b.StepSize() > largest {
+			largest = b.StepSize()
+		}
+	}
+	return largest
+}
+
+func (g *MiningGroup)PrintHashRateSummary() {
+	totalHashrate := g.HashRateEstimate()
 	fmt.Printf("Total hashrate %s\n", formatHashRate(totalHashrate))
 	for _,b := range g.Backends {
 		fmt.Printf("\t%8s (%4.1f%%): %s \n", formatHashRate(b.HashRateEstimate), (b.HashRateEstimate/totalHashrate)*100,b.Name())

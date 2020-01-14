@@ -32,8 +32,6 @@ type MiningMgr struct {
 	tasker WorkSource
 	solHandler SolutionSink
 
-	proxy db.DataServerProxy
-
 	dataRequester *DataRequester
 	//data requester's exit channel
 	requesterExit chan os.Signal
@@ -53,25 +51,18 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 
 	proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 
-	rExit := make(chan os.Signal)
-
-	dataRequester := CreateDataRequester(rExit, submitter, cfg.RequestDataInterval.Duration, proxy)
-	log := util.NewLogger("ops", "MiningMgr")
-
 	mng := &MiningMgr{
 		exitCh:  exitCh,
-		log:     log,
+		log:     util.NewLogger("ops", "MiningMgr"),
 		Running: false,
 		group:   group,
-		proxy:   proxy,
 		tasker:  nil,
 		solHandler: nil,
-		dataRequester: dataRequester,
-		requesterExit: rExit}
+	}
 
 
 	if cfg.EnablePoolWorker {
-		pool := pow.CreatePool(cfg)
+		pool := pow.CreatePool(cfg, group)
 		mng.tasker = pool
 		mng.solHandler = pool
 	} else {
@@ -84,6 +75,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 
 //Start will start the mining run loop
 func (mgr *MiningMgr) Start(ctx context.Context) {
+	mgr.Running = true
 	go func(ctx context.Context) {
 		cfg, err := config.GetConfig()
 		if err != nil {

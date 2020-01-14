@@ -1,88 +1,107 @@
 package pow
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
-  "context"
-  "math/big"
-  "bytes"
-  "net/http"
-  "io/ioutil"
-  "encoding/json"
 	"github.com/tellor-io/TellorMiner/config"
-  "github.com/tellor-io/TellorMiner/util"
+	"github.com/tellor-io/TellorMiner/util"
+	"io/ioutil"
+	"math"
+	"math/big"
+	"net/http"
+	"time"
 )
 
 //job is the response from the pool server contianing job data for this worker
 type Job struct {
-	Challenge       string `json:"challenge"`
-  Difficulty     int `json:"difficulty"`
-  EndNonce       int `json:"end_nonce"`
-  JobID          int `json:"job_id"`
-	PublicAddress   string `json:"public_address"`
-	StartNonce     int `json:"start_nonce"`
-  WorkID        int `json:"work_id"`
+	Challenge     string `json:"challenge"`
+	Difficulty    int    `json:"difficulty"`
+	EndNonce      int    `json:"end_nonce"`
+	JobID         int    `json:"job_id"`
+	PublicAddress string `json:"public_address"`
+	StartNonce    int    `json:"start_nonce"`
+	WorkID        int    `json:"work_id"`
 }
 
 type Pool struct {
-	log              *util.Logger
-  url string
-  publicAddress string
-  currJobID int
+	log           *util.Logger
+	url           string
+	publicAddress string
+	currJobID     int
+	group         *MiningGroup
 }
 
-func CreatePool(cfg *config.Config) *Pool {
+func CreatePool(cfg *config.Config, group *MiningGroup) *Pool {
 
 	return &Pool{
-		url: cfg.PoolURL,
-    currJobID: 0,
-    publicAddress: cfg.PublicAddress,
-		log:util.NewLogger("pow", "Pool"),
+		url:           cfg.PoolURL,
+		currJobID:     0,
+		publicAddress: cfg.PublicAddress,
+		log:           util.NewLogger("pow", "Pool"),
+		group:         group,
 	}
 }
 
-
 func (p *Pool) GetWork() *Work {
-  // HTTP GET work from the server
-  p.log.Info("Getting work from the pool server.")
-  if p.currJobID > 0 {
-    return nil
-  }
-  var j = new(Job)
-	url := p.url + fmt.Sprintf("/job?public_address=%s&job_size=10000000", p.publicAddress)
+	// HTTP GET work from the server
+	if p.currJobID > 0 {
+		return nil
+	}
+	//target 2s pool chunks
+	jobDuration := 2 * time.Second
+	jobSize := jobDuration.Seconds()*p.group.HashRateEstimate()
+	step := p.group.PreferredWorkMultiple()
+	nsteps := uint64(math.Round(jobSize /float64(step)))
+	if nsteps == 0 {
+		nsteps = 1
+	}
+	n := nsteps * step
+
+	url := p.url + fmt.Sprintf("/job?public_address=%s&job_size=%d", p.publicAddress, n)
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	cli := &http.Client{}
 	resp, err := cli.Do(req)
-	p.log.Info("response Status:", resp.Status)
-	p.log.Info("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	err = json.Unmarshal(body, &j)
-  p.log.Info("Response Body Job Data: %v", string(body))
-  p.log.Info("Response Body Job Data: %v", j)
 	if err != nil {
-			p.log.Error("Error decoding nonce:", err.Error())
-			return nil
+		p.log.Error("failed to get work from pool: %s", err.Error())
+		return nil
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		p.log.Error("failed to read response: %s", err.Error())
+		return nil
+	}
+
+	var j = new(Job)
+	err = json.Unmarshal(body, &j)
+	if err != nil {
+		p.log.Error("Error decoding job json: %s", err.Error())
+		return nil
 	}
 	newChallenge := &MiningChallenge{
-		Challenge:  []byte(j.Challenge),
+		Challenge:  decodeHex(j.Challenge),
 		Difficulty: big.NewInt(int64(j.Difficulty)),
 		RequestID:  big.NewInt(1),
 	}
 	p.currJobID = j.JobID
-	return &Work{Challenge:newChallenge, PublicAddr:j.PublicAddress, Start:uint64(j.StartNonce), N:uint64(j.EndNonce - j.StartNonce)}
+	return &Work{Challenge: newChallenge, PublicAddr: j.PublicAddress, Start: uint64(j.StartNonce), N: uint64(j.EndNonce - j.StartNonce)}
 }
 
 func (p *Pool) Submit(ctx context.Context, result *Result) {
-  // HTTP POST valid nonces to the pool server
-  nonce := result.Nonce
-  if result.Nonce == "" {
-    nonce = "0"
-  }
-  values := map[string]string{
-		"job_id": fmt.Sprintf("%v",p.currJobID),
-		"nonce": nonce}
-  p.log.Info(fmt.Sprintf("Submit: %v", values))
+	// HTTP POST valid nonces to the pool server
+	nonce := result.Nonce
+	if result.Nonce == "" {
+		nonce = "0"
+	}
+	values := map[string]string{
+		"job_id": fmt.Sprintf("%v", p.currJobID),
+		"nonce":  nonce,
+	}
 	jsonValue, _ := json.Marshal(values)
 
 	url := p.url + "/job"
@@ -94,15 +113,10 @@ func (p *Pool) Submit(ctx context.Context, result *Result) {
 	resp, err := cli.Do(req)
 	if err != nil {
 		p.log.Error("Problem submitting txn", err)
-			p.log.Error("Error posting nonce:", err.Error())
-			return
+		p.log.Error("Error posting nonce:", err.Error())
+		return
 	} else {
-		p.log.Info("Successfully submitted solution")
-		p.log.Info("Posted job to pool server.")
-		body, _ := ioutil.ReadAll(resp.Body)
-		//ml.log.Info("response Status:", resp.Status)
-	  //ml.log.Info("response Headers:", resp.Header)
-	  p.log.Info("response Body:", string(body))
-    p.currJobID = 0
+		resp.Body.Close()
+		p.currJobID = 0
 	}
 }
