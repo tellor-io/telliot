@@ -77,6 +77,8 @@ type Config struct {
 	Heartbeat                    Duration `json:"heartbeat"`
 	ServerWhitelist              []string `json:"serverWhitelist"`
 	GPUConfig				     map[string]*GPUConfig  `json:"gpuConfig"`
+	EnablePoolWorker             bool     `json:"enablePoolWorker"`
+	PoolURL                      string   `json:"poolURL"`
 	logger                       *util.Logger
 }
 
@@ -150,6 +152,11 @@ func ParseConfig(path string) (*Config, error) {
 
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
+
+	err = validateConfig(config)
+	if err != nil {
+		return nil, err
+	}
 
 	err = validateConfig(config)
 	if err != nil {
