@@ -53,8 +53,8 @@ func NewHashSettings(challenge *MiningChallenge, publicAddr string) *HashSetting
 // the mining group will attempt to size the chunk it gives each hasher so that it takes roughly this long to complete
 // if you make it too low, overall mining efficiency will drop due to exessive overhead
 // if you make it too high, the miner won't respond quickly to commands (stop, change challenge, etc)
-// right now 50ms seems like a good default. This could perhaps be made configurable, but I don't see much benefit
-const targetChunkTime = 50 * time.Millisecond
+// right now 200ms seems like a good default. This could perhaps be made configurable, but I don't see much benefit
+const targetChunkTime = 200 * time.Millisecond
 
 const rateInitialGuess = 100e3
 
