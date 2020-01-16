@@ -143,7 +143,7 @@ func ParseConfig(path string) error {
 
 	err = validateConfig(config)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = validateConfig(config)

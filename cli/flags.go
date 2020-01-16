@@ -66,12 +66,10 @@ func GetFlags() *Flags {
 		// logConfigPath := filepath.Join(home, "LoggingConfig.json")
 		// psrConfigPath := filepath.Join(home, "psr.json")
 		// cfgPath := filepath.Join(home, "config.json")
-		logConfigPath := "./loggingConfig.json"
+		logConfigPath := "./"
 		psrConfigPath := "./psr.json"
 		cfgPath := "./config.json"
 
-		path := flag.String(configPath, cfgPath, "Path to the primary JSON config file")
-		logPath := flag.String(loggingConfigPath, logConfigPath, "Path to a JSON logging config file")
 		psr := flag.String(psrPath, psrConfigPath, "Path to the psr.json file for pre-specified requests")
 		miner := flag.Bool(minerArg, false, "Whether to run the miner")
 		dataServer := flag.Bool(dataServerArg, false, "Whether to run the data server")
