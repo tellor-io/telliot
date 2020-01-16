@@ -22,6 +22,12 @@ github.com/btcsuite/winsvc v1.0.0/go.mod h1:jsenWakMcC0zFBFurPLEAyrnc/teJEM1O46f
 github.com/cespare/cp v1.1.1 h1:nCb6ZLdB7NRaqsm91JtQTAme2SKJzXVsdPIPkyJr1MU=
 github.com/cespare/cp v1.1.1/go.mod h1:SOGHArjBr4JWaSDEVpWpo/hNg6RoKrls6Oh40hiwW+s=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
+github.com/charliehorse55/go-opencl v0.0.0-20200115224230-5eb7a724bbd0 h1:p8ouq2nl2mHWMidNk5THJ9PJFBcxzJ9UmthFbjEJfUc=
+github.com/charliehorse55/go-opencl v0.0.0-20200115224230-5eb7a724bbd0/go.mod h1:ZBkMZb2xOKd2QLjMOkDkESFlUhSLsQbBL0WGwgpnSWw=
+github.com/charliehorse55/go-opencl v0.0.0-20200116143525-f541a451d3bc h1:IPu2r594Zwru+cf+79f/3R5+iryf1Bj3ZT8fhC1GlvE=
+github.com/charliehorse55/go-opencl v0.0.0-20200116143525-f541a451d3bc/go.mod h1:ZBkMZb2xOKd2QLjMOkDkESFlUhSLsQbBL0WGwgpnSWw=
+github.com/charliehorse55/go-opencl v0.0.0-20200116145223-eb5421c9755d h1:D4+KpZ1VJlgwV4X8FaUsbWE+/23b4GyVAVHyoeRVCqU=
+github.com/charliehorse55/go-opencl v0.0.0-20200116145223-eb5421c9755d/go.mod h1:ZBkMZb2xOKd2QLjMOkDkESFlUhSLsQbBL0WGwgpnSWw=
 github.com/davecgh/go-spew v0.0.0-20171005155431-ecdeabc65495/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

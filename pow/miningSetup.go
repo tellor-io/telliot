@@ -19,7 +19,11 @@ func SetupMiningGroup(cfg *config.Config) (*MiningGroup, error) {
 			return nil, err
 		}
 		for _, gpu := range gpus {
-			thisMiner, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()])
+			gpuConfig, ok := cfg.GPUConfig[gpu.Name()]
+			if !ok {
+				gpuConfig = cfg.GPUConfig["default"]
+			}
+			thisMiner, err := NewGpuMiner(gpu, gpuConfig)
 			if err != nil {
 				return nil, fmt.Errorf("error initializing GPU %s: %s", gpu.Name(), err.Error())
 			}

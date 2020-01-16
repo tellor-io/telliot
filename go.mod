@@ -7,6 +7,7 @@ require (
 	github.com/apilayer/freegeoip v3.5.0+incompatible // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190712234253-ed1100a1c015 // indirect
 	github.com/cespare/cp v1.1.1 // indirect
+	github.com/charliehorse55/go-opencl v0.0.0-20200116145223-eb5421c9755d
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
@@ -22,7 +23,6 @@ require (
 	github.com/huin/goupnp v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.7.9 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
-	github.com/jgillich/go-opencl v0.0.0-20180608191952-a0efba3e5257
 	github.com/karalabe/usb v0.0.0-20190819132248-550797b1cad8 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.11 // indirect
