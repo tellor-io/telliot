@@ -349,3 +349,7 @@ func paddedInt(w *bytes.Buffer, val *big.Int) error {
 	_, err := w.Write(hex)
 	return err
 }
+
+func (c *mockClient)HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
+	return nil, fmt.Errorf("not implemented")
+}

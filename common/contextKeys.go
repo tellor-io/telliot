@@ -11,6 +11,9 @@ var (
 	//DBContextKey is the shared context key where a DB instance can be found in a context
 	DBContextKey = util.NewKey("common", "DB")
 
+	//Tellor Contract Address
+	ContractAddress = util.NewKey("common", "contractAddress")
+
 	//MasterContractContextKey is the shared context key to get shared master tellor contract instance
 	MasterContractContextKey = util.NewKey("common", "masterContract")
 

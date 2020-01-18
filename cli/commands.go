@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 	"github.com/tellor-io/TellorMiner/util"
 	"log"
+	"math/big"
 	"os"
 )
 
@@ -50,6 +52,7 @@ func buildContext() error {
 	}
 
 	ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
+	ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
 	ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 	ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
 
@@ -88,7 +91,6 @@ func AddDBToCtx() error {
 		return err
 	}
 
-
 	var dataProxy db.DataServerProxy
 	if true { //EVANTODO
 		proxy, err := db.OpenLocalProxy(DB)
@@ -112,27 +114,95 @@ func AddDBToCtx() error {
 func App() *cli.Cli {
 
 
-	app := cli.App("tellor", "Tellor Coin Miner")
+	app := cli.App("TellorMiner", "The tellor.io official miner")
 
 	//app wide config options
 	configPath := app.StringOpt("config", "config.json", "Path to the primary JSON config file")
 	logPath := app.StringOpt("logConfig", "loggingConfig.json", "Path to a JSON logging config file")
 
+	//this will get run before any of the commands
 	app.Before = func() {
 		ErrorHandler(config.ParseConfig(*configPath))
 		ErrorHandler(util.ParseLoggingConfig(*logPath))
+		ErrorHandler(buildContext())
 	}
 
-	ErrorHandler(buildContext())
-
-
-	app.Command("deposit", "deposit TRB stake", func(cmd *cli.Cmd) {
-		cmd.Action = func() {
-			ErrorHandler(ops.Deposit(ctx))
-		}
-	})
-
-	//		cmd.Before = ErrorWrapper(AddDBToCtx)
+	app.Command("stake", "staking operations", stakeCmd)
+	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer))
+	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve))
+	app.Command("balance", "check balance of address", balanceCmd)
+	app.Command("dispute", "dispute operations", disputeCmd)
+	app.Command("activity", "block activity", activityCmd)
 	return app
 }
 
+func stakeCmd(cmd *cli.Cmd) {
+	cmd.Command("deposit", "deposit TRB stake", simpleCmd(ops.Deposit))
+	cmd.Command("withdraw", "withdraw TRB stake", simpleCmd(ops.WithdrawStake))
+	cmd.Command("request", "request to withdraw TRB stake", simpleCmd(ops.RequestStakingWithdraw))
+	cmd.Command("status", "show current staking status", simpleCmd(ops.ShowStatus))
+}
+
+func simpleCmd(f func (context.Context) error) func(*cli.Cmd) {
+	return func(cmd *cli.Cmd) {
+		cmd.Action = func() {
+			ErrorHandler(f(ctx))
+		}
+	}
+}
+
+func moveCmd(f func(common.Address, *big.Int, context.Context) error) func (*cli.Cmd) {
+	return func(cmd *cli.Cmd) {
+		amt := TRBAmount{}
+		addr := ETHAddress{}
+		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
+		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
+		cmd.Action = func() {
+			ErrorHandler(f(addr.addr, amt.Int, ctx))
+		}
+	}
+}
+
+func balanceCmd(cmd *cli.Cmd) {
+	addr := ETHAddress{}
+	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
+	cmd.Spec = "[ADDRESS]"
+	cmd.Action = func() {
+		var zero [20]byte
+		if bytes.Compare(addr.addr.Bytes(), zero[:]) == 0 {
+			addr.addr = ctx.Value(tellorCommon.PublicAddress).(common.Address)
+		}
+		ErrorHandler(ops.Balance(ctx, addr.addr))
+	}
+}
+
+func disputeCmd(cmd *cli.Cmd) {
+	cmd.Command("vote", "deposit TRB stake", voteCmd)
+	cmd.Command("new", "withdraw TRB stake", newDisputeCmd)
+}
+
+func voteCmd(cmd *cli.Cmd) {
+	disputeID := EthereumInt{}
+	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
+	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
+	cmd.Action = func() {
+		ErrorHandler(ops.Vote(disputeID.Int, *supports, ctx))
+	}
+}
+
+func newDisputeCmd(cmd *cli.Cmd) {
+	requestID := EthereumInt{}
+	timestamp := EthereumInt{}
+	minerIndex := EthereumInt{}
+	cmd.VarArg("REQUEST_ID", &requestID, "request id")
+	cmd.VarArg("TIMESTAMP", &timestamp, "timestamp")
+	cmd.VarArg("MINER_INDEX", &minerIndex, "miner to dispute (0-4)")
+	cmd.Action = func() {
+		ErrorHandler(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx))
+	}
+}
+
+func activityCmd(cmd *cli.Cmd) {
+	cmd.Before = ErrorWrapper(AddDBToCtx)
+	simpleCmd(ops.ActivityFoo)(cmd)
+}

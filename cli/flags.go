@@ -1,9 +1,5 @@
 package cli
 
-import (
-	"flag"
-)
-
 const configPath = "config"
 const loggingConfigPath = "logConfig"
 const psrPath = "psrPath"
@@ -66,49 +62,34 @@ func GetFlags() *Flags {
 		// logConfigPath := filepath.Join(home, "LoggingConfig.json")
 		// psrConfigPath := filepath.Join(home, "psr.json")
 		// cfgPath := filepath.Join(home, "config.json")
-		logConfigPath := "./"
-		psrConfigPath := "./psr.json"
-		cfgPath := "./config.json"
 
-		psr := flag.String(psrPath, psrConfigPath, "Path to the psr.json file for pre-specified requests")
-		miner := flag.Bool(minerArg, false, "Whether to run the miner")
-		dataServer := flag.Bool(dataServerArg, false, "Whether to run the data server")
-		transfer := flag.Bool(transferArg, false, "Whether to transfer funds")
-		deposit := flag.Bool(depositArg, false, "Whether to deposit funds")
-		toAddress := flag.String(toAddressArg, "", "Address of party to transfer/approve to")
-		amount := flag.String(amountArg, "0", "amount to transfer")
-		approve := flag.Bool(approveArg, false, "Whether to transfer funds")
-		dispute := flag.Bool(disputeArg, false, "Whether to dispute")
-		requestId := flag.String(requestIdArg, "0", "requestId to dispute")
-		timestamp := flag.String(timestampArg, "0", "timestamp to dispute")
-		minerIndex := flag.String(minerIndexArg, "6", "minerIndex to dispute")
-		requestStakingWithdraw := flag.Bool(requestStakingWithdrawArg, false, "Whether to request a staking withdraw")
-		withdrawStake := flag.Bool(withdrawStakeArg, false, "Whether to withdrawstake")
-		vote := flag.Bool(voteArg, false, "Whether to vote")
-		disputeId := flag.String(disputeIdArg, "0", "dispute id to vote on")
-		supportsDispute := flag.Bool(supportsDisputeArg, false, "Whether to withdrawstake")
-
-		flag.Parse()
+		//miner := flag.Bool(minerArg, false, "Whether to run the miner")
+		//dataServer := flag.Bool(dataServerArg, false, "Whether to run the data server")
+		//dispute := flag.Bool(disputeArg, false, "Whether to dispute")
+		//requestId := flag.String(requestIdArg, "0", "requestId to dispute")
+		//timestamp := flag.String(timestampArg, "0", "timestamp to dispute")
+		//minerIndex := flag.String(minerIndexArg, "6", "minerIndex to dispute")
+		//vote := flag.Bool(voteArg, false, "Whether to vote")
+		//disputeId := flag.String(disputeIdArg, "0", "dispute id to vote on")
+		//supportsDispute := flag.Bool(supportsDisputeArg, false, "Whether to withdrawstake")
+		//
+		//flag.Parse()
 		//log.Printf("Path: %s, LogPath: %s, PSRPath: %s, Args: %v", *path, *logPath, *psr, flag.Args())
-		f.ConfigPath = *path
-		f.LoggingConfigPath = *logPath
-		f.PSRPath = *psr
-		f.Miner = *miner
-		f.DataServer = *dataServer
-		f.Deposit = *deposit
-		f.Transfer = *transfer
-		f.ToAddress = *toAddress
-		f.Amount = *amount
-		f.Approve = *approve
-		f.Dispute = *dispute
-		f.RequestId = *requestId
-		f.Timestamp = *timestamp
-		f.MinerIndex = *minerIndex
-		f.RequestStakingWithdraw = *requestStakingWithdraw
-		f.WithdrawStake = *withdrawStake
-		f.Vote = *vote
-		f.DisputeId = *disputeId
-		f.SupportsDispute = *supportsDispute
+		//f.Miner = *miner
+		//f.DataServer = *dataServer
+		//f.Transfer = *transfer
+		//f.ToAddress = *toAddress
+		//f.Amount = *amount
+		//f.Approve = *approve
+		//f.Dispute = *dispute
+		//f.RequestId = *requestId
+		//f.Timestamp = *timestamp
+		//f.MinerIndex = *minerIndex
+		//f.RequestStakingWithdraw = *requestStakingWithdraw
+		//f.WithdrawStake = *withdrawStake
+		//f.Vote = *vote
+		//f.DisputeId = *disputeId
+		//f.SupportsDispute = *supportsDispute
 		sharedFlags = f
 	}
 	return sharedFlags
