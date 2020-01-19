@@ -8,7 +8,7 @@ import (
 func SetupMiningGroup(cfg *config.Config) (*MiningGroup, error) {
 	var hashers []Hasher
 	gpus, err := GetOpenCLGPUs()
-	fmt.Printf("Using %d GPUs:\n", len(gpus))
+	fmt.Printf("Found %d GPUs:\n", len(gpus))
 	if err != nil {
 		return nil, err
 	}
