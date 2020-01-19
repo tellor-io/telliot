@@ -198,7 +198,6 @@ func ActivityFoo(ctx context.Context) error {
 		Addresses: []common.Address{contractAddress},
 		Topics: [][]common.Hash{{newValID, nonceSubmitID}},
 	}
-
 	//DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	sub, err := client.FilterLogs(ctx, query)
@@ -237,6 +236,7 @@ func ActivityFoo(ctx context.Context) error {
 	noncesFound := 0
 	for i := start-1; i >= 0; i-- {
 		if sub[i].Topics[0] == nonceSubmitID {
+			fmt.Printf("txn: %x\n", sub[i].TxHash)
 			nonceSubmit := contracts1.TellorLibraryNonceSubmitted{}
 			err := bar.UnpackLog(&nonceSubmit,"NonceSubmitted", sub[i])
 			if err != nil {
