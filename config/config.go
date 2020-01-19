@@ -50,6 +50,8 @@ type GPUConfig struct {
 	Groups int`json:"groups"`
 	//number of iterations within a thread
 	Count uint32 `json:"count"`
+
+	Disabled bool `json:"disabled"`
 }
 
 
@@ -122,9 +124,6 @@ func ParseConfig(path string) (*Config, error) {
 		return nil, err
 	}
 	config.logger = util.NewLogger("config", "Config")
-	if len(config.GPUConfig) == 0  {
-		fmt.Println("Not using GPU's, check config file")
-	}
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout
 	}
@@ -158,11 +157,6 @@ func ParseConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
-	err = validateConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
 	config.logger.Info("config: %+v", config)
 	return config, nil
 }
@@ -188,6 +182,9 @@ func validateConfig(cfg *Config) error {
 	}
 
 	for name,gpuConfig := range cfg.GPUConfig {
+		if gpuConfig.Disabled {
+			continue
+		}
 		if gpuConfig.Count == 0 {
 			return fmt.Errorf("gpu %s requires 'count' > 0", name)
 		}
