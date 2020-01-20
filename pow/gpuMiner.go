@@ -52,11 +52,15 @@ func GetOpenCLGPUs() ([]*cl.Device, error) {
 	}
 	gpus := []*cl.Device{}
 	for _,platform := range platforms {
-		devices, err := platform.GetDevices(cl.DeviceTypeGPU)
+		devices, err := platform.GetDevices(cl.DeviceTypeAll)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get devices for platform %s: %s", platform.Name(), err.Error())
 		}
-		gpus = append(gpus, devices...)
+		for _,device := range devices {
+			if device.Type() == cl.DeviceTypeGPU {
+				gpus = append(gpus, device)
+			}
+		}
 	}
 	return gpus, nil
 }
@@ -73,9 +77,9 @@ func NewGpuMiner(device *cl.Device, config *config.GPUConfig) (*GpuMiner, error)
 	var g GpuMiner
 	var err error
 	if config == nil {
-		g.Count = 512
+		g.Count = 8
 		g.GroupSize = 64
-		g.Groups = 128
+		g.Groups = 4096
 	} else {
 		g.GPUConfig = *config
 	}

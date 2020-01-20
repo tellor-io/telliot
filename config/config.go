@@ -50,6 +50,8 @@ type GPUConfig struct {
 	Groups int`json:"groups"`
 	//number of iterations within a thread
 	Count uint32 `json:"count"`
+
+	Disabled bool `json:"disabled"`
 }
 
 
@@ -79,6 +81,7 @@ type Config struct {
 	GPUConfig				     map[string]*GPUConfig  `json:"gpuConfig"`
 	EnablePoolWorker             bool     `json:"enablePoolWorker"`
 	PoolURL                      string   `json:"poolURL"`
+	PoolJobDuration              Duration `json:"poolJobDuration"`
 	logger                       *util.Logger
 }
 
@@ -89,7 +92,7 @@ const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for ne
 const defaultCores = 2
 
 const defaultHeartbeat = 15 * time.Second //check miner speed every 10 ^ 8 cycles
-
+const defaultPoolJobDuration = 15 * time.Second //target 15s for jobs from pool
 var (
 	config *Config
 	mux    sync.Mutex
@@ -122,9 +125,6 @@ func ParseConfig(path string) (*Config, error) {
 		return nil, err
 	}
 	config.logger = util.NewLogger("config", "Config")
-	if len(config.GPUConfig) == 0  {
-		fmt.Println("Not using GPU's, check config file")
-	}
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout
 	}
@@ -141,6 +141,9 @@ func ParseConfig(path string) (*Config, error) {
 	if config.Heartbeat.Seconds() == 0 {
 		config.Heartbeat.Duration = defaultHeartbeat
 	}
+	if config.PoolJobDuration.Seconds() == 0 {
+		config.PoolJobDuration.Duration = defaultPoolJobDuration
+	}
 
 	if len(config.ServerWhitelist) == 0{
 		if strings.Contains(config.PublicAddress, "0x") {
@@ -152,11 +155,6 @@ func ParseConfig(path string) (*Config, error) {
 
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
-
-	err = validateConfig(config)
-	if err != nil {
-		return nil, err
-	}
 
 	err = validateConfig(config)
 	if err != nil {
@@ -188,6 +186,9 @@ func validateConfig(cfg *Config) error {
 	}
 
 	for name,gpuConfig := range cfg.GPUConfig {
+		if gpuConfig.Disabled {
+			continue
+		}
 		if gpuConfig.Count == 0 {
 			return fmt.Errorf("gpu %s requires 'count' > 0", name)
 		}
