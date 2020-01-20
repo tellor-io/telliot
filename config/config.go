@@ -79,6 +79,7 @@ type Config struct {
 	GPUConfig				     map[string]*GPUConfig  `json:"gpuConfig"`
 	EnablePoolWorker             bool     `json:"enablePoolWorker"`
 	PoolURL                      string   `json:"poolURL"`
+	PoolJobDuration              Duration `json:"poolJobDuration"`
 	logger                       *util.Logger
 }
 
@@ -89,7 +90,7 @@ const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for ne
 const defaultCores = 2
 
 const defaultHeartbeat = 15 * time.Second //check miner speed every 10 ^ 8 cycles
-
+const defaultPoolJobDuration = 15 * time.Second //target 15s for jobs from pool
 var (
 	config *Config
 	mux    sync.Mutex
@@ -140,6 +141,9 @@ func ParseConfig(path string) (*Config, error) {
 
 	if config.Heartbeat.Seconds() == 0 {
 		config.Heartbeat.Duration = defaultHeartbeat
+	}
+	if config.PoolJobDuration.Seconds() == 0 {
+		config.PoolJobDuration.Duration = defaultPoolJobDuration
 	}
 
 	if len(config.ServerWhitelist) == 0{

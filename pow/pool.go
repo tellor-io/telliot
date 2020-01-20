@@ -11,7 +11,6 @@ import (
 	"math"
 	"math/big"
 	"net/http"
-	"time"
 )
 
 //job is the response from the pool server contianing job data for this worker
@@ -31,6 +30,8 @@ type Pool struct {
 	publicAddress string
 	currJobID     int
 	group         *MiningGroup
+	jobDuration   config.Duration
+
 }
 
 func CreatePool(cfg *config.Config, group *MiningGroup) *Pool {
@@ -41,6 +42,7 @@ func CreatePool(cfg *config.Config, group *MiningGroup) *Pool {
 		publicAddress: cfg.PublicAddress,
 		log:           util.NewLogger("pow", "Pool"),
 		group:         group,
+		jobDuration:   cfg.PoolJobDuration,
 	}
 }
 
@@ -49,9 +51,8 @@ func (p *Pool) GetWork() *Work {
 	if p.currJobID > 0 {
 		return nil
 	}
-	//target 2s pool chunks
-	jobDuration := 2 * time.Second
-	jobSize := jobDuration.Seconds()*p.group.HashRateEstimate()
+	//target 15s pool chunks by default
+	jobSize := p.jobDuration.Seconds()*p.group.HashRateEstimate()
 	step := p.group.PreferredWorkMultiple()
 	nsteps := uint64(math.Round(jobSize /float64(step)))
 	if nsteps == 0 {
