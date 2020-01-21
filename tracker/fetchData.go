@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
@@ -67,11 +66,8 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 				//below we send a nil entry through so we bail once we see that
 				return
 			}
-			//encode the value in hex
-			enc := hexutil.EncodeBig(res.value)
 			fetchLog.Debug("Storing fetch result: %v for id: %d", res.value, res.reqID)
-			//and write it to DB using value prefix and request Id
-			DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, res.reqID), []byte(enc))
+			setRequestValue(res.reqID, &TimedInt{Created:time.Now(), Val:uint(res.value.Uint64())})
 		}
 	}()
 

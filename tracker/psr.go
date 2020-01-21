@@ -5,18 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/util"
 	"io/ioutil"
-	"log"
-	"math/big"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"sync"
+	"time"
 )
 
 //PSRTracker keeps track of pre-specified requests
@@ -33,19 +30,65 @@ type PrespecifiedRequest struct {
 	Granularity    uint     `json:"granularity"`
 }
 
+
+
 var (
 	psrLog          = util.NewLogger("tracker", "PSRTracker")
-	sharedInstance  *PSRTracker
 	funcs           map[string]interface{}
-	psrWaitGroupKey = util.NewKey("tracker", "PSRFetchWaitGroup")
 )
 
-//package function to get a shared PSRInstance
-func psrInstance() (*PSRTracker, error) {
-	if sharedInstance == nil {
-		return nil, fmt.Errorf("Missing psrInstance singleton")
+//maps requestID to a time window of values
+var PSRWindows map[uint]*Window
+var lastWrotePSR time.Time
+var PSRWindowMutex sync.RWMutex
+
+func GetLatestRequestValue(id uint) *TimedInt {
+	PSRWindowMutex.RLock()
+	defer PSRWindowMutex.RUnlock()
+	w, ok := PSRWindows[id]
+	if !ok {
+		return nil
 	}
-	return sharedInstance, nil
+	return w.Latest()
+}
+
+func setRequestValue(id uint, val *TimedInt) {
+	PSRWindowMutex.Lock()
+	_, ok := PSRWindows[id]
+	if !ok {
+		PSRWindows[id] = NewWindow(7 * 24 * time.Hour)
+	}
+	PSRWindows[id].Insert(val)
+	PSRWindowMutex.Unlock()
+}
+
+func writeOutPSR() {
+	PSRWindowMutex.Lock()
+	for _,v := range PSRWindows {
+		v.Trim()
+	}
+	data, err := json.MarshalIndent(PSRWindows, "", "\t")
+	PSRWindowMutex.Unlock()
+	if err != nil {
+		psrLog.Error("failed to marshal PSR values: %s", err.Error())
+		return
+	}
+
+	cfg := config.GetConfig()
+	psrSavedData := filepath.Join(cfg.PSRFolder, "saved.json")
+	psrSavedDataTmp := psrSavedData + ".tmp"
+	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
+	if err != nil {
+		psrLog.Error("failed to write out PSR values to %s: %s", psrSavedDataTmp, err.Error())
+		return
+	}
+	//rename tmp file to old file (should be atomic on most modern OS)
+	err = os.Rename(psrSavedDataTmp, psrSavedData)
+	if err != nil {
+		psrLog.Error("failed move new PSR save onto old: %s", err.Error())
+		return
+	}
+	lastWrotePSR = time.Now()
 }
 
 //BuildPSRTracker creates and initializes a new tracker instance
@@ -61,7 +104,6 @@ func BuildPSRTracker() (*PSRTracker, error) {
 		"median":  median,
 		"square":  square,
 	}
-	sharedInstance = psr
 	return psr, nil
 }
 
@@ -73,28 +115,15 @@ func (psr *PSRTracker) String() string {
 func (psr *PSRTracker) init() error {
 	//Loop through all PSRs
 	cfg := config.GetConfig()
-	psrPath := cfg.PSRPath
-	psrLog.Info("Opening PSR config file at: %s\n", psrPath)
-	info, err := os.Stat(psrPath)
-	if os.IsNotExist(err) {
-		log.Fatalf("Invalid PSRPath file path: %s", psrPath)
-	}
-	if info.IsDir() {
-		log.Fatalf("PSRPath setting is a directory: %s", psrPath)
-	}
 
-	configFile, err := os.Open(psrPath)
-
+	psrPath := filepath.Join(cfg.PSRFolder, "psr.json")
+	byteValue, err := ioutil.ReadFile(psrPath)
 	if err != nil {
-		fmt.Println("Error", err)
-		return err
+		return fmt.Errorf("failed to read psr file @ %s: %v", psrPath, err)
 	}
 
-	defer configFile.Close()
-	byteValue, _ := ioutil.ReadAll(configFile)
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'Requests' which we defined above
-
 	err = json.Unmarshal(byteValue, &psr)
 	if err != nil {
 		return err
@@ -103,6 +132,32 @@ func (psr *PSRTracker) init() error {
 		r := psr.Requests[i]
 		psr.requestByID[r.RequestID] = &r
 	}
+
+	psrSavedData := filepath.Join(cfg.PSRFolder, "saved.json")
+
+	_, err = os.Stat(psrSavedData)
+	exists := true
+	if err != nil {
+		if os.IsNotExist(err) {
+			exists = false
+		} else {
+			return fmt.Errorf("file %s stat error: %v", psrSavedData, err)
+		}
+	}
+
+	if exists {
+		byteValue, err = ioutil.ReadFile(psrSavedData)
+		if err != nil {
+			return fmt.Errorf("failed to read psr file @ %s: %v", psrPath, err)
+		}
+		err = json.Unmarshal(byteValue, &PSRWindows)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal saved")
+		}
+	} else {
+		PSRWindows = make(map[uint]*Window)
+	}
+
 	psrLog.Info("Initialized PSR with %d requests\n", len(psr.Requests))
 	return nil
 }
@@ -111,39 +166,40 @@ func (psr *PSRTracker) init() error {
 func (psr *PSRTracker) Exec(ctx context.Context) error {
 	//TODO: retrieve github updates of psr config file. For now, we'll just pull
 	//PSR's as defined by psr.json file
-	var syncGroup sync.WaitGroup
-	var doneGroup sync.WaitGroup
-	ctx = context.WithValue(ctx, psrWaitGroupKey, &syncGroup)
-	errorCh := make(chan error)
-	doneGroup.Add(1)
-	go func() {
-		defer doneGroup.Done()
-		for {
-			e := <-errorCh
-			if e != nil {
-				psrLog.Error("Problem in PSR fetch: %v]\n", e)
-			} else {
-				return
-			}
-		}
-	}()
-
+	resultCh := make(chan *fetchResult, len(psr.Requests))
 	for i := 0; i < len(psr.Requests); i++ {
 		p := psr.Requests[i]
-		syncGroup.Add(1)
-		go p.fetch(ctx, errorCh)
+		go p.fetch(resultCh)
 	}
-	syncGroup.Wait()
-	errorCh <- nil
-	doneGroup.Wait()
-	psrLog.Info("PSR Tracker cycle complete")
+	nerr := 0
+	for i := 0; i < len(psr.Requests); i++ {
+		result := <- resultCh
+		if result.err != nil {
+			psrLog.Error("Problem fetching PSR for id %d: %v]\n", result.r.RequestID, result.err)
+			nerr++
+		} else {
+			setRequestValue(result.r.RequestID, result.val)
+		}
+	}
+	if nerr > 0 {
+		psrLog.Info("PSR Tracker cycle completed with %d errors", nerr)
+	} else {
+		psrLog.Info("PSR Tracker cycle completed succesfully")
+	}
+	now := time.Now()
+	if now.Sub(lastWrotePSR) > 2 * time.Minute {
+		writeOutPSR()
+	}
 	return nil
 }
 
-func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
-	syncGroup := ctx.Value(psrWaitGroupKey).(*sync.WaitGroup)
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	defer syncGroup.Done()
+type fetchResult struct {
+	r *PrespecifiedRequest
+	val *TimedInt
+	err error
+}
+
+func (r *PrespecifiedRequest) fetch(resultCh chan *fetchResult) {
 	cfg := config.GetConfig()
 	reqs := make([]*FetchRequest, len(r.APIs))
 	argGroups := make([][]string, len(r.APIs))
@@ -154,45 +210,35 @@ func (r *PrespecifiedRequest) fetch(ctx context.Context, errorCh chan error) {
 		argGroups[i] = args
 	}
 	payloads, _ := batchFetchWithRetries(reqs)
-	vals := make([]int, len(payloads))
+	vals := make([]int, 0, len(payloads))
 	errs := 0
-	for i := 0; i < len(vals); i++ {
-		pl := payloads[i]
+	for i, pl := range payloads {
 		if pl == nil {
 			errs += 1
-			newlen := len(payloads) - errs
-			nn := vals[i:newlen]
-			vals := make([]int,newlen)
-			copy(vals,nn)
 			continue
 		}
-		v, err := util.ParsePayload(payloads[i], r.Granularity, argGroups[i])
+		v, err := util.ParsePayload(pl, r.Granularity, argGroups[i])
 		if err != nil {
 			errs += 1
-			newlen := len(payloads) - errs
-			nn := vals[i:newlen]
-			vals := make([]int,newlen)
-			copy(vals,nn)
 			continue
-		}else{
-			vals[i] = v
 		}
-
+		vals = append(vals, v)
 	}
-	if len(vals) > errs {
+	result := &fetchResult{r: r}
+	if len(vals) > 0 {
 		res, err := computeTransformation(r.Transformation, vals)
 		if err != nil {
-			fmt.Println("computeTransError")
-			errorCh <- err
+			 result.err = err
 		} else {
-			y := res.Interface().(uint)
-			enc := hexutil.EncodeBig(big.NewInt(int64(y)))
-			DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, r.RequestID), []byte(enc))
+			result.val = &TimedInt{
+				Created: time.Now(),
+				Val:     res.Interface().(uint),
+			}
 		}
-	}else{
-		fmt.Println("No value stored this round -- ID : ", r.RequestID)
+	} else {
+		result.err = fmt.Errorf("no sucessful api hits, no value stored for id %d", r.RequestID)
 	}
-
+	resultCh <- result
 }
 
 func computeTransformation(name string, params ...interface{}) (result reflect.Value, err error) {

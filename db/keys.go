@@ -30,9 +30,6 @@ const (
 	//RequestID's are stored with this prefix and the id itself
 	//e.g. "qm_2" represents request ID 2
 	QueryMetadataPrefix = "qm_"
-
-	//Request values are stored with this prefix plus request id
-	QueriedValuePrefix = "qv_"
 )
 
 var knownKeys map[string]bool
@@ -58,8 +55,7 @@ func isKnownKey(key string) bool {
 		initKeyLook()
 	}
 	if !knownKeys[key] {
-		if !strings.HasPrefix(key, QueryMetadataPrefix) &&
-			!strings.HasPrefix(key, QueriedValuePrefix) {
+		if !strings.HasPrefix(key, QueryMetadataPrefix) {
 			return false
 		}
 	}

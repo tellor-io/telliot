@@ -2,15 +2,16 @@ package pow
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/tracker"
 	"github.com/tellor-io/TellorMiner/util"
 	"log"
 	"math"
 	"math/big"
 	"math/rand"
+	"time"
 )
 
 const (
@@ -81,15 +82,14 @@ func (mt *MiningTasker) GetWork() *Work {
 		return nil
 	}
 
-	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqID.Uint64())
-	m2, err := mt.proxy.BatchGet([]string{valKey})
-	if err != nil {
-		mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
+	val := tracker.GetLatestRequestValue(uint(reqID.Uint64()))
+	if val == nil {
+		mt.log.Info("Pricing data not available for request %d, cannot mine yet", reqID.Uint64())
 		return nil
 	}
-	val := m2[valKey]
-	if val == nil || len(val) == 0 {
-		mt.log.Info("Pricing data not available for request %d, cannot mine yet", reqID.Uint64())
+	now := time.Now()
+	if now.Sub(val.Created) > (2 * time.Minute) {
+		mt.log.Info("Pricing data out of date for request %d, cannot mine yet", reqID.Uint64())
 		return nil
 	}
 

@@ -66,17 +66,17 @@ type Config struct {
 	FetchTimeout                 Duration `json:"fetchTimeout"`
 	RequestData                  uint     `json:"requestData"`
 	RequestDataInterval          Duration `json:"requestDataInterval"` //in seconds
-	RequestTips                  int64    `json: "requestTips"`
-	MiningInterruptCheckInterval Duration `json:"miningInterruptCheckInterval"` //in seconds
-	GasMultiplier                float32  `json:"gasMultiplier"`
-	GasMax                       uint     `json:"gasMax"`
-	NumProcessors                int      `json:"numProcessors"`
-	Heartbeat                    Duration `json:"heartbeat"`
-	ServerWhitelist              []string `json:"serverWhitelist"`
-	GPUConfig				     map[string]*GPUConfig  `json:"gpuConfig"`
-	EnablePoolWorker             bool     `json:"enablePoolWorker"`
-	PoolURL                      string   `json:"poolURL"`
-	PSRPath						 string `json:"psrPath"`
+	RequestTips                  int64                 `json: "requestTips"`
+	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"` //in seconds
+	GasMultiplier                float32               `json:"gasMultiplier"`
+	GasMax                       uint                  `json:"gasMax"`
+	NumProcessors                int                   `json:"numProcessors"`
+	Heartbeat                    Duration              `json:"heartbeat"`
+	ServerWhitelist              []string              `json:"serverWhitelist"`
+	GPUConfig                    map[string]*GPUConfig `json:"gpuConfig"`
+	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
+	PoolURL                      string                `json:"poolURL"`
+	PSRFolder                    string                `json:"psrFolder"`
 	logger                       *util.Logger
 }
 

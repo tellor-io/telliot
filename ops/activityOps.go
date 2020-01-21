@@ -210,13 +210,10 @@ func ActivityFoo(ctx context.Context) error {
 		uniqBlocks[cEvent.BlockNumber] = true
 	}
 	fmt.Printf("found %d logs in %d blocks\n", len(sub), len(uniqBlocks))
+
+
 	//just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
 	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
-
-	//baz, err := rpc.AllEvents()
-	//if err != nil {
-	//	return fmt.Errorf("failed to build codec: %v", err)
-	//}
 
 	start := 0
 	for i := len(sub) - 1; i >= 0; i-- {

@@ -45,8 +45,6 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		return nil, fmt.Errorf("failed to setup miners: %s", err.Error())
 	}
 
-	proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
-
 	mng := &MiningMgr{
 		exitCh:  exitCh,
 		log:     util.NewLogger("ops", "MiningMgr"),
@@ -56,16 +54,15 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		solHandler: nil,
 	}
 
-
 	if cfg.EnablePoolWorker {
 		pool := pow.CreatePool(cfg, group)
 		mng.tasker = pool
 		mng.solHandler = pool
 	} else {
+		proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 		mng.tasker = pow.CreateTasker(cfg, proxy)
 		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, proxy)
 	}
-
 	return mng, nil
 }
 

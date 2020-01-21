@@ -2,12 +2,11 @@ package pow
 
 import (
 	"context"
-	"fmt"
+	"github.com/tellor-io/TellorMiner/tracker"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -54,9 +53,8 @@ func CreateSolutionHandler(
 func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	challenge := result.Work.Challenge
 	nonce := result.Nonce
-	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
 	s.log.Info("Getting pending txn and value from data server...")
-	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.RequestIdKey, valKey})
+	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.RequestIdKey})
 
 	if err != nil {
 		s.log.Error("Problem reading pending txn: %v", err)
@@ -64,17 +62,13 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	}
 	s.log.Debug("Retrieved data from data server %v", m)
 
-	val := m[valKey]
-	if val == nil || len(val) == 0 {
+	val := tracker.GetLatestRequestValue(uint(challenge.RequestID.Uint64()))
+	if val == nil {
 		s.log.Warn("Have not retrieved price data for requestId %d. We can't submit solution until we've received value at least once", challenge.RequestID.Uint64())
 		return
 	}
 
-	value, err := hexutil.DecodeBig(string(val))
-	if err != nil {
-		s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
-		return
-	}
+	value := big.NewInt(int64(val.Val))
 
 	s.currentChallenge = challenge
 	s.currentNonce = nonce
