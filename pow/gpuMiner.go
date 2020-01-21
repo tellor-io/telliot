@@ -52,15 +52,15 @@ func GetOpenCLGPUs() ([]*cl.Device, error) {
 	}
 	gpus := []*cl.Device{}
 	for _,platform := range platforms {
-		devices, err := platform.GetDevices(cl.DeviceTypeAll)
+		devices, err := platform.GetDevices(cl.DeviceTypeGPU)
 		if err != nil {
+			if err.Error() == "cl: Device Not Found" {
+				fmt.Printf("Found 0 GPUs on platform %s\n", platform.Name())
+				continue
+			}
 			return nil, fmt.Errorf("failed to get devices for platform %s: %s", platform.Name(), err.Error())
 		}
-		for _,device := range devices {
-			if device.Type() == cl.DeviceTypeGPU {
-				gpus = append(gpus, device)
-			}
-		}
+		gpus = append(gpus, devices...)
 	}
 	return gpus, nil
 }
