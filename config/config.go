@@ -46,6 +46,8 @@ type GPUConfig struct {
 	Groups int`json:"groups"`
 	//number of iterations within a thread
 	Count uint32 `json:"count"`
+
+	Disabled bool `json:"disabled"`
 }
 
 
@@ -75,6 +77,7 @@ type Config struct {
 	GPUConfig                    map[string]*GPUConfig `json:"gpuConfig"`
 	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
 	PoolURL                      string                `json:"poolURL"`
+	PoolJobDuration              Duration `json:"poolJobDuration"`
 	PSRFolder                    string                `json:"psrFolder"`
 }
 
@@ -85,7 +88,7 @@ const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for ne
 const defaultCores = 2
 
 const defaultHeartbeat = 15 * time.Second //check miner speed every 10 ^ 8 cycles
-
+const defaultPoolJobDuration = 15 * time.Second //target 15s for jobs from pool
 var (
 	config *Config
 )
@@ -126,6 +129,9 @@ func ParseConfig(path string) error {
 
 	if config.Heartbeat.Seconds() == 0 {
 		config.Heartbeat.Duration = defaultHeartbeat
+	}
+	if config.PoolJobDuration.Seconds() == 0 {
+		config.PoolJobDuration.Duration = defaultPoolJobDuration
 	}
 
 	if len(config.ServerWhitelist) == 0{
@@ -171,6 +177,9 @@ func validateConfig(cfg *Config) error {
 	}
 
 	for name,gpuConfig := range cfg.GPUConfig {
+		if gpuConfig.Disabled {
+			continue
+		}
 		if gpuConfig.Count == 0 {
 			return fmt.Errorf("gpu %s requires 'count' > 0", name)
 		}
