@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/tellor-io/TellorMiner/util"
 )
 
 //unfortunate hack to enable json parsing of human readable time strings
@@ -52,22 +51,22 @@ type GPUConfig struct {
 
 //Config holds global config info derived from config.json
 type Config struct {
-	ContractAddress              string        `json:"contractAddress"`
-	NodeURL                      string        `json:"nodeURL"`
-	PrivateKey                   string        `json:"privateKey"`
+	ContractAddress              string   `json:"contractAddress"`
+	NodeURL                      string   `json:"nodeURL"`
+	PrivateKey                   string   `json:"privateKey"`
 	DatabaseURL                  string   `json:"databaseURL"`
 	PublicAddress                string   `json:"publicAddress"`
 	EthClientTimeout             uint     `json:"ethClientTimeout"`
-	TrackerSleepCycle            Duration     `json:"trackerCycle"` //in seconds
+	TrackerSleepCycle            Duration `json:"trackerCycle"`
 	Trackers                     []string `json:"trackers"`
 	DBFile                       string   `json:"dbFile"`
 	ServerHost                   string   `json:"serverHost"`
 	ServerPort                   uint     `json:"serverPort"`
 	FetchTimeout                 Duration `json:"fetchTimeout"`
 	RequestData                  uint     `json:"requestData"`
-	RequestDataInterval          Duration `json:"requestDataInterval"` //in seconds
-	RequestTips                  int64                 `json: "requestTips"`
-	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"` //in seconds
+	RequestDataInterval          Duration `json:"requestDataInterval"`
+	RequestTips                  int64                 `json:"requestTips"`
+	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
 	GasMultiplier                float32               `json:"gasMultiplier"`
 	GasMax                       uint                  `json:"gasMax"`
 	NumProcessors                int                   `json:"numProcessors"`
@@ -77,7 +76,6 @@ type Config struct {
 	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
 	PoolURL                      string                `json:"poolURL"`
 	PSRFolder                    string                `json:"psrFolder"`
-	logger                       *util.Logger
 }
 
 const defaultTimeout = 30 * time.Second //30 second fetch timeout
@@ -103,16 +101,16 @@ func ParseConfig(path string) error {
 	}
 
 	configFile, err := os.Open(path)
-	defer configFile.Close()
 	if err != nil {
-		return fmt.Errorf("couldn't open %s: %s", path, err)
+		return fmt.Errorf("failed to open config file %s: %v", path, err)
 	}
+	defer configFile.Close()
+
 	dec := json.NewDecoder(configFile)
 	err = dec.Decode(&config)
 	if err != nil {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
-	config.logger = util.NewLogger("config", "Config")
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout
 	}
@@ -138,20 +136,17 @@ func ParseConfig(path string) error {
 		}
 	}
 
+	if config.PSRFolder == "" {
+		config.PSRFolder = filepath.Dir(path)
+	}
+
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
 	err = validateConfig(config)
 	if err != nil {
-		return err
-	}
-
-	err = validateConfig(config)
-	if err != nil {
 		return fmt.Errorf("validation failed: %s", err)
 	}
-
-	//config.logger.Info("config: %+v", config)
 	return nil
 }
 

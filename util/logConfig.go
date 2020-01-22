@@ -57,12 +57,14 @@ func ParseLoggingConfig(file string) error {
 	} else {
 		sharedConfig = &LogConfig{make(map[string]LogLevel)}
 	}
+	//initialize all the loggers that have already been declared as global vars
+	initLoggers(sharedConfig)
 	return nil
 }
 
 //GetLoggingConfig retrieves a shared logging config
-func GetLoggingConfig() (*LogConfig, error) {
-	return sharedConfig, nil
+func GetLoggingConfig() *LogConfig {
+	return sharedConfig
 }
 
 //GetLevel the log level

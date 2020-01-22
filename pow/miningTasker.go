@@ -82,6 +82,11 @@ func (mt *MiningTasker) GetWork() *Work {
 		return nil
 	}
 
+	if reqID.Uint64() == 0 {
+		mt.log.Info("No current challenge to mine on, waiting...")
+		return nil
+	}
+
 	val := tracker.GetLatestRequestValue(uint(reqID.Uint64()))
 	if val == nil {
 		mt.log.Info("Pricing data not available for request %d, cannot mine yet", reqID.Uint64())

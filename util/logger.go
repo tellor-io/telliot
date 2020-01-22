@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
@@ -31,20 +32,43 @@ type Logger struct {
 	log       *logrus.Entry
 }
 
+//people want to declare singleton logger instances as global vars
+//but the logging config won't be loaded yet
+//so we hand out a pointer to a logger instance, but leave it uninitalized and keep a copy for ourselves
+//then when the logging config is loaded, we can init all the instances we gave out earlier
+//since none of these modules should be using the logger before the config is loaded, this works
+var loggersToInit []*Logger
+var loggerMutex sync.Mutex
+
+
 //NewLogger creates a log instance for the given component with the given log level enabled
 func NewLogger(pkg string, component string) *Logger {
-	//levels, err := GetLoggingConfig()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//level := levels.GetLevel(pkg, component)
-	//ll := xlateLevel(level)
-	log := logrus.New()
-	//log.SetLevel(ll)
-	log.SetFormatter(&logrus.TextFormatter{ForceColors: true})
+	loggerMutex.Lock()
+	defer loggerMutex.Unlock()
 
-	e := log.WithFields(logrus.Fields{"component": component, "package": pkg})
-	return &Logger{pkg: pkg, component: component, log: e}
+	l := &Logger{pkg: pkg, component: component}
+	levels := GetLoggingConfig()
+	if levels != nil {
+		initLogger(levels, l)
+	} else {
+		loggersToInit = append(loggersToInit, l)
+	}
+	return l
+}
+
+func initLogger(levels *LogConfig, l *Logger) {
+	level := levels.GetLevel(l.pkg, l.component)
+	ll := xlateLevel(level)
+	log := logrus.New()
+	log.SetLevel(ll)
+	log.SetFormatter(&logrus.TextFormatter{ForceColors: true})
+	l.log = log.WithFields(logrus.Fields{"component": l.component, "package": l.pkg})
+}
+
+func initLoggers(levels *LogConfig) {
+	for _,l := range loggersToInit {
+		initLogger(levels, l)
+	}
 }
 
 //Error log an error message
