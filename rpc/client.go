@@ -48,6 +48,7 @@ type ETHClient interface {
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 	IsSyncing(ctx context.Context) (bool, error)
 	NetworkID(ctx context.Context) (*big.Int, error)
+	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
 }
 
 //clientInstance is the concrete implementation of the ETHClient
@@ -67,11 +68,8 @@ var (
 
 //NewClient creates a new client instance
 func NewClient(url string) (ETHClient, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-	timeout := time.Duration(time.Duration(cfg.EthClientTimeout) * time.Second)
+	cfg := config.GetConfig()
+	timeout := time.Duration(cfg.EthClientTimeout) * time.Second
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
@@ -276,4 +274,14 @@ func (c *clientInstance) NetworkID(ctx context.Context) (*big.Int, error) {
 		return e
 	})
 	return id, _err
+}
+
+func (c *clientInstance) HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
+	var res *types.Header
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.HeaderByNumber(*_ctx, num)
+		res = r
+		return e
+	})
+	return res, _err
 }

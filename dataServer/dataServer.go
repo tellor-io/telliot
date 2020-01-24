@@ -28,10 +28,8 @@ type DataServer struct {
 
 //CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data
 func CreateServer(ctx context.Context) (*DataServer, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
+	cfg := config.GetConfig()
+
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	client := ctx.Value(common.ClientContextKey).(rpc.ETHClient)
 	run, err := tracker.NewRunner(client, DB)

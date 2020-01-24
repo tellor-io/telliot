@@ -11,6 +11,9 @@ var (
 	//DBContextKey is the shared context key where a DB instance can be found in a context
 	DBContextKey = util.NewKey("common", "DB")
 
+	//Tellor Contract Address
+	ContractAddress = util.NewKey("common", "contractAddress")
+
 	//MasterContractContextKey is the shared context key to get shared master tellor contract instance
 	MasterContractContextKey = util.NewKey("common", "masterContract")
 
@@ -19,4 +22,11 @@ var (
 
 	//DataProxyKey used to access the local or remote data server proxy
 	DataProxyKey = util.NewKey("common", "DataServerProxy")
+
+	//Ethereum wallet private key
+	PrivateKey = util.NewKey("common", "PrivateKey")
+
+	//Ethereum wallet public address
+	PublicAddress = util.NewKey("common", "PublicAddress")
+
 )

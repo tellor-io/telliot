@@ -47,7 +47,12 @@ func batchFetchWithRetries(reqs []*FetchRequest) ([][]byte, error) {
 func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 	retryFetchLog.Debug("Fetch request will expire at: %v (timeout: %v)", expiration, req.timeout)
 
-	r, err := http.Get(req.queryURL)
+	now := time.Now()
+	client := http.Client{
+		Timeout:       expiration.Sub(now),
+	}
+
+	r, err := client.Get(req.queryURL)
 	if err != nil {
 		//log local non-timeout errors for now
 		retryFetchLog.Warn("Problem fetching data from: %s. %v", req.queryURL, err)
@@ -64,14 +69,18 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		return _recFetch(req, expiration)
 	}
 
-	data, _ := ioutil.ReadAll(r.Body)
+	data, err := ioutil.ReadAll(r.Body)
+	r.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
 
 	if r.StatusCode < 200 || r.StatusCode > 299 {
 		retryFetchLog.Warn("Response from fetching  %s. Response code: %d, payload: %s", req.queryURL, r.StatusCode, data)
 		//log local non-timeout errors for now
 		now := time.Now()
 		if now.After(expiration) {
-			return nil, fmt.Errorf("Giving up fetch request after request timeout: %d", r.StatusCode)
+			return nil, fmt.Errorf("giving up fetch request after request timeout: %d", r.StatusCode)
 		}
 		//FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)

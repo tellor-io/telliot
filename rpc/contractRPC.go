@@ -47,10 +47,7 @@ func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
 
 func PrepareContractTxn(ctx context.Context,proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
 
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return err
-	}
+	cfg := config.GetConfig()
 	client := ctx.Value(tellorCommon.ClientContextKey).(ETHClient)
 
 	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)

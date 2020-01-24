@@ -29,7 +29,7 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := config.GetConfig()
+	cfg := config.GetConfig()
 	ctx := context.WithValue(context.Background(), common.DBContextKey, DB)
 	ctx = context.WithValue(ctx, common.DataProxyKey, proxy)
 	srv, err := Create(ctx, cfg.ServerHost, cfg.ServerPort)

@@ -50,10 +50,7 @@ func (t testSubmit) PrepareTransaction(ctx context.Context, ctxName string, fn t
 
 func TestRequestDataOps(t *testing.T) {
 	exitCh := make(chan os.Signal)
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
+	cfg := config.GetConfig()
 
 	con := &testContract{}
 	submitter := testSubmit{contract: con}

@@ -48,10 +48,7 @@ type remoteImpl struct {
 func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
 	rdbLog = util.NewLogger("db", "RemoteDBProxy")
 
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
+	cfg := config.GetConfig()
 	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 	if err != nil {
 		fmt.Println("Problem decoding private key", err)

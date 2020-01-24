@@ -31,11 +31,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	//get the single config instance
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
+	cfg := config.GetConfig()
 
 	//get address from config
 	_fromAddress := cfg.PublicAddress
