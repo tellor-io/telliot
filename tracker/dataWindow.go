@@ -74,7 +74,6 @@ func (w *Window)WithinRange(at time.Time, delta time.Duration) []*TimedInt {
 		i++
 	}
 	return items
-
 }
 
 func (w *Window)Insert(x *TimedInt) {

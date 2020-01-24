@@ -4,8 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/ioutil"
 	"strings"
 	"time"
 )
@@ -103,22 +102,15 @@ const DefaultDisputeThreshold = 0.01
 
 //ParseConfig and set a shared config entry
 func ParseConfig(path string) error {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("Invalid ConfigPath setting: %s", path)
-	}
-	if info.IsDir() {
-		return fmt.Errorf("ConfigPath is a directory: %s", path)
-	}
-
-	configFile, err := os.Open(path)
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to open config file %s: %v", path, err)
 	}
-	defer configFile.Close()
+	return ParseConfigBytes(data)
+}
 
-	dec := json.NewDecoder(configFile)
-	err = dec.Decode(&config)
+func ParseConfigBytes(data []byte) error {
+	err := json.Unmarshal(data, &config)
 	if err != nil {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
@@ -150,10 +142,6 @@ func ParseConfig(path string) error {
 		}
 	}
 
-	if config.PSRFolder == "" {
-		config.PSRFolder = filepath.Dir(path)
-	}
-
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
@@ -176,15 +164,18 @@ func ParseConfig(path string) error {
 func validateConfig(cfg *Config) error {
 	b, err := hex.DecodeString(cfg.PublicAddress)
 	if err != nil || len(b) != 20 {
-		return fmt.Errorf("expecting 40 hex character public address, got %s", cfg.PublicAddress)
+		return fmt.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
 	b, err = hex.DecodeString(cfg.PrivateKey)
 	if err != nil || len(b) != 32 {
-		return fmt.Errorf("expecting 64 hex character private key, got %s", cfg.PublicAddress)
+		return fmt.Errorf("expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
+	}
+	if len(cfg.ContractAddress) != 42 {
+		return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 	}
 	b, err = hex.DecodeString(cfg.ContractAddress[2:])
 	if err != nil || len(b) != 20 {
-		return fmt.Errorf("expecting 40 hex character contract address, got %s", cfg.ContractAddress)
+		return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 	}
 
 	if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
@@ -196,13 +187,13 @@ func validateConfig(cfg *Config) error {
 			continue
 		}
 		if gpuConfig.Count == 0 {
-			return fmt.Errorf("gpu %s requires 'count' > 0", name)
+			return fmt.Errorf("gpu '%s' requires 'count' > 0", name)
 		}
 		if gpuConfig.GroupSize == 0 {
-			return fmt.Errorf("gpu %s requires 'groupSize' > 0", name)
+			return fmt.Errorf("gpu '%s' requires 'groupSize' > 0", name)
 		}
 		if gpuConfig.Groups == 0 {
-			return fmt.Errorf("gpu %s requires 'groups' > 0", name)
+			return fmt.Errorf("gpu '%s' requires 'groups' > 0", name)
 		}
 	}
 
