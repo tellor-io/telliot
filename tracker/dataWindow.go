@@ -40,6 +40,43 @@ func (w *Window)Trim() {
 	}
 }
 
+func (w *Window)ClosestTwo(at time.Time) (before, after *TimedInt) {
+	if w.num == 0 {
+		return
+	}
+	i := 0
+	n := len(w.buffer)
+	for i < w.num {
+		c := w.buffer[(w.start + i) % n]
+		if c.Created.After(at) {
+			after = c
+			break
+		}
+		before = c
+		i++
+	}
+	return
+}
+
+func (w *Window)WithinRange(at time.Time, delta time.Duration) []*TimedInt {
+	var items []*TimedInt
+	i := 0
+	n := len(w.buffer)
+	for i < w.num {
+		c := w.buffer[(w.start + i) % n]
+		d := c.Created.Sub(at)
+		if d < 0 {
+			d = -d
+		}
+		if d <= delta {
+			items = append(items, c)
+		}
+		i++
+	}
+	return items
+
+}
+
 func (w *Window)Insert(x *TimedInt) {
 	now := time.Now()
 	t := x.Created

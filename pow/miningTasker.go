@@ -2,16 +2,15 @@ package pow
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
-	"github.com/tellor-io/TellorMiner/tracker"
 	"github.com/tellor-io/TellorMiner/util"
 	"log"
 	"math"
 	"math/big"
 	"math/rand"
-	"time"
 )
 
 const (
@@ -42,7 +41,7 @@ type MiningTasker struct {
 }
 
 func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
-
+	
 	return &MiningTasker{
 		proxy:         proxy,
 		pubKey:        "0x" + cfg.PublicAddress,
@@ -82,19 +81,15 @@ func (mt *MiningTasker) GetWork() *Work {
 		return nil
 	}
 
-	if reqID.Uint64() == 0 {
-		mt.log.Info("No current challenge to mine on, waiting...")
+	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqID.Uint64())
+	m2, err := mt.proxy.BatchGet([]string{valKey})
+	if err != nil {
+		mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
 		return nil
 	}
-
-	val := tracker.GetLatestRequestValue(uint(reqID.Uint64()))
-	if val == nil {
+	val := m2[valKey]
+	if val == nil || len(val) == 0 {
 		mt.log.Info("Pricing data not available for request %d, cannot mine yet", reqID.Uint64())
-		return nil
-	}
-	now := time.Now()
-	if now.Sub(val.Created) > (2 * time.Minute) {
-		mt.log.Info("Pricing data out of date for request %d, cannot mine yet", reqID.Uint64())
 		return nil
 	}
 

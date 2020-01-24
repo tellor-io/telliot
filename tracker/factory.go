@@ -1,5 +1,7 @@
 package tracker
 
+import "fmt"
+
 //CreateTracker a tracker instance by its well-known name
 func createTracker(name string) (Tracker, error) {
 	switch name {
@@ -39,7 +41,10 @@ func createTracker(name string) (Tracker, error) {
 		{
 			return BuildPSRTracker()
 		}
+	case "disputeChecker":
+		return &disputeChecker{}, nil
+	default:
+		return nil, fmt.Errorf("no tracker with the name %s", name)
 	}
-
 	return nil, nil
 }

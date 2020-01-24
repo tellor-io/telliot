@@ -5,21 +5,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/util"
 	"io/ioutil"
-	"os"
+	"math/big"
 	"path/filepath"
 	"reflect"
 	"sort"
-	"sync"
 	"time"
 )
 
 //PSRTracker keeps track of pre-specified requests
 type PSRTracker struct {
 	Requests    []PrespecifiedRequest `json:"prespecifiedRequests"`
-	requestByID map[uint]*PrespecifiedRequest
+	RequestByID map[uint]*PrespecifiedRequest
 }
 
 //PrespecifiedRequest holds fields for pre-specific requests
@@ -28,6 +29,7 @@ type PrespecifiedRequest struct {
 	APIs           []string `json:"apis"`
 	Transformation string   `json:"transformation"`
 	Granularity    uint     `json:"granularity"`
+	Symbol    	   string   `json:"symbol"`
 }
 
 
@@ -37,64 +39,11 @@ var (
 	funcs           map[string]interface{}
 )
 
-//maps requestID to a time window of values
-var PSRWindows map[uint]*Window
-var lastWrotePSR time.Time
-var PSRWindowMutex sync.RWMutex
-
-func GetLatestRequestValue(id uint) *TimedInt {
-	PSRWindowMutex.RLock()
-	defer PSRWindowMutex.RUnlock()
-	w, ok := PSRWindows[id]
-	if !ok {
-		return nil
-	}
-	return w.Latest()
-}
-
-func setRequestValue(id uint, val *TimedInt) {
-	PSRWindowMutex.Lock()
-	_, ok := PSRWindows[id]
-	if !ok {
-		PSRWindows[id] = NewWindow(7 * 24 * time.Hour)
-	}
-	PSRWindows[id].Insert(val)
-	PSRWindowMutex.Unlock()
-}
-
-func writeOutPSR() {
-	PSRWindowMutex.Lock()
-	for _,v := range PSRWindows {
-		v.Trim()
-	}
-	data, err := json.MarshalIndent(PSRWindows, "", "\t")
-	PSRWindowMutex.Unlock()
-	if err != nil {
-		psrLog.Error("failed to marshal PSR values: %s", err.Error())
-		return
-	}
-
-	cfg := config.GetConfig()
-	psrSavedData := filepath.Join(cfg.PSRFolder, "saved.json")
-	psrSavedDataTmp := psrSavedData + ".tmp"
-	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
-	if err != nil {
-		psrLog.Error("failed to write out PSR values to %s: %s", psrSavedDataTmp, err.Error())
-		return
-	}
-	//rename tmp file to old file (should be atomic on most modern OS)
-	err = os.Rename(psrSavedDataTmp, psrSavedData)
-	if err != nil {
-		psrLog.Error("failed move new PSR save onto old: %s", err.Error())
-		return
-	}
-	lastWrotePSR = time.Now()
-}
 
 //BuildPSRTracker creates and initializes a new tracker instance
 func BuildPSRTracker() (*PSRTracker, error) {
 
-	psr := &PSRTracker{Requests: nil, requestByID: make(map[uint]*PrespecifiedRequest)}
+	psr := &PSRTracker{Requests: nil, RequestByID: make(map[uint]*PrespecifiedRequest)}
 	if err := psr.init(); err != nil {
 		return nil, err
 	}
@@ -130,35 +79,15 @@ func (psr *PSRTracker) init() error {
 	}
 	for i := 0; i < len(psr.Requests); i++ {
 		r := psr.Requests[i]
-		psr.requestByID[r.RequestID] = &r
+		psr.RequestByID[r.RequestID] = &r
 	}
 
-	psrSavedData := filepath.Join(cfg.PSRFolder, "saved.json")
-
-	_, err = os.Stat(psrSavedData)
-	exists := true
+	err = EnsureValueOracle()
 	if err != nil {
-		if os.IsNotExist(err) {
-			exists = false
-		} else {
-			return fmt.Errorf("file %s stat error: %v", psrSavedData, err)
-		}
+		return fmt.Errorf("failed to launch value oracle: %v", err)
 	}
 
-	if exists {
-		byteValue, err = ioutil.ReadFile(psrSavedData)
-		if err != nil {
-			return fmt.Errorf("failed to read psr file @ %s: %v", psrPath, err)
-		}
-		err = json.Unmarshal(byteValue, &PSRWindows)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal saved")
-		}
-	} else {
-		PSRWindows = make(map[uint]*Window)
-	}
-
-	psrLog.Info("Initialized PSR with %d requests\n", len(psr.Requests))
+	//psrLog.Info("Initialized PSR with %d requests\n", len(psr.Requests))
 	return nil
 }
 
@@ -172,13 +101,14 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 		go p.fetch(resultCh)
 	}
 	nerr := 0
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	for i := 0; i < len(psr.Requests); i++ {
 		result := <- resultCh
 		if result.err != nil {
 			psrLog.Error("Problem fetching PSR for id %d: %v]\n", result.r.RequestID, result.err)
 			nerr++
 		} else {
-			setRequestValue(result.r.RequestID, result.val)
+			setRequestValue(DB, uint64(result.r.RequestID), result.val.Created, big.NewInt(int64(result.val.Val)))
 		}
 	}
 	if nerr > 0 {
@@ -187,8 +117,8 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 		psrLog.Info("PSR Tracker cycle completed succesfully")
 	}
 	now := time.Now()
-	if now.Sub(lastWrotePSR) > 2 * time.Minute {
-		writeOutPSR()
+	if now.Sub(lastWroteValueHistory) > 2 * time.Minute {
+		writeOutHistory()
 	}
 	return nil
 }

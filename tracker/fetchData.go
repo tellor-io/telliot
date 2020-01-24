@@ -67,7 +67,7 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 				return
 			}
 			fetchLog.Debug("Storing fetch result: %v for id: %d", res.value, res.reqID)
-			setRequestValue(res.reqID, &TimedInt{Created:time.Now(), Val:uint(res.value.Uint64())})
+			setRequestValue(DB, uint64(res.reqID), time.Now(), res.value)
 		}
 	}()
 

@@ -25,16 +25,10 @@ import (
 
 var ctx context.Context
 
-func ErrorHandler(err error) {
+func ErrorHandler(err error, operation string) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintf(os.Stderr, "%s failed: %s\n", operation, err.Error())
 		cli.Exit(-1)
-	}
-}
-
-func ErrorWrapper(f func() error) func() {
-	return func() {
-		ErrorHandler(f())
 	}
 }
 
@@ -124,9 +118,9 @@ func App() *cli.Cli {
 
 	//this will get run before any of the commands
 	app.Before = func() {
-		ErrorHandler(config.ParseConfig(*configPath))
-		ErrorHandler(util.ParseLoggingConfig(*logPath))
-		ErrorHandler(buildContext())
+		ErrorHandler(config.ParseConfig(*configPath), "parsing config file")
+		ErrorHandler(util.ParseLoggingConfig(*logPath), "parsing log file")
+		ErrorHandler(buildContext(), "building context")
 	}
 
 	app.Command("stake", "staking operations", stakeCmd)
@@ -134,8 +128,6 @@ func App() *cli.Cli {
 	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve))
 	app.Command("balance", "check balance of address", balanceCmd)
 	app.Command("dispute", "dispute operations", disputeCmd)
-	app.Command("activity", "block activity", activityCmd)
-	app.Command("benchmark", "mining benchmarks", simpleCmd(ops.RunBenchmark))
 	app.Command("mine", "mine for TRB", mineCmd)
 	app.Command("dataserver", "start an independent dataserver", dataserverCmd)
 	return app
@@ -151,7 +143,7 @@ func stakeCmd(cmd *cli.Cmd) {
 func simpleCmd(f func (context.Context) error) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			ErrorHandler(f(ctx))
+			ErrorHandler(f(ctx), "")
 		}
 	}
 }
@@ -163,7 +155,7 @@ func moveCmd(f func(common.Address, *big.Int, context.Context) error) func (*cli
 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 		cmd.Action = func() {
-			ErrorHandler(f(addr.addr, amt.Int, ctx))
+			ErrorHandler(f(addr.addr, amt.Int, ctx), "move")
 		}
 	}
 }
@@ -177,13 +169,14 @@ func balanceCmd(cmd *cli.Cmd) {
 		if bytes.Compare(addr.addr.Bytes(), zero[:]) == 0 {
 			addr.addr = ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		}
-		ErrorHandler(ops.Balance(ctx, addr.addr))
+		ErrorHandler(ops.Balance(ctx, addr.addr), "checking balance")
 	}
 }
 
 func disputeCmd(cmd *cli.Cmd) {
-	cmd.Command("vote", "deposit TRB stake", voteCmd)
-	cmd.Command("new", "withdraw TRB stake", newDisputeCmd)
+	cmd.Command("vote", "vote on an active dispute", voteCmd)
+	cmd.Command("new", "start a new dispute", newDisputeCmd)
+	cmd.Command("show", "show existing disputes", simpleCmd(ops.List))
 }
 
 func voteCmd(cmd *cli.Cmd) {
@@ -191,7 +184,7 @@ func voteCmd(cmd *cli.Cmd) {
 	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
 	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
 	cmd.Action = func() {
-		ErrorHandler(ops.Vote(disputeID.Int, *supports, ctx))
+		ErrorHandler(ops.Vote(disputeID.Int, *supports, ctx), "vote")
 	}
 }
 
@@ -203,12 +196,8 @@ func newDisputeCmd(cmd *cli.Cmd) {
 	cmd.VarArg("TIMESTAMP", &timestamp, "timestamp")
 	cmd.VarArg("MINER_INDEX", &minerIndex, "miner to dispute (0-4)")
 	cmd.Action = func() {
-		ErrorHandler(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx))
+		ErrorHandler(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
 	}
-}
-
-func activityCmd(cmd *cli.Cmd) {
-	simpleCmd(ops.ActivityFoo)(cmd)
 }
 
 func mineCmd(cmd *cli.Cmd) {
@@ -222,17 +211,20 @@ func mineCmd(cmd *cli.Cmd) {
 		cfg := config.GetConfig()
 		var ds *ops.DataServerOps
 		if !cfg.EnablePoolWorker {
-			ErrorHandler(AddDBToCtx(*remoteDS))
-			ch := make(chan os.Signal)
-			exitChannels = append(exitChannels, &ch)
-			var err error
-			ds, err = ops.CreateDataServerOps(ctx, ch)
-			if err != nil {
-				log.Fatal(err)
+			ErrorHandler(AddDBToCtx(*remoteDS), "initializing database")
+			if !*remoteDS {
+				ch := make(chan os.Signal)
+				exitChannels = append(exitChannels, &ch)
+
+				var err error
+				ds, err = ops.CreateDataServerOps(ctx, ch)
+				if err != nil {
+					log.Fatal(err)
+				}
+				//start and wait for it to be ready
+				ds.Start(ctx)
+				<-ds.Ready()
 			}
-			//start and wait for it to be ready
-			ds.Start(ctx)
-			<-ds.Ready()
 		}
 		//start miner
 		ch := make(chan os.Signal)
@@ -280,6 +272,49 @@ func mineCmd(cmd *cli.Cmd) {
 }
 
 func dataserverCmd(cmd *cli.Cmd) {
+	cmd.Action = func() {
+		//create os kill sig listener
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt)
+
+		var ds *ops.DataServerOps
+		ErrorHandler(AddDBToCtx(true), "initializing database")
+		ch := make(chan os.Signal)
+		var err error
+		ds, err = ops.CreateDataServerOps(ctx, ch)
+		if err != nil {
+			log.Fatal(err)
+		}
+		//start and wait for it to be ready
+		ds.Start(ctx)
+		<-ds.Ready()
+
+		//now we wait for kill sig
+		<-c
+		//and then notify exit channels
+		ch <- os.Interrupt
+
+		cnt := 0
+		start := time.Now()
+		for {
+			cnt++
+			dsStopped := false
+
+			if ds != nil {
+				dsStopped = !ds.Running
+			} else {
+				dsStopped = true
+			}
+
+			if !dsStopped && cnt > 60 {
+				fmt.Printf("Taking longer than expected to stop operations. Waited %v so far\n", time.Now().Sub(start))
+			} else if dsStopped {
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		fmt.Printf("Main shutdown complete\n")
+	}
 
 }
 

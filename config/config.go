@@ -77,8 +77,10 @@ type Config struct {
 	GPUConfig                    map[string]*GPUConfig `json:"gpuConfig"`
 	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
 	PoolURL                      string                `json:"poolURL"`
-	PoolJobDuration              Duration `json:"poolJobDuration"`
+	PoolJobDuration              Duration 			   `json:"poolJobDuration"`
 	PSRFolder                    string                `json:"psrFolder"`
+	DisputeTimeDelta			 Duration			   `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
+	DisputeThreshold			 float64			   `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
 }
 
 const defaultTimeout = 30 * time.Second //30 second fetch timeout
@@ -92,6 +94,12 @@ const defaultPoolJobDuration = 15 * time.Second //target 15s for jobs from pool
 var (
 	config *Config
 )
+
+const DefaultMaxCheckTimeDelta = 5 * time.Minute
+
+//threshold, a percentage of the expected value
+const DefaultDisputeThreshold = 0.01
+
 
 //ParseConfig and set a shared config entry
 func ParseConfig(path string) error {
@@ -148,6 +156,13 @@ func ParseConfig(path string) error {
 
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
+
+	if config.DisputeThreshold == 0 {
+		config.DisputeThreshold = DefaultDisputeThreshold
+	}
+	if config.DisputeTimeDelta.Duration == 0 {
+		config.DisputeTimeDelta.Duration = DefaultMaxCheckTimeDelta
+	}
 
 	err = validateConfig(config)
 	if err != nil {
