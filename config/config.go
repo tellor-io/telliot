@@ -94,6 +94,8 @@ var (
 	config *Config
 )
 
+const defaultTrackerInterval = 30 * time.Second
+
 const DefaultMaxCheckTimeDelta = 5 * time.Minute
 
 //threshold, a percentage of the expected value
@@ -125,6 +127,9 @@ func ParseConfigBytes(data []byte) error {
 	}
 	if config.NumProcessors == 0 {
 		config.NumProcessors = defaultCores
+	}
+	if config.TrackerSleepCycle.Duration == 0 {
+		config.TrackerSleepCycle.Duration = defaultTrackerInterval
 	}
 
 	if config.Heartbeat.Seconds() == 0 {
