@@ -26,7 +26,7 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 }
 
 func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
-	cfg := config.GetMockConfig()
+	cfg := config.GetConfig()
 	_string := fmt.Sprintf("%x", challenge.Challenge) + cfg.PublicAddress
 	hashIn := decodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
@@ -40,7 +40,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 }
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
-	cfg := config.GetMockConfig()
+	cfg := config.GetConfig()
 
 	group := NewMiningGroup([]Hasher{impl})
 
@@ -92,7 +92,7 @@ func TestGpuMiner(t *testing.T) {
 		fmt.Println(gpus)
 		t.Fatal(err)
 	}
-	cfg := config.GetMockConfig()
+	cfg := config.GetConfig()
 
 	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()])
 	if err != nil {
@@ -105,7 +105,7 @@ func TestMulti(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
-	cfg := config.GetMockConfig()
+	cfg := config.GetConfig()
 
 	var hashers []Hasher
 	for i := 0; i < 4; i++ {
