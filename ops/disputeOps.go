@@ -277,7 +277,7 @@ func List(ctx context.Context) error {
 		fmt.Printf("    Currently %.0f%% of %s TRB support this dispute (%s votes)\n", currTallyRatio*100, util.FormatERC20Balance(uintVars[7]), uintVars[4])
 
 		result := tracker.CheckValueAtTime(dispute.RequestId.Uint64(), uintVars[2], disputedValTime)
-		if len(result.Datapoints) < 0 {
+		if result == nil || len(result.Datapoints) < 0 {
 			fmt.Printf("      No data available for recommendation\n")
 			continue
 		}
