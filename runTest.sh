@@ -2,9 +2,6 @@
 
 NAME="$1"
 PKG="$2"
-PSR=`pwd`/psr.json
-CFG=`pwd`/myconfig.json
-LOG=`pwd`/loggingConfig.json
 
 if [ -z "${NAME}" ]; then
   echo "Missing test name";
@@ -17,4 +14,4 @@ if [ -z "${PKG}" ]; then
 fi
 
 echo "Running test ${NAME} from package  ${PKG}..."
-go test -v -run "${NAME}" "./${PKG}" -psrPath="${PSR}" -config="${CFG}" -logConfig="${LOG}"
+go test -v -run "${NAME}" "./${PKG}" 

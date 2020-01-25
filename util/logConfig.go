@@ -2,7 +2,7 @@ package util
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"os"
 )
 
@@ -24,15 +24,15 @@ var (
 //ParseLoggingConfig parses the given JSON log level config file for use in log configuration
 func ParseLoggingConfig(file string) error {
 
-	info, err := os.Stat(file)
-	if os.IsNotExist(err) {
-		log.Fatalf("LoggingConfigPath references an invalid file at: %s", file)
-	}
-	if info.IsDir() {
-		log.Fatalf("Logging config file %s is a directory", file)
-	}
-
 	if len(file) > 0 {
+		info, err := os.Stat(file)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("loggingConfigPath references an invalid file at: %s", file)
+		}
+		if info.IsDir() {
+			return fmt.Errorf("logging config file %s is a directory", file)
+		}
+
 		configFile, err := os.Open(file)
 		defer configFile.Close()
 		if err != nil {

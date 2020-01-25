@@ -28,7 +28,10 @@ func TestPSR(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	psr.Exec(ctx)
+	err = psr.Exec(ctx)
+	if err != nil {
+		t.Fatalf("failed to execute psr: %v", err)
+	}
 	val, err := db.Get(fmt.Sprintf("qv_%d", 1))
 	if err != nil {
 		t.Fatal(err)

@@ -44,7 +44,6 @@ func CheckValueAtTime(reqId uint64, val *big.Int, at time.Time) *ValueCheckResul
 
 	if len(datapoints) == 0 {
 		//no data for requestID
-		disputeLogger.Warn("no value data for reqID %d at %s", reqId, at)
 		return nil
 	}
 
@@ -138,6 +137,10 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 		}
 		reqID := nonceSubmit.RequestId.Uint64()
 		result := CheckValueAtTime(reqID, nonceSubmit.Value, blockTime)
+		if result == nil {
+			disputeLogger.Warn("no value data for reqID %d at %s", reqID, blockTime)
+			continue
+		}
 		if !result.WithinRange {
 			s := fmt.Sprintf("suspected incorrect value for requestID %d at %s:\n", reqID, blockTime)
 			s += fmt.Sprintf("nearest values:\n")
