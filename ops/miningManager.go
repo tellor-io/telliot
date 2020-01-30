@@ -8,7 +8,6 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/pow"
 	"github.com/tellor-io/TellorMiner/util"
-	"log"
 	"os"
 	"time"
 )
@@ -39,17 +38,12 @@ type MiningMgr struct {
 
 //CreateMiningManager creates a new manager that mananges mining and data requests
 func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter) (*MiningMgr, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
+	cfg := config.GetConfig()
 
 	group, err := pow.SetupMiningGroup(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup miners: %s", err.Error())
 	}
-
-	proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 
 	mng := &MiningMgr{
 		exitCh:  exitCh,
@@ -60,16 +54,15 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		solHandler: nil,
 	}
 
-
 	if cfg.EnablePoolWorker {
 		pool := pow.CreatePool(cfg, group)
 		mng.tasker = pool
 		mng.solHandler = pool
 	} else {
+		proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 		mng.tasker = pow.CreateTasker(cfg, proxy)
 		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, proxy)
 	}
-
 	return mng, nil
 }
 
@@ -77,11 +70,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.Running = true
 	go func(ctx context.Context) {
-		cfg, err := config.GetConfig()
-		if err != nil {
-			log.Fatal(err)
-		}
-
+		cfg := config.GetConfig()
 
 		ticker := time.NewTicker(cfg.MiningInterruptCheckInterval.Duration)
 

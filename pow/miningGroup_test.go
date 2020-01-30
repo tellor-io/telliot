@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tellor-io/TellorMiner/config"
 	"math/big"
+	"os"
 	"testing"
 	"time"
 
@@ -25,10 +26,7 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 }
 
 func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cfg := config.GetConfig()
 	_string := fmt.Sprintf("%x", challenge.Challenge) + cfg.PublicAddress
 	hashIn := decodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
@@ -42,10 +40,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 }
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cfg := config.GetConfig()
 
 	group := NewMiningGroup([]Hasher{impl})
 
@@ -97,10 +92,7 @@ func TestGpuMiner(t *testing.T) {
 		fmt.Println(gpus)
 		t.Fatal(err)
 	}
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cfg := config.GetConfig()
 
 	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()])
 	if err != nil {
@@ -113,10 +105,7 @@ func TestMulti(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cfg := config.GetConfig()
 
 	var hashers []Hasher
 	for i := 0; i < 4; i++ {
@@ -188,6 +177,22 @@ func BenchmarkHashFunction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		hashFn(bytes, result)
 	}
+}
+
+var configJSON = `{
+	"publicAddress":"0000000000000000000000000000000000000000",
+	"privateKey":"1111111111111111111111111111111111111111111111111111111111111111",
+	"contractAddress":"0x724D1B69a7Ba352F11D73fDBdEB7fF869cB22E19"
+}
+`
+
+func TestMain(m *testing.M) {
+	err := config.ParseConfigBytes([]byte(configJSON))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to parse mock config: %v\n", err)
+		os.Exit(-1)
+	}
+	os.Exit(m.Run())
 }
 
 

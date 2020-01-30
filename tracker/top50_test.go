@@ -19,10 +19,7 @@ import (
 
 func TestTop50(t *testing.T) {
 	startBal := big.NewInt(356000)
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cfg := config.GetConfig()
 
 	top50 := make([]*big.Int, 51)
 	mockQueryParams := &rpc.MockQueryMeta{QueryString: "json(https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1).0.4", Granularity: 1000}

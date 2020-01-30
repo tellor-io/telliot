@@ -29,11 +29,7 @@ func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
 
 //Start will kick off the runner until the given exit channel selects.
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		runnerLog.Error("Problem getting config", err)
-		return err
-	}
+	cfg := config.GetConfig()
 	trackerNames := cfg.Trackers
 	trackers := make([]Tracker, len(trackerNames))
 	for i := 0; i < len(trackers); i++ {
@@ -43,7 +39,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		}
 		trackers[i] = t
 	}
-
+	var err error
 	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
 	if masterInstance == nil {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)

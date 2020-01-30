@@ -4,14 +4,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
+	"io/ioutil"
 	"strings"
-	"sync"
 	"time"
-
-	"github.com/tellor-io/TellorMiner/cli"
-	"github.com/tellor-io/TellorMiner/util"
 )
 
 //unfortunate hack to enable json parsing of human readable time strings
@@ -57,32 +52,34 @@ type GPUConfig struct {
 
 //Config holds global config info derived from config.json
 type Config struct {
-	ContractAddress              string        `json:"contractAddress"`
-	NodeURL                      string        `json:"nodeURL"`
-	PrivateKey                   string        `json:"privateKey"`
+	ContractAddress              string   `json:"contractAddress"`
+	NodeURL                      string   `json:"nodeURL"`
+	PrivateKey                   string   `json:"privateKey"`
 	DatabaseURL                  string   `json:"databaseURL"`
 	PublicAddress                string   `json:"publicAddress"`
 	EthClientTimeout             uint     `json:"ethClientTimeout"`
-	TrackerSleepCycle            Duration     `json:"trackerCycle"` //in seconds
+	TrackerSleepCycle            Duration `json:"trackerCycle"`
 	Trackers                     []string `json:"trackers"`
 	DBFile                       string   `json:"dbFile"`
 	ServerHost                   string   `json:"serverHost"`
 	ServerPort                   uint     `json:"serverPort"`
 	FetchTimeout                 Duration `json:"fetchTimeout"`
 	RequestData                  uint     `json:"requestData"`
-	RequestDataInterval          Duration `json:"requestDataInterval"` //in seconds
-	RequestTips                  int64    `json: "requestTips"`
-	MiningInterruptCheckInterval Duration `json:"miningInterruptCheckInterval"` //in seconds
-	GasMultiplier                float32  `json:"gasMultiplier"`
-	GasMax                       uint     `json:"gasMax"`
-	NumProcessors                int      `json:"numProcessors"`
-	Heartbeat                    Duration `json:"heartbeat"`
-	ServerWhitelist              []string `json:"serverWhitelist"`
-	GPUConfig				     map[string]*GPUConfig  `json:"gpuConfig"`
-	EnablePoolWorker             bool     `json:"enablePoolWorker"`
-	PoolURL                      string   `json:"poolURL"`
-	PoolJobDuration              Duration `json:"poolJobDuration"`
-	logger                       *util.Logger
+	RequestDataInterval          Duration `json:"requestDataInterval"`
+	RequestTips                  int64                 `json:"requestTips"`
+	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
+	GasMultiplier                float32               `json:"gasMultiplier"`
+	GasMax                       uint                  `json:"gasMax"`
+	NumProcessors                int                   `json:"numProcessors"`
+	Heartbeat                    Duration              `json:"heartbeat"`
+	ServerWhitelist              []string              `json:"serverWhitelist"`
+	GPUConfig                    map[string]*GPUConfig `json:"gpuConfig"`
+	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
+	PoolURL                      string                `json:"poolURL"`
+	PoolJobDuration              Duration 			   `json:"poolJobDuration"`
+	PSRFolder                    string                `json:"psrFolder"`
+	DisputeTimeDelta			 Duration			   `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
+	DisputeThreshold			 float64			   `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
 }
 
 const defaultTimeout = 30 * time.Second //30 second fetch timeout
@@ -95,36 +92,30 @@ const defaultHeartbeat = 15 * time.Second //check miner speed every 10 ^ 8 cycle
 const defaultPoolJobDuration = 15 * time.Second //target 15s for jobs from pool
 var (
 	config *Config
-	mux    sync.Mutex
 )
 
-//ParseConfig and set a shared config entry
-func ParseConfig(path string) (*Config, error) {
-	if len(path) == 0 {
-		path = cli.GetFlags().ConfigPath
-		if len(path) == 0 {
-			panic("Invalid config path. Not provided and not a command line option")
-		}
-	}
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		log.Fatalf("Invalid ConfigPath setting: %s", path)
-	}
-	if info.IsDir() {
-		log.Fatalf("ConfigPath is a directory: %s", path)
-	}
+const defaultTrackerInterval = 30 * time.Second
 
-	configFile, err := os.Open(path)
-	defer configFile.Close()
+const DefaultMaxCheckTimeDelta = 5 * time.Minute
+
+//threshold, a percentage of the expected value
+const DefaultDisputeThreshold = 0.01
+
+
+//ParseConfig and set a shared config entry
+func ParseConfig(path string) error {
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to open config file %s: %v", path, err)
 	}
-	dec := json.NewDecoder(configFile)
-	err = dec.Decode(&config)
+	return ParseConfigBytes(data)
+}
+
+func ParseConfigBytes(data []byte) error {
+	err := json.Unmarshal(data, &config)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
-	config.logger = util.NewLogger("config", "Config")
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout
 	}
@@ -136,6 +127,9 @@ func ParseConfig(path string) (*Config, error) {
 	}
 	if config.NumProcessors == 0 {
 		config.NumProcessors = defaultCores
+	}
+	if config.TrackerSleepCycle.Duration == 0 {
+		config.TrackerSleepCycle.Duration = defaultTrackerInterval
 	}
 
 	if config.Heartbeat.Seconds() == 0 {
@@ -156,13 +150,18 @@ func ParseConfig(path string) (*Config, error) {
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
-	err = validateConfig(config)
-	if err != nil {
-		return nil, err
+	if config.DisputeThreshold == 0 {
+		config.DisputeThreshold = DefaultDisputeThreshold
+	}
+	if config.DisputeTimeDelta.Duration == 0 {
+		config.DisputeTimeDelta.Duration = DefaultMaxCheckTimeDelta
 	}
 
-	config.logger.Info("config: %+v", config)
-	return config, nil
+	err = validateConfig(config)
+	if err != nil {
+		return fmt.Errorf("validation failed: %s", err)
+	}
+	return nil
 }
 
 
@@ -170,15 +169,18 @@ func ParseConfig(path string) (*Config, error) {
 func validateConfig(cfg *Config) error {
 	b, err := hex.DecodeString(cfg.PublicAddress)
 	if err != nil || len(b) != 20 {
-		return fmt.Errorf("expecting 40 hex character public address, got %s", cfg.PublicAddress)
+		return fmt.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
 	b, err = hex.DecodeString(cfg.PrivateKey)
 	if err != nil || len(b) != 32 {
-		return fmt.Errorf("expecting 64 hex character private key, got %s", cfg.PublicAddress)
+		return fmt.Errorf("expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
+	}
+	if len(cfg.ContractAddress) != 42 {
+		return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 	}
 	b, err = hex.DecodeString(cfg.ContractAddress[2:])
 	if err != nil || len(b) != 20 {
-		return fmt.Errorf("expecting 40 hex character contract address, got %s", cfg.ContractAddress)
+		return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 	}
 
 	if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
@@ -190,13 +192,13 @@ func validateConfig(cfg *Config) error {
 			continue
 		}
 		if gpuConfig.Count == 0 {
-			return fmt.Errorf("gpu %s requires 'count' > 0", name)
+			return fmt.Errorf("gpu '%s' requires 'count' > 0", name)
 		}
 		if gpuConfig.GroupSize == 0 {
-			return fmt.Errorf("gpu %s requires 'groupSize' > 0", name)
+			return fmt.Errorf("gpu '%s' requires 'groupSize' > 0", name)
 		}
 		if gpuConfig.Groups == 0 {
-			return fmt.Errorf("gpu %s requires 'groups' > 0", name)
+			return fmt.Errorf("gpu '%s' requires 'groups' > 0", name)
 		}
 	}
 
@@ -204,16 +206,6 @@ func validateConfig(cfg *Config) error {
 }
 
 //GetConfig returns a shared instance of config
-func GetConfig() (*Config, error) {
-	if config == nil {
-		mux.Lock()
-		defer mux.Unlock()
-		if config == nil {
-			_, err := ParseConfig("")
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return config, nil
+func GetConfig() *Config {
+	return config
 }

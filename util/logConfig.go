@@ -2,10 +2,8 @@ package util
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"os"
-
-	"github.com/tellor-io/TellorMiner/cli"
 )
 
 //Entry holds specific component log level
@@ -24,41 +22,34 @@ var (
 )
 
 //ParseLoggingConfig parses the given JSON log level config file for use in log configuration
-func ParseLoggingConfig(file string) (*LogConfig, error) {
-	if len(file) == 0 {
-		lCfg := cli.GetFlags()
-		file = lCfg.LoggingConfigPath
-	}
-	if sharedConfig != nil {
-		return sharedConfig, nil
-	}
-
-	info, err := os.Stat(file)
-	if os.IsNotExist(err) {
-		log.Fatalf("LoggingConfigPath references an invalid file at: %s", file)
-	}
-	if info.IsDir() {
-		log.Fatalf("Logging config file %s is a directory", file)
-	}
+func ParseLoggingConfig(file string) error {
 
 	if len(file) > 0 {
+		info, err := os.Stat(file)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("loggingConfigPath references an invalid file at: %s", file)
+		}
+		if info.IsDir() {
+			return fmt.Errorf("logging config file %s is a directory", file)
+		}
+
 		configFile, err := os.Open(file)
 		defer configFile.Close()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		var entries []Entry
 
 		dec := json.NewDecoder(configFile)
 		err = dec.Decode(&entries)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		cfg := &LogConfig{make(map[string]LogLevel)}
 		for _, e := range entries {
 			lvl, err := StringToLevel(e.Level)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			cfg.levels[e.Component] = lvl
 		}
@@ -66,18 +57,14 @@ func ParseLoggingConfig(file string) (*LogConfig, error) {
 	} else {
 		sharedConfig = &LogConfig{make(map[string]LogLevel)}
 	}
-	return sharedConfig, nil
+	//initialize all the loggers that have already been declared as global vars
+	initLoggers(sharedConfig)
+	return nil
 }
 
 //GetLoggingConfig retrieves a shared logging config
-func GetLoggingConfig() (*LogConfig, error) {
-	if sharedConfig == nil {
-		_, err := ParseLoggingConfig("")
-		if err != nil {
-			return nil, err
-		}
-	}
-	return sharedConfig, nil
+func GetLoggingConfig() *LogConfig {
+	return sharedConfig
 }
 
 //GetLevel the log level

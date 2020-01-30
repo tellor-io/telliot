@@ -2,14 +2,13 @@ package tracker
 
 import (
 	"context"
-	"log"
-	"math/big"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	tellor "github.com/tellor-io/TellorMiner/contracts"
 	"github.com/tellor-io/TellorMiner/rpc"
+	"math/big"
 )
 
 type IDSpecifications struct {
@@ -22,11 +21,7 @@ func GetSpecs(ctx context.Context, requestID uint) (*IDSpecifications, error) {
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
 	//get the single config instance
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
-	}
+	cfg := config.GetConfig()
 
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
 	instance, err := tellor.NewTellorMaster(contractAddress, client)

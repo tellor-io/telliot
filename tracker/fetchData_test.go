@@ -19,10 +19,7 @@ import (
 
 func TestFetchData(t *testing.T) {
 	os.RemoveAll("/tmp/test_fetchData/")
-	cfg, err := config.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cfg := config.GetConfig()
 	startBal := big.NewInt(456000)
 	top50 := make([]*big.Int, 51)
 	mockQueryParams := &rpc.MockQueryMeta{QueryString:"json(https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1).0.4", Granularity: 1000}

@@ -113,11 +113,8 @@ func (p *Pool) Submit(ctx context.Context, result *Result) {
 	cli := &http.Client{}
 	resp, err := cli.Do(req)
 	if err != nil {
-		p.log.Error("Problem submitting txn", err)
 		p.log.Error("Error posting nonce:", err.Error())
-		return
-	} else {
-		resp.Body.Close()
-		p.currJobID = 0
 	}
+	resp.Body.Close()
+	p.currJobID = 0
 }
