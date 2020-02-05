@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/charliehorse55/go-opencl/cl"
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/util"
 	"math/big"
 	"time"
 	"unsafe"
@@ -26,6 +27,7 @@ const (
 	divisorConstantBytes = divisorConstantWords * 4
 )
 
+var gpuLog = util.NewLogger("pow", "gpuMiner")
 
 type GpuMiner struct {
 	config.GPUConfig
@@ -48,6 +50,10 @@ type GpuMiner struct {
 func GetOpenCLGPUs() ([]*cl.Device, error) {
 	platforms, err := cl.GetPlatforms()
 	if err != nil {
+		if err.Error() == "cl: error -1001" {
+			gpuLog.Info("No OpenCL platforms avilable")
+			return nil, nil
+		}
 		return nil, err
 	}
 	gpus := []*cl.Device{}
@@ -55,7 +61,7 @@ func GetOpenCLGPUs() ([]*cl.Device, error) {
 		devices, err := platform.GetDevices(cl.DeviceTypeGPU)
 		if err != nil {
 			if err.Error() == "cl: Device Not Found" {
-				fmt.Printf("Found 0 GPUs on platform %s\n", platform.Name())
+				gpuLog.Info("Found 0 GPUs on platform %s\n", platform.Name())
 				continue
 			}
 			return nil, fmt.Errorf("failed to get devices for platform %s: %s", platform.Name(), err.Error())

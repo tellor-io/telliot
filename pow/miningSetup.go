@@ -16,7 +16,8 @@ func SetupMiningGroup(cfg *config.Config) (*MiningGroup, error) {
 		gpuConfig, ok := cfg.GPUConfig[gpu.Name()]
 		if !ok {
 			gpuConfig = cfg.GPUConfig["default"]
-		} else if gpuConfig.Disabled {
+		}
+		if gpuConfig != nil && gpuConfig.Disabled {
 			fmt.Printf("%s disabled in config, ignoring\n", gpu.Name())
 			continue
 		}
