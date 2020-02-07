@@ -81,20 +81,18 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
 
-	if c.lastCheckedBlock == 0 {
-		header, err := client.HeaderByNumber(ctx, nil)
-		if err != nil {
-			return fmt.Errorf("failed to get latest eth block header: %v", err)
-		}
-		c.lastCheckedBlock = header.Number.Uint64()
-	}
 	header, err := client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to get latest eth block header: %v", err)
 	}
+	if c.lastCheckedBlock == 0 {
+		c.lastCheckedBlock = header.Number.Uint64()
+	}
+
 	toCheck := header.Number.Uint64()
 
-	if toCheck - c.lastCheckedBlock < 10 {
+	const blockDelay = 100
+	if toCheck - c.lastCheckedBlock < blockDelay {
 		return nil
 	}
 
@@ -107,11 +105,11 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 	//just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
 	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
 
-
+	checkUntil := toCheck - blockDelay
 	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID()
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(c.lastCheckedBlock)),
-		ToBlock:   header.Number,
+		ToBlock:   big.NewInt(int64(checkUntil)),
 		Addresses: []common.Address{contractAddress},
 		Topics: [][]common.Hash{{nonceSubmitID}},
 	}
@@ -165,6 +163,6 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 		}
 
 	}
-	c.lastCheckedBlock = header.Number.Uint64()
+	c.lastCheckedBlock = checkUntil
 	return nil
 }
