@@ -31,6 +31,7 @@ type Hasher interface {
 type Backend struct {
 	Hasher
 	TotalHashes uint64
+	HashSincePrint uint64
 	HashRateEstimate float64
 }
 
@@ -60,6 +61,7 @@ const rateInitialGuess = 100e3
 
 type MiningGroup struct {
 	Backends []*Backend
+	LastPrinted time.Time
 }
 
 func NewMiningGroup(hashers []Hasher) *MiningGroup {
@@ -136,11 +138,20 @@ func (g *MiningGroup)PreferredWorkMultiple() uint64 {
 }
 
 func (g *MiningGroup)PrintHashRateSummary() {
-	totalHashrate := g.HashRateEstimate()
+	totalHashes := uint64(0)
+	for _,b := range g.Backends {
+		totalHashes += b.HashSincePrint
+	}
+	now := time.Now()
+	delta := now.Sub(g.LastPrinted).Seconds()
+	totalHashrate := float64(totalHashes)/delta
 	fmt.Printf("Total hashrate %s\n", formatHashRate(totalHashrate))
 	for _,b := range g.Backends {
-		fmt.Printf("\t%8s (%4.1f%%): %s \n", formatHashRate(b.HashRateEstimate), (b.HashRateEstimate/totalHashrate)*100,b.Name())
+		hashRate := float64(b.HashSincePrint)/delta
+		fmt.Printf("\t%8s (%4.1f%%): %s \n", formatHashRate(hashRate), (hashRate/totalHashrate)*100,b.Name())
+		b.HashSincePrint = 0
 	}
+	g.LastPrinted = now
 }
 
 type Work struct {
@@ -173,6 +184,7 @@ func (g *MiningGroup)Mine(input chan *Work, output chan *Result) {
 	sent := uint64(0)
 	recv := uint64(0)
 	timeStarted := time.Now()
+	g.LastPrinted = timeStarted
 
 	resultChannel := make(chan *backendResult, len(g.Backends)*2)
 
@@ -224,6 +236,7 @@ func (g *MiningGroup)Mine(input chan *Work, output chan *Result) {
 
 			//update the backend statistics no matter what
 			result.backend.TotalHashes += result.n
+			result.backend.HashSincePrint += result.n
 
 			//only update the hashRateEstimate if we didn't find a solution - otherwise the rate could be wrong
 			// due to returning early
