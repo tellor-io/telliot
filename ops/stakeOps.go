@@ -27,7 +27,10 @@ func printStakeStatus(bigStatus *big.Int, started *big.Int) {
 	case 1:
 		fmt.Printf("Staked in good standing since %s\n", stakeTime.UTC())
 	case 2:
-		timePassed := time.Now().Truncate(24 * time.Hour).Sub(stakeTime)
+		startedRound := started.Int64()
+		startedRound = ((startedRound + 86399) / 86400) * 86400
+		target := time.Unix(startedRound, 0)
+		timePassed := time.Now().Sub(target)
 		delta := timePassed - (time.Hour * 24 * 7)
 		if delta > 0 {
 			fmt.Printf("Stake has been eligbile to withdraw for %s\n", delta)
@@ -138,6 +141,7 @@ func WithdrawStake(ctx context.Context) error {
 		return fmt.Errorf("failed to get stake status: %s", err.Error())
 	}
 	if status.Uint64() != 2 {
+		fmt.Printf("Can't withdraw")
 		printStakeStatus(status, startTime)
 		return nil
 	}
