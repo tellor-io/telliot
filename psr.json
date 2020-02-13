@@ -292,9 +292,9 @@
         },
         {
             "requestID":33,
-            "symbol":"ALGO/USDT - Binance",
+            "symbol":"DefiScore - Compound/ETH",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1).0.4"
+                "json(https://api.defiscore.io/v0/scores?groupByAsset=dai&groupByPlatform=compound).data.0.metrics.score"
             ],
             "transformation" : "value",
             "granularity" : 1000000
@@ -385,15 +385,6 @@
             "symbol":"GNT/ETH - Binance",
             "apis":[
                 "json(https://api.binance.com/api/v1/klines?symbol=GNTETH&interval=1d&limit=1).0.4"
-            ],
-            "transformation" : "value",
-            "granularity" : 1000000
-        },
-        {
-            "requestID":44,
-            "symbol":"BTC/USD - Bitfinex",
-            "apis":[
-                "json(https://api-pub.bitfinex.com/v2/ticker/tBTCUSD).6"
             ],
             "transformation" : "value",
             "granularity" : 1000000
