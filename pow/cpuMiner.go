@@ -42,7 +42,7 @@ func (c *CpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (strin
 		hashFn(hashInput, numHash)
 		x.Mod(numHash, hash.difficulty)
 		if x.Cmp(compareZero) == 0 {
-			return nn, i-start, nil
+			return nn, (i-start)+1, nil
 		}
 	}
 	return "", n, nil
