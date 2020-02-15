@@ -26,7 +26,7 @@ func (c *CpuMiner)Name() string {
 	return fmt.Sprintf("CPU %d", *c)
 }
 
-func (c *CpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (string, error) {
+func (c *CpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (string, uint64, error) {
 	baseLen := len(hash.prefix)
 	hashInput := make([]byte, len(hash.prefix), len(hash.prefix))
 	copy(hashInput, hash.prefix)
@@ -42,10 +42,10 @@ func (c *CpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (strin
 		hashFn(hashInput, numHash)
 		x.Mod(numHash, hash.difficulty)
 		if x.Cmp(compareZero) == 0 {
-			return nn, nil
+			return nn, i-start, nil
 		}
 	}
-	return "", nil
+	return "", n, nil
 }
 
 func hashFn(data []byte, result *big.Int) {
