@@ -19,7 +19,7 @@ type Hasher interface {
 	//base is a 52 byte slice containing the challenge and public address
 	// the guessed nonce is appended to this slice and used as input to the first hash fn
 	// returns a valid nonce, or empty string if none was found
-	CheckRange(hash *HashSettings,  start uint64, n uint64) (string, error)
+	CheckRange(hash *HashSettings,  start uint64, n uint64) (string, uint64, error)
 
 	//number of hashes this backend checks at a time
 	StepSize() uint64
@@ -90,7 +90,7 @@ type backendResult struct {
 // do some work and write the result back to a channel
 func (b *Backend)doWork(hash *HashSettings, start uint64, n uint64, resultCh chan *backendResult) {
 	timeStarted := time.Now()
-	sol, err := b.CheckRange(hash, start, n)
+	sol, nchecked, err := b.CheckRange(hash, start, n)
 	if err != nil {
 		resultCh <- &backendResult{err: err}
 		return
@@ -100,7 +100,7 @@ func (b *Backend)doWork(hash *HashSettings, start uint64, n uint64, resultCh cha
 		nonce: sol,
 		started: timeStarted,
 		finished: time.Now(),
-		n: n,
+		n: nchecked,
 		backend: b,
 	}
 }

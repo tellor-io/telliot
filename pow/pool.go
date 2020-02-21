@@ -16,11 +16,11 @@ import (
 //job is the response from the pool server contianing job data for this worker
 type Job struct {
 	Challenge     string `json:"challenge"`
-	Difficulty    int    `json:"difficulty"`
-	EndNonce      int    `json:"end_nonce"`
+	Difficulty    uint64    `json:"difficulty"`
+	EndNonce      uint64    `json:"end_nonce"`
 	JobID         int    `json:"job_id"`
 	PublicAddress string `json:"public_address"`
-	StartNonce    int    `json:"start_nonce"`
+	StartNonce    uint64    `json:"start_nonce"`
 	WorkID        int    `json:"work_id"`
 }
 
@@ -84,13 +84,15 @@ func (p *Pool) GetWork() *Work {
 		p.log.Error("Error decoding job json: %s", err.Error())
 		return nil
 	}
+	diff := new(big.Int)
+	diff.SetUint64(j.Difficulty)
 	newChallenge := &MiningChallenge{
 		Challenge:  decodeHex(j.Challenge),
-		Difficulty: big.NewInt(int64(j.Difficulty)),
+		Difficulty: diff,
 		RequestID:  big.NewInt(1),
 	}
 	p.currJobID = j.JobID
-	return &Work{Challenge: newChallenge, PublicAddr: j.PublicAddress, Start: uint64(j.StartNonce), N: uint64(j.EndNonce - j.StartNonce)}
+	return &Work{Challenge: newChallenge, PublicAddr: j.PublicAddress, Start: j.StartNonce, N: j.EndNonce - j.StartNonce}
 }
 
 func (p *Pool) Submit(ctx context.Context, result *Result) {

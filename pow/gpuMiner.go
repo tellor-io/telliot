@@ -129,31 +129,31 @@ func (g *GpuMiner)Name() string {
 	return g.name
 }
 
-func (g *GpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (string, error) {
+func (g *GpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (string, uint64, error) {
 	if n % g.StepSize() != 0 {
-		return "", fmt.Errorf("n (%d) must be a multiple of GPU step size (%d)", n, g.StepSize())
+		return "", 0, fmt.Errorf("n (%d) must be a multiple of GPU step size (%d)", n, g.StepSize())
 	}
 	mulDivisorBytes := createDivisorByteArray(hash.difficulty)
 
 	_, err := g.queue.EnqueueWriteBuffer(g.prefix, true, 0, len(hash.prefix), unsafe.Pointer(&hash.prefix[0]), nil)
 	if err != nil {
-		return "", fmt.Errorf("EnqueueWriteBuffer hashPrefix failed: %+v", err)
+		return "", 0, fmt.Errorf("EnqueueWriteBuffer hashPrefix failed: %+v", err)
 	}
 	_, err = g.queue.EnqueueWriteBuffer(g.mulDivisor, true, 0, len(mulDivisorBytes), unsafe.Pointer(&mulDivisorBytes[0]), nil)
 	if err != nil {
-		return "", fmt.Errorf("EnqueueWriteBuffer mulDivisor failed: %+v", err)
+		return "", 0, fmt.Errorf("EnqueueWriteBuffer mulDivisor failed: %+v", err)
 	}
 
 	done := uint64(0)
 	for done < n {
 		if err := g.kernel.SetArgs(g.prefix, g.mulDivisor, g.output, start, g.Count); err != nil {
-			return "", fmt.Errorf("SetKernelArgs failed: %+v", err)
+			return "", done, fmt.Errorf("SetKernelArgs failed: %+v", err)
 		}
 
 		kernelStarted := time.Now()
 		_, err := g.queue.EnqueueNDRangeKernel(g.kernel, nil, []int{g.Groups*g.GroupSize}, []int{g.GroupSize}, nil)
 		if err != nil {
-			return "", fmt.Errorf("EnqueueNDRangeKernel failed: %+v", err)
+			return "", done, fmt.Errorf("EnqueueNDRangeKernel failed: %+v", err)
 		}
 		//flush the q then sleep while we wait for the kernel to finish
 		g.queue.Flush()
@@ -166,7 +166,7 @@ func (g *GpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (strin
 		results := make([]byte, 16)
 		_, err = g.queue.EnqueueReadBuffer(g.output, true, 0, len(results), unsafe.Pointer(&results[0]), nil)
 		if err != nil {
-			return "", fmt.Errorf("EnqueueReadBuffer failed: %+v", err)
+			return "", done, fmt.Errorf("EnqueueReadBuffer failed: %+v", err)
 		}
 		end := time.Now()
 		totalTime := end.Sub(kernelStarted)
@@ -174,13 +174,13 @@ func (g *GpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (strin
 		readTarget := (totalTime * 10)/100
 		g.sleepTime += readTime - readTarget
 
-		if results[0] != 0 {
-			return string(results), nil
-		}
 		start += g.StepSize()
 		done += g.StepSize()
+		if results[0] != 0 {
+			return string(results), done, nil
+		}
 	}
-	return "", nil
+	return "", done, nil
 }
 
 //number of hashes this backend checks at a time
