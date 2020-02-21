@@ -31,7 +31,6 @@ type PrespecifiedRequest struct {
 	Transformation string   `json:"transformation"`
 	Granularity    uint     `json:"granularity"`
 	Symbol         string   `json:"symbol"`
-	Fallback       []string `json:"fallback"`
 }
 
 var (
@@ -165,14 +164,7 @@ func (r *PrespecifiedRequest) fetch(resultCh chan *fetchResult) {
 			}
 		}
 	} else {
-		if(len(r.Fallback) > 0){
-			q := r
-			q.APIs = r.Fallback;
-			q.Fallback = [];
-			q.fetch(resultCh)
-		}
 		result.err = fmt.Errorf("no sucessful api hits, no value stored for id %d", r.RequestID)
-
 	}
 	resultCh <- result
 }
