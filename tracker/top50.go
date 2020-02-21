@@ -33,7 +33,6 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 
 	top50Logger.Debug("Querying for top50 request IDs...")
 	top50, err := instance.GetRequestQ(nil)
-	fmt.Println("t50", top50)
 	if err != nil {
 		fmt.Println("top50 get error")
 		return err
@@ -57,7 +56,6 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 			//did not find meta stored locally, let's grab it from on-chain then
 			top50Logger.Debug("Pulling query metadata from on-chain with id: %v\n", reqID)
 			meta, err = GetSpecs(ctx, uint(reqID.Uint64()))
-			fmt.Println(meta)
 			if err != nil {
 				top50Logger.Error("Problem pulling query metadata from on-chain: %v\n", err)
 				continue
@@ -82,7 +80,6 @@ func (b *Top50Tracker) Exec(ctx context.Context) error {
 
 		//TODO: retrieve request meta details here if we've never seen ID before
 		top50Logger.Debug("Found top50 ID: %v\n", top50[i])
-		fmt.Println("top 50", rIDs)
 		rIDs = append(rIDs, top50[i].Bytes()...)
 
 	}
