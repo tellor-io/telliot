@@ -399,15 +399,6 @@
             "granularity" : 1000000
         },
         {
-            "requestID":44,
-            "symbol":"BTC/USD - Bitfinex",
-            "apis":[
-                "json(https://api-pub.bitfinex.com/v2/ticker/tBTCUSD).6"
-            ],
-            "transformation" : "value",
-            "granularity" : 1000000
-        },
-        {
             "requestID":45,
             "symbol":"BTC/USD - CoinGecko",
             "apis":[

@@ -49,7 +49,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 
 	now := time.Now()
 	client := http.Client{
-		Timeout:       expiration.Sub(now),
+		Timeout: expiration.Sub(now),
 	}
 
 	r, err := client.Get(req.queryURL)
