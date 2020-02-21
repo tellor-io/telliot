@@ -18,17 +18,17 @@ type Job struct {
 	Challenge     string `json:"challenge"`
 	Difficulty    uint64    `json:"difficulty"`
 	EndNonce      uint64    `json:"end_nonce"`
-	JobID         int    `json:"job_id"`
+	JobID         uint64    `json:"job_id"`
 	PublicAddress string `json:"public_address"`
 	StartNonce    uint64    `json:"start_nonce"`
-	WorkID        int    `json:"work_id"`
+	WorkID        uint64    `json:"work_id"`
 }
 
 type Pool struct {
 	log           *util.Logger
 	url           string
 	publicAddress string
-	currJobID     int
+	currJobID     uint64
 	group         *MiningGroup
 	jobDuration   config.Duration
 
