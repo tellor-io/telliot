@@ -7,7 +7,10 @@
                 "json(https://api.pro.coinbase.com/products/ETH-USD/ticker).price"
             ],
             "transformation" : "value",
-            "granularity" : 1000
+            "granularity" : 1000,
+            "fallback":[
+                "json(https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1).0.4"
+            ]
         },
         {
             "requestID":2,
@@ -16,7 +19,10 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=BTCUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000
+            "granularity" : 1000,
+            "fallback":[
+                "json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price"
+            ]
         },
         {
             "requestID":3,
@@ -25,7 +31,8 @@
                 "json(https://dex.binance.org/api/v1/klines?symbol=BNB_USDSB-1AC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000
+            "granularity" : 1000,
+            "fallback":[]
         },
         {
             "requestID":4,
@@ -36,7 +43,8 @@
                 "json(https://api.coindesk.com/v1/bpi/currentprice.json).bpi.USD.rate"
             ],
             "transformation" : "median",
-            "granularity" : 100000
+            "granularity" : 100000,
+            "fallback":[]
         },
         {
             "requestID":5,
@@ -45,7 +53,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":6,
@@ -54,7 +63,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=BNBBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":7,
@@ -63,7 +73,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=BNBETH&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":8,
@@ -72,7 +83,10 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback": [
+                "json(https://api.pro.coinbase.com/products/ETH-USD/ticker).price"
+            ]
         },
         {
             "requestID":9,
@@ -81,7 +95,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=LINKBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":10,
@@ -90,7 +105,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ETCETH&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":11,
@@ -99,7 +115,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ZECETH&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":12,
@@ -108,7 +125,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=TRXETH&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":13,
@@ -117,7 +135,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=XRPBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":14,
@@ -126,7 +145,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=XMRETH&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":15,
@@ -135,7 +155,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=XLMBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":16,
@@ -144,7 +165,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=LTCUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":17,
@@ -153,7 +175,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=WAVESBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":18,
@@ -162,7 +185,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=REPBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":19,
@@ -171,7 +195,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=TUSDETH&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":20,
@@ -180,7 +205,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=EOSUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":21,
@@ -189,7 +215,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=IOTAUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":22,
@@ -198,7 +225,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ETCUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":23,
@@ -207,7 +235,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ETHPAX&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":24,
@@ -216,7 +245,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":25,
@@ -225,7 +255,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=USDCUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":26,
@@ -234,7 +265,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=RCNBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":27,
@@ -243,7 +275,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=LINKUSDC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":28,
@@ -252,7 +285,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ZRXBNB&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":29,
@@ -261,7 +295,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ZECUSDC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":30,
@@ -270,7 +305,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=DASHBNB&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":31,
@@ -279,7 +315,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=MATICUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":32,
@@ -288,7 +325,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=BATUSDC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":33,
@@ -297,7 +335,8 @@
                 "json(https://api.defiscore.io/v0/scores?groupByAsset=dai&groupByPlatform=compound).data.0.metrics.score"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":34,
@@ -306,7 +345,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":35,
@@ -315,7 +355,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=COSUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":36,
@@ -324,7 +365,8 @@
                 "json(https://api.kraken.com/0/public/Ticker?pair=BCHUSD).result.BCHUSD.p.0"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":37,
@@ -333,7 +375,8 @@
                 "json(https://api.coingecko.com/api/v3/simple/price?ids=augur&vs_currencies=usd).augur.usd"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":38,
@@ -342,7 +385,8 @@
                 "json(https://api.kraken.com/0/public/Ticker?pair=GNOUSD).result.GNOUSD.p.0"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":39,
@@ -351,7 +395,8 @@
                 "json(https://api.kraken.com/0/public/Ticker?pair=DAIUSD).result.DAIUSD.p.0"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":40,
@@ -360,7 +405,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=STEEMBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":41,
@@ -369,7 +415,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=LINKUSDT&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":42,
@@ -378,7 +425,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=WANBTC&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":43,
@@ -387,7 +435,8 @@
                 "json(https://api.binance.com/api/v1/klines?symbol=GNTETH&interval=1d&limit=1).0.4"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":44,
@@ -396,7 +445,8 @@
                 "json(https://api-pub.bitfinex.com/v2/ticker/tBTCUSD).6"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":45,
@@ -405,7 +455,8 @@
                 "json(https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd).bitcoin.usd"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":46,
@@ -414,7 +465,8 @@
                 "json(https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd).ethereum.usd"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":47,
@@ -423,7 +475,8 @@
                 "json(https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd).litecoin.usd"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":48,
@@ -432,7 +485,8 @@
                 "json(https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd).maker.usd"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":49,
@@ -441,7 +495,8 @@
                 "json(https://api.coingecko.com/api/v3/simple/price?ids=eos&vs_currencies=usd).eos.usd"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         },
         {
             "requestID":50,
@@ -450,7 +505,8 @@
                 "json(https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd).tellor.usd"
             ],
             "transformation" : "value",
-            "granularity" : 1000000
+            "granularity" : 1000000,
+            "fallback":[]
         }
     ]
 }

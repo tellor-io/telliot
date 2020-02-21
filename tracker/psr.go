@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	tellorCommon "github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/db"
-	"github.com/tellor-io/TellorMiner/util"
 	"io/ioutil"
 	"math/big"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"time"
+
+	tellorCommon "github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/util"
 )
 
 //PSRTracker keeps track of pre-specified requests
@@ -29,16 +30,14 @@ type PrespecifiedRequest struct {
 	APIs           []string `json:"apis"`
 	Transformation string   `json:"transformation"`
 	Granularity    uint     `json:"granularity"`
-	Symbol    	   string   `json:"symbol"`
+	Symbol         string   `json:"symbol"`
+	Fallback       []string `json:"fallback"`
 }
 
-
-
 var (
-	psrLog          = util.NewLogger("tracker", "PSRTracker")
-	funcs           map[string]interface{}
+	psrLog = util.NewLogger("tracker", "PSRTracker")
+	funcs  map[string]interface{}
 )
-
 
 //BuildPSRTracker creates and initializes a new tracker instance
 func BuildPSRTracker() (*PSRTracker, error) {
@@ -103,7 +102,7 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 	nerr := 0
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	for i := 0; i < len(psr.Requests); i++ {
-		result := <- resultCh
+		result := <-resultCh
 		if result.err != nil {
 			psrLog.Error("Problem fetching PSR for id %d: %v]\n", result.r.RequestID, result.err)
 			nerr++
@@ -117,14 +116,14 @@ func (psr *PSRTracker) Exec(ctx context.Context) error {
 		psrLog.Info("PSR Tracker cycle completed succesfully")
 	}
 	now := time.Now()
-	if now.Sub(lastWroteValueHistory) > 2 * time.Minute {
+	if now.Sub(lastWroteValueHistory) > 2*time.Minute {
 		writeOutHistory()
 	}
 	return nil
 }
 
 type fetchResult struct {
-	r *PrespecifiedRequest
+	r   *PrespecifiedRequest
 	val *TimedInt
 	err error
 }
@@ -158,7 +157,7 @@ func (r *PrespecifiedRequest) fetch(resultCh chan *fetchResult) {
 	if len(vals) > 0 {
 		res, err := computeTransformation(r.Transformation, vals)
 		if err != nil {
-			 result.err = err
+			result.err = err
 		} else {
 			result.val = &TimedInt{
 				Created: time.Now(),
@@ -166,7 +165,14 @@ func (r *PrespecifiedRequest) fetch(resultCh chan *fetchResult) {
 			}
 		}
 	} else {
+		if(len(r.Fallback) > 0){
+			q := r
+			q.APIs = r.Fallback;
+			q.Fallback = [];
+			q.fetch(resultCh)
+		}
 		result.err = fmt.Errorf("no sucessful api hits, no value stored for id %d", r.RequestID)
+
 	}
 	resultCh <- result
 }

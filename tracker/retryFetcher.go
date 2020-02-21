@@ -13,8 +13,9 @@ var retryFetchLog = util.NewLogger("tracker", "FetchWithRetries")
 
 //FetchRequest holds info for a request
 type FetchRequest struct {
-	queryURL string
-	timeout  time.Duration
+	queryURL  string
+	backupURL string
+	timeout   time.Duration
 }
 
 func fetchWithRetries(req *FetchRequest) ([]byte, error) {
@@ -49,7 +50,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 
 	now := time.Now()
 	client := http.Client{
-		Timeout:       expiration.Sub(now),
+		Timeout: expiration.Sub(now),
 	}
 
 	r, err := client.Get(req.queryURL)
