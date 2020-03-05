@@ -82,6 +82,11 @@ func (mt *MiningTasker) GetWork() *Work {
 		return nil
 	}
 
+	if reqID.Uint64() == 0 {
+		mt.log.Info("Request ID is zero")
+		return nil
+	}
+
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqID.Uint64())
 	m2, err := mt.proxy.BatchGet([]string{valKey})
 	if err != nil {
