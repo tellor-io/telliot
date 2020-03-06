@@ -16,14 +16,9 @@ uint32_t mulAddWWW(uint32_t x,uint32_t y, uint32_t c, uint32_t *z0) {
 	return mad_hi(x, y, c1);
 }
 
-uint32_t addWW(uint32_t x, uint32_t y, uint32_t c, uint32_t *z0) {
-	uint32_t z1 = 0;
-	uint32_t yc = y + c;
-	*z0 = x + yc;
-	if (*z0 < x || yc < y) {
-		z1 = 1;
-	}
-	return z1;
+uint32_t addWW(uint32_t x, uint32_t y, uint32_t *z0) {
+	*z0 = x + y;
+	return (*z0 < x) ? 1 : 0;
 }
 
 uint32_t addMulVVW(uint32_t *z, uint32_t n, constant uint32_t *x, uint32_t y) {
@@ -31,7 +26,7 @@ uint32_t addMulVVW(uint32_t *z, uint32_t n, constant uint32_t *x, uint32_t y) {
 	for (int i = 0; i < n; i++) {
 		uint32_t z0;
 		uint32_t z1 = mulAddWWW(x[i], y, z[i], &z0);
-		c = addWW(z0, c, 0, &z[i]);
+		c = addWW(z0, c, &z[i]);
 		c += z1;
 	}
 	return c;
@@ -42,15 +37,15 @@ uint32_t addMulVVWZero(uint32_t *z, uint32_t n, constant uint32_t *x, uint32_t y
 	for (int i = 0; i < n; i++) {
 		uint32_t z0;
 		uint32_t z1 = mulAddWWW(x[i], y, 0, &z0);
-		c = addWW(z0, c, 0, &z[i]);
+		c = addWW(z0, c, &z[i]);
 		c += z1;
 	}
 	return c;
 }
 
 
-//p has len 512 bits
-//x has len 512 bits (16 words)
+//p has len MUL_CONSTANT_SIZE words
+//x has len MUL_CONSTANT_SIZE words
 //y has len 256 bits (8 words)
 //p = x * y
 void basicMul(uint32_t *p, constant uint32_t *x, uint32_t *y) {
