@@ -19,16 +19,16 @@ import (
 * The solution handler has one purpose: to either submit the solution on-chain
 * or to reject it if the miner has already submitted a solution for the challenge
 * or the the solution's challenge does not match current challenge
-*/
+ */
 
 type SolutionHandler struct {
-	log             *util.Logger
-	pubKey          string
-	proxy           db.DataServerProxy
+	log              *util.Logger
+	pubKey           string
+	proxy            db.DataServerProxy
 	currentChallenge *MiningChallenge
-	currentNonce 	string
-	currentValue    *big.Int
-	submitter       tellorCommon.TransactionSubmitter
+	currentNonce     string
+	currentValue     *big.Int
+	submitter        tellorCommon.TransactionSubmitter
 }
 
 func CreateSolutionHandler(
@@ -44,10 +44,10 @@ func CreateSolutionHandler(
 	pubKey := strings.ToLower(fromAddress.Hex())
 
 	return &SolutionHandler{
-		pubKey:     pubKey,
-		proxy:      proxy,
-		submitter:  submitter,
-		log:        util.NewLogger("pow", "SolutionHandler"),
+		pubKey:    pubKey,
+		proxy:     proxy,
+		submitter: submitter,
+		log:       util.NewLogger("pow", "SolutionHandler"),
 	}
 }
 
@@ -66,14 +66,16 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 
 	val := m[valKey]
 	if val == nil || len(val) == 0 {
-		s.log.Warn("Have not retrieved price data for requestId %d. We can't submit solution until we've received value at least once", challenge.RequestID.Uint64())
-		return
+		s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
 	}
 
 	value, err := hexutil.DecodeBig(string(val))
 	if err != nil {
 		s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
-		return
+		if len(val) == 0 {
+			s.log.Error("0 value being submitted")
+			value = big.NewInt(0)
+		}
 	}
 
 	s.currentChallenge = challenge
@@ -81,7 +83,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	s.currentValue = value
 
 	s.log.Info("Submitting solution to contract...")
-	err = s.submitter.PrepareTransaction(ctx, s.proxy,"submitSolution", s.submit)
+	err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.submit)
 	if err != nil {
 		s.log.Error("Problem submitting txn", err)
 	} else {

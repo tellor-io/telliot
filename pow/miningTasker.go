@@ -3,14 +3,15 @@ package pow
 import (
 	"bytes"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/db"
-	"github.com/tellor-io/TellorMiner/util"
 	"log"
 	"math"
 	"math/big"
 	"math/rand"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/util"
 )
 
 const (
@@ -34,18 +35,18 @@ const (
  */
 
 type MiningTasker struct {
-	log              *util.Logger
-	proxy            db.DataServerProxy
-	pubKey           string
-	currChallenge 	*MiningChallenge
+	log           *util.Logger
+	proxy         db.DataServerProxy
+	pubKey        string
+	currChallenge *MiningChallenge
 }
 
 func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
-	
+
 	return &MiningTasker{
-		proxy:         proxy,
-		pubKey:        "0x" + cfg.PublicAddress,
-		log:           util.NewLogger("pow", "MiningTasker"),
+		proxy:  proxy,
+		pubKey: "0x" + cfg.PublicAddress,
+		log:    util.NewLogger("pow", "MiningTasker"),
 	}
 }
 
@@ -81,6 +82,11 @@ func (mt *MiningTasker) GetWork() *Work {
 		return nil
 	}
 
+	if reqID.Uint64() == 0 {
+		mt.log.Info("Request ID is zero")
+		return nil
+	}
+
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqID.Uint64())
 	m2, err := mt.proxy.BatchGet([]string{valKey})
 	if err != nil {
@@ -89,8 +95,8 @@ func (mt *MiningTasker) GetWork() *Work {
 	}
 	val := m2[valKey]
 	if val == nil || len(val) == 0 {
-		mt.log.Info("Pricing data not available for request %d, cannot mine yet", reqID.Uint64())
-		return nil
+		mt.log.Info("Pricing data not available for request %d", reqID.Uint64())
+		mt.log.Info("WARNING: will submit as 0")
 	}
 
 	newChallenge := &MiningChallenge{
@@ -106,7 +112,7 @@ func (mt *MiningTasker) GetWork() *Work {
 		}
 	}
 	mt.currChallenge = newChallenge
-	return &Work{Challenge:newChallenge, PublicAddr:mt.pubKey[2:], Start:uint64(rand.Int63()), N:math.MaxInt64}
+	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64}
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {

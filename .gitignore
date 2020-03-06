@@ -23,7 +23,9 @@ pkg/darwin_amd64
 ./GPUMiner2
 
 TellorMiner
-OpenCLdef
+OpenCL.def
 saved.json
 */saved.json
 /saved.json
+libOpenCL.a
+

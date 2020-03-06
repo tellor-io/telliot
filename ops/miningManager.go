@@ -3,13 +3,14 @@ package ops
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
+
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/pow"
 	"github.com/tellor-io/TellorMiner/util"
-	"os"
-	"time"
 )
 
 type WorkSource interface {
@@ -27,8 +28,8 @@ type MiningMgr struct {
 	log     *util.Logger
 	Running bool
 
-	group  *pow.MiningGroup
-	tasker WorkSource
+	group      *pow.MiningGroup
+	tasker     WorkSource
 	solHandler SolutionSink
 
 	dataRequester *DataRequester
@@ -46,11 +47,11 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 	}
 
 	mng := &MiningMgr{
-		exitCh:  exitCh,
-		log:     util.NewLogger("ops", "MiningMgr"),
-		Running: false,
-		group:   group,
-		tasker:  nil,
+		exitCh:     exitCh,
+		log:        util.NewLogger("ops", "MiningMgr"),
+		Running:    false,
+		group:      group,
+		tasker:     nil,
 		solHandler: nil,
 	}
 
@@ -62,6 +63,10 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		proxy := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 		mng.tasker = pow.CreateTasker(cfg, proxy)
 		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, proxy)
+		if cfg.RequestData > 0 {
+			fmt.Println("dataRequester created")
+			mng.dataRequester = CreateDataRequester(exitCh, submitter, 0, proxy)
+		}
 	}
 	return mng, nil
 }
@@ -77,12 +82,15 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		//if you make these buffered, think about the effects on synchronization!
 		input := make(chan *pow.Work)
 		output := make(chan *pow.Result)
-
+		if cfg.RequestData > 0 {
+			fmt.Println("Starting Data Requester")
+			mgr.dataRequester.Start(ctx)
+		}
 		//start the mining group
 		go mgr.group.Mine(input, output)
 
 		// sends work to the mining group
-		sendWork := func () {
+		sendWork := func() {
 			//if its nil, nothing new to report
 			work := mgr.tasker.GetWork()
 			if work != nil {
@@ -99,7 +107,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				input <- nil
 
 			//found a solution
-			case result := <- output:
+			case result := <-output:
 				if result == nil {
 					mgr.Running = false
 					return
