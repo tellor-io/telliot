@@ -1,0 +1,29 @@
+
+
+{
+    "contractAddress": "0xFe41Cb708CD98C5B20423433309E55b53F79134a",
+    "nodeURL": "https://eth-rinkeby.alchemyapi.io/jsonrpc/myvmwBy6Q7CHwxMa7MQMyxuSE2P7CeAD",
+    "privateKey": "8b73fa2c839ccea66e8eddf0aa95f6bc4c6aaa11e2fa126c1d9334985b0e7666",
+    "databaseURL":"http://localhost7545",
+    "publicAddress": "e0d7bae200f0994b11423e8be8f386060bbdd808",
+    "serverHost": "localhost",
+    "serverPort": 5001,
+    "ethClientTimeout": 3000,
+    "trackerCycle": 26,
+    "requestData":50,
+    "requestDataInterval":86400,
+ "trackers": [
+        "balance",
+        "currentVariables",
+        "disputeStatus",
+        "gas",
+        "top50",
+        "tributeBalance",
+        "fetchData",
+        "psr"
+    ],
+    "dbFile": "/tmp/tellor/tellor_db1"
+}
+
+
+
