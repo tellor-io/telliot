@@ -37,35 +37,33 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	}
 }
 
-
 type GPUConfig struct {
 	//number of threads in a workgroup
 	GroupSize int `json:"groupSize"`
 	//total number of threads
-	Groups int`json:"groups"`
+	Groups int `json:"groups"`
 	//number of iterations within a thread
 	Count uint32 `json:"count"`
 
 	Disabled bool `json:"disabled"`
 }
 
-
 //Config holds global config info derived from config.json
 type Config struct {
-	ContractAddress              string   `json:"contractAddress"`
-	NodeURL                      string   `json:"nodeURL"`
-	PrivateKey                   string   `json:"privateKey"`
-	DatabaseURL                  string   `json:"databaseURL"`
-	PublicAddress                string   `json:"publicAddress"`
-	EthClientTimeout             uint     `json:"ethClientTimeout"`
-	TrackerSleepCycle            Duration `json:"trackerCycle"`
-	Trackers                     []string `json:"trackers"`
-	DBFile                       string   `json:"dbFile"`
-	ServerHost                   string   `json:"serverHost"`
-	ServerPort                   uint     `json:"serverPort"`
-	FetchTimeout                 Duration `json:"fetchTimeout"`
-	RequestData                  uint     `json:"requestData"`
-	RequestDataInterval          Duration `json:"requestDataInterval"`
+	ContractAddress              string                `json:"contractAddress"`
+	NodeURL                      string                `json:"nodeURL"`
+	PrivateKey                   string                `json:"privateKey"`
+	DatabaseURL                  string                `json:"databaseURL"`
+	PublicAddress                string                `json:"publicAddress"`
+	EthClientTimeout             uint                  `json:"ethClientTimeout"`
+	TrackerSleepCycle            Duration              `json:"trackerCycle"`
+	Trackers                     []string              `json:"trackers"`
+	DBFile                       string                `json:"dbFile"`
+	ServerHost                   string                `json:"serverHost"`
+	ServerPort                   uint                  `json:"serverPort"`
+	FetchTimeout                 Duration              `json:"fetchTimeout"`
+	RequestData                  uint                  `json:"requestData"`
+	RequestDataInterval          Duration              `json:"requestDataInterval"`
 	RequestTips                  int64                 `json:"requestTips"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
 	GasMultiplier                float32               `json:"gasMultiplier"`
@@ -76,10 +74,10 @@ type Config struct {
 	GPUConfig                    map[string]*GPUConfig `json:"gpuConfig"`
 	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
 	PoolURL                      string                `json:"poolURL"`
-	PoolJobDuration              Duration 			   `json:"poolJobDuration"`
+	PoolJobDuration              Duration              `json:"poolJobDuration"`
 	PSRFolder                    string                `json:"psrFolder"`
-	DisputeTimeDelta			 Duration			   `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
-	DisputeThreshold			 float64			   `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
+	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
+	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
 }
 
 const defaultTimeout = 30 * time.Second //30 second fetch timeout
@@ -88,7 +86,7 @@ const defaultRequestInterval = 30 * time.Second //30 seconds between data reques
 const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for new challenges that could interrupt current mining
 const defaultCores = 2
 
-const defaultHeartbeat = 15 * time.Second //check miner speed every 10 ^ 8 cycles
+const defaultHeartbeat = 15 * time.Second       //check miner speed every 10 ^ 8 cycles
 const defaultPoolJobDuration = 15 * time.Second //target 15s for jobs from pool
 var (
 	config *Config
@@ -100,7 +98,6 @@ const DefaultMaxCheckTimeDelta = 5 * time.Minute
 
 //threshold, a percentage of the expected value
 const DefaultDisputeThreshold = 0.01
-
 
 //ParseConfig and set a shared config entry
 func ParseConfig(path string) error {
@@ -119,7 +116,7 @@ func ParseConfigBytes(data []byte) error {
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout
 	}
-	if config.RequestDataInterval.Seconds() == 0 {
+	if config.RequestDataInterval.Duration == 0 {
 		config.RequestDataInterval.Duration = defaultRequestInterval
 	}
 	if config.MiningInterruptCheckInterval.Seconds() == 0 {
@@ -139,11 +136,11 @@ func ParseConfigBytes(data []byte) error {
 		config.PoolJobDuration.Duration = defaultPoolJobDuration
 	}
 
-	if len(config.ServerWhitelist) == 0{
+	if len(config.ServerWhitelist) == 0 {
 		if strings.Contains(config.PublicAddress, "0x") {
-			config.ServerWhitelist = append(config.ServerWhitelist,config.PublicAddress)
-		}else{
-			config.ServerWhitelist = append(config.ServerWhitelist,"0x" + config.PublicAddress)
+			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)
+		} else {
+			config.ServerWhitelist = append(config.ServerWhitelist, "0x"+config.PublicAddress)
 		}
 	}
 
@@ -163,8 +160,6 @@ func ParseConfigBytes(data []byte) error {
 	}
 	return nil
 }
-
-
 
 func validateConfig(cfg *Config) error {
 	b, err := hex.DecodeString(cfg.PublicAddress)
@@ -187,7 +182,7 @@ func validateConfig(cfg *Config) error {
 		return fmt.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
 	}
 
-	for name,gpuConfig := range cfg.GPUConfig {
+	for name, gpuConfig := range cfg.GPUConfig {
 		if gpuConfig.Disabled {
 			continue
 		}
