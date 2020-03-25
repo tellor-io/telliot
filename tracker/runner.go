@@ -76,6 +76,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	}(len(trackers))
 	runnerLog.Info("Waiting for trackers to complete initial requests")
 
+	//run the trackers until we quit
 	go func() {
 		i := 0
 		for {
@@ -106,17 +107,6 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		}
 	}()
 
-	return nil
-
-}
-
-func (r *Runner) callTrackers(ctx context.Context, trackers *[]Tracker) error {
-	for _, t := range *trackers {
-		err := t.Exec(ctx)
-		if err != nil {
-			runnerLog.Error("Problem in tracker: %v\n", err)
-		}
-	}
 	return nil
 }
 
