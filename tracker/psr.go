@@ -21,7 +21,6 @@ import (
 //PSRTracker keeps track of pre-specified requests
 type PSRTracker struct {
 	Requests    []PrespecifiedRequest `json:"prespecifiedRequests"`
-	RequestByID map[uint]*PrespecifiedRequest
 }
 
 //PrespecifiedRequest holds fields for pre-specific requests
@@ -38,10 +37,10 @@ var (
 	funcs  map[string]interface{}
 )
 
-//BuildPSRTracker creates and initializes a new tracker instance
-func BuildPSRTracker() (*PSRTracker, error) {
+//BuildPSRTrackers creates and initializes a new tracker instance
+func BuildPSRTrackers() ([]Tracker, error) {
 
-	psr := &PSRTracker{Requests: nil, RequestByID: make(map[uint]*PrespecifiedRequest)}
+	psr := &PSRTracker{}
 	if err := psr.init(); err != nil {
 		return nil, err
 	}
@@ -51,12 +50,24 @@ func BuildPSRTracker() (*PSRTracker, error) {
 		"median":  median,
 		"square":  square,
 	}
-	return psr, nil
+	trackers := make([]Tracker, len(psr.Requests))
+	for i := range trackers {
+		trackers[i] = psr.Requests[i]
+	}
+	return trackers, nil
 }
 
-//String name of this tracker
-func (psr *PSRTracker) String() string {
-	return "PSRTracker"
+func GetPSRByIDMap() (map[uint]*PrespecifiedRequest, error) {
+	result := make(map[uint]*PrespecifiedRequest)
+	psr := &PSRTracker{}
+	if err := psr.init(); err != nil {
+		return nil, err
+	}
+	for i := 0; i < len(psr.Requests); i++ {
+		r := psr.Requests[i]
+		result[r.RequestID] = &r
+	}
+	return result, nil
 }
 
 func (psr *PSRTracker) init() error {
@@ -75,50 +86,32 @@ func (psr *PSRTracker) init() error {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < len(psr.Requests); i++ {
-		r := psr.Requests[i]
-		psr.RequestByID[r.RequestID] = &r
-	}
 
 	err = EnsureValueOracle()
 	if err != nil {
 		return fmt.Errorf("failed to launch value oracle: %v", err)
 	}
 
-	//psrLog.Info("Initialized PSR with %d requests\n", len(psr.Requests))
+	psrLog.Info("Initialized PSR with %d requests\n", len(psr.Requests))
 	return nil
 }
 
 //Exec implements tracker API
-func (psr *PSRTracker) Exec(ctx context.Context) error {
+func (r PrespecifiedRequest) Exec(ctx context.Context) error {
 	//TODO: retrieve github updates of psr config file. For now, we'll just pull
 	//PSR's as defined by psr.json file
-	resultCh := make(chan *fetchResult, len(psr.Requests))
-	for i := 0; i < len(psr.Requests); i++ {
-		p := psr.Requests[i]
-		go p.fetch(resultCh)
-	}
-	nerr := 0
+	result := r.fetch()
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	for i := 0; i < len(psr.Requests); i++ {
-		result := <-resultCh
-		if result.err != nil {
-			psrLog.Error("Problem fetching PSR for id %d: %v]\n", result.r.RequestID, result.err)
-			nerr++
-		} else {
-			setRequestValue(DB, uint64(result.r.RequestID), result.val.Created, big.NewInt(int64(result.val.Val)))
-		}
-	}
-	if nerr > 0 {
-		psrLog.Info("PSR Tracker cycle completed with %d errors", nerr)
+	if result.err != nil {
+		psrLog.Error("Problem fetching PSR for id %d: %v]\n", result.r.RequestID, result.err)
 	} else {
-		psrLog.Info("PSR Tracker cycle completed succesfully")
-	}
-	now := time.Now()
-	if now.Sub(lastWroteValueHistory) > 2*time.Minute {
-		writeOutHistory()
+		setRequestValue(DB, uint64(result.r.RequestID), result.val.Created, big.NewInt(int64(result.val.Val)))
 	}
 	return nil
+}
+
+func (r PrespecifiedRequest) String() string {
+	return fmt.Sprintf("%s PSR", r.Symbol)
 }
 
 type fetchResult struct {
@@ -127,7 +120,7 @@ type fetchResult struct {
 	err error
 }
 
-func (r *PrespecifiedRequest) fetch(resultCh chan *fetchResult) {
+func (r PrespecifiedRequest) fetch() *fetchResult {
 	cfg := config.GetConfig()
 	reqs := make([]*FetchRequest, len(r.APIs))
 	argGroups := make([][]string, len(r.APIs))
@@ -152,7 +145,7 @@ func (r *PrespecifiedRequest) fetch(resultCh chan *fetchResult) {
 		}
 		vals = append(vals, v)
 	}
-	result := &fetchResult{r: r}
+	result := &fetchResult{r: &r}
 	if len(vals) > 0 {
 		res, err := computeTransformation(r.Transformation, vals)
 		if err != nil {
@@ -166,7 +159,7 @@ func (r *PrespecifiedRequest) fetch(resultCh chan *fetchResult) {
 	} else {
 		result.err = fmt.Errorf("no sucessful api hits, no value stored for id %d", r.RequestID)
 	}
-	resultCh <- result
+	return result
 }
 
 func computeTransformation(name string, params ...interface{}) (result reflect.Value, err error) {

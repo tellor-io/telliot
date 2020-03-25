@@ -167,7 +167,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 func List(ctx context.Context) error {
 	cfg := config.GetConfig()
 
-	psrs, err := tracker.BuildPSRTracker()
+	psrs, err := tracker.GetPSRByIDMap()
 	if err != nil {
 		return fmt.Errorf("failed to read request info: %v\n", err)
 	}
@@ -246,7 +246,7 @@ func List(ctx context.Context) error {
 		}
 		disputedValTime := allSubmitted[uintVars[6].Uint64()].Created
 
-		psr, ok := psrs.RequestByID[uint(dispute.RequestId.Uint64())]
+		psr, ok := psrs[uint(dispute.RequestId.Uint64())]
 		if ok {
 			fmt.Printf("      Symbol: %s\n", psr.Symbol)
 		}

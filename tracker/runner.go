@@ -31,14 +31,20 @@ func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	cfg := config.GetConfig()
 	trackerNames := cfg.Trackers
-	trackers := make([]Tracker, len(trackerNames))
-	for i := 0; i < len(trackers); i++ {
-		t, err := createTracker(trackerNames[i])
+	var trackers []Tracker
+	for _,name := range trackerNames {
+		t, err := createTracker(name)
 		if err != nil {
 			runnerLog.Error("Problem creating tracker: %s\n", err.Error())
+			continue
 		}
-		trackers[i] = t
+		trackers = append(trackers, t...)
 	}
+	if len(trackers) == 0 {
+		return nil
+	}
+	runnerLog.Info("Created %d trackers", len(trackers))
+
 	var err error
 	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
 	if masterInstance == nil {
@@ -52,7 +58,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	}
 
 	runnerLog.Info("Trackers will run every %v\n", cfg.TrackerSleepCycle)
-	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration)
+	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration/time.Duration(len(trackers)))
 	if ctx.Value(tellorCommon.ClientContextKey) == nil {
 		ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)
 	}
@@ -60,24 +66,20 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		ctx = context.WithValue(ctx, tellorCommon.DBContextKey, r.db)
 	}
 
-	ready := make(chan bool)
-	callTrackers := func() {
-		r.callTrackers(ctx, &trackers)
-		ready <- true
-	}
+	//after first run, let others know that tracker output data is ready for use
+	doneFirstExec := make(chan bool, len(trackers))
+	go func(n int) {
+		for i := 0; i < n; i++ {
+			<-doneFirstExec
+		}
+		r.readyChannel <- true
+	}(len(trackers))
+	runnerLog.Info("Waiting for trackers to complete initial requests")
 
 	go func() {
-		//r.callTrackers(ctx, &trackers)
-		go callTrackers()
-		//after first run, let others know that tracker output data is ready for use
-		//r.readyChannel <- true
+		i := 0
 		for {
-			runnerLog.Info("Waiting for next tracker run cycle...")
 			select {
-			case _ = <-ready:
-				{
-					r.readyChannel <- true
-				}
 			case _ = <-exitCh:
 				{
 					runnerLog.Info("Exiting run loop")
@@ -86,8 +88,19 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 				}
 			case _ = <-ticker.C:
 				{
-					runnerLog.Info("Running trackers...")
-					r.callTrackers(ctx, &trackers)
+					//runnerLog.Info("Running trackers...")
+					go func(count int) {
+						idx := count % len(trackers)
+						err := trackers[idx].Exec(ctx)
+						if err != nil {
+							runnerLog.Error("Problem in tracker: %v\n", err)
+						}
+						//only increment this the first time a tracker is run
+						if count < len(trackers) {
+							doneFirstExec <- true
+						}
+					}(i)
+					i++
 				}
 			}
 		}
@@ -98,13 +111,11 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 }
 
 func (r *Runner) callTrackers(ctx context.Context, trackers *[]Tracker) error {
-	i := 0
 	for _, t := range *trackers {
 		err := t.Exec(ctx)
 		if err != nil {
 			runnerLog.Error("Problem in tracker: %v\n", err)
 		}
-		i++
 	}
 	return nil
 }

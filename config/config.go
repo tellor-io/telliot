@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
-	"github.com/joho/godotenv"
 )
 
 //unfortunate hack to enable json parsing of human readable time strings
@@ -95,6 +95,8 @@ const defaultPoolJobDuration = 15 * time.Second //target 15s for jobs from pool
 var (
 	config *Config
 )
+
+const defaultMaxParallelPSR = 4
 
 const defaultTrackerInterval = 30 * time.Second
 

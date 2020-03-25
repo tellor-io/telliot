@@ -24,7 +24,7 @@ func TestPSR(t *testing.T) {
 	}
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, common.DBContextKey, db)
-	psr, err := BuildPSRTracker()
+	psr, err := BuildPSRTrackers()
 	if err != nil {
 		t.Fatal(err)
 	}

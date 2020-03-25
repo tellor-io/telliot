@@ -19,7 +19,7 @@ var valueHistory map[uint64]*Window
 var valueHistoryMutex sync.RWMutex
 
 //last time PSR windows written to disk
-var lastWroteValueHistory time.Time
+var lastHistoryWriteAttempt time.Time
 
 func GetLatestRequestValue(id uint64) *TimedInt {
 	valueHistoryMutex.RLock()
@@ -64,6 +64,9 @@ func writeOutHistory() {
 		v.Trim()
 	}
 	data, err := json.MarshalIndent(valueHistory, "", "\t")
+
+	//in order to not hold up the rest of the program, we release the mutex while we write out the file
+	//this function is single threaded, but we need mutex to access multithreaded history
 	valueHistoryMutex.Unlock()
 	if err != nil {
 		psrLog.Error("failed to marshal PSR values: %s", err.Error())
@@ -84,7 +87,6 @@ func writeOutHistory() {
 		psrLog.Error("failed move new PSR save onto old: %s", err.Error())
 		return
 	}
-	lastWroteValueHistory = time.Now()
 }
 
 func EnsureValueOracle() error {
@@ -126,6 +128,13 @@ func EnsureValueOracle() error {
 	} else {
 		valueHistory = make(map[uint64]*Window)
 	}
+	//periodically flush the value history to disk to create a record for disputes
+	go func() {
+		for {
+			time.Sleep(2 * time.Minute)
+			writeOutHistory()
+		}
+	}()
 	return nil
 }
 
