@@ -123,16 +123,21 @@ func ParseConfigBytes(data []byte) error {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
 
-	//load the env
-	err = godotenv.Load()
-	if err != nil {
-		return fmt.Errorf("error reading .env file: %v", err)
-	}
-
+	//check if the env is already set, only try loading .env if its not there
 	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 	if config.PrivateKey == "" {
-		return fmt.Errorf("missing ethereum wallet private key environment variable '%s'", PrivateKeyEnvName)
+		//load the env
+		err = godotenv.Load()
+		if err != nil {
+			return fmt.Errorf("error reading .env file: %v", err)
+		}
+
+		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
+		if config.PrivateKey == "" {
+			return fmt.Errorf("missing ethereum wallet private key environment variable '%s'", PrivateKeyEnvName)
+		}
 	}
+
 
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout
