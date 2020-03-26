@@ -24,6 +24,7 @@ require (
 	github.com/influxdata/influxdb v1.7.9 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
 	github.com/jawher/mow.cli v1.1.0
+	github.com/joho/godotenv v1.3.0
 	github.com/karalabe/usb v0.0.0-20190819132248-550797b1cad8 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.11 // indirect
