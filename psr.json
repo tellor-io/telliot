@@ -6,7 +6,7 @@
             "apis":[
                 "json(https://api.pro.coinbase.com/products/ETH-USD/ticker).price"
             ],
-            "transformation" : "value",
+            "transformation" : "dayAvg",
             "granularity" : 1000
         },
         {
@@ -15,7 +15,7 @@
             "apis": [
                 "json(https://api.binance.com/api/v1/klines?symbol=BTCUSDT&interval=1d&limit=1).0.4"
             ],
-            "transformation" : "value",
+            "transformation" : "dayAvg",
             "granularity" : 1000
         },
         {

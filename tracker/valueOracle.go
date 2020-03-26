@@ -3,9 +3,7 @@ package tracker
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/db"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -41,10 +39,7 @@ func GetRequestValuesForTime(id uint64, at time.Time, delta time.Duration) []*Ti
 	return w.WithinRange(at, delta)
 }
 
-func setRequestValue(DB db.DB, id uint64, at time.Time, val *big.Int) {
-	enc := hexutil.EncodeBig(val)
-	//and write it to DB using value prefix and request Id
-	DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, id), []byte(enc))
+func setRequestValue(id uint64, at time.Time, val *big.Int) {
 
 	valueHistoryMutex.Lock()
 	_, ok := valueHistory[id]
@@ -53,7 +48,7 @@ func setRequestValue(DB db.DB, id uint64, at time.Time, val *big.Int) {
 	}
 	valueHistory[id].Insert(&TimedInt{
 		Created: at,
-		Val:     uint(val.Uint64()),
+		Val:val.Uint64(),
 	})
 	valueHistoryMutex.Unlock()
 }

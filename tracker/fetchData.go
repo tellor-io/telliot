@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"sync"
 	"time"
@@ -67,7 +68,11 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 				return
 			}
 			fetchLog.Debug("Storing fetch result: %v for id: %d", res.value, res.reqID)
-			setRequestValue(DB, uint64(res.reqID), time.Now(), res.value)
+			setRequestValue(uint64(res.reqID), time.Now(), res.value)
+			//always write out non-psr data to the DB immediately
+			enc := hexutil.EncodeBig(res.value)
+			DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, res.reqID), []byte(enc))
+
 		}
 	}()
 

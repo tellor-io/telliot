@@ -94,7 +94,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 						idx := count % len(trackers)
 						err := trackers[idx].Exec(ctx)
 						if err != nil {
-							runnerLog.Error("Problem in tracker: %v\n", err)
+							runnerLog.Error("Problem in tracker %s: %v\n", trackers[idx].String(), err)
 						}
 						//only increment this the first time a tracker is run
 						if count < len(trackers) {

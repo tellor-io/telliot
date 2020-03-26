@@ -7,7 +7,7 @@ import (
 
 type TimedInt struct {
 	Created time.Time
-	Val     uint
+	Val     uint64
 }
 
 type Window struct {

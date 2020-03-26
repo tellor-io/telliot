@@ -150,7 +150,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 
 					timedValues[i] = &tracker.TimedInt{
 						Created: valTime,
-						Val: uint(allVals[i].Uint64()),
+						Val: allVals[i].Uint64(),
 					}
 					found++
 					break
@@ -246,7 +246,7 @@ func List(ctx context.Context) error {
 		}
 		disputedValTime := allSubmitted[uintVars[6].Uint64()].Created
 
-		psr, ok := psrs[uint(dispute.RequestId.Uint64())]
+		psr, ok := psrs[dispute.RequestId.Uint64()]
 		if ok {
 			fmt.Printf("      Symbol: %s\n", psr.Symbol)
 		}
