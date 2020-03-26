@@ -92,7 +92,7 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 	return nil
 }
 
-func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tellor1.TellorDisputeNewDispute) ([]*tracker.TimedInt, error) {
+func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tellor1.TellorDisputeNewDispute) ([]*tracker.TimedFloat, error) {
 	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor1.TellorLibraryABI))
 	if err != nil {
@@ -119,7 +119,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 	high := int64(valueBlock.Uint64())
 	low := high - blockStep
 	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID()
-	timedValues := make([]*tracker.TimedInt, 5)
+	timedValues := make([]*tracker.TimedFloat, 5)
 	found := 0
 	for found < 5 {
 		query := ethereum.FilterQuery{
@@ -148,15 +148,18 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 				if nonceSubmit.Miner == allAddrs[i] {
 					valTime := time.Unix(int64(header.Time), 0)
 
-					timedValues[i] = &tracker.TimedInt{
+					bigF := new(big.Float)
+					bigF.SetInt(allVals[i])
+					f, _ := bigF.Float64()
+
+					timedValues[i] = &tracker.TimedFloat{
 						Created: valTime,
-						Val: allVals[i].Uint64(),
+						Val: f,
 					}
 					found++
 					break
 				}
 			}
-
 		}
 		high -= blockStep
 		low = high - blockStep

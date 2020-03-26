@@ -68,7 +68,10 @@ func (b *RequestDataTracker) Exec(ctx context.Context) error {
 				return
 			}
 			fetchLog.Debug("Storing fetch result: %v for id: %d", res.value, res.reqID)
-			setRequestValue(uint64(res.reqID), time.Now(), res.value)
+			bigF := new(big.Float)
+			bigF.SetInt(res.value)
+			f, _ := bigF.Float64()
+			setRequestValue(uint64(res.reqID), time.Now(), f)
 			//always write out non-psr data to the DB immediately
 			enc := hexutil.EncodeBig(res.value)
 			DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, res.reqID), []byte(enc))

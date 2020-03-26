@@ -31,7 +31,7 @@ func ParseQueryString(_query string) (url string, args []string) {
 }
 
 //ParsePayload will extract the value from a query payload
-func ParsePayload(payload []byte, _granularity uint, args []string) (int, error) {
+func ParsePayload(payload []byte, _granularity uint, args []string) (float64, error) {
 	var f interface{}
 	if err := json.Unmarshal(payload, &f); err != nil {
 		fmt.Println(err)
@@ -43,7 +43,7 @@ func ParsePayload(payload []byte, _granularity uint, args []string) (int, error)
 		return 0,errors.New("JSON Parsing error")
 	}
 	s, _ := strconv.ParseFloat(fmt.Sprintf("%v", result), 64)
-	return int(s * float64(_granularity)), nil
+	return s * float64(_granularity), nil
 }
 
 var Bi = 0

@@ -34,7 +34,7 @@ func (c *disputeChecker) String() string {
 type ValueCheckResult struct {
 	High, Low float64
 	WithinRange bool
-	Datapoints []*TimedInt
+	Datapoints []*TimedFloat
 }
 
 func CheckValueAtTime(reqId uint64, val *big.Int, at time.Time) *ValueCheckResult {

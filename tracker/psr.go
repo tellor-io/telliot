@@ -117,19 +117,21 @@ func (r PrespecifiedRequest) Exec(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	bigVal := new(big.Int)
-	bigVal.SetUint64(val)
 
 	//save the value into our local data window no matter what
-	setRequestValue(r.RequestID, time.Now(), bigVal)
+	setRequestValue(r.RequestID, time.Now(), val)
 
 	//if we have enough data saved in the window to make an accurate reading,
 	//place the value into the DB so it can be submitted during mining
 	//if value returns nil, we don't have enough saved yet
-	value := r.Transformation.Value(&r)
-	if value != nil {
+	value,ok := r.Transformation.Value(&r)
+	if ok {
+		bigVal := new(big.Float)
+		bigVal.SetFloat64(value)
+		bigInt := new(big.Int)
+		bigVal.Int(bigInt)
 		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-		enc := hexutil.EncodeBig(bigVal)
+		enc := hexutil.EncodeBig(bigInt)
 		err := DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, r.RequestID), []byte(enc))
 		if err != nil {
 			return err
