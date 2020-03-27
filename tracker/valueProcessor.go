@@ -77,7 +77,8 @@ func (t TimeAverage)Value(r *PrespecifiedRequest) (float64, bool) {
 	//require at least 60% of the values from the past day
 	ratio := float64(len(vals))/float64(max)
 	if ratio < 0.6 {
-		estimate := time.Duration(0.6 * float64(timeInterval))
+		//this isn't perfectly accurate, but it's a good cheap estimate. And is this REALLY worth the time to do right?
+		estimate := time.Duration((0.6-ratio) * float64(timeInterval))
 		psrLog.Info("Insufficient data for request ID %d, expected in %s", r.RequestID, estimate.String())
 		return 0, false
 	}
