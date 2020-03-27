@@ -117,6 +117,10 @@ func parsePayloads(r *PrespecifiedRequest, payloads [][]byte) []float64 {
 // 6 hours old    0.50
 // 24 hours old   0.05
 func expTimeWeightedMean(vals []*TimedFloat) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
+
 	now := time.Now()
 	sum := 0.0
 	for _,v := range vals {
@@ -127,6 +131,9 @@ func expTimeWeightedMean(vals []*TimedFloat) float64 {
 }
 
 func mean(vals []float64) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
 	//compute the mean
 	sum := 0.0
 	for _,v := range vals {
@@ -137,6 +144,10 @@ func mean(vals []float64) float64 {
 }
 
 func median(vals []float64) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
+
 	sort.Slice(vals, func (i, j int) bool {
 		return vals[i] < vals[j]
 	})
