@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/tellor-io/TellorMiner/config"
 	"io/ioutil"
-	"math/big"
 	"os"
 	"path/filepath"
 	"sync"
@@ -19,7 +18,7 @@ var valueHistoryMutex sync.RWMutex
 //last time PSR windows written to disk
 var lastHistoryWriteAttempt time.Time
 
-func GetLatestRequestValue(id uint64) *TimedInt {
+func GetLatestRequestValue(id uint64) *TimedFloat {
 	valueHistoryMutex.RLock()
 	defer valueHistoryMutex.RUnlock()
 	w, ok := valueHistory[id]
@@ -29,7 +28,7 @@ func GetLatestRequestValue(id uint64) *TimedInt {
 	return w.Latest()
 }
 
-func GetRequestValuesForTime(id uint64, at time.Time, delta time.Duration) []*TimedInt {
+func GetRequestValuesForTime(id uint64, at time.Time, delta time.Duration) []*TimedFloat {
 	valueHistoryMutex.RLock()
 	defer valueHistoryMutex.RUnlock()
 	w, ok := valueHistory[id]
@@ -39,16 +38,16 @@ func GetRequestValuesForTime(id uint64, at time.Time, delta time.Duration) []*Ti
 	return w.WithinRange(at, delta)
 }
 
-func setRequestValue(id uint64, at time.Time, val *big.Int) {
+func setRequestValue(id uint64, at time.Time, val float64) {
 
 	valueHistoryMutex.Lock()
 	_, ok := valueHistory[id]
 	if !ok {
 		valueHistory[id] = NewWindow(7 * 24 * time.Hour)
 	}
-	valueHistory[id].Insert(&TimedInt{
+	valueHistory[id].Insert(&TimedFloat{
 		Created: at,
-		Val:val.Uint64(),
+		Val:val,
 	})
 	valueHistoryMutex.Unlock()
 }

@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-type TimedInt struct {
+type TimedFloat struct {
 	Created time.Time
-	Val     uint64
+	Val     float64
 }
 
 type Window struct {
-	buffer []*TimedInt
+	buffer []*TimedFloat
 	start int
 	num int
 	keep time.Duration
@@ -40,7 +40,7 @@ func (w *Window)Trim() {
 	}
 }
 
-func (w *Window)ClosestTwo(at time.Time) (before, after *TimedInt) {
+func (w *Window)ClosestTwo(at time.Time) (before, after *TimedFloat) {
 	if w.num == 0 {
 		return
 	}
@@ -58,8 +58,8 @@ func (w *Window)ClosestTwo(at time.Time) (before, after *TimedInt) {
 	return
 }
 
-func (w *Window)WithinRange(at time.Time, delta time.Duration) []*TimedInt {
-	var items []*TimedInt
+func (w *Window)WithinRange(at time.Time, delta time.Duration) []*TimedFloat {
+	var items []*TimedFloat
 	i := 0
 	n := len(w.buffer)
 	for i < w.num {
@@ -76,7 +76,7 @@ func (w *Window)WithinRange(at time.Time, delta time.Duration) []*TimedInt {
 	return items
 }
 
-func (w *Window)Insert(x *TimedInt) {
+func (w *Window)Insert(x *TimedFloat) {
 	now := time.Now()
 	t := x.Created
 	latest := w.Latest()
@@ -89,7 +89,7 @@ func (w *Window)Insert(x *TimedInt) {
 	if w.num == n {
 		newLen := 2*n
 		if newLen == 0 { newLen = 1 }
-		bigger := make([]*TimedInt, newLen)
+		bigger := make([]*TimedFloat, newLen)
 		for i := 0; i < w.num; i++ {
 			bigger[i] = w.buffer[(w.start + i) % n]
 		}
@@ -106,7 +106,7 @@ func (w *Window)Len() int {
 	return w.num
 }
 
-func (w *Window)Latest() *TimedInt {
+func (w *Window)Latest() *TimedFloat {
 	w.Trim()
 	if w.num == 0 {
 		return nil
@@ -117,7 +117,7 @@ func (w *Window)Latest() *TimedInt {
 
 
 func (w *Window) UnmarshalJSON(b []byte) error {
-	var v []*TimedInt
+	var v []*TimedFloat
 	err := json.Unmarshal(b, &v)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func (w *Window) UnmarshalJSON(b []byte) error {
 
 func (w *Window) MarshalJSON() ([]byte, error) {
 	w.Trim()
-	a := make([]*TimedInt, w.num)
+	a := make([]*TimedFloat, w.num)
 	n := len(w.buffer)
 	for i := 0; i < w.num; i++ {
 		a[i] = w.buffer[(w.start + i) % n]
