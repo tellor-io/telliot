@@ -73,8 +73,8 @@ type Config struct {
 	ServerWhitelist              []string              `json:"serverWhitelist"`
 	GPUConfig                    map[string]*GPUConfig `json:"gpuConfig"`
 	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
+	Worker                       string                `json:"worker"`
 	PoolURL                      string                `json:"poolURL"`
-	PoolJobDuration              Duration              `json:"poolJobDuration"`
 	PSRFolder                    string                `json:"psrFolder"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
 	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
@@ -87,7 +87,6 @@ const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for ne
 const defaultCores = 2
 
 const defaultHeartbeat = 15 * time.Second       //check miner speed every 10 ^ 8 cycles
-const defaultPoolJobDuration = 15 * time.Second //target 15s for jobs from pool
 var (
 	config *Config
 )
@@ -132,9 +131,6 @@ func ParseConfigBytes(data []byte) error {
 	if config.Heartbeat.Seconds() == 0 {
 		config.Heartbeat.Duration = defaultHeartbeat
 	}
-	if config.PoolJobDuration.Seconds() == 0 {
-		config.PoolJobDuration.Duration = defaultPoolJobDuration
-	}
 
 	if len(config.ServerWhitelist) == 0 {
 		if strings.Contains(config.PublicAddress, "0x") {
@@ -166,20 +162,27 @@ func validateConfig(cfg *Config) error {
 	if err != nil || len(b) != 20 {
 		return fmt.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
-	b, err = hex.DecodeString(cfg.PrivateKey)
-	if err != nil || len(b) != 32 {
-		return fmt.Errorf("expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
-	}
-	if len(cfg.ContractAddress) != 42 {
-		return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
-	}
-	b, err = hex.DecodeString(cfg.ContractAddress[2:])
-	if err != nil || len(b) != 20 {
-		return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
-	}
+	if cfg.EnablePoolWorker  {
+		// Check worker is set
+		if len(cfg.Worker) == 0 {
+			return fmt.Errorf("worker name required")
+		}
+	} else {
+		b, err = hex.DecodeString(cfg.PrivateKey)
+		if err != nil || len(b) != 32 {
+			return fmt.Errorf("expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
+		}
+		if len(cfg.ContractAddress) != 42 {
+			return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
+		}
+		b, err = hex.DecodeString(cfg.ContractAddress[2:])
+		if err != nil || len(b) != 20 {
+			return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
+		}
 
-	if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
-		return fmt.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
+		if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
+			return fmt.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
+		}
 	}
 
 	for name, gpuConfig := range cfg.GPUConfig {

@@ -1,123 +1,156 @@
 package pow
 
 import (
-	"bytes"
+	// "bytes"
 	"context"
 	"encoding/json"
+	"math"
+	"math/rand"
+	"math/big"
+
 	"fmt"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/util"
-	"io/ioutil"
-	"math"
-	"math/big"
-	"net/http"
 )
 
-//job is the response from the pool server contianing job data for this worker
-type Job struct {
-	Challenge     string `json:"challenge"`
-	Difficulty    uint64    `json:"difficulty"`
-	EndNonce      uint64    `json:"end_nonce"`
-	JobID         uint64    `json:"job_id"`
-	PublicAddress string `json:"public_address"`
-	StartNonce    uint64    `json:"start_nonce"`
-	WorkID        uint64    `json:"work_id"`
-}
-
-type Pool struct {
+type StratumPool struct {
 	log           *util.Logger
 	url           string
-	publicAddress string
-	currJobID     uint64
+	minerAddress  string
+	worker        string
 	group         *MiningGroup
-	jobDuration   config.Duration
-
+	stratumClient *StratumClient
+	input 				chan *Work
+	currChallenge *MiningChallenge
+	currJobID     string
 }
 
-func CreatePool(cfg *config.Config, group *MiningGroup) *Pool {
+type MiningNotify struct {
+	JobID  			string
+	Challenge 	string
+	PoolAddress string
+	Difficulty *big.Int
+	CleanJob 		bool
+}
 
-	return &Pool{
+func (n *MiningNotify) UnmarshalJSON(buf []byte) error {
+	tmp := []interface{}{&n.JobID, &n.Challenge, &n.PoolAddress, &n.Difficulty, &n.CleanJob}
+	wantLen := len(tmp)
+	if err := json.Unmarshal(buf, &tmp); err != nil {
+		return err
+	}
+	if g, e := len(tmp), wantLen; g != e {
+		return fmt.Errorf("wrong number of fields in MiningNotify: %d != %d", g, e)
+	}
+	return nil
+}
+
+
+func CreatePool(cfg *config.Config, group *MiningGroup) *StratumPool {
+	return &StratumPool{
 		url:           cfg.PoolURL,
-		currJobID:     0,
-		publicAddress: cfg.PublicAddress,
-		log:           util.NewLogger("pow", "Pool"),
+		minerAddress:  cfg.PublicAddress + "." + cfg.Worker,
+		log:           util.NewLogger("pow", "StratumPool"),
 		group:         group,
-		jobDuration:   cfg.PoolJobDuration,
 	}
 }
 
-func (p *Pool) GetWork() *Work {
-	// HTTP GET work from the server
-	if p.currJobID > 0 {
-		return nil
-	}
-	//target 15s pool chunks by default
-	jobSize := p.jobDuration.Seconds()*p.group.HashRateEstimate()
-	step := p.group.PreferredWorkMultiple()
-	nsteps := uint64(math.Round(jobSize /float64(step)))
-	if nsteps == 0 {
-		nsteps = 1
-	}
-	n := nsteps * step
-
-	url := p.url + fmt.Sprintf("/job?public_address=%s&job_size=%d", p.publicAddress, n)
-	req, err := http.NewRequest("GET", url, nil)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	cli := &http.Client{}
-	resp, err := cli.Do(req)
-	if err != nil {
-		p.log.Error("failed to get work from pool: %s", err.Error())
-		return nil
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		p.log.Error("failed to read response: %s", err.Error())
+func (p *StratumPool) GetWork(input chan *Work) *Work {
+	if p.stratumClient != nil && p.stratumClient.running {
+		p.log.Warn("stratum client already running")
 		return nil
 	}
 
-	var j = new(Job)
-	err = json.Unmarshal(body, &j)
+	p.input = input
+
+	msgChan := make(chan *StratumResponse)
+	stratumClient, err := StratumConnect(p.url, msgChan)
 	if err != nil {
-		p.log.Error("Error decoding job json: %s", err.Error())
+		p.log.Error("stratum connect error: %s", err.Error())
 		return nil
 	}
-	diff := new(big.Int)
-	diff.SetUint64(j.Difficulty)
-	newChallenge := &MiningChallenge{
-		Challenge:  decodeHex(j.Challenge),
-		Difficulty: diff,
-		RequestID:  big.NewInt(1),
-	}
-	p.currJobID = j.JobID
-	return &Work{Challenge: newChallenge, PublicAddr: j.PublicAddress, Start: j.StartNonce, N: j.EndNonce - j.StartNonce}
+
+	p.stratumClient = stratumClient
+	p.stratumClient.Request(
+		"mining.subscribe",
+		"TellorStratum/1.0.0")
+
+	subscribed := false
+	nonce1 := ""
+
+	go func() {
+		for {
+			select {
+			case msg := <-msgChan:
+
+				p.log.Info("received message from pool: %#v", msg)
+
+				if !subscribed {
+					r, err := json.Marshal(msg.Result)
+					if err != nil {
+						p.log.Error("parse subscribe result error: %s", err.Error())
+						return
+					}
+					result := string(r)
+					nonce1 = fmt.Sprintf("%x", []byte(result[7:15]))
+					p.log.Info("nonce1 is : %v", nonce1)
+					subscribed = true
+
+					p.stratumClient.Request(
+						"mining.authorize",
+						p.minerAddress, "123")
+				}
+
+				if msg.Method == "mining.notify" {
+					params, err := json.Marshal(msg.Params)
+					if err != nil {
+						p.log.Error("mining.notify msg parse error: %s", err.Error())
+						return
+					}
+
+					var miningNotify MiningNotify
+					if err := json.Unmarshal([]byte(string(params)), &miningNotify); err != nil {
+						p.log.Error("mining.notify params msg parse error: %s", err.Error())
+					}
+
+					p.log.Info("mining.notify: %#v", miningNotify)
+
+					newChallenge := &MiningChallenge{
+						Challenge:  decodeHex(miningNotify.Challenge),
+						Difficulty: miningNotify.Difficulty,
+						// Difficulty: big.NewInt(10000000),
+						// Difficulty: big.NewInt(6377077812),
+						RequestID:  big.NewInt(1),
+					}
+
+					p.currChallenge = newChallenge
+					p.currJobID = miningNotify.JobID
+					job := &Work{
+						Challenge: newChallenge,
+						PublicAddr: miningNotify.PoolAddress + nonce1,
+						Start: uint64(rand.Int63()),
+						N: math.MaxInt64}
+					input <- job
+					p.log.Info("send new work to hash %#v", job)
+				}
+			}
+		}
+	}()
+
+	return nil
 }
 
-func (p *Pool) Submit(ctx context.Context, result *Result) {
-	// HTTP POST valid nonces to the pool server
+func (p *StratumPool) Submit(ctx context.Context, result *Result) {
 	nonce := result.Nonce
-	if result.Nonce == "" {
-		nonce = "0"
-	}
-	values := map[string]string{
-		"job_id": fmt.Sprintf("%v", p.currJobID),
-		"nonce":  nonce,
-	}
-	jsonValue, _ := json.Marshal(values)
+	submission := fmt.Sprintf("%s, %s, %s", p.minerAddress, p.currJobID, nonce)
+	p.log.Warn("mining.submit: %s", submission)
+	p.stratumClient.Request(
+		"mining.submit",
+		p.minerAddress,
+		fmt.Sprintf("%v", p.currJobID), nonce)
 
-	url := p.url + "/job"
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
-	req.SetBasicAuth("demo", "demo")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	cli := &http.Client{}
-	resp, err := cli.Do(req)
-	if err != nil {
-		p.log.Error("Error posting nonce:", err.Error())
-	} else {
-		resp.Body.Close()
+	if p.input != nil {
+		result.Work.Start = uint64(rand.Int63())
+		p.input <- result.Work
 	}
-	p.currJobID = 0
 }

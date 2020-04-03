@@ -78,7 +78,7 @@ func GenKernelSource() string {
 }
 
 //prepare an openCL device for work
-func NewGpuMiner(device *cl.Device, config *config.GPUConfig) (*GpuMiner, error) {
+func NewGpuMiner(device *cl.Device, config *config.GPUConfig, poolEnabled bool) (*GpuMiner, error) {
 
 	var g GpuMiner
 	var err error
@@ -109,8 +109,11 @@ func NewGpuMiner(device *cl.Device, config *config.GPUConfig) (*GpuMiner, error)
 	if err != nil {
 		return nil, fmt.Errorf("CreateKernel failed: %+v", err)
 	}
-
-	g.prefix, err = g.context.CreateEmptyBuffer(cl.MemReadOnly, 56)
+	if poolEnabled {
+		g.prefix, err = g.context.CreateEmptyBuffer(cl.MemReadOnly, 64)
+	} else {
+		g.prefix, err = g.context.CreateEmptyBuffer(cl.MemReadOnly, 56)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("CreateBuffer failed for prefix: %+v", err)
 	}
@@ -231,6 +234,3 @@ func createDivisorByteArray(d *big.Int) []byte {
 
 	return result
 }
-
-
-

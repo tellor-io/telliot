@@ -34,46 +34,49 @@ func ErrorHandler(err error, operation string) {
 
 func buildContext() error {
 	cfg := config.GetConfig()
-	//create an rpc client
-	client, err := rpc.NewClient(cfg.NodeURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	//create an instance of the tellor master contract for on-chain interactions
-	contractAddress := common.HexToAddress(cfg.ContractAddress)
-	masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
-	transactorInstance, err := contracts1.NewTellorTransactor(contractAddress, client)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
-	ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
-	ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
-	ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
+	if !cfg.EnablePoolWorker {
+		//create an rpc client
+		client, err := rpc.NewClient(cfg.NodeURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+		//create an instance of the tellor master contract for on-chain interactions
+		contractAddress := common.HexToAddress(cfg.ContractAddress)
+		masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
+		transactorInstance, err := contracts1.NewTellorTransactor(contractAddress, client)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
-	if err != nil {
-		return fmt.Errorf("problem getting private key: %s", err.Error())
-	}
-	ctx = context.WithValue(ctx, tellorCommon.PrivateKey, privateKey)
+		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
+		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
+		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
+		ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
 
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return fmt.Errorf("error casting public key to ECDSA")
-	}
+		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
+		if err != nil {
+			return fmt.Errorf("problem getting private key: %s", err.Error())
+		}
+		ctx = context.WithValue(ctx, tellorCommon.PrivateKey, privateKey)
 
-	publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	ctx = context.WithValue(ctx, tellorCommon.PublicAddress, publicAddress)
+		publicKey := privateKey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			return fmt.Errorf("error casting public key to ECDSA")
+		}
 
-	//Issue #55, halt if client is still syncing with Ethereum network
-	s, err := client.IsSyncing(ctx)
-	if err != nil {
-		return fmt.Errorf("could not determine if Ethereum client is syncing: %v\n", err)
-	}
-	if s {
-		return fmt.Errorf("ethereum node is still sycning with the network")
+		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+		ctx = context.WithValue(ctx, tellorCommon.PublicAddress, publicAddress)
+
+		//Issue #55, halt if client is still syncing with Ethereum network
+		s, err := client.IsSyncing(ctx)
+		if err != nil {
+			return fmt.Errorf("could not determine if Ethereum client is syncing: %v\n", err)
+		}
+		if s {
+			return fmt.Errorf("ethereum node is still sycning with the network")
+		}
 	}
 	return nil
 }

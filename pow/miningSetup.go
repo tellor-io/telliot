@@ -21,7 +21,7 @@ func SetupMiningGroup(cfg *config.Config) (*MiningGroup, error) {
 			fmt.Printf("%s disabled in config, ignoring\n", gpu.Name())
 			continue
 		}
-		thisMiner, err := NewGpuMiner(gpu, gpuConfig)
+		thisMiner, err := NewGpuMiner(gpu, gpuConfig, cfg.EnablePoolWorker)
 		if err != nil {
 			return nil, fmt.Errorf("error initializing GPU %s: %s", gpu.Name(), err.Error())
 		}
