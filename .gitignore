@@ -31,3 +31,6 @@ saved.json
 /saved.json
 libOpenCL.a
 
+
+.env
+/.env
