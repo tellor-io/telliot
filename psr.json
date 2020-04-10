@@ -302,20 +302,24 @@
         },
         {
             "requestID":30,
-            "symbol":"DASH/BNB - Binance",
+            "symbol":"XAU/USD",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=DASHBNB&interval=1d&limit=1).0.4"
+                "json(https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD).spreadProfilePrices.0.ask"
+
             ],
             "transformation" : "value",
             "granularity" : 1000000
         },
         {
             "requestID":31,
-            "symbol":"MATIC/USDT - Binance",
+            "symbol":"MATIC/USD ",
             "apis":[
-                "json(https://api.binance.com/api/v1/klines?symbol=MATICUSDT&interval=1d&limit=1).0.4"
+                "json(https://api.binance.com/api/v1/klines?symbol=MATICUSDT&interval=1d&limit=1).0.4",
+                "json(https://api.coinpaprika.com/v1/tickers/matic-matic-network).quotes.USD.price",
+                "json(https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd).matic-network.usd",
+                "json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price"
             ],
-            "transformation" : "value",
+            "transformation" : "median",
             "granularity" : 1000000
         },
         {
