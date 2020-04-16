@@ -33,14 +33,14 @@ func createTracker(name string) ([]Tracker, error) {
 		{
 			return []Tracker{&TributeTracker{}}, nil
 		}
-	case "fetchData":
+	case "indexers":
 		{
-			return []Tracker{&RequestDataTracker{}}, nil
+			return BuildIndexTrackers()
 		}
-	case "psr":
-		{
-			return BuildPSRTrackers()
-		}
+	//case "requestValues":
+	//	{
+	//		return
+	//	}
 	case "disputeChecker":
 		return []Tracker{&disputeChecker{}}, nil
 	default:

@@ -7,13 +7,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/tellor-io/TellorMiner/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/contracts1"
 	"github.com/tellor-io/TellorMiner/rpc"
 	"github.com/tellor-io/TellorMiner/util"
 	"io/ioutil"
-	"math"
 	"math/big"
 	"strings"
 	"time"
@@ -34,46 +33,47 @@ func (c *disputeChecker) String() string {
 type ValueCheckResult struct {
 	High, Low float64
 	WithinRange bool
-	Datapoints []*TimedFloat
+	Datapoints []*apiOracle.PriceStamp
 }
 
 func CheckValueAtTime(reqId uint64, val *big.Int, at time.Time) *ValueCheckResult {
-	cfg := config.GetConfig()
-
-	datapoints := GetRequestValuesForTime(reqId, at, cfg.DisputeTimeDelta.Duration)
-
-	if len(datapoints) == 0 {
-		//no data for requestID
-		return nil
-	}
-
-	min := math.MaxFloat64
-	max := 0.0
-
-	for _,dp := range datapoints {
-		val := float64(dp.Val)
-		if val > max {
-			max = val
-		}
-		if val < min {
-			min = val
-		}
-	}
-
-	min *= 1 - cfg.DisputeThreshold
-	max *= 1 + cfg.DisputeThreshold
-
-	floatVal := float64(val.Uint64())
-
-
-	withinRange := (floatVal > min) && (floatVal < max)
-
-	return &ValueCheckResult{
-		Low:         min,
-		High:        max,
-		WithinRange: withinRange,
-		Datapoints:  datapoints,
-	}
+	//cfg := config.GetConfig()
+	//
+	//datapoints := GetRequestValuesForTime(reqId, at, cfg.DisputeTimeDelta.Duration)
+	//
+	//if len(datapoints) == 0 {
+	//	//no data for requestID
+	//	return nil
+	//}
+	//
+	//min := math.MaxFloat64
+	//max := 0.0
+	//
+	//for _,dp := range datapoints {
+	//	val := float64(dp.Val)
+	//	if val > max {
+	//		max = val
+	//	}
+	//	if val < min {
+	//		min = val
+	//	}
+	//}
+	//
+	//min *= 1 - cfg.DisputeThreshold
+	//max *= 1 + cfg.DisputeThreshold
+	//
+	//floatVal := float64(val.Uint64())
+	//
+	//
+	//withinRange := (floatVal > min) && (floatVal < max)
+	//
+	//return &ValueCheckResult{
+	//	Low:         min,
+	//	High:        max,
+	//	WithinRange: withinRange,
+	//	Datapoints:  datapoints,
+	//}
+	return nil
 }
 
 func (c *disputeChecker) Exec(ctx context.Context) error {
@@ -143,7 +143,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 			s := fmt.Sprintf("suspected incorrect value for requestID %d at %s:\n", reqID, blockTime)
 			s += fmt.Sprintf("nearest values:\n")
 			for _,pt := range result.Datapoints {
-				s += fmt.Sprintf("\t%d, ", pt.Val)
+				//s += fmt.Sprintf("\t%d, ", pt.Val)
 				delta := blockTime.Sub(pt.Created)
 				if delta > 0 {
 					s += fmt.Sprintf("%s before\n", delta.String())

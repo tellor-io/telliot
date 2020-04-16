@@ -1,9 +1,10 @@
-package tracker
+package apiOracle
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,14 +12,16 @@ import (
 	"time"
 )
 
-//maps requestID to a time window of values
-var valueHistory map[uint64]*Window
+var logger = util.NewLogger("apiOracle", "valueOracle")
+
+//maps symbol to a time window of values
+var valueHistory map[string]*Window
 var valueHistoryMutex sync.RWMutex
 
 //last time PSR windows written to disk
 var lastHistoryWriteAttempt time.Time
 
-func GetLatestRequestValue(id uint64) *TimedFloat {
+func GetLatestRequestValue(id string) *PriceStamp {
 	valueHistoryMutex.RLock()
 	defer valueHistoryMutex.RUnlock()
 	w, ok := valueHistory[id]
@@ -28,7 +31,7 @@ func GetLatestRequestValue(id uint64) *TimedFloat {
 	return w.Latest()
 }
 
-func GetRequestValuesForTime(id uint64, at time.Time, delta time.Duration) []*TimedFloat {
+func GetRequestValuesForTime(id string, at time.Time, delta time.Duration) []*PriceStamp {
 	valueHistoryMutex.RLock()
 	defer valueHistoryMutex.RUnlock()
 	w, ok := valueHistory[id]
@@ -38,16 +41,17 @@ func GetRequestValuesForTime(id uint64, at time.Time, delta time.Duration) []*Ti
 	return w.WithinRange(at, delta)
 }
 
-func setRequestValue(id uint64, at time.Time, val float64) {
+func SetRequestValue(id string, at time.Time, price float64, volume float64) {
 
 	valueHistoryMutex.Lock()
 	_, ok := valueHistory[id]
 	if !ok {
 		valueHistory[id] = NewWindow(7 * 24 * time.Hour)
 	}
-	valueHistory[id].Insert(&TimedFloat{
+	valueHistory[id].Insert(&PriceStamp{
 		Created: at,
-		Val:val,
+		Price:price,
+		Volume:volume,
 	})
 	valueHistoryMutex.Unlock()
 }
@@ -63,22 +67,22 @@ func writeOutHistory() {
 	//this function is single threaded, but we need mutex to access multithreaded history
 	valueHistoryMutex.Unlock()
 	if err != nil {
-		psrLog.Error("failed to marshal PSR values: %s", err.Error())
+		logger.Error("failed to marshal PSR values: %s", err.Error())
 		return
 	}
 
 	cfg := config.GetConfig()
-	psrSavedData := filepath.Join(cfg.PSRFolder, "saved.json")
+	psrSavedData := filepath.Join(cfg.IndexFolder, "saved.json")
 	psrSavedDataTmp := psrSavedData + ".tmp"
 	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
 	if err != nil {
-		psrLog.Error("failed to write out PSR values to %s: %s", psrSavedDataTmp, err.Error())
+		logger.Error("failed to write out PSR values to %s: %s", psrSavedDataTmp, err.Error())
 		return
 	}
 	//rename tmp file to old file (should be atomic on most modern OS)
 	err = os.Rename(psrSavedDataTmp, psrSavedData)
 	if err != nil {
-		psrLog.Error("failed move new PSR save onto old: %s", err.Error())
+		logger.Error("failed move new PSR save onto old: %s", err.Error())
 		return
 	}
 }
@@ -98,7 +102,7 @@ func EnsureValueOracle() error {
 
 	cfg := config.GetConfig()
 
-	historyPath := filepath.Join(cfg.PSRFolder, "saved.json")
+	historyPath := filepath.Join(cfg.IndexFolder, "saved.json")
 
 	_, err := os.Stat(historyPath)
 	exists := true
@@ -120,7 +124,7 @@ func EnsureValueOracle() error {
 			return fmt.Errorf("failed to unmarshal saved")
 		}
 	} else {
-		valueHistory = make(map[uint64]*Window)
+		valueHistory = make(map[string]*Window)
 	}
 	//periodically flush the value history to disk to create a record for disputes
 	go func() {
