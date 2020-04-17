@@ -1,24 +1,21 @@
 package tracker
 
+import "time"
+
 type SingleSymbol struct {
-	symbol     string
-	multiplier float64
-	transform  IndexProcessor
+	symbol      string
+	granularity float64
+	transform   IndexProcessor
 }
 
-func (s SingleSymbol)Require() map[string]IndexProcessor {
+func (s SingleSymbol)Require(at time.Time) map[string]IndexProcessor {
 	r := make(map[string]IndexProcessor)
 	r[s.symbol] = s.transform
 	return r
 }
 
-func (s SingleSymbol)Update(vals map[string]float64) float64 {
-	return vals[s.symbol]
+func (s SingleSymbol) ValueAt(vals map[string]float64, at time.Time) float64 {
+	return vals[s.symbol] * s.granularity
 }
-
-func (s SingleSymbol)Multiplier() float64 {
-	return s.multiplier
-}
-
 
 

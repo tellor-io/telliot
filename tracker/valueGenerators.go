@@ -4,71 +4,82 @@ import (
 	"context"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/TellorMiner/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
 	"math"
 	"math/big"
-	"sort"
 	"time"
 )
 
 //a function to consolidate the recorded API values to a single value
-type IndexProcessor func([]*IndexTracker)(float64, bool)
+type IndexProcessor func([]*IndexTracker, time.Time)(float64, float64)
 
 type ValueGenerator interface {
-	Require() map[string]IndexProcessor
-	Update(map[string]float64) float64
-	Multiplier() float64
+	//PSRs report what they require to produce a value with this
+	Require(time.Time) map[string]IndexProcessor
+
+	//return the best estimate of a value at a given time, and the confidence
+	// if confidence == 0, the value has no meaning
+	ValueAt(map[string]float64, time.Time) float64
 }
 
 
-var sensitivity map[string][]int
 
-var requirements map[int]map[string]IndexProcessor
-
-
-func InitPSRs() {
-	sensitivity = make(map[string][]int)
-	requirements = make(map[int]map[string]IndexProcessor)
+func InitPSRs() error {
+	//check that we have all the symbols asked for
+	now := time.Now()
 	for requestID, handler := range PSRs {
-		reqs := handler.Require()
+		reqs := handler.Require(now)
 		for symbol := range reqs {
-			sensitivity[symbol] = append(sensitivity[symbol], requestID)
+			_,ok := indexes[symbol]
+			if !ok {
+				return fmt.Errorf("PSR %d requires non-existent symbol %s", requestID, symbol)
+			}
 		}
-		requirements[requestID] = reqs
 	}
+	return nil
+}
+
+func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
+	//get the requirements
+	reqs := PSRs[requestID].Require(at)
+	values := make(map[string]float64)
+	minConfidence := math.MaxFloat64
+	for symbol, fn := range reqs {
+		val, confidence := fn(indexes[symbol], at)
+		if confidence == 0 {
+			return 0, 0
+		}
+		if confidence < minConfidence {
+			minConfidence = confidence
+		}
+		values[symbol] = val
+	}
+	return PSRs[requestID].ValueAt(values, at), minConfidence
 }
 
 func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
+	now := time.Now()
 	//generate a set of all affected PSRs
-	toUpdate := make(map[int]bool)
-	for _,symbol := range updatedSymbols {
-		for _,requestID := range sensitivity[symbol] {
-			toUpdate[requestID] = true
+	var toUpdate []int
+	for requestID,psr := range PSRs {
+		reqs := psr.Require(now)
+		for _,symbol := range updatedSymbols {
+			_,ok := reqs[symbol]
+			if ok {
+				toUpdate = append(toUpdate, requestID)
+				break
+			}
 		}
 	}
 
 	//update all affected PSRs
-	for requestID := range toUpdate {
-		//compute the requirements
-		reqs := requirements[requestID]
-		allGood := true
-		values := make(map[string]float64)
-		for symbol, fn := range reqs {
-			val, ok := fn(indexes[symbol])
-			if !ok {
-				allGood = false
-				break
-			}
-			values[symbol] = val
-		}
-		//we need all the requirements to update a PSR
-		if !allGood {
+	for _,requestID := range toUpdate {
+		amt, conf := PSRValueForTime(requestID, now)
+		if conf < 0.3 {
+			//confidence in this signal is too low to use
 			continue
 		}
-		amt := PSRs[requestID].Update(values)
-		amt *= PSRs[requestID].Multiplier()
 
 		//convert it directly from a float to a bigInt so that we don't risk overflowing a uint64
 		bigVal := new(big.Float)
@@ -86,5 +97,4 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	}
 	return nil
 }
-
 

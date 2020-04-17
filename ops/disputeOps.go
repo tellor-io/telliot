@@ -250,18 +250,9 @@ func List(ctx context.Context) error {
 		}
 		disputedValTime := allSubmitted[uintVars[6].Uint64()].Created
 
-		//psr, ok := psrs[dispute.RequestId.Uint64()]
-		//if ok {
-		//	//fmt.Printf("      Symbol: %s\n", psr.Symbol)
-		//}
 		for i := len(allSubmitted)-1; i >= 0; i-- {
 			sub := allSubmitted[i]
-			var valStr string
-			//if ok {
-			//	//valStr = fmt.Sprintf("%.2f", sub.Price/float64(psr.Granularity))
-			//} else {
-				valStr = fmt.Sprintf("%f\n", sub.Price)
-			//}
+			valStr := fmt.Sprintf("%f\n", sub.Price)
 			var pointerStr string
 			if i == int(uintVars[6].Uint64()) {
 				pointerStr = " <--disputed"
@@ -299,7 +290,7 @@ func List(ctx context.Context) error {
 		for i := 0; i < len(result.Datapoints) - numToShow; i++ {
 			totalDelta := time.Duration(0)
 			for j := 0; j < numToShow; j++ {
-				delta := result.Datapoints[i+j].Created.Sub(disputedValTime)
+				delta := result.Times[i+j].Sub(disputedValTime)
 				if delta < 0 {
 					delta = -delta
 				}
@@ -312,8 +303,9 @@ func List(ctx context.Context) error {
 		}
 		for i := 0 ; i < numToShow; i++ {
 			dp := result.Datapoints[index + i]
-			fmt.Printf("        %f, ", dp.Price)
-			delta := disputedValTime.Sub(dp.Created)
+			t := result.Times[index + i]
+			fmt.Printf("        %f, ", dp)
+			delta := disputedValTime.Sub(t)
 			if delta > 0 {
 				fmt.Printf("%.0fs before\n", delta.Seconds())
 			} else {

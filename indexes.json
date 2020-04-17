@@ -13,10 +13,11 @@
 		"json(https://api.binance.com/api/v1/klines?symbol=BATUSDC&interval=1d&limit=1).0.4"
 	],
 	"BCH/USD": [
-		"json(https://api.kraken.com/0/public/Ticker?pair=BCHUSD).result.BCHUSD.p.0"
+		"json(https://api.kraken.com/0/public/Ticker?pair=BCHUSD).result.BCHUSD.p.0,.result.BCHUSD.v.0"
 	],
 	"BNB/BTC": [
-		"json(https://api.binance.com/api/v1/klines?symbol=BNBBTC&interval=1d&limit=1).0.4"
+		"json(https://api.binance.com/api/v1/klines?symbol=BNBBTC&interval=1d&limit=1).0.4",
+		"json(tmp_file.json).foo"
 	],
 	"BNB/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=BNBETH&interval=1d&limit=1).0.4"
@@ -68,7 +69,7 @@
 		"json(https://api.binance.com/api/v1/klines?symbol=ETHPAX&interval=1d&limit=1).0.4"
 	],
 	"ETH/USD": [
-		"json(https://api.pro.coinbase.com/products/ETH-USD/ticker).price",
+		"json(https://api.pro.coinbase.com/products/ETH-USD/ticker).price,.volume",
 		"json(https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1).0.4",
 		"json(https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1).0.4",
 		"json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0",

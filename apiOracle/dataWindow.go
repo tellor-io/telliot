@@ -62,12 +62,11 @@ func (w *Window)ClosestTwo(at time.Time) (before, after *PriceStamp) {
 func (w *Window)WithinRange(at time.Time, delta time.Duration) []*PriceStamp {
 	var items []*PriceStamp
 	i := 0
-	n := len(w.buffer)
 	for i < w.num {
-		c := w.buffer[(w.start + i) % n]
-		d := c.Created.Sub(at)
+		c := w.buffer[(w.start + i) % len(w.buffer)]
+		d := at.Sub(c.Created)
 		if d < 0 {
-			d = -d
+			break
 		}
 		if d <= delta {
 			items = append(items, c)

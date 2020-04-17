@@ -51,16 +51,25 @@ func BuildIndexTrackers() ([]Tracker, error) {
 			//did we already have a tracker for this API string?
 			_,ok := indexers[api]
 			if !ok {
-				urlStr, args := util.ParseQueryString(api)
-				u, err := url.Parse(urlStr)
-				if err != nil {
-					return nil, fmt.Errorf("invalid API URL: %s: %v", urlStr, err)
+				pathStr, args := util.ParseQueryString(api)
+				var name string
+				var source DataSource
+				if strings.HasPrefix(pathStr, "http") {
+					source = &JSONapi{&FetchRequest{queryURL: pathStr, timeout: cfg.FetchTimeout.Duration}}
+					u, err := url.Parse(pathStr)
+					if err != nil {
+						return nil, fmt.Errorf("invalid API URL: %s: %v", pathStr, err)
+					}
+					name = u.Host
+				} else {
+					source = &JSONfile{filepath: pathStr}
+					name = filepath.Base(pathStr)
 				}
 				indexers[api] = &IndexTracker{
-					Host:    u.Host,
-					Name:    api,
-					Request: &FetchRequest{queryURL: urlStr, timeout: cfg.FetchTimeout.Duration},
-					Args:    args,
+					Name:       name,
+					Identifier: api,
+					Source:    	source,
+					Args:       args,
 				}
 			}
 			//now we definitely have one
@@ -68,7 +77,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 
 			//insert add it and it's more specific variant to the symbol->api map
 			indexes[symbol] = append(indexes[symbol], thisOne)
-			specificName := fmt.Sprintf("%s~%s", symbol, thisOne.Host)
+			specificName := fmt.Sprintf("%s~%s", symbol, thisOne.Name)
 			indexes[specificName] = append(indexes[specificName], thisOne)
 
 			//save this for later so we can build the api->symbol map
@@ -90,39 +99,68 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	}
 
 	//start the PSR system that will feed from these indexes
-	InitPSRs()
+	err = InitPSRs()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initalize PSRs: %v", err)
+	}
 
 	return trackers, nil
 }
 
 type IndexTracker struct {
-	Host    string
-	Name    string
-	Symbols []string
+	Name       string
+	Identifier string
+	Symbols    []string
+	Source	   DataSource
+	Args    [][]string
+}
+
+type DataSource interface {
+	Get() ([]byte, error)
+}
+
+type JSONapi struct {
 	Request *FetchRequest
-	Args    []string
+}
+
+func (j *JSONapi)Get() ([]byte, error) {
+	return fetchWithRetries(j.Request)
+}
+
+type JSONfile struct {
+	filepath string
+}
+
+func (j *JSONfile)Get() ([]byte, error) {
+	return ioutil.ReadFile(j.filepath)
 }
 
 func (i *IndexTracker) Exec(ctx context.Context) error {
-	//fetch it
-	payload, err := fetchWithRetries(i.Request)
 
-	//parse them according to its rules
-	val, err := util.ParsePayload(payload, i.Args)
+	payload, err := i.Source.Get()
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("got value of %f for %s\n", val, i.Name )
+	vals, err := util.ParsePayload(payload, i.Args)
+	if err != nil {
+		return err
+	}
+
+	//fmt.Printf("got value of %f for %s\n", val, i.Identifier )
+	volume := 0.0
+	if len(vals) >= 2 {
+		volume = vals[1]
+	}
 
 	//save the value into our local data window (set 0 volume for now)
-	apiOracle.SetRequestValue(i.Name, time.Now(), val, 0)
+	apiOracle.SetRequestValue(i.Identifier, time.Now(), vals[0], volume)
 
 	//update all the values that depend on these symbols
 	return UpdatePSRs(ctx, i.Symbols)
 }
 
 func (i *IndexTracker) String() string {
-	return fmt.Sprintf("%s on %s", strings.Join(i.Symbols, ","), i.Host)
+	return fmt.Sprintf("%s on %s", strings.Join(i.Symbols, ","), i.Name)
 }
 

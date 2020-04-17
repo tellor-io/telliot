@@ -21,14 +21,14 @@ var valueHistoryMutex sync.RWMutex
 //last time PSR windows written to disk
 var lastHistoryWriteAttempt time.Time
 
-func GetLatestRequestValue(id string) *PriceStamp {
+func GetNearestTwoRequestValue(id string, at time.Time) (before, after *PriceStamp) {
 	valueHistoryMutex.RLock()
 	defer valueHistoryMutex.RUnlock()
 	w, ok := valueHistory[id]
 	if !ok {
-		return nil
+		return nil, nil
 	}
-	return w.Latest()
+	return w.ClosestTwo(at)
 }
 
 func GetRequestValuesForTime(id string, at time.Time, delta time.Duration) []*PriceStamp {
