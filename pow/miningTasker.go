@@ -96,7 +96,7 @@ func (mt *MiningTasker) GetWork() *Work {
 	val := m2[valKey]
 	if val == nil || len(val) == 0 {
 		mt.log.Info("Pricing data not available for request %d", reqID.Uint64())
-		mt.log.Info("WARNING: will submit as 0")
+		return nil
 	}
 
 	newChallenge := &MiningChallenge{
