@@ -20,7 +20,7 @@ var PSRs = map[int]ValueGenerator {
 		at: switchTime,
 	},
 	//computes the TRB/USD price indirectly
-	5: &ChainedPrice{chain: []string{"TRB/ETH", "ETH/BTC", "BTC/USD"}},
+	5: &ChainedPrice{chain: []string{"TRB/ETH", "ETH/BTC", "BTC/USD"}, granularity:1000, transform:TimeWeightedAvg(5*time.Minute, NoDecay)},
 }
 
 //these weight functions map values of x between 0 (brand new) and 1 (old) to weights between 0 and 1
