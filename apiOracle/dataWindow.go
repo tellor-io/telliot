@@ -1,17 +1,18 @@
-package tracker
+package apiOracle
 
 import (
 	"encoding/json"
 	"time"
 )
 
-type TimedFloat struct {
+type PriceStamp struct {
 	Created time.Time
-	Val     float64
+	Price     float64
+	Volume 	  float64
 }
 
 type Window struct {
-	buffer []*TimedFloat
+	buffer []*PriceStamp
 	start int
 	num int
 	keep time.Duration
@@ -40,7 +41,7 @@ func (w *Window)Trim() {
 	}
 }
 
-func (w *Window)ClosestTwo(at time.Time) (before, after *TimedFloat) {
+func (w *Window)ClosestTwo(at time.Time) (before, after *PriceStamp) {
 	if w.num == 0 {
 		return
 	}
@@ -58,15 +59,14 @@ func (w *Window)ClosestTwo(at time.Time) (before, after *TimedFloat) {
 	return
 }
 
-func (w *Window)WithinRange(at time.Time, delta time.Duration) []*TimedFloat {
-	var items []*TimedFloat
+func (w *Window)WithinRange(at time.Time, delta time.Duration) []*PriceStamp {
+	var items []*PriceStamp
 	i := 0
-	n := len(w.buffer)
 	for i < w.num {
-		c := w.buffer[(w.start + i) % n]
-		d := c.Created.Sub(at)
+		c := w.buffer[(w.start + i) % len(w.buffer)]
+		d := at.Sub(c.Created)
 		if d < 0 {
-			d = -d
+			break
 		}
 		if d <= delta {
 			items = append(items, c)
@@ -76,7 +76,7 @@ func (w *Window)WithinRange(at time.Time, delta time.Duration) []*TimedFloat {
 	return items
 }
 
-func (w *Window)Insert(x *TimedFloat) {
+func (w *Window)Insert(x *PriceStamp) {
 	now := time.Now()
 	t := x.Created
 	latest := w.Latest()
@@ -89,7 +89,7 @@ func (w *Window)Insert(x *TimedFloat) {
 	if w.num == n {
 		newLen := 2*n
 		if newLen == 0 { newLen = 1 }
-		bigger := make([]*TimedFloat, newLen)
+		bigger := make([]*PriceStamp, newLen)
 		for i := 0; i < w.num; i++ {
 			bigger[i] = w.buffer[(w.start + i) % n]
 		}
@@ -106,7 +106,7 @@ func (w *Window)Len() int {
 	return w.num
 }
 
-func (w *Window)Latest() *TimedFloat {
+func (w *Window)Latest() *PriceStamp {
 	w.Trim()
 	if w.num == 0 {
 		return nil
@@ -117,7 +117,7 @@ func (w *Window)Latest() *TimedFloat {
 
 
 func (w *Window) UnmarshalJSON(b []byte) error {
-	var v []*TimedFloat
+	var v []*PriceStamp
 	err := json.Unmarshal(b, &v)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func (w *Window) UnmarshalJSON(b []byte) error {
 
 func (w *Window) MarshalJSON() ([]byte, error) {
 	w.Trim()
-	a := make([]*TimedFloat, w.num)
+	a := make([]*PriceStamp, w.num)
 	n := len(w.buffer)
 	for i := 0; i < w.num; i++ {
 		a[i] = w.buffer[(w.start + i) % n]

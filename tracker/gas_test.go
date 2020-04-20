@@ -65,7 +65,7 @@ func TestETHGasStation(t *testing.T) {
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
-// 	t.Logf("Gas Price stored: %v\n", string(v))
+// 	t.Logf("Gas PriceStamp stored: %v\n", string(v))
 // 	if b.Cmp(big.NewInt(7000000000)) != 0 {
 // 		t.Fatalf("Balance from client did not match what should have been stored in DB. %s != %s", b, "Should be 1")
 // 	}
