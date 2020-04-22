@@ -9,7 +9,7 @@
 		"json(https://api.pro.coinbase.com/products/ATOM-USD/ticker).price",
 		"json(https://api.kraken.com/0/public/Ticker?pair=ATOMUSD).result.ATOMUSD.c.0"
 	],
-	"BATUSDC": [
+	"BAT/USDC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=BATUSDC&interval=1d&limit=1).0.4"
 	],
 	"BCH/USD": [
@@ -43,7 +43,7 @@
 	"DAI/USD": [
 		"json(https://api.kraken.com/0/public/Ticker?pair=DAIUSD).result.DAIUSD.p.0"
 	],
-	"DefiScore": [
+	"DEFISCORE": [
 		"json(https://api.defiscore.io/v0/scores?groupByAsset=dai).data.0.metrics.score"
 	],
 	"EOS/USD": [
@@ -109,7 +109,7 @@
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd).matic-network.usd",
 		"json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price"
 	],
-	"Maker/USD": [
+	"MAKER/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd).maker.usd"
 	],
 	"REP/BTC": [
@@ -127,7 +127,7 @@
 	"TRX/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=TRXETH&interval=1d&limit=1).0.4"
 	],
-	"TUSDETH": [
+	"TUSD/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=TUSDETH&interval=1d&limit=1).0.4"
 	],
 	"USDC/USDT": [

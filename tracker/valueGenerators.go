@@ -3,16 +3,17 @@ package tracker
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	tellorCommon "github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/db"
 	"math"
 	"math/big"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	tellorCommon "github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/db"
 )
 
 //a function to consolidate the recorded API values to a single value
-type IndexProcessor func([]*IndexTracker, time.Time)(float64, float64)
+type IndexProcessor func([]*IndexTracker, time.Time) (float64, float64)
 
 type ValueGenerator interface {
 	//PSRs report what they require to produce a value with this
@@ -23,15 +24,13 @@ type ValueGenerator interface {
 	ValueAt(map[string]float64, time.Time) float64
 }
 
-
-
 func InitPSRs() error {
 	//check that we have all the symbols asked for
 	now := time.Now()
 	for requestID, handler := range PSRs {
 		reqs := handler.Require(now)
 		for symbol := range reqs {
-			_,ok := indexes[symbol]
+			_, ok := indexes[symbol]
 			if !ok {
 				return fmt.Errorf("PSR %d requires non-existent symbol %s", requestID, symbol)
 			}
@@ -47,6 +46,7 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 	minConfidence := math.MaxFloat64
 	for symbol, fn := range reqs {
 		val, confidence := fn(indexes[symbol], at)
+		fmt.Println("Value Updated", symbol, " : ", val)
 		if confidence == 0 {
 			return 0, 0
 		}
@@ -62,10 +62,10 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	now := time.Now()
 	//generate a set of all affected PSRs
 	var toUpdate []int
-	for requestID,psr := range PSRs {
+	for requestID, psr := range PSRs {
 		reqs := psr.Require(now)
-		for _,symbol := range updatedSymbols {
-			_,ok := reqs[symbol]
+		for _, symbol := range updatedSymbols {
+			_, ok := reqs[symbol]
 			if ok {
 				toUpdate = append(toUpdate, requestID)
 				break
@@ -74,7 +74,7 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	}
 
 	//update all affected PSRs
-	for _,requestID := range toUpdate {
+	for _, requestID := range toUpdate {
 		amt, conf := PSRValueForTime(requestID, now)
 		if conf < 0.3 {
 			//confidence in this signal is too low to use
@@ -97,4 +97,3 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	}
 	return nil
 }
-
