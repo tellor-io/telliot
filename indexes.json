@@ -133,6 +133,9 @@
 	"USDC/USDT": [
 		"json(https://api.binance.com/api/v1/klines?symbol=USDCUSDT&interval=1d&limit=1).0.4"
 	],
+	"USPCE":[
+		"json(manualData.json).USPCE"
+	],
 	"WAN/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=WANBTC&interval=1d&limit=1).0.4"
 	],
