@@ -45,8 +45,16 @@ var PSRs = map[int]ValueGenerator{
 		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
 		at:     switchTime,
 	},
-	9:  &SingleSymbol{symbol: "LINK/BTC~api.binance.com", granularity: 1000000, transform: CurrentMean},
-	10: &SingleSymbol{symbol: "ETC/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
+	9: &TimedSwitch{
+		before: &SingleSymbol{symbol: "LINK/USDT~api.binance.com", granularity: 1000000, transform: CurrentMean},
+		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: EOD},
+		at:     switchTime,
+	},
+	10: &TimedSwitch{
+		before: &SingleSymbol{symbol: "ETC/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
+		after:  &ChainedPrice{chain: []string{"AMPL/USD","AMPL/BTC","BTC/USD"}, granularity: 1000000, transform: TimeWeightedAvg(10*time.Minute, NoDecay)},
+		at:     switchTime,
+	},
 	11: &SingleSymbol{symbol: "ZEC/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
 	12: &SingleSymbol{symbol: "TRX/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
 	13: &TimedSwitch{
@@ -102,7 +110,11 @@ var PSRs = map[int]ValueGenerator{
 		after:  &SingleSymbol{symbol: "USPCE", granularity: 1000, transform: CurrentMedian},
 		at:     switchTime,
 	},
-	42: &SingleSymbol{symbol: "WAN/BTC~api.binance.com", granularity: 1000000, transform: CurrentMean},
+	42: &TimedSwitch{
+		before: &SingleSymbol{symbol: "WAN/BTC~api.binance.com", granularity: 1000000, transform: CurrentMean},
+		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: EOD},
+		at:     switchTime,
+	},
 	43: &SingleSymbol{symbol: "GNT/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
 	44: &SingleSymbol{symbol: "BTC/USD~api-pub.bitfinex.com", granularity: 1000000, transform: CurrentMean},
 	45: &SingleSymbol{symbol: "BTC/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
@@ -111,15 +123,6 @@ var PSRs = map[int]ValueGenerator{
 	48: &SingleSymbol{symbol: "MAKER/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
 	49: &SingleSymbol{symbol: "EOS/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
 	50: &SingleSymbol{symbol: "TRB/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
-
-	3: &SingleSymbol{symbol: "BTC/USD~api.binance.com", granularity: 1000000, transform: CurrentMean},
-	4: &TimedSwitch{
-		before: SingleSymbol{symbol: "ETH/USD", granularity: 10000000, transform: CurrentMedian},
-		after:  SingleSymbol{symbol: "ETH/USD", granularity: 10000000, transform: TimeWeightedAvg(10*time.Minute, NoDecay)},
-		at:     switchTime,
-	},
-	//computes the TRB/USD price indirectly
-	5: &ChainedPrice{chain: []string{"TRB/ETH", "ETH/BTC", "BTC/USD"}, granularity: 1000000, transform: TimeWeightedAvg(5*time.Minute, NoDecay)},
 }
 
 //these weight functions map values of x between 0 (brand new) and 1 (old) to weights between 0 and 1
@@ -198,4 +201,12 @@ func CurrentMean(apis []*IndexTracker, at time.Time) (float64, float64) {
 		sum += val.Price
 	}
 	return sum / float64(len(values)), confidence
+}
+
+
+func EOD(apis []*IndexTracker, at time.Time) (float64,float64){
+	if at > 15:59 EST || at < 16:01 EST {
+		return currentMedian(apis,at);
+	}
+	else return prevValue;
 }
