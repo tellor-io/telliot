@@ -2,18 +2,6 @@
 	"ALGO/USDT": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1).0.4"
 	],
-	"AMPL/USD":[
-		"json(https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd).ampleforth.usd",
-		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).vol,.last",
-		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.10,.0.11",
-		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.10,.0.11",
-		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD",
-		"json(https://min-api.cryptocompare.com/data/symbol/histoday?fsym=AMPL&tsym=USD&limit=1).Data.0.total_volume_total"
-	],
-	"AMPL/BTC":[
-		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-BTC).vol,.last",
-		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC).0.10,.0.11"
-	],
 	"ATOM/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ATOMUSDT&interval=1d&limit=1).0.4",
 		"json(https://api.binance.com/api/v1/klines?symbol=ATOMUSDC&interval=1d&limit=1).0.4",
@@ -176,5 +164,18 @@
 	],
 	"ZRX/USDT": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1).0.4"
+	], 
+	"AMPL/USD":[
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd).ampleforth.usd",
+		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).vol,.last",
+		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.10,.0.11",//price,volume
+		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.10,.0.11",//price,volume
+		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD"
+		"json(https://min-api.cryptocompare.com/data/symbol/histoday?fsym=AMPL&tsym=USD&limit=1).Data.0.total_volume_total",//volume (can we separate?)
+	],
+	"AMPL/BTC":[
+		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-BTC).vol,.last"
+		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC).0.10,.0.11"//price,volume
 	]
+
 }

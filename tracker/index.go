@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/tellor-io/TellorMiner/apiOracle"
-	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/util"
 	"io/ioutil"
 	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
-)
 
+	"github.com/tellor-io/TellorMiner/apiOracle"
+	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/util"
+)
 
 var psrLog = util.NewLogger("tracker", "IndexTrackers")
 
@@ -21,6 +21,7 @@ var indexes map[string][]*IndexTracker
 
 //BuildPSRTrackers creates and initializes a new tracker instance
 func BuildIndexTrackers() ([]Tracker, error) {
+	fmt.Println("StartingIndex Trackers")
 	err := apiOracle.EnsureValueOracle()
 	if err != nil {
 		return nil, err
@@ -46,10 +47,10 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	//and keep track of which APIs influence which symbols so we know what to update later
 	symbolsForAPI := make(map[string][]string)
 
-	for symbol,apis := range baseIndexes {
-		for _,api := range apis {
+	for symbol, apis := range baseIndexes {
+		for _, api := range apis {
 			//did we already have a tracker for this API string?
-			_,ok := indexers[api]
+			_, ok := indexers[api]
 			if !ok {
 				pathStr, args := util.ParseQueryString(api)
 				var name string
@@ -68,7 +69,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 				indexers[api] = &IndexTracker{
 					Name:       name,
 					Identifier: api,
-					Source:    	source,
+					Source:     source,
 					Args:       args,
 				}
 			}
@@ -86,14 +87,14 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	}
 
 	//set the reverse map
-	for api,symbols := range symbolsForAPI {
+	for api, symbols := range symbolsForAPI {
 		indexers[api].Symbols = symbols
 	}
 
 	//make an array of trackers to be sent to Runner
 	trackers := make([]Tracker, len(indexers))
 	pos := 0
-	for _,indexer := range indexers {
+	for _, indexer := range indexers {
 		trackers[pos] = indexer
 		pos++
 	}
@@ -111,8 +112,8 @@ type IndexTracker struct {
 	Name       string
 	Identifier string
 	Symbols    []string
-	Source	   DataSource
-	Args    [][]string
+	Source     DataSource
+	Args       [][]string
 }
 
 type DataSource interface {
@@ -123,7 +124,7 @@ type JSONapi struct {
 	Request *FetchRequest
 }
 
-func (j *JSONapi)Get() ([]byte, error) {
+func (j *JSONapi) Get() ([]byte, error) {
 	return fetchWithRetries(j.Request)
 }
 
@@ -131,12 +132,11 @@ type JSONfile struct {
 	filepath string
 }
 
-func (j *JSONfile)Get() ([]byte, error) {
+func (j *JSONfile) Get() ([]byte, error) {
 	return ioutil.ReadFile(j.filepath)
 }
 
 func (i *IndexTracker) Exec(ctx context.Context) error {
-
 	payload, err := i.Source.Get()
 	if err != nil {
 		return err
@@ -163,4 +163,3 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 func (i *IndexTracker) String() string {
 	return fmt.Sprintf("%s on %s", strings.Join(i.Symbols, ","), i.Name)
 }
-

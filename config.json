@@ -21,7 +21,7 @@
         "top50",
         "tributeBalance",
         "fetchData",
-        "psr"
+        "indexers"
     ],
     "dbFile": "/tellorDB"
 }
