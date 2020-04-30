@@ -4,15 +4,15 @@
 	],
 	"AMPL/USD":[
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd).ampleforth.usd",
-		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).vol,.last",
-		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.10,.0.11",
-		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.10,.0.11",
+		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).data.vol,.data.last",
+		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.7,.0.8",
+		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.7,.0.8",
 		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD",
 		"json(https://min-api.cryptocompare.com/data/symbol/histoday?fsym=AMPL&tsym=USD&limit=1).Data.0.total_volume_total"
 	],
 	"AMPL/BTC":[
-		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-BTC).vol,.last",
-		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC).0.10,.0.11"
+		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-BTC).data.vol,.data.last",
+		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC).0.7,.0.8"
 	],
 	"ATOM/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ATOMUSDT&interval=1d&limit=1).0.4",
@@ -28,8 +28,7 @@
 		"json(https://api.kraken.com/0/public/Ticker?pair=BCHUSD).result.BCHUSD.p.0,.result.BCHUSD.v.0"
 	],
 	"BNB/BTC": [
-		"json(https://api.binance.com/api/v1/klines?symbol=BNBBTC&interval=1d&limit=1).0.4",
-		"json(tmp_file.json).foo"
+		"json(https://api.binance.com/api/v1/klines?symbol=BNBBTC&interval=1d&limit=1).0.4"
 	],
 	"BNB/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=BNBETH&interval=1d&limit=1).0.4"
@@ -47,7 +46,9 @@
 		"json(https://www.bitstamp.net/api/v2/ticker/btcusd).last",
 		"json(https://api.coinpaprika.com/v1/tickers/btc-bitcoin).quotes.USD.price",
 		"json(https://api.cryptowat.ch/markets/coinbase-pro/btcusd/price).result.price",
-		"json(https://api.kraken.com/0/public/Ticker?pair=XBTUSD).result.XXBTZUSD.c.0"
+		"json(https://api.kraken.com/0/public/Ticker?pair=XBTUSD).result.XXBTZUSD.c.0",
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd).bitcoin.usd",
+		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tBTCUSD).0.7,.0.8"
 	],
 	"COS/USDT": [
 		"json(https://api.binance.com/api/v1/klines?symbol=COSUSDT&interval=1d&limit=1).0.4"
@@ -97,7 +98,7 @@
 	"GNT/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=GNTETH&interval=1d&limit=1).0.4"
 	],
-	"IOTA/USDT-": [
+	"IOTA/USDT": [
 		"json(https://api.binance.com/api/v1/klines?symbol=IOTAUSDT&interval=1d&limit=1).0.4"
 	],
 	"LINK/BTC": [
@@ -155,7 +156,7 @@
 		"json(https://api.binance.com/api/v1/klines?symbol=WAVESBTC&interval=1d&limit=1).0.4"
 	],
 	"XAU/USD": [
-		"json(https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD).spreadProfilePrices.0.ask"
+		"json(https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD).0.spreadProfilePrices.0.ask"
 	],
 	"XMR/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=XMRETH&interval=1d&limit=1).0.4"

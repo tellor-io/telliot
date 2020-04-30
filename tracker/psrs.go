@@ -12,11 +12,11 @@ import (
 var switchTime, _ = time.Parse(time.RFC3339, "2012-11-01T22:08:41+00:00")
 
 var PSRs = map[int]ValueGenerator{
-	1: &TimedSwitch{
-		before: &SingleSymbol{symbol: "ETH/USD~api.pro.coinbase.com", granularity: 1000, transform: CurrentMean},
-		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: CurrentMedian},
-		at:     switchTime,
-	},
+	// 1: &TimedSwitch{
+	// 	before: &SingleSymbol{symbol: "ETH/USD~api.pro.coinbase.com", granularity: 1000, transform: CurrentMean},
+	// 	after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: CurrentMedian},
+	// 	at:     switchTime,
+	// },
 	// 2: &TimedSwitch{
 	// 	before: &SingleSymbol{symbol: "BTC/USD~api.binance.com", granularity: 1000, transform: CurrentMean},
 	// 	after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: CurrentMedian},
@@ -105,24 +105,24 @@ var PSRs = map[int]ValueGenerator{
 	// 38: &SingleSymbol{symbol: "GNO/USD~api.kraken.com", granularity: 1000000, transform: CurrentMean},
 	// 39: &SingleSymbol{symbol: "DAI/USD~api.kraken.com", granularity: 1000000, transform: CurrentMean},
 	// 40: &SingleSymbol{symbol: "STEEM/BTC~api.binance.com", granularity: 1000000, transform: CurrentMean},
-	// 41: &TimedSwitch{
-	// 	before: &SingleSymbol{symbol: "LINK/USDT~api.binance.com", granularity: 1000000, transform: CurrentMean},
-	// 	after:  &SingleSymbol{symbol: "USPCE", granularity: 1000, transform: CurrentMedian},
-	// 	at:     switchTime,
-	// },
-	// 42: &TimedSwitch{
-	// 	before: &SingleSymbol{symbol: "WAN/BTC~api.binance.com", granularity: 1000000, transform: CurrentMean},
-	// 	after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: EOD},
-	// 	at:     switchTime,
-	// },
-	// 43: &SingleSymbol{symbol: "GNT/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
-	// 44: &SingleSymbol{symbol: "BTC/USD~api-pub.bitfinex.com", granularity: 1000000, transform: CurrentMean},
-	// 45: &SingleSymbol{symbol: "BTC/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
-	// 46: &SingleSymbol{symbol: "ETH/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
-	// 47: &SingleSymbol{symbol: "LTC/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
-	// 48: &SingleSymbol{symbol: "MAKER/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
-	// 49: &SingleSymbol{symbol: "EOS/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
-	// 50: &SingleSymbol{symbol: "TRB/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
+	41: &TimedSwitch{
+		before: &SingleSymbol{symbol: "LINK/USDT~api.binance.com", granularity: 1000000, transform: CurrentMean},
+		after:  &SingleSymbol{symbol: "USPCE", granularity: 1000, transform: CurrentMedian},
+		at:     switchTime,
+	},
+	42: &TimedSwitch{
+		before: &SingleSymbol{symbol: "WAN/BTC~api.binance.com", granularity: 1000000, transform: CurrentMean},
+		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: EOD},
+		at:     switchTime,
+	},
+	43: &SingleSymbol{symbol: "GNT/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
+	44: &SingleSymbol{symbol: "BTC/USD~api-pub.bitfinex.com", granularity: 1000000, transform: CurrentMean},
+	45: &SingleSymbol{symbol: "BTC/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
+	46: &SingleSymbol{symbol: "ETH/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
+	47: &SingleSymbol{symbol: "LTC/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
+	48: &SingleSymbol{symbol: "MAKER/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
+	49: &SingleSymbol{symbol: "EOS/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
+	50: &SingleSymbol{symbol: "TRB/USD~api.coingecko.com", granularity: 1000000, transform: CurrentMean},
 }
 
 //these weight functions map values of x between 0 (brand new) and 1 (old) to weights between 0 and 1
