@@ -66,15 +66,25 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 
 	val := m[valKey]
 	if val == nil || len(val) == 0 {
-		s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+		if challenge.RequestID.Uint64() > 50 && (val == nil || len(val) == 0) {
+			s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+		} else {
+			s.log.Error("No Value in database, not submitting.")
+			return
+		}
 	}
 
 	value, err := hexutil.DecodeBig(string(val))
 	if err != nil {
-		s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
-		if len(val) == 0 {
-			s.log.Error("0 value being submitted")
-			value = big.NewInt(0)
+		if challenge.RequestID.Uint64() > 50 {
+			s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
+			if len(val) == 0 {
+				s.log.Error("0 value being submitted")
+				value = big.NewInt(0)
+			}
+		} else {
+			s.log.Error("No Value in database, not submitting.")
+			return
 		}
 	}
 
