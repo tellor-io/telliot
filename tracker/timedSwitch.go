@@ -1,15 +1,16 @@
 package tracker
 
-import "time"
+import (
+	"time"
+)
 
 type TimedSwitch struct {
-	before  ValueGenerator
-	after   ValueGenerator
-	at      time.Time
+	before ValueGenerator
+	after  ValueGenerator
+	at     time.Time
 }
 
-
-func (t *TimedSwitch)Require(at time.Time) map[string]IndexProcessor {
+func (t *TimedSwitch) Require(at time.Time) map[string]IndexProcessor {
 	if at.After(t.at) {
 		return t.after.Require(at)
 	} else {
@@ -26,4 +27,3 @@ func (t *TimedSwitch) ValueAt(vals map[string]float64, at time.Time) float64 {
 		return t.before.ValueAt(vals, at)
 	}
 }
-
