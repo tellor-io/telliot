@@ -53,7 +53,7 @@ var PSRs = map[int]ValueGenerator{
 	// },
 	10: &TimedSwitch{
 		before: &SingleSymbol{symbol: "ETC/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
-		after:  &ChainedPrice{chain: []string{"AMPL/USD", "AMPL/BTC", "BTC/USD"}, granularity: 1000000, transform: TimeAndVolumeWeightedAvg(24*time.Hour, 10*time.Minute, NoDecay)},
+		after:  &ChainedPrice{chain: []string{"AMPL/USD", "AMPL/BTC", "BTC/USD"}, granularity: 1000000, transform: AmpleCustom(NoDecay)},
 		at:     switchTime,
 	},
 	// 11: &SingleSymbol{symbol: "ZEC/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
@@ -175,30 +175,56 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 }
 
 //does this properly do what Ampl needs?
-func TimeAndVolumeWeightedAvg(interval time.Duration, step time.Duration, weightFn func(float64) (float64, float64)) IndexProcessor {
+func AmpleCustom(weightFn func(float64) (float64, float64)) IndexProcessor {
 	return func(apis []*IndexTracker, at time.Time) (float64, float64) {
-		cfg := config.GetConfig()
+		//make sure the chained prices is working (everything in USD, not BTC)
+		eod := time.Now().UTC()
+		d := 24 * time.Hour
+		eod = eod.Truncate(d)
+		eod = eod.Add(2 * time.Hour)
+		//Get the value always at 2am UTC
+		//time weight individual 10 minute buckets
+		//VWAP based on time at 2am
+		i := 0
+		numVals := 0.0
+		volumes := make(map[string]float64)
 		sum := 0.0
-		weightSum := 0.0
-		for _, api := range apis {
-			values := apiOracle.GetRequestValuesForTime(api.Identifier, at, interval)
-			for _, v := range values {
-				normDelta := at.Sub(v.Created).Seconds() / interval.Seconds()
-				weight, _ := weightFn(normDelta)
-				if v.Volume == 0 {
-					v.Volume = 1
+		totalVolume := 0.0
+		for i < 144 {
+			var s []*apiOracle.PriceStamp
+			for _, api := range apis {
+				thistime := eod.Add(time.Duration(i*-10) * time.Minute)
+				values := apiOracle.GetRequestValuesForTime(api.Identifier, thistime, 2*time.Minute)
+				for _, v := range values {
+					s = append(s, v)
 				}
-				sum += v.Price * weight * v.Volume
-				weightSum += weight * v.Volume
-			}
-		}
-		// number of APIs * rate * interval
-		maxWeight := float64(len(apis)) * (1 / cfg.TrackerSleepCycle.Duration.Seconds()) * interval.Seconds()
+				if i == 0 && len(s) > 0 {
+					sort.Slice(s, func(i, j int) bool {
+						return s[i].Volume < s[j].Volume
+					})
+					if s[len(s)-1].Volume > 0 {
+						volumes[api.Identifier] = s[len(s)-1].Volume //get max volume this interval
+					} else {
+						volumes[api.Identifier] = 1 //set to 1 if no volume number (handles if apis w/volume go down)
+					}
 
-		//average weight is the integral of the weight fn over [0,1]
-		_, avgWeight := weightFn(0)
-		targetWeight := maxWeight * avgWeight
-		return sum / weightSum, math.Min(weightSum/targetWeight, 1.0)
+					totalVolume += s[len(s)-1].Volume
+				}
+				if len(s) > 0 {
+					sort.Slice(s, func(i, j int) bool {
+						return s[i].Price < s[j].Price
+					})
+					sum += volumes[api.Identifier] * (s[len(s)/2].Price)
+					numVals += 1
+				}
+			}
+			i++
+		}
+		if sum > 0 && totalVolume > 0 {
+			return sum / totalVolume / numVals, numVals / 144.0
+		} else {
+			return 0, 0
+		}
 	}
 }
 
