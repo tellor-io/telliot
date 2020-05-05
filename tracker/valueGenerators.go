@@ -53,8 +53,9 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 			minConfidence = confidence
 		}
 		values[symbol] = val
-		fmt.Println("Value Updated", symbol, " : ", requestID, ": ", val)
+		//fmt.Println("Value Updated", symbol, " : ", requestID, ": ", val)
 	}
+	fmt.Println("values", values)
 	return PSRs[requestID].ValueAt(values, at), minConfidence
 }
 

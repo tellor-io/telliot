@@ -7,8 +7,7 @@
 		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).data.last,.data.last",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.7,.0.8",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.7,.0.8",
-		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD",
-		"json(https://min-api.cryptocompare.com/data/symbol/histoday?fsym=AMPL&tsym=USD&limit=1),.Data.0.total_volume_total"
+		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD"
 	],
 	"AMPL/BTC":[
 		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-BTC).data.last,.data.vol",

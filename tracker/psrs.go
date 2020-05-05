@@ -18,21 +18,21 @@ var PSRs = map[int]ValueGenerator{
 	// 	after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: CurrentMedian},
 	// 	at:     switchTime,
 	// },
-	// 2: &TimedSwitch{
-	// 	before: &SingleSymbol{symbol: "BTC/USD~api.binance.com", granularity: 1000, transform: CurrentMean},
-	// 	after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: CurrentMedian},
-	// 	at:     switchTime,
-	// },
+	2: &TimedSwitch{
+		before: &SingleSymbol{symbol: "BTC/USD~api.binance.com", granularity: 1000, transform: CurrentMean},
+		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: CurrentMedian},
+		at:     switchTime,
+	},
 	// 3: &TimedSwitch{
 	// 	before: &SingleSymbol{symbol: "BNB/USD~dex.binance.org", granularity: 1000, transform: CurrentMean},
 	// 	after:  &SingleSymbol{symbol: "BNB/USD", granularity: 1000000, transform: CurrentMedian},
 	// 	at:     switchTime,
 	// },
-	4: &TimedSwitch{
-		before: &SingleSymbol{symbol: "BTC/USD", granularity: 100000, transform: CurrentMedian},
-		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
-		at:     switchTime,
-	},
+	// 4: &TimedSwitch{
+	// 	before: &SingleSymbol{symbol: "BTC/USD", granularity: 100000, transform: CurrentMedian},
+	// 	after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
+	// 	at:     switchTime,
+	// },
 	// 5: &TimedSwitch{
 	// 	before: &SingleSymbol{symbol: "ETH/BTC~api.binance.com", granularity: 1000000, transform: CurrentMean},
 	// 	after:  &SingleSymbol{symbol: "ETH/BTC", granularity: 1000000, transform: CurrentMedian},
@@ -41,11 +41,11 @@ var PSRs = map[int]ValueGenerator{
 	// 6: &SingleSymbol{symbol: "BNB/BTC~api.binance.com", granularity: 1000000, transform: CurrentMean},
 
 	// 7: &SingleSymbol{symbol: "BNB/ETH~api.binance.com", granularity: 1000000, transform: CurrentMean},
-	8: &TimedSwitch{
-		before: &SingleSymbol{symbol: "ETH/USD~api.binance.com", granularity: 1000000, transform: CurrentMean},
-		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
-		at:     switchTime,
-	},
+	// 8: &TimedSwitch{
+	// 	before: &SingleSymbol{symbol: "ETH/USD~api.binance.com", granularity: 1000000, transform: CurrentMean},
+	// 	after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
+	// 	at:     switchTime,
+	// },
 	// 9: &TimedSwitch{
 	// 	before: &SingleSymbol{symbol: "LINK/USDT~api.binance.com", granularity: 1000000, transform: CurrentMean},
 	// 	after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: EODMedian},
@@ -177,51 +177,73 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 //does this properly do what Ampl needs?
 func AmpleCustom(weightFn func(float64) (float64, float64)) IndexProcessor {
 	return func(apis []*IndexTracker, at time.Time) (float64, float64) {
+		//need to handle if it's BTC or AMPL
+
 		//make sure the chained prices is working (everything in USD, not BTC)
 		eod := time.Now().UTC()
 		d := 24 * time.Hour
 		eod = eod.Truncate(d)
-		eod = eod.Add(2 * time.Hour)
+		eod = eod.Add(17 * time.Hour)
+		eod = eod.Add(28 * time.Minute) //make this 2 am for live version
 		//Get the value always at 2am UTC
 		//time weight individual 10 minute buckets
 		//VWAP based on time at 2am
 		i := 0
 		numVals := 0.0
-		volumes := make(map[string]float64)
+		uniqueApis := 0.0
+		//volumes := make(map[string]float64)
 		sum := 0.0
 		totalVolume := 0.0
-		for i < 144 {
+		for i < 10 {
 			var s []*apiOracle.PriceStamp
-			for _, api := range apis {
-				thistime := eod.Add(time.Duration(i*-10) * time.Minute)
-				values := apiOracle.GetRequestValuesForTime(api.Identifier, thistime, 2*time.Minute)
-				for _, v := range values {
-					s = append(s, v)
-				}
-				if i == 0 && len(s) > 0 {
-					sort.Slice(s, func(i, j int) bool {
-						return s[i].Volume < s[j].Volume
-					})
-					if s[len(s)-1].Volume > 0 {
-						volumes[api.Identifier] = s[len(s)-1].Volume //get max volume this interval
-					} else {
-						volumes[api.Identifier] = 1 //set to 1 if no volume number (handles if apis w/volume go down)
-					}
+			thistime := eod.Add(time.Duration(i*-10) * time.Minute)
+			btcusdPrice := PSRs[2].ValueAt(thistime)
+			fmt.Println("BTC price", btcusdPrice)
+			// for _, api := range apis {
+			// 	values := apiOracle.GetRequestValuesForTime(api.Identifier, thistime, 2*time.Minute)
+			// 	for _, v := range values {
+			// 		s = append(s, v)
+			// 	}
+			// 	if api.Symbols[0] == "AMPL/BTC" {
+			// 		for _, stuff := range s {
+			// 			stuff.Volume = stuff.Volume * btcusdPrice.Price
+			// 			stuff.Price = stuff.Price * btcusdPrice.Price
+			// 		}
+			// 	}
+			// 	if api.Symbols[0] == "AMPL/BTC" || api.Symbols[0] == "AMPL/USD" {
+			// 		if i == 0 && len(s) > 0 {
+			// 			sort.Slice(s, func(i, j int) bool {
+			// 				return s[i].Volume < s[j].Volume
+			// 			})
+			// 			if s[len(s)-1].Volume > 0 {
+			// 				volumes[api.Identifier] = s[len(s)-1].Volume //get max volume this interval
+			// 			} else {
+			// 				volumes[api.Identifier] = 1 //set to 1 if no volume number (handles if apis w/volume go down)
+			// 			}
 
-					totalVolume += s[len(s)-1].Volume
-				}
-				if len(s) > 0 {
-					sort.Slice(s, func(i, j int) bool {
-						return s[i].Price < s[j].Price
-					})
-					sum += volumes[api.Identifier] * (s[len(s)/2].Price)
-					numVals += 1
-				}
+			// 			totalVolume += s[len(s)-1].Volume
+			// 		}
+			// 		if len(s) > 0 {
+			// 			//fmt.Println("API.Identifier", api.Identifier, "    Price:  ", s[len(s)/2].Price)
+			// 			sort.Slice(s, func(i, j int) bool {
+			// 				return s[i].Price < s[j].Price
+			// 			})
+			// 			sum += volumes[api.Identifier] * (s[len(s)/2].Price)
+			// 			numVals += 1
+			// 		}
+			// 	}
+
+			// }
+			if len(s) > 0 {
+				uniqueApis += 1
 			}
 			i++
 		}
+		fmt.Println(numVals, "taken as part of the AMPL piece")
+		fmt.Println("uniqueAPIs : ", uniqueApis)
+		fmt.Println("Ample Price", sum/totalVolume/numVals, "   : Ample Confidence:  ", numVals/(144.0*uniqueApis))
 		if sum > 0 && totalVolume > 0 {
-			return sum / totalVolume / numVals, numVals / 144.0
+			return sum / totalVolume / numVals, numVals / (144.0 * uniqueApis)
 		} else {
 			return 0, 0
 		}
