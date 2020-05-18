@@ -1,6 +1,9 @@
 package tracker
 
-import "time"
+import (
+	"github.com/tellor-io/TellorMiner/apiOracle"
+	"time"
+)
 
 type SingleSymbol struct {
 	symbol      string
@@ -14,8 +17,8 @@ func (s SingleSymbol)Require(at time.Time) map[string]IndexProcessor {
 	return r
 }
 
-func (s SingleSymbol) ValueAt(vals map[string]float64, at time.Time) float64 {
-	return vals[s.symbol] * s.granularity
+func (s SingleSymbol) ValueAt(vals map[string]apiOracle.PriceInfo, at time.Time) float64 {
+	return vals[s.symbol].Price * s.granularity
 }
 
 

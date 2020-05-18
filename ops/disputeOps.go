@@ -155,7 +155,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 
 					timedValues[i] = &apiOracle.PriceStamp{
 						Created: valTime,
-						Price: f,
+						PriceInfo: apiOracle.PriceInfo{Price:f},
 					}
 					found++
 					break
