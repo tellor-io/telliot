@@ -15,7 +15,7 @@ func (a Ampl)Require(at time.Time) map[string]IndexProcessor {
 		//make sure these are all returning the volume in AMPL
 		"AMPL/USD": VolumeWeightedAPIs(TimeWeightedAvg(24*time.Hour, NoDecay)),
 		"AMPL/BTC": AmpleChained("BTC/USD"),
-		//"AMPL/ETH": AmpleChained("ETH/USD"),
+		"AMPL/ETH": AmpleChained("ETH/USD"),
 	}
 }
 
@@ -50,7 +50,7 @@ func AmpleChained(chainedPair string) IndexProcessor {
 		//function to collect API values over an interval
 		apiFn := VolumeWeightedAPIs(TimeWeightedAvg(interval, NoDecay))
 
-		for i:= 0; i < 10; i++ {
+		for i:= 0; i < 144; i++ {
 			thisTime := eod.Add(time.Duration(-i) * interval)
 			chainedPrice, confidence := MedianAt(indexes[chainedPair], thisTime)
 			if confidence < 0.3 {

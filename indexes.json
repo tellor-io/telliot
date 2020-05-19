@@ -139,6 +139,9 @@
 	"STEEM/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=STEEMBTC&interval=1d&limit=1).0.4"
 	],
+	"TRB/ETH": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=eth).tellor.eth"
+	],
 	"TRB/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd).tellor.usd"
 	],
