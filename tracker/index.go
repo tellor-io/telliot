@@ -154,7 +154,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	}
 
 	//save the value into our local data window (set 0 volume for now)
-	apiOracle.SetRequestValue(i.Identifier, time.Now(), vals[0], volume)
+	apiOracle.SetRequestValue(i.Identifier, time.Now(), apiOracle.PriceInfo{Price:vals[0], Volume:volume})
 
 	//update all the values that depend on these symbols
 	return UpdatePSRs(ctx, i.Symbols)

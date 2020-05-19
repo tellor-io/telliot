@@ -41,7 +41,7 @@ func GetRequestValuesForTime(id string, at time.Time, delta time.Duration) []*Pr
 	return w.WithinRange(at, delta)
 }
 
-func SetRequestValue(id string, at time.Time, price float64, volume float64) {
+func SetRequestValue(id string, at time.Time, info PriceInfo) {
 
 	valueHistoryMutex.Lock()
 	_, ok := valueHistory[id]
@@ -50,8 +50,7 @@ func SetRequestValue(id string, at time.Time, price float64, volume float64) {
 	}
 	valueHistory[id].Insert(&PriceStamp{
 		Created: at,
-		Price:price,
-		Volume:volume,
+		PriceInfo:info,
 	})
 	valueHistoryMutex.Unlock()
 }

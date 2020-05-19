@@ -4,7 +4,7 @@
 	],
 	"AMPL/USD":[
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd).ampleforth.usd",
-		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).data.last,.data.last",
+		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).data.last,.data.vol",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.7,.0.8",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.7,.0.8",
 		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD"

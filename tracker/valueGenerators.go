@@ -3,6 +3,7 @@ package tracker
 import (
 	"context"
 	"fmt"
+	"github.com/tellor-io/TellorMiner/apiOracle"
 	"math"
 	"math/big"
 	"time"
@@ -13,7 +14,7 @@ import (
 )
 
 //a function to consolidate the recorded API values to a single value
-type IndexProcessor func([]*IndexTracker, time.Time) (float64, float64)
+type IndexProcessor func([]*IndexTracker, time.Time) (apiOracle.PriceInfo, float64)
 
 type ValueGenerator interface {
 	//PSRs report what they require to produce a value with this
@@ -21,7 +22,7 @@ type ValueGenerator interface {
 
 	//return the best estimate of a value at a given time, and the confidence
 	// if confidence == 0, the value has no meaning
-	ValueAt(map[string]float64, time.Time) float64
+	ValueAt(map[string]apiOracle.PriceInfo, time.Time) float64
 }
 
 func InitPSRs() error {
@@ -42,7 +43,7 @@ func InitPSRs() error {
 func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 	//get the requirements
 	reqs := PSRs[requestID].Require(at)
-	values := make(map[string]float64)
+	values := make(map[string]apiOracle.PriceInfo)
 	minConfidence := math.MaxFloat64
 	for symbol, fn := range reqs {
 		val, confidence := fn(indexes[symbol], at)

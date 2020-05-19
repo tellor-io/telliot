@@ -5,10 +5,14 @@ import (
 	"time"
 )
 
+
+type PriceInfo struct {
+	Price, Volume float64
+}
+
 type PriceStamp struct {
 	Created time.Time
-	Price     float64
-	Volume 	  float64
+	PriceInfo
 }
 
 type Window struct {
