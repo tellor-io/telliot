@@ -81,7 +81,7 @@ type Config struct {
 	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
 
 	//config parameters excluded from the json config file
-	PrivateKey                   string 			   `json:"-"`
+	PrivateKey                   string 			   `json:"privateKey"`
 }
 
 const defaultTimeout = 30 * time.Second //30 second fetch timeout
@@ -124,7 +124,6 @@ func ParseConfigBytes(data []byte) error {
 	}
 
 	//check if the env is already set, only try loading .env if its not there
-	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 	if config.PrivateKey == "" {
 		//load the env
 		err = godotenv.Load()

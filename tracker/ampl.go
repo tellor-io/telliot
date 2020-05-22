@@ -1,7 +1,7 @@
 package tracker
 
 import (
-	"fmt"
+	//"fmt"
 	"github.com/tellor-io/TellorMiner/apiOracle"
 	"time"
 )
@@ -55,13 +55,13 @@ func AmpleChained(chainedPair string) IndexProcessor {
 			chainedPrice, confidence := MedianAt(indexes[chainedPair], thisTime)
 			if confidence < 0.5 {
 				//we don't have an accurate estimate of the intermediary price, so we can't convert the AMPL price to USD
-				fmt.Println("confidence error1")
+				//fmt.Println("confidence error1")
 				continue
 			}
 			avg, confidence := apiFn(apis, thisTime)
 			if confidence < 0.5 {
 				//our estimate of AMPL/intermediary is not good enough right now
-				fmt.Println("confidence error2")
+				//fmt.Println("confidence error2")
 				continue
 			}
 			sum += avg.Price * chainedPrice.Price
@@ -75,7 +75,7 @@ func AmpleChained(chainedPair string) IndexProcessor {
 		var result apiOracle.PriceInfo
 		result.Price = sum / float64(numVals)
 		result.Volume = maxVolume
-		fmt.Println("Ample Price", result.Price, "   : Ample Confidence:  ", numVals/144.0)
+		//fmt.Println("Ample Price", result.Price, "   : Ample Confidence:  ", numVals/144.0)
 		if sum > 0 {
 			return result, float64(numVals) / 144.0
 
