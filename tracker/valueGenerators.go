@@ -54,9 +54,9 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 			minConfidence = confidence
 		}
 		values[symbol] = val
-		//fmt.Println("Value Updated", symbol, " : ", requestID, ": ", val)
+		fmt.Println("Value Updated", symbol, " : ", requestID, ": ", val)
 	}
-	fmt.Println("values", values)
+	//fmt.Println("values", values)
 	return PSRs[requestID].ValueAt(values, at), minConfidence
 }
 
@@ -78,7 +78,7 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	//update all affected PSRs
 	for _, requestID := range toUpdate {
 		amt, conf := PSRValueForTime(requestID, now)
-		if conf < 0.3 {
+		if conf < 0.5 {
 			//confidence in this signal is too low to use
 			continue
 		}

@@ -1,5 +1,5 @@
 {
-	"ALGO/USDT": [
+	"ALGO/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1).0.4"
 	],
 	"AMPL/USD":[
@@ -20,7 +20,7 @@
 		"json(https://api.pro.coinbase.com/products/ATOM-USD/ticker).price",
 		"json(https://api.kraken.com/0/public/Ticker?pair=ATOMUSD).result.ATOMUSD.c.0"
 	],
-	"BAT/USDC": [
+	"BAT/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=BATUSDC&interval=1d&limit=1).0.4"
 	],
 	"BCH/USD": [
@@ -38,6 +38,9 @@
 		"json(https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1).0.4",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd).binancecoin.usd"
 	],
+	"BSV/USD":[
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash-sv&vs_currencies=usd).bitcoin-cash-sv.usd"
+	],
 	"BTC/USD": [
 		"json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price",
 		"json(https://api.binance.com/api/v1/klines?symbol=BTCUSDT&interval=1d&limit=1).0.4",
@@ -49,7 +52,7 @@
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd).bitcoin.usd",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tBTCUSD).0.7,.0.8"
 	],
-	"COS/USDT": [
+	"COS/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=COSUSDT&interval=1d&limit=1).0.4"
 	],
 	"DAI/USD": [
@@ -58,19 +61,14 @@
 	"DASH/BNB": [
 		"json(https://api.binance.com/api/v1/klines?symbol=DASHBNB&interval=1d&limit=1).0.4"
 	],
-	"DEFISCORE": [
-		"json(https://api.defiscore.io/v0/scores?groupByAsset=dai).data.0.metrics.score"
-	],
 	"EOS/USD": [
-		"json(https://api.coingecko.com/api/v3/simple/price?ids=eos&vs_currencies=usd).eos.usd"
-	],
-	"EOS/USDT": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=eos&vs_currencies=usd).eos.usd",
 		"json(https://api.binance.com/api/v1/klines?symbol=EOSUSDT&interval=1d&limit=1).0.4"
 	],
 	"ETC/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ETCETH&interval=1d&limit=1).0.4"
 	],
-	"ETC/USDT": [
+	"ETC/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ETCUSDT&interval=1d&limit=1).0.4"
 	],
 	"ETH/BTC": [
@@ -91,31 +89,24 @@
 		"json(https://www.bitstamp.net/api/v2/ticker/ethusd).last",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd).ethereum.usd"
 	],
-	"ETH/USDC": [
-		"json(https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1).0.4"
-	],
 	"GNO/USD": [
 		"json(https://api.kraken.com/0/public/Ticker?pair=GNOUSD).result.GNOUSD.p.0"
 	],
 	"GNT/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=GNTETH&interval=1d&limit=1).0.4"
 	],
-	"IOTA/USDT": [
+	"IOTA/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=IOTAUSDT&interval=1d&limit=1).0.4"
 	],
 	"LINK/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=LINKBTC&interval=1d&limit=1).0.4"
 	],
-	"LINK/USDC": [
-		"json(https://api.binance.com/api/v1/klines?symbol=LINKUSDC&interval=1d&limit=1).0.4"
-	],
-	"LINK/USDT": [
+	"LINK/USD": [
+		"json(https://api.binance.com/api/v1/klines?symbol=LINKUSDC&interval=1d&limit=1).0.4",
 		"json(https://api.binance.com/api/v1/klines?symbol=LINKUSDT&interval=1d&limit=1).0.4"
 	],
 	"LTC/USD": [
-		"json(https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd).litecoin.usd"
-	],
-	"LTC/USDT": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd).litecoin.usd",
 		"json(https://api.binance.com/api/v1/klines?symbol=LTCUSDT&interval=1d&limit=1).0.4"
 	],
 	"MATIC/USD": [
@@ -172,6 +163,9 @@
 	"XMR/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=XMRETH&interval=1d&limit=1).0.4"
 	],
+	"XMR/USD": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd).monero.usd"
+	],
 	"XRP/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=XRPBTC&interval=1d&limit=1).0.4"
 	],
@@ -180,16 +174,19 @@
 		"json(https://api.kraken.com/0/public/Ticker?pair=XRPUSD).result.XXRPZUSD.c.0",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd).ripple.usd"
 	],
+	"XTZ/USD":[
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd).tezos.usd"
+	],
 	"ZEC/ETH": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ZECETH&interval=1d&limit=1).0.4"
 	],
-	"ZEC/USDC": [
+	"ZEC/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ZECUSDC&interval=1d&limit=1).0.4"
 	],
 	"ZRX/BNB": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ZRXBNB&interval=1d&limit=1).0.4"
 	],
-	"ZRX/USDT": [
+	"ZRX/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1).0.4"
 	]
 }
