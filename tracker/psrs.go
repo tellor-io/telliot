@@ -2,13 +2,14 @@ package tracker
 
 import (
 	"math"
+	"fmt"
 	"sort"
 	"time"
 	"github.com/tellor-io/TellorMiner/apiOracle"
 	"github.com/tellor-io/TellorMiner/config"
 )
 
-var switchTime, _ = time.Parse(time.RFC3339, "2020-05-29T00:00:00+00:00")
+var switchTime, _ = time.Parse(time.RFC3339, "2010-05-29T00:00:00+00:00")
 
 var PSRs = map[int]ValueGenerator{
 	1: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
@@ -89,7 +90,7 @@ var PSRs = map[int]ValueGenerator{
 	40: &SingleSymbol{symbol: "STEEM/BTC", granularity: 1000000, transform: MedianAt},
 	41: &TimedSwitch{
 		before: &SingleSymbol{symbol: "LINK/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "USPCE", granularity: 1000, transform: MedianAt},
+		after:  &SingleSymbol{symbol: "USPCE", granularity: 1000, transform: ManualEntry},
 		at:     switchTime,
 	},
 	42: &TimedSwitch{
@@ -225,6 +226,23 @@ func MedianAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64)
 	}
 	return Median(values), confidence
 }
+
+
+func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
+	vals, confidence := getLatest(apis, at)
+	if confidence == 0 {
+		return apiOracle.PriceInfo{}, 0
+	}
+	for _, val := range vals {
+		fmt.Println(int64(val.Volume),time.Now().Unix())
+		if int64(val.Volume) < time.Now().Unix(){
+			fmt.Println("Warning: Manual Data Entry is expired, please update")
+			return apiOracle.PriceInfo{}, 0
+		}
+	}
+	return Median(vals), confidence
+}
+
 
 func MedianAtEOD(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
 	now := time.Now().UTC()
