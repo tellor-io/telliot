@@ -9,7 +9,7 @@ import (
 	"github.com/tellor-io/TellorMiner/config"
 )
 
-var switchTime, _ = time.Parse(time.RFC3339, "2010-05-29T00:00:00+00:00")
+var switchTime, _ = time.Parse(time.RFC3339, "2020-05-29T00:00:00+00:00")
 
 var PSRs = map[int]ValueGenerator{
 	1: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
