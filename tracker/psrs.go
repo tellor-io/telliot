@@ -41,7 +41,7 @@ var PSRs = map[int]ValueGenerator{
 		at:     switchTime,
 	},
 	9: &TimedSwitch{
-		before: &SingleSymbol{symbol: "LINK/USD", granularity: 1000000, transform: MedianAt},
+		before: &SingleSymbol{symbol: "LINK/BTC", granularity: 1000000, transform: MedianAt},
 		after:  &SingleSymbol{symbol:"ETH/USD", granularity: 1000000, transform: MedianAtEOD},
 		at:     switchTime,
 	},
