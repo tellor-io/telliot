@@ -12,9 +12,21 @@ import (
 var switchTime, _ = time.Parse(time.RFC3339, "2020-05-29T00:00:00+00:00")
 
 var PSRs = map[int]ValueGenerator{
-	1: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
-	2: &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAt},
-	3: &SingleSymbol{symbol: "BNB/USD", granularity: 1000000, transform: MedianAt},
+	1: &TimedSwitch{
+		before: &SingleSymbol{symbol: "ETH/USD", granularity: 1000, transform: MedianAt},
+		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
+		at:     switchTime,
+	},
+	2: &TimedSwitch{
+		before: &SingleSymbol{symbol: "BTC/USD", granularity: 1000, transform: MedianAt},
+		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAt},
+		at:     switchTime,
+	},
+	3: &TimedSwitch{
+		before: &SingleSymbol{symbol: "BNB/USD", granularity: 1000, transform: MedianAt},
+		after:  &SingleSymbol{symbol: "BNB/USD", granularity: 1000000, transform: MedianAt},
+		at:     switchTime,
+	},
 	4: &TimedSwitch{
 		before: &SingleSymbol{symbol: "BTC/USD", granularity: 100000, transform: MedianAt},
 		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
