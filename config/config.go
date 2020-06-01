@@ -64,6 +64,7 @@ type Config struct {
 	ServerPort                   uint                  `json:"serverPort"`
 	FetchTimeout                 Duration              `json:"fetchTimeout"`
 	RequestData                  uint                  `json:"requestData"`
+	MinConfidence                float64                 `json:"minConfidence"`
 	RequestDataInterval          Duration              `json:"requestDataInterval"`
 	RequestTips                  int64                 `json:"requestTips"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
@@ -137,6 +138,9 @@ func ParseConfigBytes(data []byte) error {
 		}
 	}
 
+	if config.MinConfidence == 0 {
+		config.MinConfidence = 0.5
+	}
 
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout

@@ -59,11 +59,11 @@ func AmpleChained(chainedPair string) IndexProcessor {
 				continue
 			}
 			avg, confidence := apiFn(apis, thisTime)
-			if confidence < 0.5 {
-				//our estimate of AMPL/intermediary is not good enough right now
-				//fmt.Println("confidence error2")
-				continue
-			}
+			// if confidence < 0.5 {
+			// 	//our estimate of AMPL/intermediary is not good enough right now
+			// 	//fmt.Println("confidence error2")
+			// 	continue
+			// }
 			sum += avg.Price * chainedPrice.Price
 			if avg.Volume > maxVolume {
 				maxVolume = avg.Volume

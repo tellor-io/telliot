@@ -7,7 +7,7 @@ import (
 	"math"
 	"math/big"
 	"time"
-
+	"github.com/tellor-io/TellorMiner/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
@@ -78,7 +78,9 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	//update all affected PSRs
 	for _, requestID := range toUpdate {
 		amt, conf := PSRValueForTime(requestID, now)
-		if conf < 0.5 {
+		cfg := config.GetConfig()
+		if conf < cfg.MinConfidence {
+			//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
 			//confidence in this signal is too low to use
 			continue
 		}

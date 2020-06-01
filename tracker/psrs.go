@@ -198,6 +198,10 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 		//use the highest volume seen over all values. works well when the time averaging window is equal to the interval of volume reporting
 		// ie, 24 hour average on an api that returns 24hr volume
 		result.Volume = maxVolume
+		// if math.Min(weightSum/targetWeight, 1.0) < .5{
+		// 	values,_ := apiOracle.GetNearestTwoRequestValue(apis[0].Identifier, at)
+		// 	fmt.Println("not enough data for time series, series starts : ", values.Created)
+		// }
 		return result, math.Min(weightSum/targetWeight, 1.0)
 	}
 }
