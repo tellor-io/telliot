@@ -250,8 +250,9 @@ func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float
 		return apiOracle.PriceInfo{}, 0
 	}
 	for _, val := range vals {
-		fmt.Println(int64(val.Volume),time.Now().Unix())
+		// fmt.Println(int64(val.Volume),time.Now().Unix())
 		if int64(val.Volume) < time.Now().Unix(){
+			fmt.Println("Pulled Timestamp: ",val.Volume)
 			fmt.Println("Warning: Manual Data Entry is expired, please update")
 			return apiOracle.PriceInfo{}, 0
 		}
