@@ -140,7 +140,7 @@
 		"json(https://api.binance.com/api/v1/klines?symbol=TRXETH&interval=1d&limit=1).0.4"
 	],
 	"TUSD/ETH": [
-		"json(https://api.binance.com/api/v1/klines?symbol=TUSDETH&interval=1d&limit=1).0.4"
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=true-usd&vs_currencies=usd).true-usd.eth"
 	],
 	"USDC/USDT": [
 		"json(https://api.binance.com/api/v1/klines?symbol=USDCUSDT&interval=1d&limit=1).0.4"
