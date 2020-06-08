@@ -202,6 +202,7 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 		// 	values,_ := apiOracle.GetNearestTwoRequestValue(apis[0].Identifier, at)
 		// 	fmt.Println("not enough data for time series, series starts : ", values.Created)
 		// }
+		//fmt.Println("Time Weighted: ", result)
 		return result, math.Min(weightSum/targetWeight, 1.0)
 	}
 }
@@ -212,7 +213,8 @@ func VolumeWeightedAPIs(processor IndexProcessor) IndexProcessor {
 		totalConfidence := 0.0
 		for _,api := range apis {
 			value, confidence := processor([]*IndexTracker{api}, at)
-			if confidence > 0.3 {
+			//fmt.Println("vwAPI's : ",value, "  : ", confidence)
+			if confidence > 0 {
 				results = append(results, value)
 				totalConfidence += confidence
 			}

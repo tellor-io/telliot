@@ -36,7 +36,9 @@ func AmpleChained(chainedPair string) IndexProcessor {
 		d := 24 * time.Hour
 		eod = eod.Truncate(d)
 		eod = eod.Add(2 * time.Hour)
-		// eod = eod.Add(28 * time.Minute) //make this 2 am for live version
+
+
+
 		//Get the value always at 2am UTC
 		//time weight individual 10 minute buckets
 		//VWAP based on time at 2am
@@ -53,17 +55,17 @@ func AmpleChained(chainedPair string) IndexProcessor {
 		for i:= 0; i < 144; i++ {
 			thisTime := eod.Add(time.Duration(-i) * interval)
 			chainedPrice, confidence := MedianAt(indexes[chainedPair], thisTime)
-			if confidence < 0.5 {
+			if confidence < 0.01 {
 				//we don't have an accurate estimate of the intermediary price, so we can't convert the AMPL price to USD
 				//fmt.Println("confidence error1")
 				continue
 			}
 			avg, confidence := apiFn(apis, thisTime)
-			// if confidence < 0.5 {
-			// 	//our estimate of AMPL/intermediary is not good enough right now
-			// 	//fmt.Println("confidence error2")
-			// 	continue
-			// }
+			if confidence < 0.01 {
+				//our estimate of AMPL/intermediary is not good enough right now
+				//fmt.Println("confidence error2")
+				continue
+			}
 			sum += avg.Price * chainedPrice.Price
 			if avg.Volume > maxVolume {
 				maxVolume = avg.Volume

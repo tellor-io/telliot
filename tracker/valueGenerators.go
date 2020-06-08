@@ -46,6 +46,7 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 	values := make(map[string]apiOracle.PriceInfo)
 	minConfidence := math.MaxFloat64
 	for symbol, fn := range reqs {
+
 		val, confidence := fn(indexes[symbol], at)
 		if confidence == 0 {
 			return 0, 0
@@ -82,7 +83,7 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 			fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
 		}
 		cfg := config.GetConfig()
-		if conf < cfg.MinConfidence {
+		if conf < cfg.MinConfidence || math.IsNaN(amt) {
 			//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
 			//confidence in this signal is too low to use
 			continue
