@@ -3,46 +3,46 @@ package tracker
 import "fmt"
 
 //CreateTracker a tracker instance by its well-known name
-func createTracker(name string) (Tracker, error) {
+func createTracker(name string) ([]Tracker, error) {
 	switch name {
 	case "test":
 		{
-			return &TestTracker{}, nil
+			return []Tracker{&TestTracker{}}, nil
 		}
 	case "balance":
 		{
-			return &BalanceTracker{}, nil
+			return []Tracker{&BalanceTracker{}}, nil
 		}
 	case "currentVariables":
 		{
-			return &CurrentVariablesTracker{}, nil
+			return []Tracker{&CurrentVariablesTracker{}}, nil
 		}
 	case "disputeStatus":
 		{
-			return &DisputeTracker{}, nil
+			return []Tracker{&DisputeTracker{}}, nil
 		}
 	case "gas":
 		{
-			return &GasTracker{}, nil
+			return []Tracker{&GasTracker{}}, nil
 		}
 	case "top50":
 		{
-			return &Top50Tracker{}, nil
+			return []Tracker{&Top50Tracker{}}, nil
 		}
 	case "tributeBalance":
 		{
-			return &TributeTracker{}, nil
+			return []Tracker{&TributeTracker{}}, nil
 		}
-	case "fetchData":
+	case "indexers":
 		{
-			return &RequestDataTracker{}, nil
+			return BuildIndexTrackers()
 		}
-	case "psr":
-		{
-			return BuildPSRTracker()
-		}
+	//case "requestValues":
+	//	{
+	//		return
+	//	}
 	case "disputeChecker":
-		return &disputeChecker{}, nil
+		return []Tracker{&disputeChecker{}}, nil
 	default:
 		return nil, fmt.Errorf("no tracker with the name %s", name)
 	}

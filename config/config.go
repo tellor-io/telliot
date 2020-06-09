@@ -4,7 +4,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
 	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 )
@@ -52,7 +54,6 @@ type GPUConfig struct {
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
 	NodeURL                      string                `json:"nodeURL"`
-	PrivateKey                   string                `json:"privateKey"`
 	DatabaseURL                  string                `json:"databaseURL"`
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
@@ -63,6 +64,7 @@ type Config struct {
 	ServerPort                   uint                  `json:"serverPort"`
 	FetchTimeout                 Duration              `json:"fetchTimeout"`
 	RequestData                  uint                  `json:"requestData"`
+	MinConfidence                float64                 `json:"minConfidence"`
 	RequestDataInterval          Duration              `json:"requestDataInterval"`
 	RequestTips                  int64                 `json:"requestTips"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
@@ -75,9 +77,12 @@ type Config struct {
 	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
 	PoolURL                      string                `json:"poolURL"`
 	PoolJobDuration              Duration              `json:"poolJobDuration"`
-	PSRFolder                    string                `json:"psrFolder"`
+	IndexFolder                    string               `json:"indexFolder"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
 	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
+
+	//config parameters excluded from the json config file
+	PrivateKey                   string 			   `json:"privateKey"`
 }
 
 const defaultTimeout = 30 * time.Second //30 second fetch timeout
@@ -92,12 +97,16 @@ var (
 	config *Config
 )
 
+const defaultMaxParallelPSR = 4
+
 const defaultTrackerInterval = 30 * time.Second
 
 const DefaultMaxCheckTimeDelta = 5 * time.Minute
 
 //threshold, a percentage of the expected value
 const DefaultDisputeThreshold = 0.01
+
+const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 
 //ParseConfig and set a shared config entry
 func ParseConfig(path string) error {
@@ -109,10 +118,30 @@ func ParseConfig(path string) error {
 }
 
 func ParseConfigBytes(data []byte) error {
+	//parse the json
 	err := json.Unmarshal(data, &config)
 	if err != nil {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
+
+	//check if the env is already set, only try loading .env if its not there
+	if config.PrivateKey == "" {
+		//load the env
+		err = godotenv.Load()
+		if err != nil {
+			return fmt.Errorf("error reading .env file: %v", err)
+		}
+
+		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
+		if config.PrivateKey == "" {
+			return fmt.Errorf("missing ethereum wallet private key environment variable '%s'", PrivateKeyEnvName)
+		}
+	}
+
+	if config.MinConfidence == 0 {
+		config.MinConfidence = 0.5
+	}
+
 	if config.FetchTimeout.Seconds() == 0 {
 		config.FetchTimeout.Duration = defaultTimeout
 	}

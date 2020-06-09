@@ -17,48 +17,47 @@ type QueryStruct struct {
 }
 
 //ParseQueryString extracts the url and any args for extract values from query result payload
-func ParseQueryString(_query string) (url string, args []string) {
+func ParseQueryString(_query string) (url string, args [][]string) {
 	var rgx = regexp.MustCompile(`\((.*?)\)`)
 	url = rgx.FindStringSubmatch(_query)[1]
 	result := strings.Split(_query, ")")
-	result = strings.Split(result[1], ".")
-	// Display all elements.
-	for i := range result {
-		args = append(args, result[i])
+	groups := strings.Split(result[1], ",")
+	for _,group := range groups {
+		args = append(args, strings.Split(group, ".")[1:])
 	}
 
 	return url, args
 }
 
 //ParsePayload will extract the value from a query payload
-func ParsePayload(payload []byte, _granularity uint, args []string) (int, error) {
+func ParsePayload(payload []byte, args [][]string) ([]float64, error) {
 	var f interface{}
 	if err := json.Unmarshal(payload, &f); err != nil {
 		fmt.Println(err)
 	}
-	Bi = 0
-	result, err := dumpJSON(f, "root", args[1:])
-	if err != nil {
-		//fmt.Println("ERROR", err)
-		return 0,errors.New("JSON Parsing error")
+	results := make([]float64, len(args))
+	for i,argGroup := range args {
+		result, err := dumpJSON(f, "root", argGroup, &dumpJsonState{})
+		if err != nil {
+			//fmt.Println("ERROR", err)
+			return nil,errors.New("JSON Parsing error")
+		}
+		val, _ := strconv.ParseFloat(fmt.Sprintf("%v", result), 64)
+		results[i] = val
+
 	}
-	s, _ := strconv.ParseFloat(fmt.Sprintf("%v", result), 64)
-	return int(s * float64(_granularity)), nil
+	return results, nil
 }
 
-var Bi = 0
-var Res float64
-var Good bool
-var FRes float64
-var Finished bool
+type dumpJsonState struct {
+	Bi int
+	Res float64
+	Good bool
+	FRes float64
+	Finished bool
+}
 
-func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
-	if kn == "root" {
-		Finished = false
-		Res = 0
-		FRes = 0
-		Bi = 0
-	}
+func dumpJSON(v interface{}, kn string, args []string, s *dumpJsonState) (float64, error) {
 
 	iterMap := func(x map[string]interface{}, root string, args []string) (val float64, status bool, good bool) {
 		defer func() {
@@ -70,7 +69,7 @@ func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
 			}
 		}()
 
-		Bi++
+		s.Bi++
 		var knf string
 		if root == "root" {
 			knf = "%q:%q"
@@ -78,9 +77,9 @@ func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
 			knf = "%s:%q"
 		}
 		for k, v := range x {
-			if k == args[Bi-1] {
-				dumpJSON(v, fmt.Sprintf(knf, root, k), args)
-				if len(args) == Bi {
+			if k == args[s.Bi-1] {
+				dumpJSON(v, fmt.Sprintf(knf, root, k), args, s)
+				if len(args) == s.Bi {
 					res, err := converter(v)
 					if err != nil {
 						fmt.Println(err)
@@ -107,8 +106,8 @@ func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
 			}
 		}()
 
-		Bi++
-		if !Finished {
+		s.Bi++
+		if !s.Finished {
 			var knf string
 			if root == "root" {
 				knf = "%q:[%d]"
@@ -116,11 +115,11 @@ func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
 				knf = "%s:[%d]"
 			}
 			for k, v := range x {
-				if Bi-1 <= len(args) && len(args) > 0 { //Just added this, we need to check that our numbers are still correct...Still not fixed
-					i2, _ := strconv.ParseInt(args[Bi-1], 10, 64)
+				if s.Bi-1 <= len(args) && len(args) > 0 { //Just added this, we need to check that our numbers are still correct...Still not fixed
+					i2, _ := strconv.ParseInt(args[s.Bi-1], 10, 64)
 					if k == int(i2) {
-						dumpJSON(v, fmt.Sprintf(knf, root, k), args)
-						if len(args) == Bi {
+						dumpJSON(v, fmt.Sprintf(knf, root, k), args, s)
+						if len(args) == s.Bi {
 							res, err := converter(v)
 							if err != nil {
 								fmt.Println(err)
@@ -146,25 +145,25 @@ func dumpJSON(v interface{}, kn string, args []string) (float64, error) {
 	case int:
 		//fmt.Printf("%s => (int) %f\n", kn, vv)
 	case map[string]interface{}:
-		Res, Finished,Good = iterMap(vv, kn, args)
-		if !Good{
+		s.Res, s.Finished,s.Good = iterMap(vv, kn, args)
+		if !s.Good{
 			return 0,errors.New("Itermap Error")
 		}
-		if Finished {
-			FRes = Res
-			return Res, nil
+		if s.Finished {
+			s.FRes = s.Res
+			return s.Res, nil
 		}
 	case []interface{}:
-		Res, Finished,Good = iterSlice(vv, kn, args)
-		if !Good{
+		s.Res, s.Finished,s.Good = iterSlice(vv, kn, args)
+		if !s.Good{
 			return 0,errors.New("IterSlice Error")
 		}
-		if Finished {
-			FRes = Res
-			return Res, nil
+		if s.Finished {
+			s.FRes = s.Res
+			return s.Res, nil
 		}
 	}
-	return FRes, nil
+	return s.FRes, nil
 }
 
 func converter(v interface{}) (float64, error) {
@@ -175,7 +174,7 @@ func converter(v interface{}) (float64, error) {
 	case bool:
 		return 1, nil
 	case float64:
-		return float64(vv), nil
+		return vv, nil
 	case int:
 		return float64(vv), nil
 	case int64:

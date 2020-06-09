@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-
+	"os"
+	"io/ioutil"
+	"encoding/json"
+	"strconv"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -54,6 +57,7 @@ func CreateSolutionHandler(
 func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	challenge := result.Work.Challenge
 	nonce := result.Nonce
+	manualVal := int64(0)
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
 	s.log.Info("Getting pending txn and value from data server...")
 	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.RequestIdKey, valKey})
@@ -66,15 +70,41 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 
 	val := m[valKey]
 	if val == nil || len(val) == 0 {
-		s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+		if challenge.RequestID.Uint64() > 51 && (val == nil || len(val) == 0) {
+			s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+		} else {
+			jsonFile, err := os.Open("manualData.json")
+			if err != nil {
+				fmt.Println(err)
+			}
+			defer jsonFile.Close()
+			byteValue, _ := ioutil.ReadAll(jsonFile)
+			var result map[string]map[string]int64
+			json.Unmarshal([]byte(byteValue), &result)
+			_id := strconv.FormatUint(challenge.RequestID.Uint64(), 10)
+			manualVal = result[_id]["VALUE"]
+		if manualVal == 0{
+			s.log.Error("No Value in database, not submitting.")
+			return
+		}else{
+			fmt.Println("Using Manually entered value: ",manualVal)
+		}
+		}
 	}
 
 	value, err := hexutil.DecodeBig(string(val))
 	if err != nil {
-		s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
-		if len(val) == 0 {
-			s.log.Error("0 value being submitted")
-			value = big.NewInt(0)
+		if challenge.RequestID.Uint64() > 51 {
+			s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
+			if len(val) == 0 {
+				s.log.Error("0 value being submitted")
+				value = big.NewInt(0)
+			}
+		} else if manualVal > 0{
+			value = big.NewInt(manualVal)
+			}else{
+			s.log.Error("No Value in database, not submitting.")
+			return
 		}
 	}
 

@@ -1,12 +1,10 @@
 {
     "contractAddress": "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5",
     "nodeURL": "https://mainnet.infura.io/v3/7f11ed6dfxxxxxxxxxxxxxxxxx",
-    "privateKey": "4bdc16637633fa4b4854670fbb83fa254756798009f52a1dxxxxxxxxxxxxxxxxxx",
     "databaseURL":"http://localhost7545",
     "publicAddress": "e037ec8ec9ec423826750853899394dexxxxxxxxxxxxxxxe",
     "serverHost": "localhost",
     "serverPort": 5000,
-    "serverWhitelist": ["0xe037ec8ec9ec423826750853899394de7f024fee"],
     "ethClientTimeout": 3000,
     "trackerCycle": 10,
     "requestData":0,
@@ -20,8 +18,7 @@
         "gas",
         "top50",
         "tributeBalance",
-        "fetchData",
-        "psr"
+        "indexers"
     ],
     "dbFile": "/tellorDB"
 }

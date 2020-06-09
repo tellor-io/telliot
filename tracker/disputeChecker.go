@@ -34,16 +34,27 @@ func (c *disputeChecker) String() string {
 type ValueCheckResult struct {
 	High, Low float64
 	WithinRange bool
-	Datapoints []*TimedInt
+	Datapoints []float64
+	Times []time.Time
 }
 
 func CheckValueAtTime(reqId uint64, val *big.Int, at time.Time) *ValueCheckResult {
 	cfg := config.GetConfig()
+	//
 
-	datapoints := GetRequestValuesForTime(reqId, at, cfg.DisputeTimeDelta.Duration)
+	//check the value in 5 places, spread over cfg.DisputeTimeDelta.Duration
+	var datapoints []float64
+	var times []time.Time
+	for i := 0; i < 5; i++ {
+		t := at.Add((time.Duration(i)-2)*cfg.DisputeTimeDelta.Duration/5)
+		fval, confidence := PSRValueForTime(int(reqId), t)
+		if confidence > 0.8 {
+			datapoints = append(datapoints, fval)
+			times = append(times, t)
+		}
+	}
 
 	if len(datapoints) == 0 {
-		//no data for requestID
 		return nil
 	}
 
@@ -51,19 +62,20 @@ func CheckValueAtTime(reqId uint64, val *big.Int, at time.Time) *ValueCheckResul
 	max := 0.0
 
 	for _,dp := range datapoints {
-		val := float64(dp.Val)
-		if val > max {
-			max = val
+		if dp > max {
+			max = dp
 		}
-		if val < min {
-			min = val
+		if dp < min {
+			min = dp
 		}
 	}
-
 	min *= 1 - cfg.DisputeThreshold
 	max *= 1 + cfg.DisputeThreshold
 
-	floatVal := float64(val.Uint64())
+
+	bigF := new(big.Float)
+	bigF.SetInt(val)
+	floatVal, _ := bigF.Float64()
 
 
 	withinRange := (floatVal > min) && (floatVal < max)
@@ -142,9 +154,9 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 		if !result.WithinRange {
 			s := fmt.Sprintf("suspected incorrect value for requestID %d at %s:\n", reqID, blockTime)
 			s += fmt.Sprintf("nearest values:\n")
-			for _,pt := range result.Datapoints {
-				s += fmt.Sprintf("\t%d, ", pt.Val)
-				delta := blockTime.Sub(pt.Created)
+			for i,pt := range result.Datapoints {
+				s += fmt.Sprintf("\t%.0f, ", pt)
+				delta := blockTime.Sub(result.Times[i])
 				if delta > 0 {
 					s += fmt.Sprintf("%s before\n", delta.String())
 				} else {

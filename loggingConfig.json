@@ -42,6 +42,6 @@
     },
     {
         "component":"tracker.PSRTracker",
-        "level":"ERROR"
+        "level":"INFO"
     }
 ]
