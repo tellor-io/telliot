@@ -79,9 +79,9 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	//update all affected PSRs
 	for _, requestID := range toUpdate {
 		amt, conf := PSRValueForTime(requestID, now)
-		if requestID == 10{
-			fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
-		}
+		// if requestID == 10{
+		// 	fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
+		// }
 		cfg := config.GetConfig()
 		if conf < cfg.MinConfidence || math.IsNaN(amt) {
 			//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
