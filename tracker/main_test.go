@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"fmt"
+	"github.com/tellor-io/TellorMiner/apiOracle"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/util"
 	"os"
@@ -23,7 +24,7 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 	util.ParseLoggingConfig("")
-	EnsureValueOracle()
+	apiOracle.EnsureValueOracle()
 	os.Exit(m.Run())
 }
 

@@ -1,3 +1,4 @@
+
 <p align="center">
   <a href='https://www.tellor.io/'>
     <img src= './public/Tellor.png' width="250" height="200" alt='tellor.io' />
@@ -15,6 +16,10 @@
 This is the workhorse of the Miner system as it takes on solving the PoW challenge.  
 It's built on Go and utilizes a split structure.  The database piece is a LevelDB that keeps track of all variables (challenges, difficulty, values to submit, etc.) and the miner simply solves the PoW challenge.  This enables parties to split the pieces for optimization.
 
+**The Tellor system is a way to push data on-chain.  What the pieces of data are are specificied in the psr.json file. Note that the data corresponds to a specific API.  The tellor mining system is set up to pull api data to generate these values to submit on-chain once a correct nonce is mined. These specific apis are just suggestions.  The system is not guarunteed to work for everyone.  It is up to the consnesus of the Tellor token holders to determine what a correct value is. As an example, request ID 4 is BTC/USD.  If the api's all go down, it is the responsibility of the miner to still submit a valid BTC/USD price.  If they do not, they risk being disputed and slashed.  For these reasons, please contribute openly to the official Tellor miner (or an open source variant), as consensus here is key.  If you're miner gets a different value than the majority of the of the other miners, you risk being punished.**
+
+A list of all PSR's and the data expected can be found here: [https://docs.google.com/spreadsheets/d/1rRRklc4_LvzJFCHqIgiiNEc7eo_MUw3NRvYmh1HyV14](https://docs.google.com/spreadsheets/d/1rRRklc4_LvzJFCHqIgiiNEc7eo_MUw3NRvYmh1HyV14)
+
 <p align="center">
     <img src= './public/minerspecs.png' width="450" alt='MinerSpecs' />
 </p>
@@ -31,10 +36,7 @@ Rinkeby - [0xFe41Cb708CD98C5B20423433309E55b53F79134a](https://rinkeby.etherscan
 ### Instructions for deployment
 
 
-[Tellor Deployment Instructions](https://tellor.readthedocs.io/en/latest/MinerSetupTechnical/)
-
-
-[Tellor Deployment Instructions -- For the Non-Technical Miner](https://tellor.readthedocs.io/en/latest/MinerSetupNonTechnical/)
+[Tellor Miner Instructions](https://tellor.readthedocs.io/en/latest/MinerSetup/)
 
 
 [Tellor Deployment Instructions -- From Source](https://tellor.readthedocs.io/en/latest/MinerSetupFromSource/)
@@ -54,7 +56,7 @@ Join our Discord or Telegram:
 
     Mining also requires submitting on-chain transactions on Ethereum.  These transactions cost gas (ETH) and can sometimes be signifiant if the cost of gas on EThereum is high (i.e. the network is clogged).  Please reach out to the community to find the best tips for keeping gas costs under control or at least being aware of the costs. 
 
-    If you are building a competing client, please contact us.  A lot of the miner specifications are off-chain and a significant portion of the mining process hinges on the consensus of the Tellor community to determine what proper values are.  Competing clients that change different pieces run the risk of being disputed by the commmunity.  
+    If you are building a competing client, please contact us.  The miner specifications are off-chain and a the validity of the mining process hinges on the consensus of the Tellor community to determine what proper values are.  Competing clients that change different pieces run the risk of being disputed by the commmunity.  
 
     There is no guaruntee of profit from mining. 
 

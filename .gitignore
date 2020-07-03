@@ -17,6 +17,8 @@ pkg/darwin_amd64
 
 /myconfig.json
 */myconfig.json
+/myconfig2.json
+*/myconfig2.json
 
 /dist
 
@@ -29,3 +31,6 @@ saved.json
 /saved.json
 libOpenCL.a
 
+
+.env
+/.env

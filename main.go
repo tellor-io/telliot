@@ -109,6 +109,16 @@ func AddDBToCtx(remote bool) error {
 	return nil
 }
 
+var GitTag string
+var GitHash string
+
+const versionMessage =
+	`
+    The official Tellor Miner %s (%s)
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/TellorMiner
+`
 
 func App() *cli.Cli {
 
@@ -125,6 +135,9 @@ func App() *cli.Cli {
 		ErrorHandler(util.ParseLoggingConfig(*logPath), "parsing log file")
 		ErrorHandler(buildContext(), "building context")
 	}
+
+	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
+	app.Version("version", versionMessage)
 
 	app.Command("stake", "staking operations", stakeCmd)
 	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer))

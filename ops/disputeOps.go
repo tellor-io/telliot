@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/tellor-io/TellorMiner/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	tellor "github.com/tellor-io/TellorMiner/contracts"
@@ -92,7 +93,7 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 	return nil
 }
 
-func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tellor1.TellorDisputeNewDispute) ([]*tracker.TimedInt, error) {
+func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tellor1.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
 	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor1.TellorLibraryABI))
 	if err != nil {
@@ -119,7 +120,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 	high := int64(valueBlock.Uint64())
 	low := high - blockStep
 	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID()
-	timedValues := make([]*tracker.TimedInt, 5)
+	timedValues := make([]*apiOracle.PriceStamp, 5)
 	found := 0
 	for found < 5 {
 		query := ethereum.FilterQuery{
@@ -148,15 +149,18 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 				if nonceSubmit.Miner == allAddrs[i] {
 					valTime := time.Unix(int64(header.Time), 0)
 
-					timedValues[i] = &tracker.TimedInt{
+					bigF := new(big.Float)
+					bigF.SetInt(allVals[i])
+					f, _ := bigF.Float64()
+
+					timedValues[i] = &apiOracle.PriceStamp{
 						Created: valTime,
-						Val: uint(allVals[i].Uint64()),
+						PriceInfo: apiOracle.PriceInfo{Price:f},
 					}
 					found++
 					break
 				}
 			}
-
 		}
 		high -= blockStep
 		low = high - blockStep
@@ -167,10 +171,10 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 func List(ctx context.Context) error {
 	cfg := config.GetConfig()
 
-	psrs, err := tracker.BuildPSRTracker()
-	if err != nil {
-		return fmt.Errorf("failed to read request info: %v\n", err)
-	}
+	//psrs, err := tracker.GetPSRByIDMap()
+	//if err != nil {
+	//	return fmt.Errorf("failed to read request info: %v\n", err)
+	//}
 
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor1.TellorDisputeABI))
 	if err != nil {
@@ -246,18 +250,9 @@ func List(ctx context.Context) error {
 		}
 		disputedValTime := allSubmitted[uintVars[6].Uint64()].Created
 
-		psr, ok := psrs.RequestByID[uint(dispute.RequestId.Uint64())]
-		if ok {
-			fmt.Printf("      Symbol: %s\n", psr.Symbol)
-		}
 		for i := len(allSubmitted)-1; i >= 0; i-- {
 			sub := allSubmitted[i]
-			var valStr string
-			if ok {
-				valStr = fmt.Sprintf("%.2f", float64(sub.Val)/float64(psr.Granularity))
-			} else {
-				valStr = fmt.Sprintf("%d\n", sub.Val)
-			}
+			valStr := fmt.Sprintf("%f\n", sub.Price)
 			var pointerStr string
 			if i == int(uintVars[6].Uint64()) {
 				pointerStr = " <--disputed"
@@ -295,7 +290,7 @@ func List(ctx context.Context) error {
 		for i := 0; i < len(result.Datapoints) - numToShow; i++ {
 			totalDelta := time.Duration(0)
 			for j := 0; j < numToShow; j++ {
-				delta := result.Datapoints[i+j].Created.Sub(disputedValTime)
+				delta := result.Times[i+j].Sub(disputedValTime)
 				if delta < 0 {
 					delta = -delta
 				}
@@ -308,8 +303,9 @@ func List(ctx context.Context) error {
 		}
 		for i := 0 ; i < numToShow; i++ {
 			dp := result.Datapoints[index + i]
-			fmt.Printf("        %d, ", dp.Val)
-			delta := disputedValTime.Sub(dp.Created)
+			t := result.Times[index + i]
+			fmt.Printf("        %f, ", dp)
+			delta := disputedValTime.Sub(t)
 			if delta > 0 {
 				fmt.Printf("%.0fs before\n", delta.Seconds())
 			} else {
