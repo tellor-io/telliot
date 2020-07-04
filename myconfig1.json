@@ -1,0 +1,6 @@
+{
+    "publicAddress": "XXXX....XXXX",
+    "worker": "worker1",
+    "enablePoolWorker": true,
+    "poolURL": "example.com:1000"
+}

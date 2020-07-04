@@ -76,8 +76,9 @@ type Config struct {
 	GPUConfig                    map[string]*GPUConfig `json:"gpuConfig"`
 	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
 	Worker                       string                `json:"worker"`
+	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
-	PSRFolder                    string                `json:"psrFolder"`
+	IndexFolder                  string               `json:"indexFolder"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
 	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
 
