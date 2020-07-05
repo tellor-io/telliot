@@ -193,9 +193,11 @@ func validateConfig(cfg *Config) error {
 		return fmt.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
 	if cfg.EnablePoolWorker  {
-		// Check worker is set
 		if len(cfg.Worker) == 0 {
-			return fmt.Errorf("worker name required")
+			return fmt.Errorf("worker name required for pool")
+		}
+		if len(cfg.Password) == 0 {
+			return fmt.Errorf("password name required for pool")
 		}
 	} else {
 		b, err = hex.DecodeString(cfg.PrivateKey)
