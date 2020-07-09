@@ -54,7 +54,7 @@ func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 	}
 }
 
-func (mt *MiningTasker) GetWork() *Work {
+func (mt *MiningTasker) GetWork(input chan *Work) *Work {
 	mt.log.Info("Pulling current data from data server...")
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
