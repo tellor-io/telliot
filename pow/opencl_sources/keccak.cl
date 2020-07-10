@@ -33,21 +33,39 @@ void keccak(constant uint64_t *prefix, uint32_t *nonce, uint64_t *output) {
     uint64_t a04 = prefix[4];
     uint64_t a10 = prefix[5];
 
-    //the prefix is only 52 bytes long - the last 4 bytes in a11 are the first 4 bytes of the nonce
-    uint64_t a11, a12, a13;
-    uint32_t *a11s = (uint32_t*)&a11;
-    a11s[0] = prefix[6];
-    a11s[1] = nonce[0];
+    uint64_t a11, a12, a13, a14;
 
-    uint32_t *a12s = (uint32_t*)&a12;
-    a12s[0] = nonce[1];
-    a12s[1] = nonce[2];
+    if (prefix[7] != NULL) {
+      //the prefix is 60 bytes long when enablePoolWorker
+      a11 = prefix[6];
 
-    uint32_t *a13s = (uint32_t*)&a13;
-    a13s[0] = nonce[3];
-    a13s[1] = 1; //bit padding for keccak (first bit after message ends = 1)
+      uint32_t *a12s = (uint32_t*)&a12;
+      a12s[0] = prefix[7];
+      a12s[1] = nonce[0];
 
-    uint64_t a14 = 0;
+      uint32_t *a13s = (uint32_t*)&a13;
+      a13s[0] = nonce[1];
+      a13s[1] = nonce[2];
+
+      uint32_t *a14s = (uint32_t*)&a14;
+      a14s[0] = nonce[3];
+      a14s[1] = 1; //bit padding for keccak (first bit after message ends = 1)
+    } else {
+      //the prefix is only 52 bytes long - the last 4 bytes in a11 are the first 4 bytes of the nonce
+      uint32_t *a11s = (uint32_t*)&a11;
+      a11s[0] = prefix[6];
+      a11s[1] = nonce[0];
+
+      uint32_t *a12s = (uint32_t*)&a12;
+      a12s[0] = nonce[1];
+      a12s[1] = nonce[2];
+
+      uint32_t *a13s = (uint32_t*)&a13;
+      a13s[0] = nonce[3];
+      a13s[1] = 1; //bit padding for keccak (first bit after message ends = 1)
+
+      a14 = 0;
+    }
     uint64_t a20 = 0;
     uint64_t a21 = 0;
     uint64_t a22 = 0;

@@ -14,7 +14,7 @@ import (
 )
 
 type WorkSource interface {
-	GetWork() *pow.Work
+	GetWork(input chan *pow.Work) *pow.Work
 }
 
 type SolutionSink interface {
@@ -87,15 +87,19 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			fmt.Println("Starting Data Requester")
 			mgr.dataRequester.Start(ctx)
 		}
+
 		//start the mining group
 		go mgr.group.Mine(input, output)
 
 		// sends work to the mining group
 		sendWork := func() {
-			//if its nil, nothing new to report
-			work := mgr.tasker.GetWork()
-			if work != nil {
-				input <- work
+			if cfg.EnablePoolWorker {
+				mgr.tasker.GetWork(input)
+			} else {
+				work := mgr.tasker.GetWork(input)
+				if work != nil {
+					input <- work
+				}
 			}
 		}
 		//send the initial challenge

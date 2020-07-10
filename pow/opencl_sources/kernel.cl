@@ -59,4 +59,3 @@ __kernel void tellor(
         }
     }
 }
-
