@@ -19,7 +19,7 @@ var psrLog = util.NewLogger("tracker", "IndexTrackers")
 
 var indexes map[string][]*IndexTracker
 
-//BuildPSRTrackers creates and initializes a new tracker instance
+//BuildIndexTrackers creates and initializes a new tracker instance
 func BuildIndexTrackers() ([]Tracker, error) {
 	fmt.Println("StartingIndex Trackers")
 	err := apiOracle.EnsureValueOracle()

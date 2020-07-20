@@ -24,11 +24,12 @@ func TestPSR(t *testing.T) {
 	}
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, common.DBContextKey, db)
-	psr, err := BuildPSRTrackers()
+	psr, err := BuildIndexTrackers()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = psr.Exec(ctx)
+	err = psr[0].Exec(ctx)
+	fmt.Print("PSR details",psr[0])
 	if err != nil {
 		t.Fatalf("failed to execute psr: %v", err)
 	}

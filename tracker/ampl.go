@@ -2,8 +2,8 @@ package tracker
 
 import (
 	//"fmt"
-	"github.com/tellor-io/TellorMiner/apiOracle"
 	"time"
+	"github.com/tellor-io/TellorMiner/apiOracle"
 )
 
 type Ampl struct {

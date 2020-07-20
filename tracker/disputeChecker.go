@@ -3,6 +3,12 @@ package tracker
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"math"
+	"math/big"
+	"strings"
+	"time"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,11 +18,6 @@ import (
 	"github.com/tellor-io/TellorMiner/contracts1"
 	"github.com/tellor-io/TellorMiner/rpc"
 	"github.com/tellor-io/TellorMiner/util"
-	"io/ioutil"
-	"math"
-	"math/big"
-	"strings"
-	"time"
 )
 
 var disputeLogger = util.NewLogger("tracker", "disputeChecker")
@@ -30,7 +31,7 @@ func (c *disputeChecker) String() string {
 	return "DisputeChecker"
 }
 
-
+// ValueCheckResult holds the details regarding the disputed value
 type ValueCheckResult struct {
 	High, Low float64
 	WithinRange bool
@@ -38,7 +39,8 @@ type ValueCheckResult struct {
 	Times []time.Time
 }
 
-func CheckValueAtTime(reqId uint64, val *big.Int, at time.Time) *ValueCheckResult {
+// CheckValueAtTime queries for the details regarding the disputed value
+func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResult {
 	cfg := config.GetConfig()
 	//
 
@@ -47,7 +49,7 @@ func CheckValueAtTime(reqId uint64, val *big.Int, at time.Time) *ValueCheckResul
 	var times []time.Time
 	for i := 0; i < 5; i++ {
 		t := at.Add((time.Duration(i)-2)*cfg.DisputeTimeDelta.Duration/5)
-		fval, confidence := PSRValueForTime(int(reqId), t)
+		fval, confidence := PSRValueForTime(int(reqID), t)
 		if confidence > 0.8 {
 			datapoints = append(datapoints, fval)
 			times = append(times, t)

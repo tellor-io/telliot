@@ -2,18 +2,19 @@ package tracker
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/tellor-io/TellorMiner/apiOracle"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/util"
-	"os"
-	"testing"
 )
 
 var configJSON = `{
 	"publicAddress":"0000000000000000000000000000000000000000",
 	"privateKey":"1111111111111111111111111111111111111111111111111111111111111111",
 	"contractAddress":"0x724D1B69a7Ba352F11D73fDBdEB7fF869cB22E19",
-	"psrFolder": ".."
+	"IndexFolder": ".."
 }
 `
 
