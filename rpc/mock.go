@@ -70,6 +70,15 @@ type mockClient struct {
 	abiCodec         *ABICodec
 }
 
+type mockError struct {
+	codeVal int
+}
+
+func (e *mockError) Error() string {
+	return fmt.Sprintf("error value: %d",
+		e.codeVal)
+}
+
 //NewMockClient returns instance of mock client
 func NewMockClient() ETHClient {
 	return &mockClient{}
@@ -309,6 +318,9 @@ func (c *mockClient) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 }
 
 func (c *mockClient) BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error) {
+	if c.balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, &mockError{1}
+	}
 	return c.balance, nil
 }
 

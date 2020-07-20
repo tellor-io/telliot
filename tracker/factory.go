@@ -25,10 +25,6 @@ func createTracker(name string) ([]Tracker, error) {
 		{
 			return []Tracker{&GasTracker{}}, nil
 		}
-	case "top50":
-		{
-			return []Tracker{&Top50Tracker{}}, nil
-		}
 	case "tributeBalance":
 		{
 			return []Tracker{&TributeTracker{}}, nil
@@ -46,5 +42,4 @@ func createTracker(name string) ([]Tracker, error) {
 	default:
 		return nil, fmt.Errorf("no tracker with the name %s", name)
 	}
-	return nil, nil
 }

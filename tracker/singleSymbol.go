@@ -1,8 +1,9 @@
 package tracker
 
 import (
-	"github.com/tellor-io/TellorMiner/apiOracle"
 	"time"
+
+	"github.com/tellor-io/TellorMiner/apiOracle"
 )
 
 type SingleSymbol struct {
@@ -11,7 +12,7 @@ type SingleSymbol struct {
 	transform   IndexProcessor
 }
 
-func (s SingleSymbol)Require(at time.Time) map[string]IndexProcessor {
+func (s SingleSymbol) Require(at time.Time) map[string]IndexProcessor {
 	r := make(map[string]IndexProcessor)
 	r[s.symbol] = s.transform
 	return r

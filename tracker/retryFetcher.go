@@ -12,6 +12,7 @@ import (
 var retryFetchLog = util.NewLogger("tracker", "FetchWithRetries")
 
 //FetchRequest holds info for a request
+// TODO: add mock fetch
 type FetchRequest struct {
 	queryURL string
 	timeout  time.Duration
@@ -19,29 +20,6 @@ type FetchRequest struct {
 
 func fetchWithRetries(req *FetchRequest) ([]byte, error) {
 	return _recFetch(req, time.Now().Add(req.timeout))
-}
-
-func batchFetchWithRetries(reqs []*FetchRequest) ([][]byte, error) {
-	if len(reqs) == 0 {
-		return nil, nil
-	}
-
-	res := make([][]byte, len(reqs))
-
-	//A potential optimization is to use go routines for each sub-API request
-	for i := 0; i < len(reqs); i++ {
-		req := reqs[i]
-		data, err := _recFetch(req, time.Now().Add(req.timeout))
-
-		//in this case, one failure means all fail
-		if err != nil {
-			retryFetchLog.Warn("Batch request failure, ignoring that part of the request: %v\n", err)
-			res[i] = nil
-		} else {
-			res[i] = data
-		}
-	}
-	return res, nil
 }
 
 func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {

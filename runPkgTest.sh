@@ -11,4 +11,5 @@ if [ -z "${PKG}" ]; then
 fi
 
 echo "Running test ${NAME} from package  ${PKG}..."
-go test -v "./${PKG}" -psrPath="${PSR}" -config="${CFG}" -logConfig="${LOG}"
+go test -coverprofile trackercoverage.out -v "./${PKG}"
+go tool cover -func=trackercoverage.out
