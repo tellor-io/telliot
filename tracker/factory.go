@@ -24,7 +24,11 @@ func createTracker(name string) ([]Tracker, error) {
 	case "gas":
 		{
 			return []Tracker{&GasTracker{}}, nil
-		}
+		}	
+	case "newCurrentVariables":
+			{
+				return []Tracker{&NewCurrentVariablesTracker{}}, nil
+			}
 	case "top50":
 		{
 			return []Tracker{&Top50Tracker{}}, nil

@@ -12,6 +12,7 @@ import (
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/contracts"
 	"github.com/tellor-io/TellorMiner/contracts1"
+	"github.com/tellor-io/TellorMiner/contracts2"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/ops"
 	"github.com/tellor-io/TellorMiner/rpc"
@@ -45,6 +46,7 @@ func buildContext() error {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
 		transactorInstance, err := contracts1.NewTellorTransactor(contractAddress, client)
+		newTransactorInstance, err := contracts2.NewTellor(contractAddress,client)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -53,6 +55,7 @@ func buildContext() error {
 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
 		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 		ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
+		ctx = context.WithValue(ctx, tellorCommon.NewTransactorContractContextKey, newTransactorInstance)
 
 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {
