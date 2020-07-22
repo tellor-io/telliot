@@ -203,13 +203,13 @@ func (_Tellor *TellorCallerSession) Decimals() (uint8, error) {
 func (_Tellor *TellorCaller) GetNewCurrentVariables(opts *bind.CallOpts) (struct {
 	Challenge  [32]byte
 	RequestIds [5]*big.Int
-	Difficulty *big.Int
+	Difficutly *big.Int
 	Tip        *big.Int
 }, error) {
 	ret := new(struct {
 		Challenge  [32]byte
 		RequestIds [5]*big.Int
-		Difficulty *big.Int
+		Difficutly *big.Int
 		Tip        *big.Int
 	})
 	out := ret
@@ -219,11 +219,11 @@ func (_Tellor *TellorCaller) GetNewCurrentVariables(opts *bind.CallOpts) (struct
 
 // GetNewCurrentVariables is a free data retrieval call binding the contract method 0x4049f198.
 //
-// Solidity: function getNewCurrentVariables() view returns(bytes32 _challenge, uint256[5] _requestIds, uint256 _Difficulty, uint256 _tip)
+// Solidity: function getNewCurrentVariables() view returns(bytes32 _challenge, uint256[5] _requestIds, uint256 _difficutly, uint256 _tip)
 func (_Tellor *TellorSession) GetNewCurrentVariables() (struct {
 	Challenge  [32]byte
 	RequestIds [5]*big.Int
-	Difficulty *big.Int
+	Difficutly *big.Int
 	Tip        *big.Int
 }, error) {
 	return _Tellor.Contract.GetNewCurrentVariables(&_Tellor.CallOpts)
@@ -231,11 +231,11 @@ func (_Tellor *TellorSession) GetNewCurrentVariables() (struct {
 
 // GetNewCurrentVariables is a free data retrieval call binding the contract method 0x4049f198.
 //
-// Solidity: function getNewCurrentVariables() view returns(bytes32 _challenge, uint256[5] _requestIds, uint256 _Difficulty, uint256 _tip)
+// Solidity: function getNewCurrentVariables() view returns(bytes32 _challenge, uint256[5] _requestIds, uint256 _difficutly, uint256 _tip)
 func (_Tellor *TellorCallerSession) GetNewCurrentVariables() (struct {
 	Challenge  [32]byte
 	RequestIds [5]*big.Int
-	Difficulty *big.Int
+	Difficutly *big.Int
 	Tip        *big.Int
 }, error) {
 	return _Tellor.Contract.GetNewCurrentVariables(&_Tellor.CallOpts)
