@@ -12,6 +12,8 @@ import (
 	"github.com/tellor-io/TellorMiner/contracts"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/util"
+	// "encoding/hex"
+	"github.com/miguelmota/go-solidity-sha3"
 )
 
 var newCurrentVarsLog = util.NewLogger("tracker", "NewCurrentVarsTracker")
@@ -19,7 +21,7 @@ var newCurrentVarsLog = util.NewLogger("tracker", "NewCurrentVarsTracker")
 type returnNewVariables struct {
 	Challenge  [32]byte
 	RequestIds [5]*big.Int
-	Difficulty *big.Int
+	Difficutly *big.Int
 	Tip        *big.Int
 }
 //CurrentVariablesTracker concrete tracker type
@@ -48,7 +50,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	
 	returnNewVariables, err := instance.GetNewCurrentVariables(nil)
 	if err != nil {
-		fmt.Println("New Current Variables Retrieval Error")
+		fmt.Println("New Current Variables Retrieval Error - Contract might not be upgraded")
 		return err
 	}
 	fmt.Println(returnNewVariables)
@@ -65,6 +67,30 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	if myStatus {
 		bitSetVar = []byte{1}
 	}
+
+	hash := solsha3.SoliditySHA3(
+		// types
+		[]string{"string"},
+		// values
+		[]interface{}{
+			"timeOfLastNewValue",
+		},
+	)
+	var ret [32]byte
+	copy(ret[:], hash)
+	timeOfLastNewValue, err := instance2.GetUintVar(nil,ret)
+	fmt.Println(timeOfLastNewValue)
+	if err != nil {
+		fmt.Println("Time of Last New Value Retrieval Error")
+		return err
+	}
+	err = DB.Put(db.LastNewValue, []byte(hexutil.EncodeBig(timeOfLastNewValue)))
+	if err != nil {
+		fmt.Println("New Current Variables Put Error")
+		return err
+	}
+
+
 	currentVarsLog.Info("Retrieved variables. challengeHash: %x", returnNewVariables.Challenge)
 
 	err = DB.Put(db.CurrentChallengeKey, returnNewVariables.Challenge[:])
@@ -74,14 +100,16 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	}
 
 	//check this bad boy
+	conc := fmt.Sprintf("%s%d","RequestIdKey",0)
 	for i:= 0; i < 5; i++ {
-		err = DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(returnNewVariables.RequestIds[i])))
+		conc = fmt.Sprintf("%s%d","current_requestId",i)
+		err = DB.Put(conc, []byte(hexutil.EncodeBig(returnNewVariables.RequestIds[i])))
 		if err != nil {
 			fmt.Println("New Current Variables Put Error")
 			return err
 		}
 	}
-	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficulty)))
+	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficutly)))
 	if err != nil {
 		fmt.Println("New Current Variables Put Error")
 		return err

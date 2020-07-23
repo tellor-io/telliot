@@ -9,6 +9,11 @@ const (
 	//CurrentChallengeKey DB key
 	CurrentChallengeKey = "current_challenge"
 	RequestIdKey        = "current_requestId"
+	RequestIdKey0        = "current_requestId0"
+	RequestIdKey1        = "current_requestId1"
+	RequestIdKey2        = "current_requestId2"
+	RequestIdKey3        = "current_requestId3"
+	RequestIdKey4        = "current_requestId4"
 	DifficultyKey       = "current_difficulty"
 	QueryStringKey      = "current_query_string"
 	GranularityKey      = "current_granularity"
@@ -33,6 +38,7 @@ const (
 
 	//Request values are stored with this prefix plus request id
 	QueriedValuePrefix = "qv_"
+	LastNewValue = "lastnewvalue"
 )
 
 var knownKeys map[string]bool
@@ -42,6 +48,11 @@ func initKeyLook() {
 		BalanceKey:          true,
 		CurrentChallengeKey: true,
 		RequestIdKey:        true,
+		RequestIdKey0:        true,
+		RequestIdKey1:        true,
+		RequestIdKey2:        true,
+		RequestIdKey3:        true,
+		RequestIdKey4:        true,
 		DifficultyKey:       true,
 		QueryStringKey:      true,
 		GranularityKey:      true,
@@ -51,6 +62,7 @@ func initKeyLook() {
 		Top50Key:            true,
 		TributeBalanceKey:   true,
 		DisputeStatusKey:    true,
+		LastNewValue:		 true,
 	}
 }
 func isKnownKey(key string) bool {

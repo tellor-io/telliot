@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"time"
 )
 
@@ -246,6 +247,15 @@ func mineCmd(cmd *cli.Cmd) {
 			}
 		}
 		//start miner
+		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+		v, err := DB.Get(db.DisputeStatusKey)
+		if err != nil {
+			fmt.Println("ignoring --- could not get dispute status.  Check if staked")
+		}
+		status,_ := hexutil.DecodeBig(string(v))
+		if status.Cmp(big.NewInt(1)) != 0 {
+			log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
+		}
 		ch := make(chan os.Signal)
 		exitChannels = append(exitChannels, &ch)
 		miner, err := ops.CreateMiningManager(ctx, ch, ops.NewSubmitter())
