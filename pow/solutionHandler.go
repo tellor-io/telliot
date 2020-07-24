@@ -3,6 +3,7 @@ package pow
 import (
 	"context"
 	"fmt"
+	"time"
 	"math/big"
 	"strings"
 	"os"
@@ -61,7 +62,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	s.currentChallenge = challenge
 	s.currentNonce = nonce
 	manualVal := int64(0)
-	var valKey [5] *big.Int
+	//var valKey [5] *big.Int
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
 	s.log.Info("Getting pending txn and value from data server...")
 	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.LastNewValueKey, db.RequestIdKey, db.LastNewValueKey,valKey})
@@ -71,7 +72,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 		return
 	}
 	s.log.Debug("Retrieved data from data server %v", m)
-	val := m[LastNewValueKey]
+	val := m[db.LastNewValueKey]
 	if val != nil{
 		for i := 0; i < 5; i++{
 			val := m[valKey]
@@ -169,10 +170,11 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 			s.log.Info("Successfully submitted solution")
 		}	
 	}
-	err = DB.Put(db.LastSubmission, []byte(hexutil.EncodeBig(time.Now())))
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	err = DB.Put(db.LastSubmissionKey, []byte(hexutil.EncodeBig(big.NewInt(time.Now().Unix()))))
 	if err != nil {
-		fmt.Println("New Current Variables Put Error")
-		return err
+		fmt.Println("Last Submission Put Error")
+		return
 	}
 
 }
