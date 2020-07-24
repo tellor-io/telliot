@@ -96,14 +96,16 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			if cfg.EnablePoolWorker {
 				mgr.tasker.GetWork(input)
 			} else {
-				work := mgr.tasker.GetWork(input)
-				if work != nil {
+				work,instantSubmit := mgr.tasker.GetWork(input)
+				if instantSubmit {
+					mgr.solHandler.Submit(ctx,"1")
+				} else if work != nil {
 					input <- work
 				}
 			}
 		}
 		//send the initial challenge
-		sendWork()
+		sendWork()	
 		for {
 			select {
 			//boss wants us to quit for the day

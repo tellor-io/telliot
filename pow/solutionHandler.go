@@ -31,6 +31,7 @@ type SolutionHandler struct {
 	currentChallenge *MiningChallenge
 	currentNonce     string
 	currentValue     *big.Int
+	currentValues	 [5]*big.Int
 	submitter        tellorCommon.TransactionSubmitter
 }
 
@@ -57,68 +58,123 @@ func CreateSolutionHandler(
 func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	challenge := result.Work.Challenge
 	nonce := result.Nonce
+	s.currentChallenge = challenge
+	s.currentNonce = nonce
 	manualVal := int64(0)
+	var valKey [5] *big.Int
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
 	s.log.Info("Getting pending txn and value from data server...")
-	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.RequestIdKey, valKey})
+	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.LastNewValueKey, db.RequestIdKey, db.LastNewValueKey,valKey})
 
 	if err != nil {
 		s.log.Error("Problem reading pending txn: %v", err)
 		return
 	}
 	s.log.Debug("Retrieved data from data server %v", m)
-
-	val := m[valKey]
-	if val == nil || len(val) == 0 {
-		if challenge.RequestID.Uint64() > 51 && (val == nil || len(val) == 0) {
-			s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
-		} else {
-			jsonFile, err := os.Open("manualData.json")
-			if err != nil {
-				fmt.Println(err)
-			}
-			defer jsonFile.Close()
-			byteValue, _ := ioutil.ReadAll(jsonFile)
-			var result map[string]map[string]int64
-			json.Unmarshal([]byte(byteValue), &result)
-			_id := strconv.FormatUint(challenge.RequestID.Uint64(), 10)
-			manualVal = result[_id]["VALUE"]
-		if manualVal == 0{
-			s.log.Error("No Value in database, not submitting.")
-			return
-		}else{
-			fmt.Println("Using Manually entered value: ",manualVal)
-		}
-		}
-	}
-
-	value, err := hexutil.DecodeBig(string(val))
-	if err != nil {
-		if challenge.RequestID.Uint64() > 51 {
-			s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
-			if len(val) == 0 {
-				s.log.Error("0 value being submitted")
-				value = big.NewInt(0)
-			}
-		} else if manualVal > 0{
-			value = big.NewInt(manualVal)
+	val := m[LastNewValueKey]
+	if val != nil{
+		for i := 0; i < 5; i++{
+			val := m[valKey]
+		if val == nil || len(val) == 0 {
+			if challenge.RequestID.Uint64() > 51 && (val == nil || len(val) == 0) {
+				s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+			} else {
+				jsonFile, err := os.Open("manualData.json")
+				if err != nil {
+					fmt.Println(err)
+				}
+				defer jsonFile.Close()
+				byteValue, _ := ioutil.ReadAll(jsonFile)
+				var result map[string]map[string]int64
+				json.Unmarshal([]byte(byteValue), &result)
+				_id := strconv.FormatUint(challenge.RequestID.Uint64(), 10)
+				manualVal = result[_id]["VALUE"]
+			if manualVal == 0{
+				s.log.Error("No Value in database, not submitting.")
+				return
 			}else{
-			s.log.Error("No Value in database, not submitting.")
-			return
+				fmt.Println("Using Manually entered value: ",manualVal)
+			}
+			}
 		}
+		value, err := hexutil.DecodeBig(string(val))
+		if err != nil {
+			if challenge.RequestID.Uint64() > 51 {
+				s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
+				if len(val) == 0 {
+					s.log.Error("0 value being submitted")
+					value = big.NewInt(0)
+				}
+			} else if manualVal > 0{
+				value = big.NewInt(manualVal)
+				}else{
+				s.log.Error("No Value in database, not submitting.")
+				return
+			}
+		}
+		s.currentValues[i] = value
+		}
+		err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.newSubmit)
+		if err != nil {
+			s.log.Error("Problem submitting txn", err)
+		} else {
+			s.log.Info("Successfully submitted solution")
+		}
+	
+		
+	}else{
+		val := m[valKey]
+		if val == nil || len(val) == 0 {
+			if challenge.RequestID.Uint64() > 51 && (val == nil || len(val) == 0) {
+				s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+			} else {
+				jsonFile, err := os.Open("manualData.json")
+				if err != nil {
+					fmt.Println(err)
+				}
+				defer jsonFile.Close()
+				byteValue, _ := ioutil.ReadAll(jsonFile)
+				var result map[string]map[string]int64
+				json.Unmarshal([]byte(byteValue), &result)
+				_id := strconv.FormatUint(challenge.RequestID.Uint64(), 10)
+				manualVal = result[_id]["VALUE"]
+			if manualVal == 0{
+				s.log.Error("No Value in database, not submitting.")
+				return
+			}else{
+				fmt.Println("Using Manually entered value: ",manualVal)
+			}
+			}
+		}
+		value, err := hexutil.DecodeBig(string(val))
+		if err != nil {
+			if challenge.RequestID.Uint64() > 51 {
+				s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
+				if len(val) == 0 {
+					s.log.Error("0 value being submitted")
+					value = big.NewInt(0)
+				}
+			} else if manualVal > 0{
+				value = big.NewInt(manualVal)
+				}else{
+				s.log.Error("No Value in database, not submitting.")
+				return
+			}
+		}
+		s.currentValue = value
+		err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.submit)
+		if err != nil {
+			s.log.Error("Problem submitting txn", err)
+		} else {
+			s.log.Info("Successfully submitted solution")
+		}	
 	}
-
-	s.currentChallenge = challenge
-	s.currentNonce = nonce
-	s.currentValue = value
-
-	s.log.Info("Submitting solution to contract...")
-	err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.submit)
+	err = DB.Put(db.LastSubmission, []byte(hexutil.EncodeBig(time.Now())))
 	if err != nil {
-		s.log.Error("Problem submitting txn", err)
-	} else {
-		s.log.Info("Successfully submitted solution")
+		fmt.Println("New Current Variables Put Error")
+		return err
 	}
+
 }
 
 func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
@@ -127,6 +183,20 @@ func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.Cont
 		s.currentNonce,
 		s.currentChallenge.RequestID,
 		s.currentValue)
+	if err != nil {
+		s.log.Error("Problem submitting solution: %v", err)
+		return txn, err
+	}
+
+	return txn, err
+}
+
+func (s *SolutionHandler) newSubmit(ctx context.Context, contract tellorCommon.NewContractInterface) (*types.Transaction, error) {
+
+	txn, err := contract.SubmitSolution(
+		s.currentNonce,
+		s.currentChallenge.RequestIDs,
+		s.currentValues)
 	if err != nil {
 		s.log.Error("Problem submitting solution: %v", err)
 		return txn, err

@@ -38,7 +38,8 @@ const (
 
 	//Request values are stored with this prefix plus request id
 	QueriedValuePrefix = "qv_"
-	LastNewValue = "lastnewvalue"
+	LastNewValueKey = "lastnewvalue"
+	LastSubmissionKey = "last_submission"
 )
 
 var knownKeys map[string]bool
@@ -62,7 +63,8 @@ func initKeyLook() {
 		Top50Key:            true,
 		TributeBalanceKey:   true,
 		DisputeStatusKey:    true,
-		LastNewValue:		 true,
+		LastNewValueKey:		 true,
+		LastSubmissionKey:		true,
 	}
 }
 func isKnownKey(key string) bool {

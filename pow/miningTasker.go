@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"strconv"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/config"
@@ -54,14 +55,21 @@ func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 	}
 }
 
-func (mt *MiningTasker) GetWork(input chan *Work) *Work {
+func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	mt.log.Info("Pulling current data from data server...")
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
 		db.DifficultyKey,
 		db.CurrentChallengeKey,
 		db.RequestIdKey,
+		db.RequestIdKey0,
+		db.RequestIdKey1,
+		db.RequestIdKey2,
+		db.RequestIdKey3,
+		db.RequestIdKey4,
+		db.LastNewValueKey,
 		dispKey,
+		db.LastSubmissionKey,
 	}
 
 	m, err := mt.proxy.BatchGet(keys)
@@ -73,64 +81,110 @@ func (mt *MiningTasker) GetWork(input chan *Work) *Work {
 	mt.log.Debug("Received data: %v", m)
 
 	if stat := mt.checkDispute(m[dispKey]); stat == statusWaitNext {
-		return nil
+		return nil,false
+	}
+
+
+	last, stat := mt.getInt(m[db.LastSubmissionKey])
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil,false
+	}
+	today := time.Now() 
+	if today.Sub(last) < time.Duration(55) * time.Minute{
+		return nil, false
 	}
 
 	diff, stat := mt.getInt(m[db.DifficultyKey])
 	if stat == statusWaitNext || stat == statusFailure {
-		return nil
+		return nil,false
 	}
+	var reqIDs [5] *big.Int
 
-	reqID, stat := mt.getInt(m[db.RequestIdKey])
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil
-	}
-
-	if reqID.Uint64() == 0 {
-		mt.log.Info("Request ID is zero")
-		return nil
-	}
-
-	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqID.Uint64())
-	m2, err := mt.proxy.BatchGet([]string{valKey})
-	if err != nil {
-		mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
-		return nil
-	}
-	val := m2[valKey]
-	if val == nil || len(val) == 0 {
-			jsonFile, err := os.Open("manualData.json")
-			if err != nil {
-				fmt.Println(err)
-			}
-			defer jsonFile.Close()
-			byteValue, _ := ioutil.ReadAll(jsonFile)
-			var result map[string]map[string]uint
-			json.Unmarshal([]byte(byteValue), &result)
-			_id := strconv.FormatUint(reqID.Uint64(), 10)
-			val := result[_id]["VALUE"]
-		if val == 0{
-			mt.log.Info("Pricing data not available for request %d", reqID.Uint64())
-			return nil
-		}else{
-			fmt.Println("Using Manually entered value: ",val)
+	if mt.getInt(m[db.LastNewValueKey]) != nil{
+		if today.Sub(mt.getInt(m[db.LastNewValueKey])) >= time.Duration(15) * time.Minute {
+			return nil,true
+		}
+		r, stat := mt.getInt(m[db.RequestIdKey0])
+		if stat == statusWaitNext || stat == statusFailure {
+			return nil,false
+		}
+		reqIDs[0] = r
+		r, stat = mt.getInt(m[db.RequestIdKey1])
+		if stat == statusWaitNext || stat == statusFailure {
+			return nil,false
+		}	
+		reqIDs[1] = r
+		r, stat = mt.getInt(m[db.RequestIdKey2])
+		if stat == statusWaitNext || stat == statusFailure {
+			return nil,false
+		}
+		reqIDs[2] = r
+		r, stat = mt.getInt(m[db.RequestIdKey3])
+		if stat == statusWaitNext || stat == statusFailure {
+			return nil,false
+		}
+		reqIDs[3] = r
+		r, stat = mt.getInt(m[db.RequestIdKey4])
+		if stat == statusWaitNext || stat == statusFailure {
+			return nil,false
+		}
+		reqIDs[4] = r
+	}else {
+		r, stat := mt.getInt(m[db.RequestIdKey])
+		if stat == statusWaitNext || stat == statusFailure {
+			return nil,false
+		}
+		reqIDs[0] = r
+	
+		if reqIDs[0].Uint64() == 0 {
+			mt.log.Info("Request ID is zero")
+			return nil,false
 		}
 	}
+	for i := 0;i<len(reqIDs);i++ {
+		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
+		m2, err := mt.proxy.BatchGet([]string{valKey})
+		if err != nil {
+			mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
+			return nil,false
+		}
+		val := m2[valKey]
+		if val == nil || len(val) == 0 {
+				jsonFile, err := os.Open("manualData.json")
+				if err != nil {
+					fmt.Println(err)
+				}
+				defer jsonFile.Close()
+				byteValue, _ := ioutil.ReadAll(jsonFile)
+				var result map[string]map[string]uint
+				json.Unmarshal([]byte(byteValue), &result)
+				_id := strconv.FormatUint(reqIDs[0].Uint64(), 10)
+				val := result[_id]["VALUE"]
+			if val == 0{
+				mt.log.Info("Pricing data not available for request %d", reqIDs[0].Uint64())
+				return nil,false
+			}else{
+				fmt.Println("Using Manually entered value: ",val)
+			}
+		}
+	}
+
 
 	newChallenge := &MiningChallenge{
 		Challenge:  m[db.CurrentChallengeKey],
 		Difficulty: diff,
-		RequestID:  reqID,
+		RequestID:  reqID[0],
+		RequestIDs: reqIDs,
 	}
 
 	//if we already sent this challenge out, don't do it again
 	if mt.currChallenge != nil {
 		if bytes.Compare(newChallenge.Challenge, mt.currChallenge.Challenge) == 0 {
-			return nil
+			return nil,false
 		}
 	}
 	mt.currChallenge = newChallenge
-	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64}
+	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64},false
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {
