@@ -35,7 +35,6 @@
 	"BNB/USD": [
 		"json(https://dex.binance.org/api/v1/klines?symbol=BNB_USDSB-1AC&interval=1d&limit=1).0.4",
 		"json(https://api.binance.com/api/v1/klines?symbol=BNBUSDT&interval=1d&limit=1).0.4",
-		"json(https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1).0.4",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd).binancecoin.usd"
 	],
 	"BSV/USD":[
@@ -112,8 +111,7 @@
 	"MATIC/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=MATICUSDT&interval=1d&limit=1).0.4",
 		"json(https://api.coinpaprika.com/v1/tickers/matic-matic-network).quotes.USD.price",
-		"json(https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd).matic-network.usd",
-		"json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price"
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd).matic-network.usd"
 	],
 	"MAKER/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd).maker.usd"
