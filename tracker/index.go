@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -86,17 +87,20 @@ func BuildIndexTrackers() ([]Tracker, error) {
 		}
 	}
 
+	var sortedIndexers []string
 	//set the reverse map
 	for api, symbols := range symbolsForAPI {
 		indexers[api].Symbols = symbols
+		sortedIndexers = append(sortedIndexers, api)
 	}
+
+	// sort the Indexer array so we return the same order every time
+	sort.Strings(sortedIndexers)
 
 	//make an array of trackers to be sent to Runner
 	trackers := make([]Tracker, len(indexers))
-	pos := 0
-	for _, indexer := range indexers {
-		trackers[pos] = indexer
-		pos++
+	for idx, api := range sortedIndexers {
+		trackers[idx] = indexers[api]
 	}
 
 	//start the PSR system that will feed from these indexes
