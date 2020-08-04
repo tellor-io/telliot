@@ -3,13 +3,14 @@ package tracker
 import (
 	"context"
 	"fmt"
-	"github.com/tellor-io/TellorMiner/apiOracle"
 	"math"
 	"math/big"
 	"time"
-	"github.com/tellor-io/TellorMiner/config"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/tellor-io/TellorMiner/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 )
 
