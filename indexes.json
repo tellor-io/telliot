@@ -155,6 +155,9 @@
 	"XAU/USD": [
 		"json(https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD).0.spreadProfilePrices.0.ask"
 	],
+	"XFT/USD": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=offshift&vs_currencies=usd).offshift.usd"
+	],
 	"XLM/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=XLMBTC&interval=1d&limit=1).0.4"
 	],
