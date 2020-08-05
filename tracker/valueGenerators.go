@@ -81,14 +81,15 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	for _, requestID := range toUpdate {
 		amt, conf := PSRValueForTime(requestID, now)
 		// if requestID == 10{
-		// 	fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
-		// }
-		cfg := config.GetConfig()
-		if conf < cfg.MinConfidence || math.IsNaN(amt) {
-			//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
-			//confidence in this signal is too low to use
-			continue
-		}
+			// 	fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
+			// }
+			cfg := config.GetConfig()
+			if conf < cfg.MinConfidence || math.IsNaN(amt) {
+				//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
+				//confidence in this signal is too low to use
+				continue
+			}
+			//fmt.Print("\ntester ", requestID)
 
 		//convert it directly from a float to a bigInt so that we don't risk overflowing a uint64
 		bigVal := new(big.Float)
@@ -99,10 +100,12 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 		//encode it and store to DB
 		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 		enc := hexutil.EncodeBig(bigInt)
+		//fmt.Print("\nrequestId: ", requestID, " ", db.QueriedValuePrefix, requestID)
 		err := DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
 		if err != nil {
 			return err
 		}
 	}
+	//fmt.Print("exited with requestIds: ", toUpdate)
 	return nil
 }

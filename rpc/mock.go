@@ -3,9 +3,10 @@ package rpc
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math/big"
 	"time"
-	"fmt"
+
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/tellor-io/TellorMiner/util"
 
@@ -362,6 +363,16 @@ func paddedInt(w *bytes.Buffer, val *big.Int) error {
 	return err
 }
 
+var Headerific types.Header = types.Header{
+	Difficulty: math.BigPow(11, 11),
+	Number:     math.BigPow(1,0),
+	GasLimit:   12345678,
+	GasUsed:    1476322,
+	Time:       9876543,
+	Extra:      []byte("coolest block on chain"),
+}
+
 func (c *mockClient)HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
-	return nil, fmt.Errorf("not implemented")
+	//Headerific.Number = num
+	return &Headerific, nil
 }

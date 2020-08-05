@@ -5,10 +5,6 @@ import "fmt"
 //CreateTracker a tracker instance by its well-known name
 func createTracker(name string) ([]Tracker, error) {
 	switch name {
-	case "test":
-		{
-			return []Tracker{&TestTracker{}}, nil
-		}
 	case "balance":
 		{
 			return []Tracker{&BalanceTracker{}}, nil
