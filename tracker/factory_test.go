@@ -5,10 +5,6 @@ import (
 )
 
 func TestCreateTracker(t *testing.T) {
-	testTracker, _ := createTracker("test")
-	if testTracker[0].String() != "TestTracker" {
-		t.Fatalf("Expected TestTracker but got %s", testTracker[0].String())
-	}
 
 	balanceTracker, _ := createTracker("balance")
 	if balanceTracker[0].String() != "BalanceTracker" {
@@ -35,10 +31,13 @@ func TestCreateTracker(t *testing.T) {
 		t.Fatalf("Expected TributeTracker but got %s", tributeBalanceTracker[0].String())
 	}
 
-	//indexersTracker, _ := createTracker("indexers")
-	//if indexersTracker[0].String() != "IndexersTracker" {
-	//	t.Fatalf("Expected IndexersTracker but got %s", indexersTracker[0].String())
-	//}
+	indexersTracker, err := createTracker("indexers")
+	if err != nil {
+		t.Fatalf("Could not build IndexTracker")
+	}
+	if len(indexersTracker) != 86 {
+		t.Fatalf("Could not build all IndexTrackers: only tracking %d indexes", len(indexersTracker))
+	}
 
 	disputeChecker, _ := createTracker("disputeChecker")
 	if disputeChecker[0].String() != "DisputeChecker" {

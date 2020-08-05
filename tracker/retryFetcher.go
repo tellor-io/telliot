@@ -9,6 +9,14 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
+// Client utilized for all HTTP requests
+var client http.Client
+
+func init() {
+	client = http.Client{}
+}
+
+
 var retryFetchLog = util.NewLogger("tracker", "FetchWithRetries")
 
 //FetchRequest holds info for a request
@@ -26,9 +34,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 	retryFetchLog.Debug("Fetch request will expire at: %v (timeout: %v)", expiration, req.timeout)
 
 	now := time.Now()
-	client := http.Client{
-		Timeout: expiration.Sub(now),
-	}
+	client.Timeout = expiration.Sub(now)
 
 	r, err := client.Get(req.queryURL)
 	if err != nil {
@@ -56,10 +62,11 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 	if r.StatusCode < 200 || r.StatusCode > 299 {
 		retryFetchLog.Warn("Response from fetching  %s. Response code: %d, payload: %s", req.queryURL, r.StatusCode, data)
 		//log local non-timeout errors for now
-		now := time.Now()
-		if now.After(expiration) {
-			return nil, fmt.Errorf("giving up fetch request after request timeout: %d", r.StatusCode)
-		}
+		// this is a duplicated error that is unlikely to be triggered since expiration is updated above
+		//now := time.Now()
+		//if now.After(expiration) {
+		//	return nil, fmt.Errorf("giving up fetch request after request timeout: %d", r.StatusCode)
+		//}
 		//FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)
 

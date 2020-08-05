@@ -93,6 +93,7 @@ func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResul
 func (c *disputeChecker) Exec(ctx context.Context) error {
 
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
+	fmt.Print(client)
 
 
 	header, err := client.HeaderByNumber(ctx, nil)

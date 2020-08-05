@@ -17,6 +17,7 @@ import (
 //./runTest.sh TestPSR tracker
 
 func TestPSR(t *testing.T) {
+	//client.Timeout = 5
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_psrFetch"))
 	if err != nil {
 		log.Fatal(err)
@@ -29,6 +30,7 @@ func TestPSR(t *testing.T) {
 		t.Fatal(err)
 	}
 	for idx := range psr {
+		//fmt.Print("\ntester idx: ", idx)
 		// Skip manual PSRs here
 		if idx == len(psr)-1 {continue}
 		err = psr[idx].Exec(ctx)
