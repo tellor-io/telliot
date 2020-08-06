@@ -101,11 +101,12 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	}
 	var reqIDs [5] *big.Int
 
-	if mt.getInt(m[db.LastNewValueKey]) != nil{
-		l,stat := mt.getInt(m[db.LastNewValueKey])
-		if stat == statusWaitNext || stat == statusFailure {
-			return nil,false
-		}
+	l, stat := mt.getInt(m[db.LastNewValueKey]) 
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil,false
+	}
+
+	if l != nil{
 		tm := time.Unix(l.Int64(), 0)
 		if today.Sub(tm) >= time.Duration(15) * time.Minute {
 			return nil,true

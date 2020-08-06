@@ -18,6 +18,7 @@ import (
 	"github.com/tellor-io/TellorMiner/contracts"
 
 	tellor1 "github.com/tellor-io/TellorMiner/contracts1"
+	tellor2 "github.com/tellor-io/TellorMiner/contracts2"
 	"github.com/tellor-io/TellorMiner/db"
 )
 
@@ -29,6 +30,7 @@ var (
 type contractWrapper struct {
 	contract    *tellor1.TellorTransactor
 	contract2   *contracts.TellorMaster
+	contract3 	*tellor2.TellorTransactor
 	options     *bind.TransactOpts
 	fromAddress common.Address
 }
@@ -39,6 +41,10 @@ func (c contractWrapper) AddTip(requestID *big.Int, amount *big.Int) (*types.Tra
 
 func (c contractWrapper) SubmitSolution(solution string, requestID *big.Int, value *big.Int) (*types.Transaction, error) {
 	return c.contract.SubmitMiningSolution(c.options, solution, requestID, value)
+}
+
+func (c contractWrapper) NewSubmitSolution(solution string, requestID [5]*big.Int, value [5]*big.Int) (*types.Transaction, error) {
+	return c.contract3.SubmitMiningSolution(c.options, solution, requestID, value)
 }
 
 func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {

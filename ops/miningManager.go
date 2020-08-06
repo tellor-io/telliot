@@ -14,7 +14,7 @@ import (
 )
 
 type WorkSource interface {
-	GetWork(input chan *pow.Work) *pow.Work
+	GetWork(input chan *pow.Work) (*pow.Work,bool)
 }
 
 type SolutionSink interface {
@@ -98,7 +98,10 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			} else {
 				work,instantSubmit := mgr.tasker.GetWork(input)
 				if instantSubmit {
-					mgr.solHandler.Submit(ctx,"1")
+					var iVar *pow.Result
+					iVar.Work = work
+					iVar.Nonce = "1"
+					mgr.solHandler.Submit(ctx,iVar)
 				} else if work != nil {
 					input <- work
 				}
