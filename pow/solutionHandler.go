@@ -193,9 +193,9 @@ func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.Cont
 	return txn, err
 }
 
-func (s *SolutionHandler) newSubmit(ctx context.Context, contract tellorCommon.NewContractInterface) (*types.Transaction, error) {
+func (s *SolutionHandler) newSubmit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
 
-	txn, err := contract.SubmitSolution(
+	txn, err := contract.NewSubmitSolution(
 		s.currentNonce,
 		s.currentChallenge.RequestIDs,
 		s.currentValues)

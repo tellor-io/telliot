@@ -83,18 +83,19 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	if stat := mt.checkDispute(m[dispKey]); stat == statusWaitNext {
 		return nil,false
 	}
-
-
 	last, stat := mt.getInt(m[db.LastSubmissionKey])
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil,false
-	}
 	today := time.Now() 
-	tm := time.Unix(last.Int64(), 0)
-	if today.Sub(tm) < time.Duration(55) * time.Minute{
-		return nil, false
+	fmt.Println("last",last,stat)
+	if last != nil{
+		if stat == statusWaitNext || stat == statusFailure {
+		return nil,false
+		}
+		tm := time.Unix(last.Int64(), 0)
+		if today.Sub(tm) < time.Duration(58) * time.Minute{
+			fmt.Println("Cannot submit value, within an hour")
+			return nil, false
+		}
 	}
-
 	diff, stat := mt.getInt(m[db.DifficultyKey])
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil,false
@@ -105,13 +106,15 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil,false
 	}
-
+	instantSubmit := false
 	if l != nil{
 		tm := time.Unix(l.Int64(), 0)
+		fmt.Println("This long since last value:  ",today.Sub(tm) )
 		if today.Sub(tm) >= time.Duration(15) * time.Minute {
-			return nil,true
+			instantSubmit = true
 		}
 		r, stat := mt.getInt(m[db.RequestIdKey0])
+		fmt.Println("0",)
 		if stat == statusWaitNext || stat == statusFailure {
 			return nil,false
 		}
@@ -155,7 +158,9 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 			mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
 			return nil,false
 		}
+		fmt.Println(m2)
 		val := m2[valKey]
+		fmt.Println()
 		if val == nil || len(val) == 0 {
 				jsonFile, err := os.Open("manualData.json")
 				if err != nil {
@@ -165,10 +170,10 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 				byteValue, _ := ioutil.ReadAll(jsonFile)
 				var result map[string]map[string]uint
 				json.Unmarshal([]byte(byteValue), &result)
-				_id := strconv.FormatUint(reqIDs[0].Uint64(), 10)
+				_id := strconv.FormatUint(reqIDs[i].Uint64(), 10)
 				val := result[_id]["VALUE"]
 			if val == 0{
-				mt.log.Info("Pricing data not available for request %d", reqIDs[0].Uint64())
+				mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
 				return nil,false
 			}else{
 				fmt.Println("Using Manually entered value: ",val)
@@ -191,7 +196,8 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 		}
 	}
 	mt.currChallenge = newChallenge
-	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64},false
+	fmt.Println("made it back",&Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64},instantSubmit)
+	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64},instantSubmit
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {

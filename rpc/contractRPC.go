@@ -149,8 +149,9 @@ func PrepareContractTxn(ctx context.Context,proxy db.DataServerProxy, ctxName st
 		//create a wrapper to callback the actual txn generator fn
 		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
 		instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
+		instance3 := ctx.Value(tellorCommon.NewTransactorContractContextKey).(*tellor2.TellorTransactor)
 
-		wrapper := contractWrapper{options: auth, contract: instance, contract2: instance2, fromAddress: fromAddress}
+		wrapper := contractWrapper{options: auth, contract: instance, contract2: instance2, contract3: instance3, fromAddress: fromAddress}
 		tx, err := callback(ctx, wrapper)
 
 		if err != nil {

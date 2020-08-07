@@ -45,9 +45,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	//convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 
-	instance := ctx.Value(tellorCommon.NewTransactorContractContextKey).(*contracts2.Tellor)
-
-	
+	instance := ctx.Value(tellorCommon.NewTellorContractContextKey).(*contracts2.Tellor)
 	returnNewVariables, err := instance.GetNewCurrentVariables(nil)
 	if err != nil {
 		fmt.Println("New Current Variables Retrieval Error - Contract might not be upgraded")

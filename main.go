@@ -47,7 +47,8 @@ func buildContext() error {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
 		transactorInstance, err := contracts1.NewTellorTransactor(contractAddress, client)
-		newTransactorInstance, err := contracts2.NewTellor(contractAddress,client)
+		newTellorInstance, err := contracts2.NewTellor(contractAddress,client)
+		newTransactorInstance, err := contracts2.NewTellorTransactor(contractAddress,client)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -56,6 +57,7 @@ func buildContext() error {
 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
 		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 		ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
+		ctx = context.WithValue(ctx, tellorCommon.NewTellorContractContextKey, newTellorInstance)
 		ctx = context.WithValue(ctx, tellorCommon.NewTransactorContractContextKey, newTransactorInstance)
 
 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)

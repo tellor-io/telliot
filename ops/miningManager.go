@@ -98,12 +98,15 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			} else {
 				work,instantSubmit := mgr.tasker.GetWork(input)
 				if instantSubmit {
-					var iVar *pow.Result
-					iVar.Work = work
-					iVar.Nonce = "1"
-					mgr.solHandler.Submit(ctx,iVar)
+					// var iVar *pow.Result
+					// iVar.Work = work
+					// iVar.Nonce = "1"
+					result := &pow.Result{Work:work, Nonce:"1"}
+					mgr.solHandler.Submit(ctx,result)
 				} else if work != nil {
 					input <- work
+				}else{
+					fmt.Println("no input...")
 				}
 			}
 		}
