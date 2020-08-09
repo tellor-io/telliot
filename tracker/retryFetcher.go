@@ -63,10 +63,10 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		retryFetchLog.Warn("Response from fetching  %s. Response code: %d, payload: %s", req.queryURL, r.StatusCode, data)
 		//log local non-timeout errors for now
 		// this is a duplicated error that is unlikely to be triggered since expiration is updated above
-		//now := time.Now()
-		//if now.After(expiration) {
-		//	return nil, fmt.Errorf("giving up fetch request after request timeout: %d", r.StatusCode)
-		//}
+		now := time.Now()
+		if now.After(expiration) {
+			return nil, fmt.Errorf("giving up fetch request after request timeout: %d", r.StatusCode)
+		}
 		//FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)
 

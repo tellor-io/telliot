@@ -102,10 +102,8 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	trackers := make([]Tracker, len(indexers))
 	for idx, api := range sortedIndexers {
 		trackers[idx] = indexers[api]
-		//fmt.Print("\nbase:", api, " ", indexers[api].Symbols)
 	}
 
-	//fmt.Print("\nsize: ", len(trackers))
 	//start the PSR system that will feed from these indexes
 	err = InitPSRs()
 	if err != nil {
@@ -150,7 +148,6 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	}
 
 	vals, err := util.ParsePayload(payload, i.Args)
-	//fmt.Print("\nTest: ",vals, i.Symbols, "\n")
 	if err != nil {
 		return err
 	}
@@ -163,7 +160,6 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 
 	//save the value into our local data window (set 0 volume for now)
 	apiOracle.SetRequestValue(i.Identifier, time.Now(), apiOracle.PriceInfo{Price:vals[0], Volume:volume})
-
 	//update all the values that depend on these symbols
 	return UpdatePSRs(ctx, i.Symbols)
 }
