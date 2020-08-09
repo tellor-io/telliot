@@ -1,10 +1,11 @@
 package tracker
 
 import (
-	"math"
 	"fmt"
+	"math"
 	"sort"
 	"time"
+
 	"github.com/tellor-io/TellorMiner/apiOracle"
 	"github.com/tellor-io/TellorMiner/config"
 )

@@ -2,7 +2,6 @@ package tracker
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +30,6 @@ func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
 //Start will kick off the runner until the given exit channel selects.
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	cfg := config.GetConfig()
-	fmt.Print("\nconfig: ", cfg.Trackers, "\n")
 	trackerNames := cfg.Trackers
 	var trackers []Tracker
 	for _,name := range trackerNames {

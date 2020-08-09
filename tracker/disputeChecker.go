@@ -87,14 +87,13 @@ func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResul
 		High:        max,
 		WithinRange: withinRange,
 		Datapoints:  datapoints,
+		Times: times,
 	}
 }
 
 func (c *disputeChecker) Exec(ctx context.Context) error {
 
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-	fmt.Print(client)
-
 
 	header, err := client.HeaderByNumber(ctx, nil)
 	if err != nil {
