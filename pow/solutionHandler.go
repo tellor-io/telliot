@@ -70,8 +70,8 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 
 	val := m[valKey]
 	if val == nil || len(val) == 0 {
-		if challenge.RequestID.Uint64() > 51 && (val == nil || len(val) == 0) {
-			s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+		if challenge.RequestID.Uint64() > 53 && (val == nil || len(val) == 0) {
+			s.log.Error("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
 		} else {
 			jsonFile, err := os.Open("manualData.json")
 			if err != nil {
