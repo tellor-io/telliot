@@ -193,7 +193,7 @@ contract Tellor {
     * @dev Getter for the current variables that include the 5 requests Id's
     * the challenge, 5 requestsId, difficulty and tip
     */
-    function getNewCurrentVariables() external view returns(bytes32 _challenge,uint[5] memory _requestIds,uint256 _difficutly, uint256 _tip){
+    function getNewCurrentVariables() external view returns(bytes32 _challenge,uint[5] memory _requestIds,uint256 _difficulty, uint256 _tip){
         return tellor.getNewCurrentVariables();
     }
 

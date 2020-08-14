@@ -114,7 +114,6 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 			instantSubmit = true
 		}
 		r, stat := mt.getInt(m[db.RequestIdKey0])
-		fmt.Println("0",)
 		if stat == statusWaitNext || stat == statusFailure {
 			return nil,false
 		}
@@ -158,13 +157,12 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 			mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
 			return nil,false
 		}
-		fmt.Println(m2)
 		val := m2[valKey]
-		fmt.Println()
 		if val == nil || len(val) == 0 {
 				jsonFile, err := os.Open("manualData.json")
 				if err != nil {
-					fmt.Println(err)
+					fmt.Println("manualData read error",err)
+					return nil,false
 				}
 				defer jsonFile.Close()
 				byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -220,7 +218,7 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 
 func (mt *MiningTasker) isEmptyChallenge(challenge *MiningChallenge) bool {
 	mt.log.Info("Checking whether current challenge is empty")
-	if challenge.RequestID.Cmp(big.NewInt(0)) == 0 {
+	if challenge.RequestID.Cmp(big.NewInt(0)) == 0 && challenge.RequestIDs[0].Cmp(big.NewInt(0)) == 0 {
 		mt.log.Info("Current challenge has 0-value request ID, Cancelling any ongoing mining since previous challenge is complete")
 		return true
 	}

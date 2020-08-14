@@ -21,7 +21,7 @@ var newCurrentVarsLog = util.NewLogger("tracker", "NewCurrentVarsTracker")
 type returnNewVariables struct {
 	Challenge  [32]byte
 	RequestIds [5]*big.Int
-	Difficutly *big.Int
+	Difficulty *big.Int
 	Tip        *big.Int
 }
 //CurrentVariablesTracker concrete tracker type
@@ -97,17 +97,16 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	//check this bad boy
-	conc := fmt.Sprintf("%s%d","RequestIdKey",0)
+
 	for i:= 0; i < 5; i++ {
-		conc = fmt.Sprintf("%s%d","current_requestId",i)
+		conc := fmt.Sprintf("%s%d","current_requestId",i)
 		err = DB.Put(conc, []byte(hexutil.EncodeBig(returnNewVariables.RequestIds[i])))
 		if err != nil {
 			fmt.Println("New Current Variables Put Error")
 			return err
 		}
 	}
-	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficutly)))
+	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficulty)))
 	if err != nil {
 		fmt.Println("New Current Variables Put Error")
 		return err
