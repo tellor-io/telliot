@@ -14,7 +14,7 @@ import (
 )
 
 type WorkSource interface {
-	GetWork(input chan *pow.Work) *pow.Work
+	GetWork(input chan *pow.Work) (*pow.Work,bool)
 }
 
 type SolutionSink interface {
@@ -96,14 +96,22 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			if cfg.EnablePoolWorker {
 				mgr.tasker.GetWork(input)
 			} else {
-				work := mgr.tasker.GetWork(input)
-				if work != nil {
+				work,instantSubmit := mgr.tasker.GetWork(input)
+				if instantSubmit {
+					// var iVar *pow.Result
+					// iVar.Work = work
+					// iVar.Nonce = "1"
+					result := &pow.Result{Work:work, Nonce:"1"}
+					mgr.solHandler.Submit(ctx,result)
+				} else if work != nil {
 					input <- work
+				}else{
+					fmt.Println("no input...")
 				}
 			}
 		}
 		//send the initial challenge
-		sendWork()
+		sendWork()	
 		for {
 			select {
 			//boss wants us to quit for the day

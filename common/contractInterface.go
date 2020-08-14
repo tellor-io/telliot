@@ -17,9 +17,9 @@ type TransactionGeneratorFN func(ctx context.Context, contract ContractInterface
 type ContractInterface interface {
 	AddTip(requestID *big.Int, amount *big.Int) (*types.Transaction, error)
 	SubmitSolution(solution string, requestID *big.Int, value *big.Int) (*types.Transaction, error)
+	NewSubmitSolution(solution string, requestID [5]*big.Int, value [5]*big.Int) (*types.Transaction, error)
 	DidMine(challenge [32]byte) (bool, error)
 }
-
 //TransactionSubmitter is an abstraction for something that will callback a generator fn
 //with a contract able to submit and generate transactions. This, like the ContractInterface,
 //is an abstraction mainly so we can test isolated functionality.

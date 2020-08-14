@@ -12,6 +12,7 @@ import (
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/contracts"
 	"github.com/tellor-io/TellorMiner/contracts1"
+	"github.com/tellor-io/TellorMiner/contracts2"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/ops"
 	"github.com/tellor-io/TellorMiner/rpc"
@@ -20,6 +21,7 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"time"
 )
 
@@ -45,6 +47,8 @@ func buildContext() error {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
 		transactorInstance, err := contracts1.NewTellorTransactor(contractAddress, client)
+		newTellorInstance, err := contracts2.NewTellor(contractAddress,client)
+		newTransactorInstance, err := contracts2.NewTellorTransactor(contractAddress,client)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -53,6 +57,8 @@ func buildContext() error {
 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
 		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 		ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
+		ctx = context.WithValue(ctx, tellorCommon.NewTellorContractContextKey, newTellorInstance)
+		ctx = context.WithValue(ctx, tellorCommon.NewTransactorContractContextKey, newTransactorInstance)
 
 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {
@@ -243,6 +249,15 @@ func mineCmd(cmd *cli.Cmd) {
 			}
 		}
 		//start miner
+		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+		v, err := DB.Get(db.DisputeStatusKey)
+		if err != nil {
+			fmt.Println("ignoring --- could not get dispute status.  Check if staked")
+		}
+		status,_ := hexutil.DecodeBig(string(v))
+		if status.Cmp(big.NewInt(1)) != 0 {
+			log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
+		}
 		ch := make(chan os.Signal)
 		exitChannels = append(exitChannels, &ch)
 		miner, err := ops.CreateMiningManager(ctx, ch, ops.NewSubmitter())
