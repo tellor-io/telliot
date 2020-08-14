@@ -96,6 +96,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 		return
 	}
 	s.log.Debug("Retrieved data from data server %v", m)
+
 	if m[db.RequestIdKey0] != nil{
 		for i := 0; i < 5; i++{
 			tKey := fmt.Sprintf("%s%d", valKey,i)

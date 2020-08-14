@@ -35,11 +35,13 @@
 	"BNB/USD": [
 		"json(https://dex.binance.org/api/v1/klines?symbol=BNB_USDSB-1AC&interval=1d&limit=1).0.4",
 		"json(https://api.binance.com/api/v1/klines?symbol=BNBUSDT&interval=1d&limit=1).0.4",
-		"json(https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1).0.4",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd).binancecoin.usd"
 	],
 	"BSV/USD":[
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash-sv&vs_currencies=usd).bitcoin-cash-sv.usd"
+	],
+	"BTCDOMINANCE":[
+		"json(https://api.coingecko.com/api/v3/global).data.market_cap_percentage.btc"
 	],
 	"BTC/USD": [
 		"json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price",
@@ -112,8 +114,7 @@
 	"MATIC/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=MATICUSDT&interval=1d&limit=1).0.4",
 		"json(https://api.coinpaprika.com/v1/tickers/matic-matic-network).quotes.USD.price",
-		"json(https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd).matic-network.usd",
-		"json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price"
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd).matic-network.usd"
 	],
 	"MAKER/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd).maker.usd"
@@ -156,6 +157,9 @@
 	],
 	"XAU/USD": [
 		"json(https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD).0.spreadProfilePrices.0.ask"
+	],
+	"XFT/USD": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=offshift&vs_currencies=usd).offshift.usd"
 	],
 	"XLM/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=XLMBTC&interval=1d&limit=1).0.4"
