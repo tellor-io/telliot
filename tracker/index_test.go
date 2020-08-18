@@ -30,9 +30,6 @@ func TestPSR(t *testing.T) {
 		t.Fatal(err)
 	}
 	for idx := range psr {
-		//fmt.Print("\ntester idx: ", idx)
-		// Skip manual PSRs here
-		if idx == len(psr)-1 {continue}
 		err = psr[idx].Exec(ctx)
 		if err != nil {
 			t.Fatalf("failed to execute psr: %v", err)
