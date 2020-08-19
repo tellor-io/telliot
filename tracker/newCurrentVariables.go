@@ -49,7 +49,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	returnNewVariables, err := instance.GetNewCurrentVariables(nil)
 	if err != nil {
 		fmt.Println("New Current Variables Retrieval Error - Contract might not be upgraded")
-		return err
+		return nil
 	}
 	fmt.Println(returnNewVariables)
 
@@ -77,7 +77,6 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	var ret [32]byte
 	copy(ret[:], hash)
 	timeOfLastNewValue, err := instance2.GetUintVar(nil,ret)
-	fmt.Println(timeOfLastNewValue)
 	if err != nil {
 		fmt.Println("Time of Last New Value Retrieval Error")
 		return err

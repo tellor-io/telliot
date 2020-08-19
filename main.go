@@ -249,7 +249,8 @@ func mineCmd(cmd *cli.Cmd) {
 			}
 		}
 		//start miner
-		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+		DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
+		//DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 		v, err := DB.Get(db.DisputeStatusKey)
 		if err != nil {
 			fmt.Println("ignoring --- could not get dispute status.  Check if staked")

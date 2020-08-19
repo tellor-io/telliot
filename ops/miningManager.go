@@ -106,7 +106,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				} else if work != nil {
 					input <- work
 				}else{
-					fmt.Println("no input...")
+					//fmt.Println("no input...")
 				}
 			}
 		}

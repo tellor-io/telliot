@@ -85,7 +85,6 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	}
 	last, stat := mt.getInt(m[db.LastSubmissionKey])
 	today := time.Now() 
-	fmt.Println("last",last,stat)
 	if last != nil{
 		if stat == statusWaitNext || stat == statusFailure {
 		return nil,false
