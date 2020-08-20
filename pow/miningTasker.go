@@ -83,18 +83,6 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	if stat := mt.checkDispute(m[dispKey]); stat == statusWaitNext {
 		return nil,false
 	}
-	last, stat := mt.getInt(m[db.LastSubmissionKey])
-	today := time.Now() 
-	if last != nil{
-		if stat == statusWaitNext || stat == statusFailure {
-		return nil,false
-		}
-		tm := time.Unix(last.Int64(), 0)
-		if today.Sub(tm) < time.Duration(58) * time.Minute{
-			fmt.Println("Cannot submit value, within an hour")
-			return nil, false
-		}
-	}
 	diff, stat := mt.getInt(m[db.DifficultyKey])
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil,false
@@ -107,6 +95,7 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	}
 	instantSubmit := false
 	if l != nil{
+		today := time.Now() 
 		tm := time.Unix(l.Int64(), 0)
 		fmt.Println("This long since last value:  ",today.Sub(tm) )
 		if today.Sub(tm) >= time.Duration(15) * time.Minute {

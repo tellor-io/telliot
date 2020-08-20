@@ -96,7 +96,17 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 		return
 	}
 	s.log.Debug("Retrieved data from data server %v", m)
-
+	last:= m[db.LastSubmissionKey]
+	today := time.Now() 
+	if last != nil{
+		_l,_ := hexutil.DecodeBig(string(last))
+		tm := time.Unix(_l.Int64(), 0)
+		fmt.Println(tm)
+		if today.Sub(tm) < time.Duration(15) * time.Minute{
+			fmt.Println("Cannot submit value, within fifteen minutes")
+			return
+		}
+	}
 	if m[db.RequestIdKey0] != nil{
 		for i := 0; i < 5; i++{
 			tKey := fmt.Sprintf("%s%d", valKey,i)
