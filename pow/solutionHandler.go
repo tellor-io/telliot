@@ -64,11 +64,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	manualVal := int64(0)
 
 	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
-	valKey0 := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[0].Uint64())
-	valKey1 := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[1].Uint64())
-	valKey2 := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[2].Uint64())
-	valKey3 := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[3].Uint64())
-	valKey4 := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[4].Uint64())
 	s.log.Info("Getting pending txn and value from data server...")
 
 	keys := []string{
@@ -82,11 +77,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 		db.LastNewValueKey,
 		db.LastSubmissionKey,
 		valKey,
-		valKey0,
-		valKey1,
-		valKey2,
-		valKey3,
-		valKey4,
 	}
 
 	m, err :=  s.proxy.BatchGet(keys)
@@ -109,28 +99,35 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	}
 	if m[db.RequestIdKey0] != nil{
 		for i := 0; i < 5; i++{
-			tKey := fmt.Sprintf("%s%d", valKey,i)
-			val := m[tKey]
+			valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[i].Uint64())
+			m2, err := s.proxy.BatchGet([]string{valKey})
+			if err != nil {
+				fmt.Println("Could not retrieve pricing data for current request id: %v", err)
+				return
+			}
+			val := m2[valKey]
+			fmt.Println(val, challenge.RequestIDs[i])
 			if val == nil || len(val) == 0 {
 				if challenge.RequestIDs[i].Uint64() > 53 && (val == nil || len(val) == 0) {
 					s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
 				} else {
 					jsonFile, err := os.Open("manualData.json")
 					if err != nil {
-						fmt.Println(err)
+						fmt.Println("manualData read error",err)
+						return
 					}
 					defer jsonFile.Close()
 					byteValue, _ := ioutil.ReadAll(jsonFile)
-					var result map[string]map[string]int64
+					var result map[string]map[string]uint
 					json.Unmarshal([]byte(byteValue), &result)
 					_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
-					manualVal = result[_id]["VALUE"]
-				if manualVal == 0{
-					s.log.Error("No Value in database, not submitting.")
-					return
-				}else{
-					fmt.Println("Using Manually entered value: ",manualVal)
-				}
+					manualVal = int64(result[_id]["VALUE"])
+					if manualVal == 0{
+						s.log.Error("No Value in database, not submitting.",challenge.RequestIDs[i].Uint64(),2)
+						return
+					}else{
+						fmt.Println("Using Manually entered value: ",manualVal)
+					}
 				}
 			}
 			value, err := hexutil.DecodeBig(string(val))
@@ -143,13 +140,14 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 					}
 				} else if manualVal > 0{
 					value = big.NewInt(manualVal)
-					}else{
-					s.log.Error("No Value in database, not submitting.")
+				}else{
+					s.log.Error("No Value in database, not submitting here2.", challenge.RequestIDs[i].Uint64())
 					return
 				}
 			}
 			s.currentValues[i] = value
 		}
+		fmt.Println("got to newSubmit")
 		err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.newSubmit)
 		if err != nil {
 			s.log.Error("Problem submitting txn", err)
