@@ -12,3 +12,12 @@ jobs:
       - run: go version
       - run: go get -d .
       - run: ./runPkgTest.sh tracker
+      - uses: jandelgado/gcov2lcov-action@v1.0.2
+        with:
+          infile: trackercoverage.out
+          outfile: coverage.lcov
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov
