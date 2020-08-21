@@ -376,6 +376,18 @@ func (c *mockClient) NetworkID(ctx context.Context) (*big.Int, error) {
 	return big.NewInt(1), nil
 }
 
+func (c *mockClient) HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
+	header := types.Header{
+		Difficulty: math.BigPow(11, 11),
+		Number:     math.BigPow(1,0),
+		GasLimit:   12345678,
+		GasUsed:    1476322,
+		Extra:      []byte("coolest block on chain"),
+	}
+	header.Time = uint64(time.Now().Unix())
+	return &header, nil
+}
+
 func paddedRLP(w *bytes.Buffer, val interface{}) error {
 	b, err := rlp.EncodeToBytes(val)
 	if err != nil {
@@ -389,17 +401,4 @@ func paddedInt(w *bytes.Buffer, val *big.Int) error {
 	hex := math.PaddedBigBytes(math.U256(val), 32)
 	_, err := w.Write(hex)
 	return err
-}
-
-var Headerific types.Header = types.Header{
-	Difficulty: math.BigPow(11, 11),
-	Number:     math.BigPow(1,0),
-	GasLimit:   12345678,
-	GasUsed:    1476322,
-	Extra:      []byte("coolest block on chain"),
-}
-
-func (c *mockClient)HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
-	Headerific.Time = uint64(time.Now().Unix())
-	return &Headerific, nil
 }
