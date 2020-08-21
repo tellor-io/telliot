@@ -1,0 +1,14 @@
+name: Coverage
+on: push
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.13.3" # The Go version to download (if necessary) and use.
+      - run: go version
+      - run: go get -d .
+      - run: ./runPkgTest.sh tracker
