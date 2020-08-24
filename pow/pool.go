@@ -181,7 +181,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work,bool) {
 	return nil,false
 }
 
-func (p *StratumPool) Submit(ctx context.Context, result *Result) {
+func (p *StratumPool) Submit(ctx context.Context, result *Result) bool{
 	nonce := result.Nonce
 	//submission := fmt.Sprintf("%s, %s, %s", p.minerAddress, p.currJobID, nonce)
 	//p.log.Warn("mining.submit: %s", submission)
@@ -194,4 +194,6 @@ func (p *StratumPool) Submit(ctx context.Context, result *Result) {
 		result.Work.Start = uint64(rand.Int63())
 		p.input <- result.Work
 	}
+	//check this piece
+	return true
 }

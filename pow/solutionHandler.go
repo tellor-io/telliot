@@ -56,7 +56,7 @@ func CreateSolutionHandler(
 	}
 }
 
-func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
+func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 	challenge := result.Work.Challenge
 	nonce := result.Nonce
 	s.currentChallenge = challenge
@@ -83,18 +83,19 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 
 	if err != nil {
 		s.log.Error("Problem reading pending txn: %v", err)
-		return
+		return false
 	}
 	s.log.Debug("Retrieved data from data server %v", m)
 	last:= m[db.LastSubmissionKey]
+	fmt.Println("Last Submission ", last)
 	today := time.Now() 
 	if last != nil{
 		_l,_ := hexutil.DecodeBig(string(last))
 		tm := time.Unix(_l.Int64(), 0)
-		fmt.Println(tm)
+		fmt.Println("Time since last submit: ",today.Sub(tm))
 		if today.Sub(tm) < time.Duration(15) * time.Minute{
 			fmt.Println("Cannot submit value, within fifteen minutes")
-			return
+			return false
 		}
 	}
 	if m[db.RequestIdKey0] != nil{
@@ -103,7 +104,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 			m2, err := s.proxy.BatchGet([]string{valKey})
 			if err != nil {
 				fmt.Println("Could not retrieve pricing data for current request id: %v", err)
-				return
+				return false
 			}
 			val := m2[valKey]
 			fmt.Println(val, challenge.RequestIDs[i])
@@ -114,7 +115,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 					jsonFile, err := os.Open("manualData.json")
 					if err != nil {
 						fmt.Println("manualData read error",err)
-						return
+						return false
 					}
 					defer jsonFile.Close()
 					byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -124,7 +125,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 					manualVal = int64(result[_id]["VALUE"])
 					if manualVal == 0{
 						s.log.Error("No Value in database, not submitting.",challenge.RequestIDs[i].Uint64(),2)
-						return
+						return false
 					}else{
 						fmt.Println("Using Manually entered value: ",manualVal)
 					}
@@ -142,7 +143,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 					value = big.NewInt(manualVal)
 				}else{
 					s.log.Error("No Value in database, not submitting here2.", challenge.RequestIDs[i].Uint64())
-					return
+					return false
 				}
 			}
 			s.currentValues[i] = value
@@ -174,7 +175,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 				manualVal = result[_id]["VALUE"]
 			if manualVal == 0{
 				s.log.Error("No Value in database, not submitting.")
-				return
+				return false
 			}else{
 				fmt.Println("Using Manually entered value: ",manualVal)
 			}
@@ -192,7 +193,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 				value = big.NewInt(manualVal)
 				}else{
 				s.log.Error("No Value in database, not submitting.")
-				return
+				return false
 			}
 		}
 		s.currentValue = value
@@ -205,11 +206,12 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
 	}
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	err = DB.Put(db.LastSubmissionKey, []byte(hexutil.EncodeBig(big.NewInt(time.Now().Unix()))))
+	fmt.Println("Stored Last Submission : ",time.Now().Unix())
 	if err != nil {
 		fmt.Println("Last Submission Put Error")
-		return
+		return false
 	}
-
+	return true
 }
 
 func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {

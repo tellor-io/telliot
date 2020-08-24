@@ -18,7 +18,7 @@ type WorkSource interface {
 }
 
 type SolutionSink interface {
-	Submit(context.Context, *pow.Result)
+	Submit(context.Context, *pow.Result) bool
 }
 
 //MiningMgr holds items for mining and requesting data
@@ -31,6 +31,7 @@ type MiningMgr struct {
 	group      *pow.MiningGroup
 	tasker     WorkSource
 	solHandler SolutionSink
+	solution   *pow.Result
 
 	dataRequester *DataRequester
 	//data requester's exit channel
@@ -52,6 +53,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		Running:    false,
 		group:      group,
 		tasker:     nil,
+		solution: 	nil,
 		solHandler: nil,
 	}
 
@@ -97,13 +99,17 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				mgr.tasker.GetWork(input)
 			} else {
 				work,instantSubmit := mgr.tasker.GetWork(input)
-				if instantSubmit {
-					// var iVar *pow.Result
-					// iVar.Work = work
-					// iVar.Nonce = "1"
-					fmt.Println("instant Submit Called!")
-					result := &pow.Result{Work:work, Nonce:"1"}
-					mgr.solHandler.Submit(ctx,result)
+				if (mgr.solution != nil || instantSubmit) {
+					if mgr.solution == nil {
+						mgr.solution = &pow.Result{Work:work, Nonce:"1"}
+						fmt.Println("Instant Submit Called!")
+					} else{
+						fmt.Println("Trying Resubmit...")
+					}
+					goodSubmit := mgr.solHandler.Submit(ctx,mgr.solution)
+					if goodSubmit {
+						mgr.solution = nil
+					}
 				} else if work != nil {
 					input <- work
 				}else{
@@ -126,7 +132,11 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 					mgr.Running = false
 					return
 				}
-				mgr.solHandler.Submit(ctx, result)
+				mgr.solution = result
+				goodSubmit := mgr.solHandler.Submit(ctx,mgr.solution)
+				if goodSubmit {
+					mgr.solution = nil
+				}
 				sendWork()
 
 			//time to check for a new challenge
