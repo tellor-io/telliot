@@ -47,8 +47,12 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 
 	instance := ctx.Value(tellorCommon.NewTellorContractContextKey).(*contracts2.Tellor)
 	returnNewVariables, err := instance.GetNewCurrentVariables(nil)
-	if err != nil {
+	if err != nil{
 		fmt.Println("New Current Variables Retrieval Error - Contract might not be upgraded")
+		return nil
+	}
+	if returnNewVariables.RequestIds[0].Int64() > int64(100) || returnNewVariables.RequestIds[0].Int64() == 0 {
+		fmt.Println("New Current Variables Request ID not correct - Contract about to be upgraded")
 		return nil
 	}
 	fmt.Println(returnNewVariables)
@@ -105,6 +109,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 			return err
 		}
 	}
+
 	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficulty)))
 	if err != nil {
 		fmt.Println("New Current Variables Put Error")

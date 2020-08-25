@@ -98,23 +98,29 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			if cfg.EnablePoolWorker {
 				mgr.tasker.GetWork(input)
 			} else {
-				work,instantSubmit := mgr.tasker.GetWork(input)
-				if (mgr.solution != nil || instantSubmit) {
-					if mgr.solution == nil {
+				fmt.Println(mgr.solution)
+				if mgr.solution == nil{
+					work,instantSubmit := mgr.tasker.GetWork(input)
+					if instantSubmit{
+						if mgr.solution == nil {
 						mgr.solution = &pow.Result{Work:work, Nonce:"1"}
 						fmt.Println("Instant Submit Called!")
-					} else{
-						fmt.Println("Trying Resubmit...")
+						} else{
+							fmt.Println("Trying Resubmit...")
+						}
+					}else if work != nil {
+						input <- work
+					}else{
+						fmt.Println("no input...")
 					}
+				}
+				if mgr.solution != nil{
 					goodSubmit := mgr.solHandler.Submit(ctx,mgr.solution)
+					fmt.Println("Good Submit? : ",goodSubmit)
 					if goodSubmit {
 						mgr.solution = nil
 					}
-				} else if work != nil {
-					input <- work
-				}else{
-					fmt.Println("no input...")
-				}
+				} 
 			}
 		}
 		//send the initial challenge
