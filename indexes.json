@@ -47,7 +47,6 @@
 		"json(https://api.pro.coinbase.com/products/BTC-USD/ticker).price",
 		"json(https://api.binance.com/api/v1/klines?symbol=BTCUSDT&interval=1d&limit=1).0.4",
 		"json(https://api.coindesk.com/v1/bpi/currentprice.json).bpi.USD.rate",
-		"json(https://www.bitstamp.net/api/v2/ticker/btcusd).last",
 		"json(https://api.coinpaprika.com/v1/tickers/btc-bitcoin).quotes.USD.price",
 		"json(https://api.cryptowat.ch/markets/coinbase-pro/btcusd/price).result.price",
 		"json(https://api.kraken.com/0/public/Ticker?pair=XBTUSD).result.XXBTZUSD.c.0",
@@ -75,7 +74,6 @@
 	],
 	"ETH/BTC": [
 		"json(https://api.pro.coinbase.com/products/ETH-BTC/ticker).price",
-		"json(https://www.bitstamp.net/api/v2/ticker/ethbtc).last",
 		"json(https://api.kraken.com/0/public/Ticker?pair=ETHXBT).result.XETHXXBT.c.0",
 		"json(https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1).0.4",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=btc).ethereum.btc"
@@ -88,7 +86,6 @@
 		"json(https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1).0.4",
 		"json(https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1).0.4",
 		"json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0",
-		"json(https://www.bitstamp.net/api/v2/ticker/ethusd).last",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd).ethereum.usd"
 	],
 	"GNO/USD": [
