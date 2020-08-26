@@ -33,6 +33,7 @@ type SolutionHandler struct {
 	currentNonce     string
 	currentValue     *big.Int
 	currentValues	 [5]*big.Int
+	lastSubmit		 int64
 	submitter        tellorCommon.TransactionSubmitter
 }
 
@@ -75,7 +76,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 		db.RequestIdKey3,
 		db.RequestIdKey4,
 		db.LastNewValueKey,
-		db.LastSubmissionKey,
 		valKey,
 	}
 
@@ -86,12 +86,10 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 		return false
 	}
 	s.log.Debug("Retrieved data from data server %v", m)
-	last:= m[db.LastSubmissionKey]
-	fmt.Println("Last Submission ", last)
-	today := time.Now() 
-	if last != nil{
-		_l,_ := hexutil.DecodeBig(string(last))
-		tm := time.Unix(_l.Int64(), 0)
+	last:= s.lastSubmit
+	today := time.Now()
+	if last > 0{
+		tm := time.Unix(last, 0)
 		fmt.Println("Time since last submit: ",today.Sub(tm))
 		if today.Sub(tm) < time.Duration(15) * time.Minute{
 			fmt.Println("Cannot submit value, within fifteen minutes")
@@ -204,8 +202,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 			s.log.Info("Successfully submitted solution")
 		}	
 	}
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	err = DB.Put(db.LastSubmissionKey, []byte(hexutil.EncodeBig(big.NewInt(time.Now().Unix()))))
+	s.lastSubmit = time.Now().Unix()
 	fmt.Println("Stored Last Submission : ",time.Now().Unix())
 	if err != nil {
 		fmt.Println("Last Submission Put Error")
