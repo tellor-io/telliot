@@ -154,8 +154,11 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 		} else {
 			s.log.Info("Successfully submitted solution")
 		}
-	
-		
+		s.lastSubmit = time.Now().Unix()
+		fmt.Println("Stored Last Submission : ",time.Now().Unix())
+		if err != nil {
+			fmt.Println("Last Submission Put Error")
+		}	
 	}else{
 		val := m[valKey]
 		if val == nil || len(val) == 0 {
@@ -202,12 +205,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 		} else {
 			s.log.Info("Successfully submitted solution")
 		}	
-	}
-	s.lastSubmit = time.Now().Unix()
-	fmt.Println("Stored Last Submission : ",time.Now().Unix())
-	if err != nil {
-		fmt.Println("Last Submission Put Error")
-		return false
 	}
 	return true
 }
