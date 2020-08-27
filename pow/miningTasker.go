@@ -90,11 +90,10 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	var reqIDs [5] *big.Int
 
 	l, stat := mt.getInt(m[db.LastNewValueKey]) 
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil,false
-	}
 	instantSubmit := false
+	looper := 1
 	if l != nil{
+		looper = 5
 		today := time.Now() 
 		tm := time.Unix(l.Int64(), 0)
 		fmt.Println("This long since last value:  ",today.Sub(tm) )
@@ -139,7 +138,8 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 			return nil,false
 		}
 	}
-	for i := 0;i<len(reqIDs);i++ {
+	for i := 0;i<looper;i++ {
+		fmt.Println(reqIDs[i].Uint64())
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
 		m2, err := mt.proxy.BatchGet([]string{valKey})
 		if err != nil {
