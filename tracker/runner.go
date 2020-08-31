@@ -31,7 +31,7 @@ func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	cfg := config.GetConfig()
 	trackerNames := cfg.Trackers
-	defaultTrackers := []string{"newCurrentVariables"}
+	defaultTrackers := []string{"newCurrentVariables","timeOut"}
 	var trackers []Tracker
 	for _,name := range trackerNames {
 		t, err := createTracker(name)

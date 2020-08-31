@@ -40,6 +40,7 @@ const (
 	QueriedValuePrefix = "qv_"
 	LastNewValueKey = "lastnewvalue"
 	LastSubmissionKey = "last_submission"
+	TimeOutKey = "time_out"
 )
 
 var knownKeys map[string]bool
@@ -63,8 +64,9 @@ func initKeyLook() {
 		Top50Key:            true,
 		TributeBalanceKey:   true,
 		DisputeStatusKey:    true,
-		LastNewValueKey:		 true,
-		LastSubmissionKey:		true,
+		LastNewValueKey:	 true,
+		LastSubmissionKey:	 true,
+		TimeOutKey:			 true,
 	}
 }
 func isKnownKey(key string) bool {

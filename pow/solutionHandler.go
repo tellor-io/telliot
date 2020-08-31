@@ -80,14 +80,15 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 	}
 
 	m, err :=  s.proxy.BatchGet(keys)
-
-	if err != nil {
-		s.log.Error("Problem reading pending txn: %v", err)
-		return false
+	address := common.HexToAddress(s.pubKey)
+	dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.TimeOutKey)
+	lastS,err := s.proxy.Get(dbKey)
+	if err != nil{
+		fmt.Println("timeout Retrieval error",err)
 	}
-	s.log.Debug("Retrieved data from data server %v", m)
-	last:= s.lastSubmit
-	fmt.Println("last  ")
+	lastB,_ := hexutil.DecodeBig(string(lastS))
+	last := lastB.Int64()
+	fmt.Println("last  ", last)
 	today := time.Now()
 	if last > 0{
 		tm := time.Unix(last, 0)
@@ -154,11 +155,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 		} else {
 			s.log.Info("Successfully submitted solution")
 		}
-		s.lastSubmit = time.Now().Unix()
-		fmt.Println("Stored Last Submission : ",time.Now().Unix())
-		if err != nil {
-			fmt.Println("Last Submission Put Error")
-		}	
 	}else{
 		val := m[valKey]
 		if val == nil || len(val) == 0 {
