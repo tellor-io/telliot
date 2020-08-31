@@ -85,6 +85,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 	lastS,err := s.proxy.Get(dbKey)
 	if err != nil{
 		fmt.Println("timeout Retrieval error",err)
+		return false
 	}
 	lastB,_ := hexutil.DecodeBig(string(lastS))
 	last := lastB.Int64()

@@ -9,6 +9,10 @@ func createTracker(name string) ([]Tracker, error) {
 		{
 			return []Tracker{&TestTracker{}}, nil
 		}
+	case "timeOut":
+		{
+			return []Tracker{&TimeOutTracker{}}, nil
+		}
 	case "balance":
 		{
 			return []Tracker{&BalanceTracker{}}, nil
