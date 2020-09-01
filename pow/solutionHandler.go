@@ -87,7 +87,11 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 		fmt.Println("timeout Retrieval error",err)
 		return false
 	}
-	lastB,_ := hexutil.DecodeBig(string(lastS))
+	lastB,err := hexutil.DecodeBig(string(lastS))
+	if err != nil{
+		fmt.Println("Timeout key decode error", lastS)
+		return false
+	}
 	last := lastB.Int64()
 	today := time.Now()
 	if last > 0{

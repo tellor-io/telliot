@@ -95,6 +95,7 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 		looper = 5
 		today := time.Now() 
 		tm := time.Unix(l.Int64(), 0)
+		fmt.Println("This long since last value:  ",today.Sub(tm) )
 		if today.Sub(tm) >= time.Duration(15) * time.Minute {
 			instantSubmit = true
 		}
