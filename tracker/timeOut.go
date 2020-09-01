@@ -6,6 +6,7 @@ import (
 	"log"
 	// "math/big"
 	"strings"
+	"encoding/hex"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -15,6 +16,7 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
+	
 )
 
 //TimeOutTracker struct
@@ -74,17 +76,29 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	//add all whitelisted miner addresses as well since they will be coming in
 	//asking for dispute status
 	for _, addr := range cfg.ServerWhitelist {
-		address := common.HexToAddress(addr)
+		address := "000000000000000000000000" + addr[2:] 
 		//fmt.Println("Getting staker info for address", addr)
-		hash := solsha3.SoliditySHA3(address.Bytes())
+		fmt.Println(address)
+		decoded, err := hex.DecodeString(address)
+		if err != nil {
+			log.Fatal(err)
+		}
+	
+		fmt.Printf("%s\n", decoded)
+		hash := solsha3.SoliditySHA3(decoded)
 		var data [32]byte
 		copy(data[:], hash)
+		fmt.Println("hash:  ", data)
+		yx := fmt.Sprintf("%x", data)
+		fmt.Println("hexHash :", yx)
 		status,err := instance.GetUintVar(nil,data)
 		if err != nil {
 			fmt.Printf("Could not get staker timeOut status for miner address %s: %v\n", addr, err)
 		}
 		fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, status)
-		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.TimeOutKey)
+		from := common.HexToAddress(addr)
+
+		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)
 		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
 			fmt.Printf("Problem storing staker dispute status: %v\n", err)
