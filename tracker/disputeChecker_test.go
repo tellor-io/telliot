@@ -26,10 +26,11 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 	ctx := context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 	ctx = context.WithValue(ctx, tellorCommon.DBContextKey, DB)
-	psrs, err := BuildIndexTrackers()
-	execEthUsdPsrs(ctx, t, psrs)
+	BuildIndexTrackers()
+	ethUSDPairs := indexes["ETH/USD"]
+	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2*time.Second)
-	execEthUsdPsrs(ctx, t, psrs)
+	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	ctx = context.WithValue(ctx, tellorCommon.ContractAddress, common.Address{0x0000000000000000000000000000000000000000})
 	err = disputeChecker.Exec(ctx)
 	if err != nil {
@@ -51,10 +52,11 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 	ctx := context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 	ctx = context.WithValue(ctx, tellorCommon.DBContextKey, DB)
-	psrs, err := BuildIndexTrackers()
-	execEthUsdPsrs(ctx, t, psrs)
+	BuildIndexTrackers()
+	ethUSDPairs := indexes["ETH/USD"]
+	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2*time.Second)
-	execEthUsdPsrs(ctx, t, psrs)
+	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	ctx = context.WithValue(ctx, tellorCommon.ContractAddress, common.Address{0x0000000000000000000000000000000000000000})
 	err = disputeChecker.Exec(ctx)
 	if err != nil {
@@ -63,13 +65,10 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	DB.Close()
 }
 
-func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []Tracker) {
-	// These indexes represent all ETH api indexes tracked in tellor
-	// The values are obtained through sorting all query endpoints in alphabetetical order
-	indexes := [6]int{19, 20, 52, 68, 78, 84}
-	for _, psrIdx  := range indexes {
+func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
+	for _, psr  := range psrs {
 		//fmt.Print("\nIndex: ", psrIdx, psrs[psrIdx])
-		err := psrs[psrIdx].Exec(ctx)
+		err := psr.Exec(ctx)
 		if err != nil {
 			t.Fatalf("failed to execute psr: %v", err)
 		}

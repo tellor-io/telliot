@@ -35,7 +35,7 @@ func TestCreateTracker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not build IndexTracker")
 	}
-	if len(indexersTracker) != 86 {
+	if len(indexersTracker) != 88 {
 		t.Fatalf("Could not build all IndexTrackers: only tracking %d indexes", len(indexersTracker))
 	}
 

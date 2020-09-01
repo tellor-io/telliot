@@ -19,12 +19,12 @@ func TestMeanAt(t *testing.T) {
 	}
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, common.DBContextKey, db)
-	psrs, err := BuildIndexTrackers()
+	BuildIndexTrackers()
 	ethIndexes := indexes["ETH/USD"]
 	if err != nil {
 		t.Fatal(err)
 	}
-	execEthUsdPsrs(ctx, t,psrs)
+	execEthUsdPsrs(ctx, t, ethIndexes)
 
 	MeanAt(ethIndexes, clck.Now())
 	db.Close()
