@@ -2,14 +2,15 @@ package tracker
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/big"
 	"os"
-	"fmt"
 	"path/filepath"
 	"testing"
-	"github.com/ethereum/go-ethereum/common/math"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common/math"
 
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
@@ -50,6 +51,7 @@ func TestRunner(t *testing.T) {
 	runner, _ := NewRunner(client, db)
 
 	ctx := context.Background()
+	runner.Ready()
 	runner.Start(ctx, exitCh)
 	fmt.Println("runner done")
 	time.Sleep(2 * time.Second)

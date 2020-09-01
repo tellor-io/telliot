@@ -31,8 +31,9 @@ func TestPSR(t *testing.T) {
 	}
 	for idx := range psr {
 		err = psr[idx].Exec(ctx)
+		psrStr := psr[idx].String()
 		if err != nil {
-			t.Fatalf("failed to execute psr: %v", err)
+			t.Fatalf("failed to execute psr: %s %v", psrStr, err)
 		}
 	}
 	val, err := db.Get(fmt.Sprintf("qv_%d", 1))

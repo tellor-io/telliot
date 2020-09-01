@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
@@ -27,6 +26,6 @@ func TestMeanAt(t *testing.T) {
 	}
 	execEthUsdPsrs(ctx, t,psrs)
 
-	MeanAt(ethIndexes, time.Now())
+	MeanAt(ethIndexes, clck.Now())
 	db.Close()
 }

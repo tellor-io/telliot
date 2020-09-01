@@ -256,7 +256,7 @@ func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float
 	}
 	for _, val := range vals {
 		// fmt.Println(int64(val.Volume),time.Now().Unix())
-		if int64(val.Volume) < time.Now().Unix(){
+		if int64(val.Volume) < clck.Now().Unix(){
 			fmt.Println("Pulled Timestamp: ",val.Volume)
 			fmt.Println("Warning: Manual Data Entry is expired, please update")
 			return apiOracle.PriceInfo{}, 0
@@ -267,7 +267,7 @@ func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float
 
 
 func MedianAtEOD(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
-	now := time.Now().UTC()
+	now := clck.Now().UTC()
 	d := 24 * time.Hour
 	eod := now.Truncate(d)
 	return MedianAt(apis, eod)
@@ -324,4 +324,3 @@ func VolumeWeightedAvg(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	}
 	return apiOracle.PriceInfo{Price: priceSum / float64(len(vals)), Volume: 0}
 }
-

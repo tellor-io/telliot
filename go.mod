@@ -6,7 +6,7 @@ require (
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/apilayer/freegeoip v3.5.0+incompatible // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190712234253-ed1100a1c015 // indirect
-	github.com/benbjohnson/clock v1.0.3 // indirect
+	github.com/benbjohnson/clock v1.0.3
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/charliehorse55/go-opencl v0.0.0-20200116145223-eb5421c9755d
 	github.com/deckarep/golang-set v1.7.1 // indirect

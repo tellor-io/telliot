@@ -28,7 +28,7 @@ type ValueGenerator interface {
 
 func InitPSRs() error {
 	//check that we have all the symbols asked for
-	now := time.Now()
+	now := clck.Now()
 	for requestID, handler := range PSRs {
 		reqs := handler.Require(now)
 		for symbol := range reqs {
@@ -63,7 +63,7 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 }
 
 func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
-	now := time.Now()
+	now := clck.Now()
 	//generate a set of all affected PSRs
 	var toUpdate []int
 	for requestID, psr := range PSRs {

@@ -27,20 +27,20 @@ type FetchRequest struct {
 }
 
 func fetchWithRetries(req *FetchRequest) ([]byte, error) {
-	return _recFetch(req, time.Now().Add(req.timeout))
+	return _recFetch(req, clck.Now().Add(req.timeout))
 }
 
 func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 	retryFetchLog.Debug("Fetch request will expire at: %v (timeout: %v)", expiration, req.timeout)
 
-	now := time.Now()
+	now := clck.Now()
 	client.Timeout = expiration.Sub(now)
 
 	r, err := client.Get(req.queryURL)
 	if err != nil {
 		//log local non-timeout errors for now
 		retryFetchLog.Warn("Problem fetching data from: %s. %v", req.queryURL, err)
-		now := time.Now()
+		now := clck.Now()
 		if now.After(expiration) {
 			retryFetchLog.Error("Timeout expired, not retrying query and passing error up")
 			return nil, err
@@ -63,7 +63,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		retryFetchLog.Warn("Response from fetching  %s. Response code: %d, payload: %s", req.queryURL, r.StatusCode, data)
 		//log local non-timeout errors for now
 		// this is a duplicated error that is unlikely to be triggered since expiration is updated above
-		now := time.Now()
+		now := clck.Now()
 		if now.After(expiration) {
 			return nil, fmt.Errorf("giving up fetch request after request timeout: %d", r.StatusCode)
 		}

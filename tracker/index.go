@@ -9,12 +9,17 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/tellor-io/TellorMiner/apiOracle"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/util"
 )
+
+var clck clock.Clock
+func init() {
+	clck = clock.New()
+}
 
 var psrLog = util.NewLogger("tracker", "IndexTrackers")
 
@@ -159,7 +164,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	}
 
 	//save the value into our local data window (set 0 volume for now)
-	apiOracle.SetRequestValue(i.Identifier, time.Now(), apiOracle.PriceInfo{Price:vals[0], Volume:volume})
+	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price:vals[0], Volume:volume})
 	//update all the values that depend on these symbols
 	return UpdatePSRs(ctx, i.Symbols)
 }
