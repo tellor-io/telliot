@@ -90,10 +90,6 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 		fmt.Println("New Current Variables Put Error")
 		return err
 	}
-
-
-	currentVarsLog.Info("Retrieved variables. challengeHash: %x", returnNewVariables.Challenge)
-
 	err = DB.Put(db.CurrentChallengeKey, returnNewVariables.Challenge[:])
 	if err != nil {
 		fmt.Println("New Current Variables Put Error")

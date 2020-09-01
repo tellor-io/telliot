@@ -89,7 +89,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 	}
 	lastB,_ := hexutil.DecodeBig(string(lastS))
 	last := lastB.Int64()
-	fmt.Println("last  ", last)
 	today := time.Now()
 	if last > 0{
 		tm := time.Unix(last, 0)
@@ -108,7 +107,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 				return false
 			}
 			val := m2[valKey]
-			fmt.Println(val, challenge.RequestIDs[i])
 			if val == nil || len(val) == 0 {
 				if challenge.RequestIDs[i].Uint64() > 53 && (val == nil || len(val) == 0) {
 					s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
@@ -149,7 +147,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 			}
 			s.currentValues[i] = value
 		}
-		fmt.Println("got to newSubmit")
 		err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.newSubmit)
 		if err != nil {
 			s.log.Error("Problem submitting txn", err)

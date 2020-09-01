@@ -56,7 +56,6 @@ func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 }
 
 func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
-	mt.log.Info("Pulling current data from data server...")
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
 		db.DifficultyKey,
@@ -96,7 +95,6 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 		looper = 5
 		today := time.Now() 
 		tm := time.Unix(l.Int64(), 0)
-		fmt.Println("This long since last value:  ",today.Sub(tm) )
 		if today.Sub(tm) >= time.Duration(15) * time.Minute {
 			instantSubmit = true
 			fmt.Println("Calling Instant Submit  ",today.Sub(tm) )
@@ -139,7 +137,6 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 		}
 	}
 	for i := 0;i<looper;i++ {
-		fmt.Println(reqIDs[i].Uint64())
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
 		m2, err := mt.proxy.BatchGet([]string{valKey})
 		if err != nil {
@@ -183,7 +180,6 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 		}
 	}
 	mt.currChallenge = newChallenge
-	fmt.Println("made it back",&Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64},instantSubmit)
 	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64},instantSubmit
 }
 

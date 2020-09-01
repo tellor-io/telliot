@@ -64,7 +64,6 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		return err
 	}
 	enc := hexutil.EncodeBig(status)
-	log.Printf("TimeOut Status: %v", enc)
 	err = DB.Put(db.TimeOutKey, []byte(enc))
 	if err != nil {
 		fmt.Printf("Problem storing dispute info: %v\n", err)
@@ -90,7 +89,9 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		if err != nil {
 			fmt.Printf("Could not get staker timeOut status for miner address %s: %v\n", addr, err)
 		}
-		fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, time.Unix(status.Int64(), 0))
+		if(status.Int64() > 0){
+				fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, time.Unix(status.Int64(), 0))
+		}
 		from := common.HexToAddress(addr)
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)
 		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
