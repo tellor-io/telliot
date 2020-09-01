@@ -7,6 +7,7 @@ import (
 	// "math/big"
 	"strings"
 	"encoding/hex"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -38,10 +39,6 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 
 	//get address from config
 	_fromAddress := cfg.PublicAddress
-
-	//convert to address
-	fromAddress := common.HexToAddress(_fromAddress)
-
 	_conAddress := cfg.ContractAddress
 
 	//convert to address
@@ -52,7 +49,12 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		fmt.Println("instance Error, disputeStatus")
 		return err
 	}
-	hash := solsha3.SoliditySHA3(fromAddress.Bytes())
+	address := "000000000000000000000000" + _fromAddress[2:] 
+	decoded, err := hex.DecodeString(address)
+	if err != nil {
+		log.Fatal(err)
+	}
+	hash := solsha3.SoliditySHA3(decoded)
 	var data [32]byte
 	copy(data[:], hash)
 	status,err := instance.GetUintVar(nil,data)
@@ -77,31 +79,23 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	//asking for dispute status
 	for _, addr := range cfg.ServerWhitelist {
 		address := "000000000000000000000000" + addr[2:] 
-		//fmt.Println("Getting staker info for address", addr)
-		fmt.Println(address)
 		decoded, err := hex.DecodeString(address)
 		if err != nil {
 			log.Fatal(err)
 		}
-	
-		fmt.Printf("%s\n", decoded)
 		hash := solsha3.SoliditySHA3(decoded)
 		var data [32]byte
 		copy(data[:], hash)
-		fmt.Println("hash:  ", data)
-		yx := fmt.Sprintf("%x", data)
-		fmt.Println("hexHash :", yx)
 		status,err := instance.GetUintVar(nil,data)
 		if err != nil {
 			fmt.Printf("Could not get staker timeOut status for miner address %s: %v\n", addr, err)
 		}
-		fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, status)
+		fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, time.Unix(status.Int64(), 0))
 		from := common.HexToAddress(addr)
-
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)
 		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
-			fmt.Printf("Problem storing staker dispute status: %v\n", err)
+			fmt.Printf("Problem storing staker last time mined: %v\n", err)
 		}
 	}
 	//fmt.Println("Finished updated dispute status")
