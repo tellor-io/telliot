@@ -99,6 +99,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				work,instantSubmit := mgr.tasker.GetWork(input)
 				if instantSubmit{
 					if mgr.solution == nil {
+						fmt.Println("Instant Submit Called! ")
 						mgr.solution = &pow.Result{Work:work, Nonce:"1"}
 					} else{
 						fmt.Println("Trying Resubmit...")
@@ -106,7 +107,8 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				}else if work != nil {
 					mgr.solution = nil
 					input <- work
-				}else if mgr.solution != nil{
+				}
+				if mgr.solution != nil{
 					goodSubmit := mgr.solHandler.Submit(ctx,mgr.solution)
 					if goodSubmit {
 						mgr.solution = nil

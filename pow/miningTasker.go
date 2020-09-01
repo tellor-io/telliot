@@ -97,7 +97,6 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 		tm := time.Unix(l.Int64(), 0)
 		if today.Sub(tm) >= time.Duration(15) * time.Minute {
 			instantSubmit = true
-			fmt.Println("Calling Instant Submit  ",today.Sub(tm) )
 		}
 		r, stat := mt.getInt(m[db.RequestIdKey0])
 		if stat == statusWaitNext || stat == statusFailure {
