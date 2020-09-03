@@ -3,10 +3,11 @@ package pow
 import (
 	"crypto/sha256"
 	"fmt"
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
-	"golang.org/x/crypto/ripemd160"
 	"math/big"
 	"strconv"
+
+	solsha3 "github.com/miguelmota/go-solidity-sha3"
+	"golang.org/x/crypto/ripemd160"
 )
 
 
@@ -60,4 +61,3 @@ func hashFn(data []byte, result *big.Int) {
 	n := sha256.Sum256(hash1)
 	result.SetBytes(n[:])
 }
-
