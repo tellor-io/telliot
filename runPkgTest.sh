@@ -19,5 +19,8 @@ echo "Running test ${NAME} from package  ${PKG}..."
 # path can be set, or [2] a refactor is needed to utilize absolute paths
 cp manualData.json ${PKG}
 go test -coverprofile trackercoverage.out -v "./${PKG}"
+testResult=$?
 go tool cover -func=trackercoverage.out
 rm ${PKG}/manualData.json
+
+exit $testResult
