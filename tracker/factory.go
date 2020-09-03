@@ -5,6 +5,14 @@ import "fmt"
 //CreateTracker a tracker instance by its well-known name
 func createTracker(name string) ([]Tracker, error) {
 	switch name {
+	case "test":
+		{
+			return []Tracker{&TestTracker{}}, nil
+		}
+	case "timeOut":
+		{
+			return []Tracker{&TimeOutTracker{}}, nil
+		}
 	case "balance":
 		{
 			return []Tracker{&BalanceTracker{}}, nil
@@ -20,7 +28,11 @@ func createTracker(name string) ([]Tracker, error) {
 	case "gas":
 		{
 			return []Tracker{&GasTracker{}}, nil
-		}
+		}	
+	case "newCurrentVariables":
+			{
+				return []Tracker{&NewCurrentVariablesTracker{}}, nil
+			}
 	case "tributeBalance":
 		{
 			return []Tracker{&TributeTracker{}}, nil
@@ -29,10 +41,6 @@ func createTracker(name string) ([]Tracker, error) {
 		{
 			return BuildIndexTrackers()
 		}
-	//case "requestValues":
-	//	{
-	//		return
-	//	}
 	case "disputeChecker":
 		return []Tracker{&disputeChecker{}}, nil
 	default:

@@ -14,11 +14,11 @@ import (
 )
 
 type WorkSource interface {
-	GetWork(input chan *pow.Work) *pow.Work
+	GetWork(input chan *pow.Work) (*pow.Work,bool)
 }
 
 type SolutionSink interface {
-	Submit(context.Context, *pow.Result)
+	Submit(context.Context, *pow.Result) bool
 }
 
 //MiningMgr holds items for mining and requesting data
@@ -31,6 +31,7 @@ type MiningMgr struct {
 	group      *pow.MiningGroup
 	tasker     WorkSource
 	solHandler SolutionSink
+	solution   *pow.Result
 
 	dataRequester *DataRequester
 	//data requester's exit channel
@@ -52,6 +53,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		Running:    false,
 		group:      group,
 		tasker:     nil,
+		solution: 	nil,
 		solHandler: nil,
 	}
 
@@ -65,7 +67,6 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, proxy)
 		if cfg.RequestData > 0 {
 			fmt.Println("dataRequester created")
-			fmt.Println("Request Interval: ", cfg.RequestDataInterval.Duration)
 			mng.dataRequester = CreateDataRequester(exitCh, submitter, cfg.RequestDataInterval.Duration, proxy)
 		}
 	}
@@ -84,7 +85,6 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		input := make(chan *pow.Work)
 		output := make(chan *pow.Result)
 		if cfg.RequestData > 0 {
-			fmt.Println("Starting Data Requester")
 			mgr.dataRequester.Start(ctx)
 		}
 
@@ -96,14 +96,28 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			if cfg.EnablePoolWorker {
 				mgr.tasker.GetWork(input)
 			} else {
-				work := mgr.tasker.GetWork(input)
-				if work != nil {
+				work,instantSubmit := mgr.tasker.GetWork(input)
+				if instantSubmit{
+					if mgr.solution == nil {
+						fmt.Println("Instant Submit Called! ")
+						mgr.solution = &pow.Result{Work:work, Nonce:"1"}
+					} else{
+						fmt.Println("Trying Resubmit...")
+					}
+				}else if work != nil {
+					mgr.solution = nil
 					input <- work
 				}
+				if mgr.solution != nil{
+					goodSubmit := mgr.solHandler.Submit(ctx,mgr.solution)
+					if goodSubmit {
+						mgr.solution = nil
+					}
+				} 
 			}
 		}
 		//send the initial challenge
-		sendWork()
+		sendWork()	
 		for {
 			select {
 			//boss wants us to quit for the day
@@ -117,7 +131,11 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 					mgr.Running = false
 					return
 				}
-				mgr.solHandler.Submit(ctx, result)
+				mgr.solution = result
+				goodSubmit := mgr.solHandler.Submit(ctx,mgr.solution)
+				if goodSubmit {
+					mgr.solution = nil
+				}
 				sendWork()
 
 			//time to check for a new challenge

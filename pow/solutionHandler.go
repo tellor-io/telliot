@@ -3,6 +3,7 @@ package pow
 import (
 	"context"
 	"fmt"
+	"time"
 	"math/big"
 	"strings"
 	"os"
@@ -31,6 +32,8 @@ type SolutionHandler struct {
 	currentChallenge *MiningChallenge
 	currentNonce     string
 	currentValue     *big.Int
+	currentValues	 [5]*big.Int
+	lastSubmit		 int64
 	submitter        tellorCommon.TransactionSubmitter
 }
 
@@ -54,71 +57,154 @@ func CreateSolutionHandler(
 	}
 }
 
-func (s *SolutionHandler) Submit(ctx context.Context, result *Result) {
+func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool{
 	challenge := result.Work.Challenge
 	nonce := result.Nonce
-	manualVal := int64(0)
-	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
-	s.log.Info("Getting pending txn and value from data server...")
-	m, err := s.proxy.BatchGet([]string{db.CurrentChallengeKey, db.RequestIdKey, valKey})
-
-	if err != nil {
-		s.log.Error("Problem reading pending txn: %v", err)
-		return
-	}
-	s.log.Debug("Retrieved data from data server %v", m)
-
-	val := m[valKey]
-	if val == nil || len(val) == 0 {
-		if challenge.RequestID.Uint64() > 53 && (val == nil || len(val) == 0) {
-			s.log.Error("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
-		} else {
-			jsonFile, err := os.Open("manualData.json")
-			if err != nil {
-				fmt.Println(err)
-			}
-			defer jsonFile.Close()
-			byteValue, _ := ioutil.ReadAll(jsonFile)
-			var result map[string]map[string]int64
-			json.Unmarshal([]byte(byteValue), &result)
-			_id := strconv.FormatUint(challenge.RequestID.Uint64(), 10)
-			manualVal = result[_id]["VALUE"]
-		if manualVal == 0{
-			s.log.Error("No Value in database, not submitting.")
-			return
-		}else{
-			fmt.Println("Using Manually entered value: ",manualVal)
-		}
-		}
-	}
-
-	value, err := hexutil.DecodeBig(string(val))
-	if err != nil {
-		if challenge.RequestID.Uint64() > 51 {
-			s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
-			if len(val) == 0 {
-				s.log.Error("0 value being submitted")
-				value = big.NewInt(0)
-			}
-		} else if manualVal > 0{
-			value = big.NewInt(manualVal)
-			}else{
-			s.log.Error("No Value in database, not submitting.")
-			return
-		}
-	}
-
 	s.currentChallenge = challenge
 	s.currentNonce = nonce
-	s.currentValue = value
+	manualVal := int64(0)
 
-	s.log.Info("Submitting solution to contract...")
-	err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.submit)
-	if err != nil {
-		s.log.Error("Problem submitting txn", err)
-	} else {
-		s.log.Info("Successfully submitted solution")
+	valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestID.Uint64())
+	s.log.Info("Getting pending txn and value from data server...")
+
+	keys := []string{
+		db.CurrentChallengeKey,
+		db.RequestIdKey,
+		db.RequestIdKey0,
+		db.RequestIdKey1,
+		db.RequestIdKey2,
+		db.RequestIdKey3,
+		db.RequestIdKey4,
+		db.LastNewValueKey,
+		valKey,
 	}
+
+	m, err :=  s.proxy.BatchGet(keys)
+	address := common.HexToAddress(s.pubKey)
+	dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.TimeOutKey)
+	lastS,err := s.proxy.Get(dbKey)
+	if err != nil{
+		fmt.Println("timeout Retrieval error",err)
+		return false
+	}
+	lastB,err := hexutil.DecodeBig(string(lastS))
+	if err != nil{
+		fmt.Println("Timeout key decode error", lastS)
+		return false
+	}
+	last := lastB.Int64()
+	today := time.Now()
+	if last > 0{
+		tm := time.Unix(last, 0)
+		fmt.Println("Time since last submit: ",today.Sub(tm))
+		if today.Sub(tm) < time.Duration(15) * time.Minute{
+			fmt.Println("Cannot submit value, within fifteen minutes")
+			return false
+		}
+	}
+	if m[db.RequestIdKey0] != nil{
+		for i := 0; i < 5; i++{
+			valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[i].Uint64())
+			m2, err := s.proxy.BatchGet([]string{valKey})
+			if err != nil {
+				fmt.Println("Could not retrieve pricing data for current request id: %v", err)
+				return false
+			}
+			val := m2[valKey]
+			if val == nil || len(val) == 0 {
+				if challenge.RequestIDs[i].Uint64() > 53 && (val == nil || len(val) == 0) {
+					s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+				} else {
+					jsonFile, err := os.Open("manualData.json")
+					if err != nil {
+						fmt.Println("manualData read error",err)
+						return false
+					}
+					defer jsonFile.Close()
+					byteValue, _ := ioutil.ReadAll(jsonFile)
+					var result map[string]map[string]uint
+					json.Unmarshal([]byte(byteValue), &result)
+					_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
+					manualVal = int64(result[_id]["VALUE"])
+					if manualVal == 0{
+						s.log.Error("No Value in database, not submitting.",challenge.RequestIDs[i].Uint64(),2)
+						return false
+					}else{
+						fmt.Println("Using Manually entered value: ",manualVal)
+					}
+				}
+			}
+			value, err := hexutil.DecodeBig(string(val))
+			if err != nil {
+				if challenge.RequestIDs[i].Uint64() > 53 {
+					s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
+					if len(val) == 0 {
+						s.log.Error("0 value being submitted")
+						value = big.NewInt(0)
+					}
+				} else if manualVal > 0{
+					value = big.NewInt(manualVal)
+				}else{
+					s.log.Error("No Value in database, not submitting here2.", challenge.RequestIDs[i].Uint64())
+					return false
+				}
+			}
+			s.currentValues[i] = value
+		}
+		err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.newSubmit)
+		if err != nil {
+			s.log.Error("Problem submitting txn", err)
+		} else {
+			s.log.Info("Successfully submitted solution")
+		}
+	}else{
+		val := m[valKey]
+		if val == nil || len(val) == 0 {
+			if challenge.RequestID.Uint64() > 51 && (val == nil || len(val) == 0) {
+				s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
+			} else {
+				jsonFile, err := os.Open("manualData.json")
+				if err != nil {
+					fmt.Println(err)
+				}
+				defer jsonFile.Close()
+				byteValue, _ := ioutil.ReadAll(jsonFile)
+				var result map[string]map[string]int64
+				json.Unmarshal([]byte(byteValue), &result)
+				_id := strconv.FormatUint(challenge.RequestID.Uint64(), 10)
+				manualVal = result[_id]["VALUE"]
+			if manualVal == 0{
+				s.log.Error("No Value in database, not submitting.")
+				return false
+			}else{
+				fmt.Println("Using Manually entered value: ",manualVal)
+			}
+			}
+		}
+		value, err := hexutil.DecodeBig(string(val))
+		if err != nil {
+			if challenge.RequestID.Uint64() > 51 {
+				s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
+				if len(val) == 0 {
+					s.log.Error("0 value being submitted")
+					value = big.NewInt(0)
+				}
+			} else if manualVal > 0{
+				value = big.NewInt(manualVal)
+				}else{
+				s.log.Error("No Value in database, not submitting.")
+				return false
+			}
+		}
+		s.currentValue = value
+		err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.submit)
+		if err != nil {
+			s.log.Error("Problem submitting txn", err)
+		} else {
+			s.log.Info("Successfully submitted solution")
+		}	
+	}
+	return true
 }
 
 func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
@@ -127,6 +213,20 @@ func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.Cont
 		s.currentNonce,
 		s.currentChallenge.RequestID,
 		s.currentValue)
+	if err != nil {
+		s.log.Error("Problem submitting solution: %v", err)
+		return txn, err
+	}
+
+	return txn, err
+}
+
+func (s *SolutionHandler) newSubmit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
+
+	txn, err := contract.NewSubmitSolution(
+		s.currentNonce,
+		s.currentChallenge.RequestIDs,
+		s.currentValues)
 	if err != nil {
 		s.log.Error("Problem submitting solution: %v", err)
 		return txn, err

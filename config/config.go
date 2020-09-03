@@ -139,7 +139,7 @@ func ParseConfigBytes(data []byte) error {
 	}
 
 	if config.MinConfidence == 0 {
-		config.MinConfidence = 0.5
+		config.MinConfidence = 0.2
 	}
 
 	if config.FetchTimeout.Seconds() == 0 {
