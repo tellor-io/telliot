@@ -3,13 +3,14 @@ package tracker
 import (
 	"context"
 	"fmt"
-	"github.com/tellor-io/TellorMiner/apiOracle"
 	"math"
 	"math/big"
 	"time"
-	"github.com/tellor-io/TellorMiner/config"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/tellor-io/TellorMiner/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
 )
 
@@ -27,7 +28,7 @@ type ValueGenerator interface {
 
 func InitPSRs() error {
 	//check that we have all the symbols asked for
-	now := time.Now()
+	now := clck.Now()
 	for requestID, handler := range PSRs {
 		reqs := handler.Require(now)
 		for symbol := range reqs {
@@ -62,7 +63,7 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 }
 
 func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
-	now := time.Now()
+	now := clck.Now()
 	//generate a set of all affected PSRs
 	var toUpdate []int
 	for requestID, psr := range PSRs {
@@ -80,14 +81,15 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	for _, requestID := range toUpdate {
 		amt, conf := PSRValueForTime(requestID, now)
 		// if requestID == 10{
-		// 	fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
-		// }
-		cfg := config.GetConfig()
-		if conf < cfg.MinConfidence || math.IsNaN(amt) {
-			//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
-			//confidence in this signal is too low to use
-			continue
-		}
+			// 	fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
+			// }
+			cfg := config.GetConfig()
+			if conf < cfg.MinConfidence || math.IsNaN(amt) {
+				//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
+				//confidence in this signal is too low to use
+				continue
+			}
+			//fmt.Print("\ntester ", requestID)
 
 		//convert it directly from a float to a bigInt so that we don't risk overflowing a uint64
 		bigVal := new(big.Float)
@@ -98,10 +100,12 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 		//encode it and store to DB
 		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 		enc := hexutil.EncodeBig(bigInt)
+		//fmt.Print("\nrequestId: ", requestID, " ", db.QueriedValuePrefix, requestID)
 		err := DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
 		if err != nil {
 			return err
 		}
 	}
+	//fmt.Print("exited with requestIds: ", toUpdate)
 	return nil
 }

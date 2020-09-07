@@ -5,10 +5,6 @@ import "fmt"
 //CreateTracker a tracker instance by its well-known name
 func createTracker(name string) ([]Tracker, error) {
 	switch name {
-	case "test":
-		{
-			return []Tracker{&TestTracker{}}, nil
-		}
 	case "timeOut":
 		{
 			return []Tracker{&TimeOutTracker{}}, nil
@@ -33,10 +29,6 @@ func createTracker(name string) ([]Tracker, error) {
 			{
 				return []Tracker{&NewCurrentVariablesTracker{}}, nil
 			}
-	case "top50":
-		{
-			return []Tracker{&Top50Tracker{}}, nil
-		}
 	case "tributeBalance":
 		{
 			return []Tracker{&TributeTracker{}}, nil
@@ -45,14 +37,9 @@ func createTracker(name string) ([]Tracker, error) {
 		{
 			return BuildIndexTrackers()
 		}
-	//case "requestValues":
-	//	{
-	//		return
-	//	}
 	case "disputeChecker":
 		return []Tracker{&disputeChecker{}}, nil
 	default:
 		return nil, fmt.Errorf("no tracker with the name %s", name)
 	}
-	return nil, nil
 }

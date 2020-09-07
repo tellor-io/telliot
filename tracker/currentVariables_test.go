@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -17,6 +18,14 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
 )
+
+func TestCurrentVarableString(t *testing.T) {
+	tracker := &CurrentVariablesTracker{}
+	res := tracker.String()
+	if res != "CurrentVariablesTracker" {
+		t.Fatalf("should return 'CurrentVariablesTracker' string")
+	}
+}
 
 func TestCurrentVariables(t *testing.T) {
 
@@ -47,6 +56,7 @@ func TestCurrentVariables(t *testing.T) {
 	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
 	if masterInstance == nil {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
+		// TODO create error state flag for mock client
 		masterInstance, err = tellor.NewTellorMaster(contractAddress,client)
 		if err != nil {
 			runnerLog.Error("Problem creating tellor master instance: %v\n", err)

@@ -1,9 +1,9 @@
 package tracker
 
 import (
-	//"fmt"
-	"github.com/tellor-io/TellorMiner/apiOracle"
 	"time"
+
+	"github.com/tellor-io/TellorMiner/apiOracle"
 )
 
 type Ampl struct {
@@ -32,7 +32,7 @@ func AmpleChained(chainedPair string) IndexProcessor {
 	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
 
 		//make sure the chained prices is working (everything in USD, not BTC)
-		eod := time.Now().UTC()
+		eod := clck.Now().UTC()
 		d := 24 * time.Hour
 		eod = eod.Truncate(d)
 		eod = eod.Add(2 * time.Hour)

@@ -7,19 +7,25 @@ import (
 	"io/ioutil"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strings"
-	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/tellor-io/TellorMiner/apiOracle"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/util"
 )
 
+var clck clock.Clock
+func init() {
+	clck = clock.New()
+}
+
 var psrLog = util.NewLogger("tracker", "IndexTrackers")
 
 var indexes map[string][]*IndexTracker
 
-//BuildPSRTrackers creates and initializes a new tracker instance
+//BuildIndexTrackers creates and initializes a new tracker instance
 func BuildIndexTrackers() ([]Tracker, error) {
 	fmt.Println("StartingIndex Trackers")
 	err := apiOracle.EnsureValueOracle()
@@ -86,17 +92,21 @@ func BuildIndexTrackers() ([]Tracker, error) {
 		}
 	}
 
+	var sortedIndexers []string
 	//set the reverse map
 	for api, symbols := range symbolsForAPI {
+		//fmt.Print("\nAPI: ", api, symbols)
 		indexers[api].Symbols = symbols
+		sortedIndexers = append(sortedIndexers, api)
 	}
+
+	// sort the Indexer array so we return the same order every time
+	sort.Strings(sortedIndexers)
 
 	//make an array of trackers to be sent to Runner
 	trackers := make([]Tracker, len(indexers))
-	pos := 0
-	for _, indexer := range indexers {
-		trackers[pos] = indexer
-		pos++
+	for idx, api := range sortedIndexers {
+		trackers[idx] = indexers[api]
 	}
 
 	//start the PSR system that will feed from these indexes
@@ -154,8 +164,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	}
 
 	//save the value into our local data window (set 0 volume for now)
-	apiOracle.SetRequestValue(i.Identifier, time.Now(), apiOracle.PriceInfo{Price:vals[0], Volume:volume})
-
+	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price:vals[0], Volume:volume})
 	//update all the values that depend on these symbols
 	return UpdatePSRs(ctx, i.Symbols)
 }

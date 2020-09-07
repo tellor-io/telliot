@@ -48,16 +48,19 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	}
 
 	balance, err := instance.BalanceOf(nil, fromAddress)
-	balanceInTributes, ok := big.NewFloat(1).SetString(balance.String())
-	if !ok {
-		fmt.Println("Problem converting tributes.")
-		balanceInTributes = big.NewFloat(0)
-	}
-	decimals, ok := big.NewFloat(1).SetString("1000000000000000000")
-	if !ok {
-		fmt.Println("Could not create tribute float for computing tributes")
-		balanceInTributes = big.NewFloat(0)
-	}
+	balanceInTributes, _ := big.NewFloat(1).SetString(balance.String())
+	// this _should_ be unreachable given that there is an erro flag for
+	// the balanceOf call
+	//if !ok {
+	//	fmt.Println("Problem converting tributes.")
+	//	balanceInTributes = big.NewFloat(0)
+	//}
+	decimals, _ := big.NewFloat(1).SetString("1000000000000000000")
+	// This is unreachable since it's hardcoded
+	//if !ok {
+	//	fmt.Println("Could not create tribute float for computing tributes")
+	//	balanceInTributes = big.NewFloat(0)
+	//}
 	if decimals != nil {
 		balanceInTributes = balanceInTributes.Quo(balanceInTributes, decimals)
 	}

@@ -14,8 +14,11 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
+// GWEI constant is the multiplier from Wei
 const GWEI = 1000000000
 
+// GasTracker is the struct that maintains the latest gasprices.
+// note the prices are actually stored in the DB
 type GasTracker struct {
 }
 
@@ -30,11 +33,12 @@ func (b *GasTracker) String() string {
 	return "GasTracker"
 }
 
+// Exec queries EthGasStation for the current Gas Prices
 func (b *GasTracker) Exec(ctx context.Context) error {
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	netId, err := client.NetworkID(context.Background())
+	netID, err := client.NetworkID(context.Background())
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -42,7 +46,7 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 
 	var gasPrice *big.Int
 
-	if big.NewInt(1).Cmp(netId) == 0 {
+	if big.NewInt(1).Cmp(netID) == 0 {
 		url := "https://ethgasstation.info/json/ethgasAPI.json"
 		req := &FetchRequest{queryURL: url, timeout: time.Duration(15 * time.Second)}
 		payload, err := fetchWithRetries(req)
