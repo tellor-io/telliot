@@ -3,10 +3,14 @@ package rpc
 import (
 	"bytes"
 	"context"
-	"math/big"
-	"time"
 	"fmt"
+	"math/big"
+	"strings"
+	"time"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tellor-io/TellorMiner/contracts1"
 	"github.com/tellor-io/TellorMiner/util"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -68,6 +72,15 @@ type mockClient struct {
 	disputeStatus    *big.Int
 	mockQueryMeta    map[uint]*MockQueryMeta
 	abiCodec         *ABICodec
+}
+
+type mockError struct {
+	codeVal int
+}
+
+func (e *mockError) Error() string {
+	return fmt.Sprintf("error value: %d",
+		e.codeVal)
 }
 
 //NewMockClient returns instance of mock client
@@ -309,11 +322,39 @@ func (c *mockClient) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 }
 
 func (c *mockClient) BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error) {
+	if c.balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, &mockError{1}
+	}
 	return c.balance, nil
 }
 
 func (c *mockClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
-	return nil, nil
+	tokenAbi, _ := abi.JSON(strings.NewReader(contracts1.TellorLibraryABI))
+	ev := tokenAbi.Events["NonceSubmitted"]
+	event1 := contracts1.TellorLibraryNonceSubmitted{
+		Miner: common.Address{0}, 
+		Nonce: "0", 
+		RequestId: big.NewInt(1),
+		Value: big.NewInt(1), 
+		CurrentChallenge: [32]byte{0},
+		}
+	//eventResult := contracts1.TellorLibraryNonceSubmitted{}
+	test, _ := ev.Inputs.NonIndexed().Pack(event1.Nonce, event1.Value, event1.CurrentChallenge)
+	//test, err := ev.Inputs.Pack(event1.Miner, event1.Nonce, event1.RequestId, event1.Value, event1.CurrentChallenge)
+	//fmt.Print("\nresult: ", test," Error: ",  err, "\n", "test: ", common.BigToHash(common.Big1))
+
+	log := types.Log{
+		Address: common.Address{0},
+		Topics: []common.Hash{ev.ID(), common.BigToHash(common.Big0), common.BigToHash(common.Big1)},
+		Data: test,
+		BlockNumber: 9,
+	}
+
+	var logs []types.Log
+
+	logs = append(logs,log)
+
+	return logs, nil
 }
 func (c *mockClient) SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
 	return nil, nil
@@ -335,6 +376,18 @@ func (c *mockClient) NetworkID(ctx context.Context) (*big.Int, error) {
 	return big.NewInt(1), nil
 }
 
+func (c *mockClient) HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
+	header := types.Header{
+		Difficulty: math.BigPow(11, 11),
+		Number:     math.BigPow(1,0),
+		GasLimit:   12345678,
+		GasUsed:    1476322,
+		Extra:      []byte("coolest block on chain"),
+	}
+	header.Time = uint64(time.Now().Unix())
+	return &header, nil
+}
+
 func paddedRLP(w *bytes.Buffer, val interface{}) error {
 	b, err := rlp.EncodeToBytes(val)
 	if err != nil {
@@ -348,8 +401,4 @@ func paddedInt(w *bytes.Buffer, val *big.Int) error {
 	hex := math.PaddedBigBytes(math.U256(val), 32)
 	_, err := w.Write(hex)
 	return err
-}
-
-func (c *mockClient)HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
-	return nil, fmt.Errorf("not implemented")
 }

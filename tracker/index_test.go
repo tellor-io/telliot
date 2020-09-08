@@ -17,6 +17,7 @@ import (
 //./runTest.sh TestPSR tracker
 
 func TestPSR(t *testing.T) {
+	//client.Timeout = 5
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_psrFetch"))
 	if err != nil {
 		log.Fatal(err)
@@ -24,13 +25,16 @@ func TestPSR(t *testing.T) {
 	}
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, common.DBContextKey, db)
-	psr, err := BuildPSRTrackers()
+	psr, err := BuildIndexTrackers()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = psr.Exec(ctx)
-	if err != nil {
-		t.Fatalf("failed to execute psr: %v", err)
+	for idx := range psr {
+		err = psr[idx].Exec(ctx)
+		psrStr := psr[idx].String()
+		if err != nil {
+			t.Fatalf("failed to execute psr: %s %v", psrStr, err)
+		}
 	}
 	val, err := db.Get(fmt.Sprintf("qv_%d", 1))
 	if err != nil {

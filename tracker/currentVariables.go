@@ -3,6 +3,7 @@ package tracker
 import (
 	"context"
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
@@ -55,35 +56,35 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	currentVarsLog.Info("Retrieved variables. challengeHash: %x", currentChallenge)
 
 	err = DB.Put(db.CurrentChallengeKey, currentChallenge[:])
-	if err != nil {
-		fmt.Println("Current Variables Put Error")
-		return err
-	}
+	//if err != nil {
+	//	fmt.Println("Current Variables Put Error")
+	//	return err
+	//}
 	err = DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(requestID)))
-	if err != nil {
-		fmt.Println("Current Variables Put Error")
-		return err
-	}
+	//if err != nil {
+	//	fmt.Println("Current Variables Put Error")
+	//	return err
+	//}
 	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(difficulty)))
-	if err != nil {
-		fmt.Println("Current Variables Put Error")
-		return err
-	}
+	//if err != nil {
+	//	fmt.Println("Current Variables Put Error")
+	//	return err
+	//}
 	err = DB.Put(db.QueryStringKey, []byte(queryString))
-	if err != nil {
-		fmt.Println("Current Variables Put Error")
-		return err
-	}
+	//if err != nil {
+	//	fmt.Println("Current Variables Put Error")
+	//	return err
+	//}
 	err = DB.Put(db.GranularityKey, []byte(hexutil.EncodeBig(granularity)))
-	if err != nil {
-		fmt.Println("Current Variables Put Error")
-		return err
-	}
+	//if err != nil {
+	//	fmt.Println("Current Variables Put Error")
+	//	return err
+	//}
 	err = DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
-	if err != nil {
-		fmt.Println("Current Variables Put Error")
-		return err
-	}
+	//if err != nil {
+	//	fmt.Println("Current Variables Put Error")
+	//	return err
+	//}
 
 	return DB.Put(db.MiningStatusKey, bitSetVar)
 }

@@ -40,6 +40,7 @@ type MiningChallenge struct {
 	Challenge  []byte
 	Difficulty *big.Int
 	RequestID  *big.Int
+	RequestIDs [5]*big.Int
 }
 
 func NewHashSettings(challenge *MiningChallenge, publicAddr string) *HashSettings {

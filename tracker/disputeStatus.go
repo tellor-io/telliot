@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/big"
+	// "math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -51,6 +51,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	}
 
 	status, _, err := instance.GetStakerInfo(nil, fromAddress)
+	
 	if err != nil {
 		fmt.Println("instance Error, disputeStatus")
 		return err
@@ -63,9 +64,9 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 		return err
 	}
 	//Issue #50, bail out of not able to mine
-	if status.Cmp(big.NewInt(1)) != 0 {
-		log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
-	}
+	// if status.Cmp(big.NewInt(1)) != 0 {
+	// 	log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
+	// }
 
 	//add all whitelisted miner addresses as well since they will be coming in
 	//asking for dispute status
