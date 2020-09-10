@@ -13,7 +13,15 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-func TestTimeOutTracker (t *testing.T) {
+func TestTimeOutString(t *testing.T) {
+	tracker := &TimeOutTracker{}
+	res := tracker.String()
+	if res != "TimeOutTracker" {
+		t.Fatalf("should return 'TimeOutTracker' string")
+	}
+}
+
+func TestTimeOutTracker(t *testing.T) {
 
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_timeOut"))
 	if err != nil {
