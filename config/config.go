@@ -4,11 +4,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 //unfortunate hack to enable json parsing of human readable time strings
@@ -52,19 +53,21 @@ type GPUConfig struct {
 
 //Config holds global config info derived from config.json
 type Config struct {
-	ContractAddress              string                `json:"contractAddress"`
-	NodeURL                      string                `json:"nodeURL"`
-	DatabaseURL                  string                `json:"databaseURL"`
-	PublicAddress                string                `json:"publicAddress"`
-	EthClientTimeout             uint                  `json:"ethClientTimeout"`
-	TrackerSleepCycle            Duration              `json:"trackerCycle"`
-	Trackers                     []string              `json:"trackers"`
+	ContractAddress              string   `json:"contractAddress"`
+	NodeURL                      string   `json:"nodeURL"`
+	DatabaseURL                  string   `json:"databaseURL"`
+	PublicAddress                string   `json:"publicAddress"`
+	EthClientTimeout             uint     `json:"ethClientTimeout"`
+	TrackerSleepCycle            Duration `json:"trackerCycle"`
+	Trackers                     map[string]bool
+	OptionalTrackers             []string              `json:"trackers"`
+	DisabledTrackers             []string              `json:"disabledTrackers"`
 	DBFile                       string                `json:"dbFile"`
 	ServerHost                   string                `json:"serverHost"`
 	ServerPort                   uint                  `json:"serverPort"`
 	FetchTimeout                 Duration              `json:"fetchTimeout"`
 	RequestData                  uint                  `json:"requestData"`
-	MinConfidence                float64                 `json:"minConfidence"`
+	MinConfidence                float64               `json:"minConfidence"`
 	RequestDataInterval          Duration              `json:"requestDataInterval"`
 	RequestTips                  int64                 `json:"requestTips"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
@@ -78,12 +81,12 @@ type Config struct {
 	Worker                       string                `json:"worker"`
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
-	IndexFolder                  string               `json:"indexFolder"`
+	IndexFolder                  string                `json:"indexFolder"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
 	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
 
 	//config parameters excluded from the json config file
-	PrivateKey                   string 			   `json:"privateKey"`
+	PrivateKey string `json:"privateKey"`
 }
 
 const defaultTimeout = 30 * time.Second //30 second fetch timeout
@@ -92,16 +95,43 @@ const defaultRequestInterval = 30 * time.Second //30 seconds between data reques
 const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for new challenges that could interrupt current mining
 const defaultCores = 2
 
-const defaultHeartbeat = 15 * time.Second       //check miner speed every 10 ^ 8 cycles
-var (
-	config *Config
-)
+const defaultHeartbeat = 15 * time.Second //check miner speed every 10 ^ 8 cycles
+// var (
+// 	config *Config
+// )
+
+var config = *Config{
+	GasMax:        10,
+	GasMultiplier: 1,
+	Trackers: map[string]bool{
+		"newCurrentVariables": true,
+		"timeOut":             true,
+		"balance":             true,
+		"currentVariables":    true,
+		"disputeStatus":       true,
+		"gas":                 true,
+		"top50":               true,
+		"tributeBalance":      true,
+		"indexers":            true,
+		"disputeChecker":      false,
+	},
+}
 
 const defaultMaxParallelPSR = 4
 
 const defaultTrackerInterval = 30 * time.Second
 
 const DefaultMaxCheckTimeDelta = 5 * time.Minute
+
+const defaultEthClientTimeout = 3000
+
+const defaultTrackerCycle = 10
+
+const defaultGasMultiplier = 1
+
+const defaultGasMax = 10
+
+var defaultTrackers = []string{"newCurrentVariables", "timeOut"}
 
 //threshold, a percentage of the expected value
 const DefaultDisputeThreshold = 0.01
@@ -162,6 +192,22 @@ func ParseConfigBytes(data []byte) error {
 		config.Heartbeat.Duration = defaultHeartbeat
 	}
 
+	if config.TrackerSleepCycle.Seconds() == 0 {
+		config.TrackerSleepCycle.Duration = defaultTrackerCycle
+	}
+
+	if config.EthClientTimeout == 0 {
+		config.EthClientTimeout = defaultEthClientTimeout
+	}
+
+	if config.GasMultiplier == 0 {
+		config.GasMultiplier = defaultGasMultiplier
+	}
+
+	if config.GasMax == 0 {
+		config.GasMax = defaultGasMax
+	}
+
 	if len(config.ServerWhitelist) == 0 {
 		if strings.Contains(config.PublicAddress, "0x") {
 			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)
@@ -180,6 +226,31 @@ func ParseConfigBytes(data []byte) error {
 		config.DisputeTimeDelta.Duration = DefaultMaxCheckTimeDelta
 	}
 
+	//All possible Trackers. True are Defaults.
+	allTrackers := map[string]bool{
+		"newCurrentVariables": true,
+		"timeOut":             true,
+		"balance":             true,
+		"currentVariables":    true,
+		"disputeStatus":       true,
+		"gas":                 true,
+		"top50":               true,
+		"tributeBalance":      true,
+		"indexers":            true,
+		"disputeChecker":      false,
+	}
+
+	for _, name := range config.OptionalTrackers {
+		_, ok := config.Trackers[name]
+		if ok {
+			config.Trackers[name] = true
+		}
+	}
+
+	for _, name := range config.DisabledTrackers {
+		config.Trackers[name] = true
+	}
+
 	err = validateConfig(config)
 	if err != nil {
 		return fmt.Errorf("validation failed: %s", err)
@@ -192,7 +263,7 @@ func validateConfig(cfg *Config) error {
 	if err != nil || len(b) != 20 {
 		return fmt.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
-	if cfg.EnablePoolWorker  {
+	if cfg.EnablePoolWorker {
 		if len(cfg.Worker) == 0 {
 			return fmt.Errorf("worker name required for pool")
 		}
