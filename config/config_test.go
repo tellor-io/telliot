@@ -33,16 +33,16 @@ func TestConfig(t *testing.T) {
 	}
 	cfg := GetConfig()
 	//Asserting Default Values
-	if cfg.GasMax != 0 {
+	if cfg.GasMax == 0 {
 		t.Fatal("GasMax should have value")
 	}
-	if cfg.GasMultiplier != 0 {
+	if cfg.GasMultiplier == 0 {
 		t.Fatal("GasMultiplier should have value")
 	}
-	if cfg.MinConfidence != 0 {
+	if cfg.MinConfidence == 0 {
 		t.Fatal("MinConfidence should have value")
 	}
-	if cfg.DisputeThreshold != 0 {
+	if cfg.DisputeThreshold == 0 {
 		t.Fatal("DisputeThreshold should have value")
 	}
 }
