@@ -5,5 +5,6 @@
     "publicAddress": "e037ec8ec9ec423826750853899394dexxxxxxxxxxxxxxxe",
     "serverHost": "localhost",
     "serverPort": 5000,
+    "gasMax": 10,
     "dbFile": "/tellorDB"
 }
