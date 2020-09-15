@@ -22,7 +22,7 @@ func TestConfig(t *testing.T) {
 	//Creating a mock .ENV file to go around this issue with godotenv:
 	//https://github.com/joho/godotenv/issues/43
 	createEnvFile(t)
-	dir, err := filepath.Abs("../config.json")
+	dir, err := filepath.Abs("../config/config1.test.json")
 	if err != nil {
 		t.Fatal("Error reading config directory")
 	}
@@ -32,7 +32,17 @@ func TestConfig(t *testing.T) {
 		t.Fatal("")
 	}
 	cfg := GetConfig()
-	if len(cfg.ContractAddress) == 0 {
-		t.Fatal("Config did not parse correctly")
+	//Asserting Default Values
+	if cfg.GasMax != 0 {
+		t.Fatal("GasMax should have value")
+	}
+	if cfg.GasMultiplier != 0 {
+		t.Fatal("GasMultiplier should have value")
+	}
+	if cfg.MinConfidence != 0 {
+		t.Fatal("MinConfidence should have value")
+	}
+	if cfg.DisputeThreshold != 0 {
+		t.Fatal("DisputeThreshold should have value")
 	}
 }

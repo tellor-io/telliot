@@ -53,15 +53,13 @@ type GPUConfig struct {
 
 //Config holds global config info derived from config.json
 type Config struct {
-	ContractAddress              string   `json:"contractAddress"`
-	NodeURL                      string   `json:"nodeURL"`
-	DatabaseURL                  string   `json:"databaseURL"`
-	PublicAddress                string   `json:"publicAddress"`
-	EthClientTimeout             uint     `json:"ethClientTimeout"`
-	TrackerSleepCycle            Duration `json:"trackerCycle"`
-	Trackers                     map[string]bool
-	OptionalTrackers             []string              `json:"trackers"`
-	DisabledTrackers             []string              `json:"disabledTrackers"`
+	ContractAddress              string                `json:"contractAddress"`
+	NodeURL                      string                `json:"nodeURL"`
+	DatabaseURL                  string                `json:"databaseURL"`
+	PublicAddress                string                `json:"publicAddress"`
+	EthClientTimeout             uint                  `json:"ethClientTimeout"`
+	TrackerSleepCycle            Duration              `json:"trackerCycle"`
+	Trackers                     map[string]bool       `json:"trackers"`
 	DBFile                       string                `json:"dbFile"`
 	ServerHost                   string                `json:"serverHost"`
 	ServerPort                   uint                  `json:"serverPort"`
@@ -157,17 +155,6 @@ func ParseConfigBytes(data []byte) error {
 
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
-
-	for _, name := range config.OptionalTrackers {
-		_, ok := config.Trackers[name]
-		if ok {
-			config.Trackers[name] = true
-		}
-	}
-
-	for _, name := range config.DisabledTrackers {
-		config.Trackers[name] = true
-	}
 
 	err = validateConfig(&config)
 	if err != nil {

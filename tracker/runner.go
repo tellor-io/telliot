@@ -30,7 +30,7 @@ func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
 //Start will kick off the runner until the given exit channel selects.
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	cfg := config.GetConfig()
-	trackerNames := cfg.Trackers
+	trackerNames := cfg.ActiveTrackers
 	var trackers []Tracker
 	for name, activated := range trackerNames {
 		if activated {
