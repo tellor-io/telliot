@@ -2,9 +2,12 @@
     "contractAddress": "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5",
     "nodeURL": "https://mainnet.infura.io/v3/7f11ed6dfxxxxxxxxxxxxxxxxx",
     "databaseURL":"http://localhost7545",
-    "publicAddress": "e037ec8ec9ec423826750853899394dexxxxxxxxxxxxxxxe",
+    "publicAddress": "3808C441402D0418C52237B697bBC5D18c84839A",
     "serverHost": "localhost",
     "serverPort": 5000,
-    "gasMax": 10,
+    "trackers": {
+        "indexers": false,
+        "disputeChecker": true
+    },
     "dbFile": "/tellorDB"
 }
