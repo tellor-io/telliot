@@ -157,6 +157,7 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 				_id := strconv.FormatUint(reqIDs[i].Uint64(), 10)
 				val := result[_id]["VALUE"]
 			if val == 0{
+				fmt.Println(reqIDs[i].Uint64(), val)
 				mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
 				return nil,false
 			}else{
@@ -174,10 +175,8 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work,bool) {
 	}
 
 	//if we already sent this challenge out, don't do it again
-	if mt.currChallenge != nil {
-		if bytes.Compare(newChallenge.Challenge, mt.currChallenge.Challenge) == 0 {
+	if mt.currChallenge != nil && !instantSubmit && bytes.Compare(newChallenge.Challenge, mt.currChallenge.Challenge) == 0 {
 			return nil,false
-		}
 	}
 	mt.currChallenge = newChallenge
 	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64},instantSubmit
