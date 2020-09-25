@@ -44,9 +44,6 @@ endef
 help: ## Displays help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-z0-9A-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-.PHONY: all
-all: format build
-
 .PHONY: deps
 deps: ## Ensures fresh go.mod and go.sum.
 	@go mod tidy
@@ -68,6 +65,11 @@ go-format: $(GOIMPORTS)
 	@SED_BIN="$(SED)" scripts/cleanup-white-noise.sh $(FILES_TO_FMT)
 	@gofmt -s -w $(FILES_TO_FMT)
 	@$(GOIMPORTS) -w $(FILES_TO_FMT)
+
+.PHONY:format
+format: ## Formats code including imports and cleans up white noise.
+format: go-format
+	@SED_BIN="$(SED)" scripts/cleanup-white-noise.sh $(FILES_TO_FMT)
 
 .PHONY:lint
 lint: ## Runs various static analysis against our code.
