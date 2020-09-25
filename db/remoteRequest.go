@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package db
 
 import (
@@ -11,49 +14,42 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-type requestType int
-
-//RequestSigner handles signing an outgoing request. It's just an abstraction
-//so we can test, etc.
+// RequestSigner handles signing an outgoing request. It's just an abstraction
+// so we can test, etc.
 type RequestSigner interface {
-	//Sign the given payload hash with a private key and return the
-	//signature bytes
+	// Sign the given payload hash with a private key and return the signature bytes.
 	Sign(payload []byte) ([]byte, error)
 }
 
-//RequestValidator validates that a miner's signature is valid, that its address
-//is whitelisted, and minizes chances that the requested hash isn't being replayed
+// RequestValidator validates that a miner's signature is valid, that its address
+// is whitelisted, and minizes chances that the requested hash isn't being replayed.
 type RequestValidator interface {
-	//Verify the given signature was signed by a valid/whitelisted miner address
+	// Verify the given signature was signed by a valid/whitelisted miner address.
 	Verify(hash []byte, timestamp int64, sig []byte) error
 }
 
-//
-// --- Request payload is encoded and comes from a remote client (miner) that is
-// --- asking for specific data. Every request has a signature to verify it's
-// --- coming from a whitelisted client and that it has not been already requested
-// --- based on its timestamp
-//
+// Request payload is encoded and comes from a remote client (miner) that is
+// asking for specific data. Every request has a signature to verify it's
+// coming from a whitelisted client and that it has not been already requested
+// based on its timestamp.
 type requestPayload struct {
 
-	//key to access the DB
+	// dbKeys to access the DB.
 	dbKeys []string
 
-	//values to store in the DB
+	// dbValues to store in the DB.
 	dbValues [][]byte
 
-	//time when the request was sent. Aids in avoiding replay attacks
+	// timestamp when the request was sent. Aids in avoiding replay attacks.
 	timestamp int64
 
-	//signature of op, dbKey, dbVal, and timestamp
+	// signature of op, dbKey, dbVal, and timestamp.
 	sig []byte
 }
 
 var rrlog *util.Logger = util.NewLogger("db", "RemoteRequest")
 
-/**
- * Create an outgoing request for the given keys
- */
+// Create an outgoing request for the given keys.
 func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*requestPayload, error) {
 
 	//rrlog = util.NewLogger("db", "RemoteRequest")
@@ -81,10 +77,8 @@ func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*req
 	return &requestPayload{dbKeys: dbKeys, dbValues: values, timestamp: t, sig: sig}, nil
 }
 
-/**
- * Since we use keys and time for sig hashing, we have a specific function for
- * encoding just those parts
- **/
+// Since we use keys and time for sig hashing, we have a specific function for
+// encoding just those parts.
 func encodeKeysValuesAndTime(buf *bytes.Buffer, dbKeys []string, values [][]byte, timestamp int64) error {
 
 	rrlog.Debug("Encoding timestamp")
@@ -131,9 +125,7 @@ func encodeKeysValuesAndTime(buf *bytes.Buffer, dbKeys []string, values [][]byte
 	return nil
 }
 
-/**
- * Decodes just the key and timestamp portions of a buffer
- */
+// Decodes just the key and timestamp portions of a buffer.
 func decodeKeysValuesAndTime(buf io.Reader) ([]string, [][]byte, int64, error) {
 	var time int64
 	if err := decode(buf, &time); err != nil {
@@ -143,7 +135,7 @@ func decodeKeysValuesAndTime(buf io.Reader) ([]string, [][]byte, int64, error) {
 	if err := decode(buf, &len); err != nil {
 		return nil, nil, 0, err
 	}
-	dbKeys := make([]string, len, len)
+	dbKeys := make([]string, len)
 	for i := uint32(0); i < len; i++ {
 		s, err := decodeString(buf)
 		if err != nil {
@@ -155,7 +147,7 @@ func decodeKeysValuesAndTime(buf io.Reader) ([]string, [][]byte, int64, error) {
 	if err := decode(buf, &len); err != nil {
 		return nil, nil, 0, err
 	}
-	values := make([][]byte, len, len)
+	values := make([][]byte, len)
 	for i := uint32(0); i < len; i++ {
 		bts, err := decodeBytes(buf)
 		if err != nil {
@@ -166,9 +158,7 @@ func decodeKeysValuesAndTime(buf io.Reader) ([]string, [][]byte, int64, error) {
 	return dbKeys, values, time, nil
 }
 
-/**
- * Encode the given request for transport over the wire
- */
+// Encode the given request for transport over the wire.
 func encodeRequest(r *requestPayload) ([]byte, error) {
 	buf := new(bytes.Buffer)
 
@@ -196,10 +186,8 @@ func encodeRequest(r *requestPayload) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-/**
- * Decode a request from the given bytes. The signer is used to validate keys
- * and whitelisted miners
- */
+// Decode a request from the given bytes. The signer is used to validate keys
+// and whitelisted miners.
 func decodeRequest(data []byte, validator RequestValidator) (*requestPayload, error) {
 	buf := bytes.NewReader(data)
 	keys, vals, time, err := decodeKeysValuesAndTime(buf)

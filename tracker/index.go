@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -17,15 +20,14 @@ import (
 )
 
 var clck clock.Clock
+
 func init() {
 	clck = clock.New()
 }
 
-var psrLog = util.NewLogger("tracker", "IndexTrackers")
-
 var indexes map[string][]*IndexTracker
 
-//BuildIndexTrackers creates and initializes a new tracker instance
+// BuildIndexTrackers creates and initializes a new tracker instance.
 func BuildIndexTrackers() ([]Tracker, error) {
 	fmt.Println("StartingIndex Trackers")
 	err := apiOracle.EnsureValueOracle()
@@ -112,7 +114,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	//start the PSR system that will feed from these indexes
 	err = InitPSRs()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initalize PSRs: %v", err)
+		return nil, fmt.Errorf("failed to initialize PSRs: %v", err)
 	}
 
 	return trackers, nil
@@ -164,7 +166,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	}
 
 	//save the value into our local data window (set 0 volume for now)
-	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price:vals[0], Volume:volume})
+	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price: vals[0], Volume: volume})
 	//update all the values that depend on these symbols
 	return UpdatePSRs(ctx, i.Symbols)
 }

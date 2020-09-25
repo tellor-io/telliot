@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -14,10 +17,10 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 )
 
-//./runTest.sh TestPSR tracker
+// /runTest.sh TestPSR tracker
 
 func TestPSR(t *testing.T) {
-	//client.Timeout = 5
+	// lient.Timeout = 5
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_psrFetch"))
 	if err != nil {
 		log.Fatal(err)

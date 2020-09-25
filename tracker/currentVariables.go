@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -15,17 +18,17 @@ import (
 
 var currentVarsLog = util.NewLogger("tracker", "CurrentVarsTracker")
 
-//CurrentVariablesTracker concrete tracker type
+const CurrentVariablesTrackerName = "CurrentVariablesTracker"
+
 type CurrentVariablesTracker struct {
 }
 
 func (b *CurrentVariablesTracker) String() string {
-	return "CurrentVariablesTracker"
+	return CurrentVariablesTrackerName
 }
 
-//Exec implementation for tracker
 func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
-	//cast client using type assertion since context holds generic interface{}
+	// cast client using type assertion since context holds generic interface{}.
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	//get the single config instance
 	cfg := config.GetConfig()
@@ -56,35 +59,35 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	currentVarsLog.Info("Retrieved variables. challengeHash: %x", currentChallenge)
 
 	err = DB.Put(db.CurrentChallengeKey, currentChallenge[:])
-	//if err != nil {
-	//	fmt.Println("Current Variables Put Error")
-	//	return err
-	//}
+	if err != nil {
+		fmt.Println("Current Variables Put Error")
+		return err
+	}
 	err = DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(requestID)))
-	//if err != nil {
-	//	fmt.Println("Current Variables Put Error")
-	//	return err
-	//}
+	if err != nil {
+		fmt.Println("Current Variables Put Error")
+		return err
+	}
 	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(difficulty)))
-	//if err != nil {
-	//	fmt.Println("Current Variables Put Error")
-	//	return err
-	//}
+	if err != nil {
+		fmt.Println("Current Variables Put Error")
+		return err
+	}
 	err = DB.Put(db.QueryStringKey, []byte(queryString))
-	//if err != nil {
-	//	fmt.Println("Current Variables Put Error")
-	//	return err
-	//}
+	if err != nil {
+		fmt.Println("Current Variables Put Error")
+		return err
+	}
 	err = DB.Put(db.GranularityKey, []byte(hexutil.EncodeBig(granularity)))
-	//if err != nil {
-	//	fmt.Println("Current Variables Put Error")
-	//	return err
-	//}
+	if err != nil {
+		fmt.Println("Current Variables Put Error")
+		return err
+	}
 	err = DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
-	//if err != nil {
-	//	fmt.Println("Current Variables Put Error")
-	//	return err
-	//}
+	if err != nil {
+		fmt.Println("Current Variables Put Error")
+		return err
+	}
 
 	return DB.Put(db.MiningStatusKey, bitSetVar)
 }

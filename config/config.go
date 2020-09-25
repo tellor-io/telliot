@@ -1,19 +1,23 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package config
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
-//unfortunate hack to enable json parsing of human readable time strings
-//see https://github.com/golang/go/issues/10275
-//code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations
+// nfortunate hack to enable json parsing of human readable time strings
+// ee https://github.com/golang/go/issues/10275
+// ode from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations
 type Duration struct {
 	time.Duration
 }
@@ -40,17 +44,17 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 type GPUConfig struct {
-	//number of threads in a workgroup
+	// GroupSize defines the number of threads in a workgroup.
 	GroupSize int `json:"groupSize"`
-	//total number of threads
+	// Groups defines total number of threads.
 	Groups int `json:"groups"`
-	//number of iterations within a thread
+	// Count defines the number of iterations within a thread.
 	Count uint32 `json:"count"`
 
 	Disabled bool `json:"disabled"`
 }
 
-//Config holds global config info derived from config.json
+// onfig holds global config info derived from config.json.
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
 	NodeURL                      string                `json:"nodeURL"`
@@ -64,7 +68,7 @@ type Config struct {
 	ServerPort                   uint                  `json:"serverPort"`
 	FetchTimeout                 Duration              `json:"fetchTimeout"`
 	RequestData                  uint                  `json:"requestData"`
-	MinConfidence                float64                 `json:"minConfidence"`
+	MinConfidence                float64               `json:"minConfidence"`
 	RequestDataInterval          Duration              `json:"requestDataInterval"`
 	RequestTips                  int64                 `json:"requestTips"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
@@ -78,37 +82,35 @@ type Config struct {
 	Worker                       string                `json:"worker"`
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
-	IndexFolder                  string               `json:"indexFolder"`
-	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
-	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
+	IndexFolder                  string                `json:"indexFolder"`
+	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // gnore data further than this away from the value we are checking
+	DisputeThreshold             float64               `json:"disputeThreshold"` // aximum allowed relative difference between observed and submitted value
 
-	//config parameters excluded from the json config file
-	PrivateKey                   string 			   `json:"privateKey"`
+	// onfig parameters excluded from the json config file
+	PrivateKey string `json:"privateKey"`
 }
 
-const defaultTimeout = 30 * time.Second //30 second fetch timeout
+const defaultTimeout = 30 * time.Second // 0 second fetch timeout
 
-const defaultRequestInterval = 30 * time.Second //30 seconds between data requests (0-value tipping)
-const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for new challenges that could interrupt current mining
+const defaultRequestInterval = 30 * time.Second // 0 seconds between data requests (0-value tipping)
+const defaultMiningInterrupt = 15 * time.Second // very 15 seconds, check for new challenges that could interrupt current mining
 const defaultCores = 2
 
-const defaultHeartbeat = 15 * time.Second       //check miner speed every 10 ^ 8 cycles
+const defaultHeartbeat = 15 * time.Second // heck miner speed every 10 ^ 8 cycles
 var (
 	config *Config
 )
-
-const defaultMaxParallelPSR = 4
 
 const defaultTrackerInterval = 30 * time.Second
 
 const DefaultMaxCheckTimeDelta = 5 * time.Minute
 
-//threshold, a percentage of the expected value
+// DefaultDisputeThreshold is the threshold in percentage of the expected value.
 const DefaultDisputeThreshold = 0.01
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 
-//ParseConfig and set a shared config entry
+// ParseConfig and set a shared config entry.
 func ParseConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -118,15 +120,15 @@ func ParseConfig(path string) error {
 }
 
 func ParseConfigBytes(data []byte) error {
-	//parse the json
+	// arse the json
 	err := json.Unmarshal(data, &config)
 	if err != nil {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
 
-	//check if the env is already set, only try loading .env if its not there
+	// heck if the env is already set, only try loading .env if its not there
 	if config.PrivateKey == "" {
-		//load the env
+		// oad the env
 		err = godotenv.Load()
 		if err != nil {
 			return fmt.Errorf("error reading .env file: %v", err)
@@ -192,7 +194,7 @@ func validateConfig(cfg *Config) error {
 	if err != nil || len(b) != 20 {
 		return fmt.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
-	if cfg.EnablePoolWorker  {
+	if cfg.EnablePoolWorker {
 		if len(cfg.Worker) == 0 {
 			return fmt.Errorf("worker name required for pool")
 		}
@@ -235,7 +237,7 @@ func validateConfig(cfg *Config) error {
 	return nil
 }
 
-//GetConfig returns a shared instance of config
+// GetConfig returns a shared instance of config.
 func GetConfig() *Config {
 	return config
 }

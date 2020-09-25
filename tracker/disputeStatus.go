@@ -1,10 +1,13 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
 	"context"
 	"fmt"
 	"log"
-	// "math/big"
+
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -16,15 +19,15 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-//DisputeTracker struct
+const DisputeTrackerName = "DisputeTracker2"
+
 type DisputeTracker struct {
 }
 
 func (b *DisputeTracker) String() string {
-	return "DisputeTracker"
+	return DisputeTrackerName
 }
 
-//Exec - Places the Dispute Status in the database
 func (b *DisputeTracker) Exec(ctx context.Context) error {
 	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
@@ -51,7 +54,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	}
 
 	status, _, err := instance.GetStakerInfo(nil, fromAddress)
-	
+
 	if err != nil {
 		fmt.Println("instance Error, disputeStatus")
 		return err

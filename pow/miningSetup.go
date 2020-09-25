@@ -1,7 +1,11 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package pow
 
 import (
 	"fmt"
+
 	"github.com/tellor-io/TellorMiner/config"
 )
 

@@ -1,9 +1,13 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package dataServer
 
 import (
 	"context"
 	"log"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
@@ -13,7 +17,7 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-//DataServer holds refs to primary stack of utilities for data retrieval and serving
+// DataServer holds refs to primary stack of utilities for data retrieval and serving.
 type DataServer struct {
 	server       *rest.Server
 	DB           db.DB
@@ -26,7 +30,7 @@ type DataServer struct {
 	log          *util.Logger
 }
 
-//CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data
+// CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data.
 func CreateServer(ctx context.Context) (*DataServer, error) {
 	cfg := config.GetConfig()
 
@@ -37,9 +41,11 @@ func CreateServer(ctx context.Context) (*DataServer, error) {
 		log.Fatal(err)
 	}
 	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
-
-	//make sure channel buffer size 1 since there is no guarantee that anyone
-	//would be listening to the channel
+	if err != nil {
+		log.Fatal(err)
+	}
+	// ake sure channel buffer size 1 since there is no guarantee that anyone
+	// ould be listening to the channel
 	ready := make(chan bool, 1)
 	return &DataServer{server: srv,
 		DB:           DB,
@@ -52,7 +58,7 @@ func CreateServer(ctx context.Context) (*DataServer, error) {
 		log:          util.NewLogger("dataServer", "DataServer")}, nil
 }
 
-//Start the data server and all underlying resources
+// Start the data server and all underlying resources.
 func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 	ds.exitCh = exitCh
 	ds.runnerExitCh = make(chan int)
@@ -70,30 +76,32 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 		ds.log.Info("DataServer ready for use")
 		<-ds.exitCh
 		ds.log.Info("DataServer received signal to stop")
-		ds.stop()
+		if err := ds.stop(); err != nil {
+			ds.log.Info("error stopping the data server:%v", err)
+		}
 	}()
 	return nil
 }
 
-//Ready provides notification channel that data from trackers is ready for use
+// Ready provides notification channel that data from trackers is ready for use.
 func (ds *DataServer) Ready() chan bool {
 	return ds.readyChannel
 }
 
 func (ds *DataServer) stop() error {
-	//stop tracker run loop
+	// Stop tracker run loop.
 	ds.runnerExitCh <- 1
 
-	//stop REST erver
-	ds.server.Stop()
+	// Stop REST erver.
+	err := ds.server.Stop()
 
-	//stop the DB
-	ds.DB.Close()
+	// Stop the DB.
+	err = multierror.Append(err, ds.DB.Close())
 
-	//stop the eth RPC client
+	// Stop the eth RPC client.
 	ds.ethClient.Close()
 
-	//all done
+	// All done.
 	ds.Stopped = true
-	return nil
+	return err
 }

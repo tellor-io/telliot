@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -15,25 +18,25 @@ import (
 
 var runnerLog = util.NewLogger("tracker", "Runner")
 
-//Runner will execute all configured trackers
+// Runner will execute all configured trackers.
 type Runner struct {
 	client       rpc.ETHClient
 	db           db.DB
 	readyChannel chan bool
 }
 
-//NewRunner will create a new runner instance
+// NewRunner will create a new runner instance.
 func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
 	return &Runner{client: client, db: db, readyChannel: make(chan bool)}, nil
 }
 
-//Start will kick off the runner until the given exit channel selects.
+// Start will kick off the runner until the given exit channel selects.
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	cfg := config.GetConfig()
 	trackerNames := cfg.Trackers
-	defaultTrackers := []string{"newCurrentVariables","timeOut"}
+	defaultTrackers := []string{"newCurrentVariables", "timeOut"}
 	var trackers []Tracker
-	for _,name := range trackerNames {
+	for _, name := range trackerNames {
 		t, err := createTracker(name)
 		if err != nil {
 			runnerLog.Error("Problem creating tracker: %s\n", err.Error())
@@ -41,7 +44,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		}
 		trackers = append(trackers, t...)
 	}
-	for _,name := range defaultTrackers {
+	for _, name := range defaultTrackers {
 		t, err := createTracker(name)
 		if err != nil {
 			runnerLog.Error("Problem creating tracker: %s\n", err.Error())
@@ -67,7 +70,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	}
 
 	runnerLog.Info("Trackers will run every %v\n", cfg.TrackerSleepCycle)
-	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration/time.Duration(len(trackers)))
+	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration / time.Duration(len(trackers)))
 	if ctx.Value(tellorCommon.ClientContextKey) == nil {
 		ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)
 	}
@@ -75,7 +78,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		ctx = context.WithValue(ctx, tellorCommon.DBContextKey, r.db)
 	}
 
-	//after first run, let others know that tracker output data is ready for use
+	// after first run, let others know that tracker output data is ready for use.
 	doneFirstExec := make(chan bool, len(trackers))
 	go func(n int) {
 		for i := 0; i < n; i++ {
@@ -90,13 +93,13 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		i := 0
 		for {
 			select {
-			case _ = <-exitCh:
+			case <-exitCh:
 				{
 					runnerLog.Info("Exiting run loop")
 					ticker.Stop()
 					return
 				}
-			case _ = <-ticker.C:
+			case <-ticker.C:
 				{
 					//runnerLog.Info("Running trackers...")
 					go func(count int) {
@@ -119,7 +122,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	return nil
 }
 
-//Ready provides notification channel to know that the tracker data output is ready for use
+// Ready provides notification channel to know that the tracker data output is ready for use.
 func (r *Runner) Ready() chan bool {
 	return r.readyChannel
 }
