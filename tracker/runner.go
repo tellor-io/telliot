@@ -34,23 +34,16 @@ func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	cfg := config.GetConfig()
 	trackerNames := cfg.Trackers
-	defaultTrackers := []string{"newCurrentVariables", "timeOut"}
 	var trackers []Tracker
-	for _, name := range trackerNames {
-		t, err := createTracker(name)
-		if err != nil {
-			runnerLog.Error("Problem creating tracker: %s\n", err.Error())
-			continue
+	for name, activated := range trackerNames {
+		if activated {
+			t, err := createTracker(name)
+			if err != nil {
+				runnerLog.Error("Problem creating tracker: %s\n", err.Error())
+				continue
+			}
+			trackers = append(trackers, t...)
 		}
-		trackers = append(trackers, t...)
-	}
-	for _, name := range defaultTrackers {
-		t, err := createTracker(name)
-		if err != nil {
-			runnerLog.Error("Problem creating tracker: %s\n", err.Error())
-			continue
-		}
-		trackers = append(trackers, t...)
 	}
 	if len(trackers) == 0 {
 		return nil

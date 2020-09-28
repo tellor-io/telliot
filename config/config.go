@@ -62,7 +62,7 @@ type Config struct {
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
-	Trackers                     []string              `json:"trackers"`
+	Trackers                     map[string]bool       `json:"trackers"`
 	DBFile                       string                `json:"dbFile"`
 	ServerHost                   string                `json:"serverHost"`
 	ServerPort                   uint                  `json:"serverPort"`
@@ -83,30 +83,38 @@ type Config struct {
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
 	IndexFolder                  string                `json:"indexFolder"`
-	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking
-	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value
+	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
+	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 
-	// Config parameters excluded from the json config file
+	// Config parameters excluded from the json config file.
 	PrivateKey string `json:"privateKey"`
 }
 
-const defaultTimeout = 30 * time.Second // 30 second fetch timeout
-
-const defaultRequestInterval = 30 * time.Second // 30 seconds between data requests (0-value tipping)
-const defaultMiningInterrupt = 15 * time.Second // Every 15 seconds, check for new challenges that could interrupt current mining
-const defaultCores = 2
-
-const defaultHeartbeat = 15 * time.Second // Check miner speed every 10 ^ 8 cycles
-var (
-	config *Config
-)
-
-const defaultTrackerInterval = 30 * time.Second
-
-const DefaultMaxCheckTimeDelta = 5 * time.Minute
-
-// DefaultDisputeThreshold is the threshold in percentage of the expected value.
-const DefaultDisputeThreshold = 0.01
+var config = Config{
+	GasMax:                       10,
+	GasMultiplier:                1,
+	MinConfidence:                0.2,
+	DisputeThreshold:             0.01,
+	Heartbeat:                    Duration{15 * time.Second},
+	MiningInterruptCheckInterval: Duration{15 * time.Second},
+	RequestDataInterval:          Duration{30 * time.Second},
+	FetchTimeout:                 Duration{30 * time.Second},
+	TrackerSleepCycle:            Duration{30 * time.Second},
+	DisputeTimeDelta:             Duration{5 * time.Minute},
+	NumProcessors:                2,
+	EthClientTimeout:             3000,
+	Trackers: map[string]bool{
+		"newCurrentVariables": true,
+		"timeOut":             true,
+		"balance":             true,
+		"currentVariables":    true,
+		"disputeStatus":       true,
+		"gas":                 true,
+		"tributeBalance":      true,
+		"indexers":            true,
+		"disputeChecker":      false,
+	},
+}
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 
@@ -116,6 +124,7 @@ func ParseConfig(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open config file %s: %v", path, err)
 	}
+
 	return ParseConfigBytes(data)
 }
 
@@ -124,43 +133,18 @@ func ParseConfigBytes(data []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
-
-	// Check if the env is already set, only try loading .env if its not there
+	// Check if the env is already set, only try loading .env if its not there.
 	if config.PrivateKey == "" {
 		// Load the env
 		err = godotenv.Load()
 		if err != nil {
-			return fmt.Errorf("error reading .env file: %v", err)
+			return fmt.Errorf("error reading .env file: %v", err.Error())
 		}
 
 		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 		if config.PrivateKey == "" {
 			return fmt.Errorf("missing ethereum wallet private key environment variable '%s'", PrivateKeyEnvName)
 		}
-	}
-
-	if config.MinConfidence == 0 {
-		config.MinConfidence = 0.2
-	}
-
-	if config.FetchTimeout.Seconds() == 0 {
-		config.FetchTimeout.Duration = defaultTimeout
-	}
-	if config.RequestDataInterval.Duration == 0 {
-		config.RequestDataInterval.Duration = defaultRequestInterval
-	}
-	if config.MiningInterruptCheckInterval.Seconds() == 0 {
-		config.MiningInterruptCheckInterval.Duration = defaultMiningInterrupt
-	}
-	if config.NumProcessors == 0 {
-		config.NumProcessors = defaultCores
-	}
-	if config.TrackerSleepCycle.Duration == 0 {
-		config.TrackerSleepCycle.Duration = defaultTrackerInterval
-	}
-
-	if config.Heartbeat.Seconds() == 0 {
-		config.Heartbeat.Duration = defaultHeartbeat
 	}
 
 	if len(config.ServerWhitelist) == 0 {
@@ -174,14 +158,7 @@ func ParseConfigBytes(data []byte) error {
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
-	if config.DisputeThreshold == 0 {
-		config.DisputeThreshold = DefaultDisputeThreshold
-	}
-	if config.DisputeTimeDelta.Duration == 0 {
-		config.DisputeTimeDelta.Duration = DefaultMaxCheckTimeDelta
-	}
-
-	err = validateConfig(config)
+	err = validateConfig(&config)
 	if err != nil {
 		return fmt.Errorf("validation failed: %s", err)
 	}
@@ -238,5 +215,5 @@ func validateConfig(cfg *Config) error {
 
 // GetConfig returns a shared instance of config.
 func GetConfig() *Config {
-	return config
+	return &config
 }

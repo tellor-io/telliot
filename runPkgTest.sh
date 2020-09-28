@@ -22,5 +22,6 @@ go test -coverprofile trackercoverage.out -v "./${PKG}"
 testResult=$?
 go tool cover -func=trackercoverage.out
 rm ${PKG}/manualData.json
+rm ${PKG}/possible-dispute*.txt
 
 exit $testResult

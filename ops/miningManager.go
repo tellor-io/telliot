@@ -104,26 +104,22 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 					if mgr.solution == nil {
 						fmt.Println("Instant Submit Called! ")
 						mgr.solution = &pow.Result{Work: work, Nonce: "1"}
-					} else {
-						fmt.Println("Trying Resubmit...")
+						goodSubmit := mgr.solHandler.Submit(ctx, mgr.solution)
+						if goodSubmit {
+							fmt.Println("good submit")
+						}
 					}
 				} else if work != nil {
 					mgr.solution = nil
 					input <- work
 				}
-				if mgr.solution != nil {
-					goodSubmit := mgr.solHandler.Submit(ctx, mgr.solution)
-					if goodSubmit {
-						mgr.solution = nil
-					}
-				}
 			}
 		}
-		//send the initial challenge
+		// Send the initial challenge.
 		sendWork()
 		for {
 			select {
-			//boss wants us to quit for the day
+			// Boss wants us to quit for the day.
 			case <-mgr.exitCh:
 				//exit
 				input <- nil
@@ -137,7 +133,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				mgr.solution = result
 				goodSubmit := mgr.solHandler.Submit(ctx, mgr.solution)
 				if goodSubmit {
-					mgr.solution = nil
+					fmt.Println("solution submitted") //mgr.solution = nil
 				}
 				sendWork()
 

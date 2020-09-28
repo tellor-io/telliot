@@ -19,7 +19,7 @@ var configJSON = `{
 	"publicAddress":"0000000000000000000000000000000000000000",
 	"privateKey":"1111111111111111111111111111111111111111111111111111111111111111",
 	"contractAddress":"0x724D1B69a7Ba352F11D73fDBdEB7fF869cB22E19",
-	"trackers": ["indexers", "balance", "currentVariables", "disputeStatus", "gas", "disputeChecker"],
+	"trackers": {"disputeChecker": true},
 	"IndexFolder": "..",
 	"disputeThreshold": 1.0,
 	"disputeTimeDelta": "50s"

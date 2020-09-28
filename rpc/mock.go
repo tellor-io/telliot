@@ -29,6 +29,7 @@ const (
 	disputeStatusFN = "0x733bdef0"
 	getRequestVars  = "0xe1eee6d6"
 	didMineFN       = "0x63bb82ad"
+	getUintVarFN    = "0x612c8f7f"
 )
 
 var mockClientLog = util.NewLogger("rpc", "mockClient")
@@ -299,6 +300,10 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 				mockClientLog.Debug("Encoded request vars: %v\n", b.Bytes())
 				return b.Bytes(), nil
 			*/
+		}
+	case getUintVarFN:
+		{
+			return meth.Outputs.Pack(big.NewInt(1))
 		}
 	}
 
