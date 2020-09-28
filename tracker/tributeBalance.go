@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -26,22 +23,22 @@ func (b *TributeTracker) String() string {
 }
 
 func (b *TributeTracker) Exec(ctx context.Context) error {
-	// ast client using type assertion since context holds generic interface{}
+	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	// et the single config instance
+	//get the single config instance
 	cfg := config.GetConfig()
 
-	// et address from config
+	//get address from config
 	_fromAddress := cfg.PublicAddress
 
-	// onvert to address
+	//convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 
 	_conAddress := cfg.ContractAddress
 
-	// onvert to address
+	//convert to address
 	contractAddress := common.HexToAddress(_conAddress)
 
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
@@ -54,21 +51,21 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	balanceInTributes, _ := big.NewFloat(1).SetString(balance.String())
 	// this _should_ be unreachable given that there is an erro flag for
 	// the balanceOf call
-	// f !ok {
-	// fmt.Println("Problem converting tributes.")
-	// balanceInTributes = big.NewFloat(0)
-	//
+	//if !ok {
+	//	fmt.Println("Problem converting tributes.")
+	//	balanceInTributes = big.NewFloat(0)
+	//}
 	decimals, _ := big.NewFloat(1).SetString("1000000000000000000")
 	// This is unreachable since it's hardcoded
-	// f !ok {
-	// fmt.Println("Could not create tribute float for computing tributes")
-	// balanceInTributes = big.NewFloat(0)
-	//
+	//if !ok {
+	//	fmt.Println("Could not create tribute float for computing tributes")
+	//	balanceInTributes = big.NewFloat(0)
+	//}
 	if decimals != nil {
 		balanceInTributes = balanceInTributes.Quo(balanceInTributes, decimals)
 	}
 
-	// umTributes, _ := balanceInTributes.Float64()
+	//numTributes, _ := balanceInTributes.Float64()
 	log.Printf("Tribute Balance: %v (%v tributes)\n", balance, balanceInTributes)
 	if err != nil {
 		fmt.Println("Balance Retrieval Error - Tribute Balance")

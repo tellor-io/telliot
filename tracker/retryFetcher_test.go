@@ -9,7 +9,7 @@ import (
 )
 
 func TestFetchRetry(t *testing.T) {
-	req := &FetchRequest{queryURL: "https:// pi.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1", timeout: time.Duration(5 * time.Second)}
+	req := &FetchRequest{queryURL: "https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1", timeout: time.Duration(5 * time.Second)}
 
 	res, err := fetchWithRetries(req)
 	if err != nil {
@@ -20,7 +20,7 @@ func TestFetchRetry(t *testing.T) {
 }
 
 func TestFetchWithErrors(t *testing.T) {
-	req := &FetchRequest{queryURL: "https:// adendpoint.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1", timeout: time.Duration(2000 * time.Millisecond)}
+	req := &FetchRequest{queryURL: "https://badendpoint.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1", timeout: time.Duration(2000 * time.Millisecond)}
 	_, err := fetchWithRetries(req)
 	if err == nil {
 		t.Fatal("Bad endpoint test should have errored")
@@ -28,7 +28,7 @@ func TestFetchWithErrors(t *testing.T) {
 }
 
 func TestFetchBodyError(t *testing.T) {
-	req := &FetchRequest{queryURL: "https:// pi.binance.com/api/v1/klines?symbol=BADPAIR&interval=1d&limit=1", timeout: time.Duration(1 * time.Second)}
+	req := &FetchRequest{queryURL: "https://api.binance.com/api/v1/klines?symbol=BADPAIR&interval=1d&limit=1", timeout: time.Duration(1 * time.Second)}
 
 	_, err := fetchWithRetries(req)
 	if err == nil {

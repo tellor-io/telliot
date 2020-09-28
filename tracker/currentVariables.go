@@ -33,10 +33,10 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	//get the single config instance
 	cfg := config.GetConfig()
 
-	//get address from config
+	// get address from config.
 	_fromAddress := cfg.PublicAddress
 
-	//convert to address
+	// convert to address.
 	fromAddress := common.HexToAddress(_fromAddress)
 
 	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
@@ -46,7 +46,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	//if we've mined it, don't save it
+	// if we've mined it, don't save it.
 	myStatus, err := instance.DidMine(nil, currentChallenge, fromAddress)
 	if err != nil {
 		fmt.Println("My Status Retrieval Error")

@@ -66,13 +66,9 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// racker := &DisputeTracker{}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	context.WithValue(ctx, common.DBContextKey, DB)
-	// rr = tracker.Exec(ctx)
-	// f err != nil {
-	// t.Fatal(err)
-	//
+
 	v, err := DB.Get(db.DisputeStatusKey)
 	if err != nil {
 		t.Fatal(err)

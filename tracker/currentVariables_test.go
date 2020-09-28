@@ -39,7 +39,7 @@ func TestCurrentVariables(t *testing.T) {
 	for i, v := range hash {
 		b32[i] = v
 	}
-	queryStr := "json(https:// oinbase.com)"
+	queryStr := "json(https://coinbase.com)"
 	chal := &rpc.CurrentChallenge{ChallengeHash: b32, RequestID: big.NewInt(1),
 		Difficulty: big.NewInt(500), QueryString: queryStr,
 		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}

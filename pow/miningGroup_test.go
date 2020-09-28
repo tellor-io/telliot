@@ -63,7 +63,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 		challenge := createChallenge(v, diff)
 		input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
 
-		// ait for a solution to be found
+		// Wait for a solution to be found.
 		select {
 		case result := <-output:
 			if result == nil {
@@ -74,10 +74,10 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 			t.Fatalf("Expected result for challenge in less than %s", timeout.String())
 		}
 	}
-	// ell the mining group to close
+	// Tell the mining group to close.
 	input <- nil
 
-	// ait for it to close
+	// Wait for it to close.
 	select {
 	case result := <-output:
 		if result != nil {

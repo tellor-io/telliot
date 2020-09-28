@@ -178,7 +178,7 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work, bool) {
 		RequestIDs: reqIDs,
 	}
 
-	// f we already sent this challenge out, don't do it again
+	// This challenge is already sent out, don't do it again.
 	if mt.currChallenge != nil {
 		if bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
 			return nil, false
@@ -200,7 +200,7 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 	if disputed.Cmp(big.NewInt(1)) != 0 {
 		mt.log.Error("Miner is in dispute, cannot continue")
 		log.Fatal("Miner in dispute")
-		return statusFailure // ever gets here but just for completeness
+		return statusFailure // Never gets here but just for completeness.
 	}
 	mt.log.Info("Miner is not in dispute, continuing")
 	return statusSuccess

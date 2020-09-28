@@ -66,7 +66,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 		fmt.Printf("Problem storing dispute info: %v\n", err)
 		return err
 	}
-	//Issue #50, bail out of not able to mine
+	// Issue #50, bail out of not able to mine
 	// if status.Cmp(big.NewInt(1)) != 0 {
 	// 	log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
 	// }

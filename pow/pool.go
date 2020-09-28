@@ -102,8 +102,6 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 
 	go func() {
 		for msg := range msgChan {
-			// .log.Info("received message from pool: %#v", msg)
-
 			if !subscribed {
 				r, err := json.Marshal(msg.Result)
 				if err != nil {
@@ -112,7 +110,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 				}
 				result := string(r)
 				nonce1 = fmt.Sprintf("%x", []byte(result[7:15]))
-				// .log.Info("nonce1 is : %v", nonce1)
+				Info("nonce1 is : %v", nonce1)
 				subscribed = true
 
 				p.stratumClient.Request(
@@ -151,26 +149,10 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 					N:          math.MaxInt64}
 				p.currWork = job
 				input <- job
-				// .log.Info("send new work to hash %#v", job)
 
 			} else if msg.Method == "mining.set_difficulty" {
 				// Not implmented
 				p.log.Error("mining.set_difficulty not implemented")
-
-				// params, err := json.Marshal(msg.Params)
-				// if err != nil {
-				// 	p.log.Error("mining.set_difficulty msg parse error: %s", err.Error())
-				// 	return
-				// }
-				//
-				// var miningSetDifficulty MiningSetDifficulty
-				// if err := json.Unmarshal([]byte(string(params)), &miningSetDifficulty); err != nil {
-				// 	p.log.Error("mining.set_difficulty params msg parse error: %s", err.Error())
-				// }
-				// p.currChallenge.Difficulty = miningSetDifficulty.Difficulty
-				// p.currWork.Challenge = p.currChallenge
-				// input <- p.currWork
-				// p.log.Info("Updated difficulty for challenge: %v", p.currChallenge)
 			}
 		}
 	}()
@@ -180,8 +162,6 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 
 func (p *StratumPool) Submit(ctx context.Context, result *Result) bool {
 	nonce := result.Nonce
-	// ubmission := fmt.Sprintf("%s, %s, %s", p.minerAddress, p.currJobID, nonce)
-	// .log.Warn("mining.submit: %s", submission)
 	p.stratumClient.Request(
 		"mining.submit",
 		p.minerAddress,
@@ -191,6 +171,6 @@ func (p *StratumPool) Submit(ctx context.Context, result *Result) bool {
 		result.Work.Start = uint64(rand.Int63())
 		p.input <- result.Work
 	}
-	// heck this piece
+	// Check this piece
 	return true
 }

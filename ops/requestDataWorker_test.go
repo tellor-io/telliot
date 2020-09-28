@@ -74,7 +74,7 @@ func TestRequestDataOps(t *testing.T) {
 	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, DB)
 	reqData := CreateDataRequester(exitCh, submitter, 2, ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy))
 
-	// t should not request data if not configured to do it
+	// It should not request data if not configured to do it.
 	cfg.RequestData = 0
 	err = reqData.Start(ctx)
 	if err != nil {

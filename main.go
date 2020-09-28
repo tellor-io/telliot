@@ -42,12 +42,12 @@ func buildContext() error {
 	cfg := config.GetConfig()
 
 	if !cfg.EnablePoolWorker {
-		// reate an rpc client
+		// Create an rpc client
 		client, err := rpc.NewClient(cfg.NodeURL)
 		if err != nil {
 			log.Fatal(err)
 		}
-		// reate an instance of the tellor master contract for on-chain interactions
+		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
 		if err != nil {
@@ -88,7 +88,7 @@ func buildContext() error {
 		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 		ctx = context.WithValue(ctx, tellorCommon.PublicAddress, publicAddress)
 
-		// ssue #55, halt if client is still syncing with Ethereum network
+		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
 		if err != nil {
 			return fmt.Errorf("could not determine if Ethereum client is syncing: %v\n", err)
@@ -102,7 +102,7 @@ func buildContext() error {
 
 func AddDBToCtx(remote bool) error {
 	cfg := config.GetConfig()
-	// reate a db instance
+	// Create a db instance
 	os.RemoveAll(cfg.DBFile)
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
@@ -134,19 +134,19 @@ var GitHash string
 const versionMessage = `
     The official Tellor Miner %s (%s)
     -----------------------------------------
-	Website: https:// ellor.io
-	Github:  https:// ithub.com/tellor-io/TellorMiner
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/TellorMiner
 `
 
 func App() *cli.Cli {
 
 	app := cli.App("TellorMiner", "The tellor.io official miner")
 
-	// pp wide config options
+	// App wide config options
 	configPath := app.StringOpt("config", "config.json", "Path to the primary JSON config file")
 	logPath := app.StringOpt("logConfig", "loggingConfig.json", "Path to a JSON logging config file")
 
-	// his will get run before any of the commands
+	// This will get run before any of the commands
 	app.Before = func() {
 		ErrorHandler(config.ParseConfig(*configPath), "parsing config file")
 		ErrorHandler(util.ParseLoggingConfig(*logPath), "parsing log file")
@@ -261,9 +261,8 @@ func mineCmd(cmd *cli.Cmd) {
 				<-ds.Ready()
 			}
 		}
-		// tart miner
+		// Start miner
 		DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
-		// B := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 		v, err := DB.Get(db.DisputeStatusKey)
 		if err != nil {
 			fmt.Println("ignoring --- could not get dispute status.  Check if staked")
@@ -280,9 +279,9 @@ func mineCmd(cmd *cli.Cmd) {
 		}
 		miner.Start(ctx)
 
-		// ow we wait for kill sig
+		// Wait for kill sig.
 		<-c
-		// nd then notify exit channels
+		// Then notify exit channels.
 		for _, ch := range exitChannels {
 			*ch <- os.Interrupt
 		}
@@ -318,7 +317,7 @@ func mineCmd(cmd *cli.Cmd) {
 
 func dataserverCmd(cmd *cli.Cmd) {
 	cmd.Action = func() {
-		// reate os kill sig listener
+		// Create os kill sig listener.
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
 
@@ -330,15 +329,15 @@ func dataserverCmd(cmd *cli.Cmd) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		// tart and wait for it to be ready
+		// Start and wait for it to be ready
 		if err := ds.Start(ctx); err != nil {
 			log.Fatal(err)
 		}
 		<-ds.Ready()
 
-		// ow we wait for kill sig
+		// Wait for kill sig.
 		<-c
-		// nd then notify exit channels
+		// Notify exit channels.
 		ch <- os.Interrupt
 
 		cnt := 0
@@ -366,7 +365,7 @@ func dataserverCmd(cmd *cli.Cmd) {
 }
 
 func main() {
-	// ee, programming is easy. Just create an App() and run it!!!!!
+	// Programming is easy. Just create an App() and run it!!!!!
 	app := App()
 	err := app.Run(os.Args)
 	if err != nil {

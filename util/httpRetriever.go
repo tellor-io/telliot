@@ -43,17 +43,17 @@ func _recReq(req *HTTPFetchRequest, expiration time.Time) ([]byte, error) {
 		r, err = http.Post(req.QueryURL, "application/json", bytes.NewBuffer(req.Payload))
 	}
 	if err != nil {
-		// og local non-timeout errors for now
+		// Log local non-timeout errors for now.
 		httpFetchLog.Warn("Problem fetching data from: %s. %v", req.QueryURL, err)
 		now := time.Now()
 		if now.After(expiration) {
 			httpFetchLog.Error("Timeout expired, not retrying query and passing error up")
 			return nil, err
 		}
-		// IXME: should this be configured as fetch error sleep duration?
+		// FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)
 
-		// ry again
+		// Try again.
 		httpFetchLog.Warn("Trying fetch again...")
 		return _recReq(req, expiration)
 	}
@@ -62,15 +62,15 @@ func _recReq(req *HTTPFetchRequest, expiration time.Time) ([]byte, error) {
 
 	if r.StatusCode < 200 || r.StatusCode > 299 {
 		httpFetchLog.Warn("Response from fetching  %s. Response code: %d, payload: %s", req.QueryURL, r.StatusCode, data)
-		// og local non-timeout errors for now
+		// Log local non-timeout errors for now.
 		now := time.Now()
 		if now.After(expiration) {
 			return nil, fmt.Errorf("Giving up fetch request after request timeout: %d", r.StatusCode)
 		}
-		// IXME: should this be configured as fetch error sleep duration?
+		// FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)
 
-		// ry again
+		// Try again.
 		return _recReq(req, expiration)
 	}
 	return data, nil

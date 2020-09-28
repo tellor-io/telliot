@@ -31,14 +31,14 @@ func TestRunner(t *testing.T) {
 	}
 
 	top50 := make([]*big.Int, 51)
-	mockQueryParams := &rpc.MockQueryMeta{QueryString: "json(https:// pi.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1).0.4", Granularity: 1000}
+	mockQueryParams := &rpc.MockQueryMeta{QueryString: "json(https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1).0.4", Granularity: 1000}
 	paramsMap := make(map[uint]*rpc.MockQueryMeta)
 	for i := range top50 {
 		top50[i] = big.NewInt(int64(i + 51))
 		paramsMap[uint(i+51)] = mockQueryParams
 	}
 
-	queryStr := "json(https:// oinbase.com)"
+	queryStr := "json(https://coinbase.com)"
 	chal := &rpc.CurrentChallenge{ChallengeHash: b32, RequestID: big.NewInt(1),
 		Difficulty: big.NewInt(500), QueryString: queryStr,
 		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}

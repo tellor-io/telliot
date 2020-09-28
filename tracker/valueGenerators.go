@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -17,20 +14,20 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 )
 
-//  function to consolidate the recorded API values to a single value
+//a function to consolidate the recorded API values to a single value
 type IndexProcessor func([]*IndexTracker, time.Time) (apiOracle.PriceInfo, float64)
 
 type ValueGenerator interface {
-	// SRs report what they require to produce a value with this
+	//PSRs report what they require to produce a value with this
 	Require(time.Time) map[string]IndexProcessor
 
-	// eturn the best estimate of a value at a given time, and the confidence
+	//return the best estimate of a value at a given time, and the confidence
 	// if confidence == 0, the value has no meaning
 	ValueAt(map[string]apiOracle.PriceInfo, time.Time) float64
 }
 
 func InitPSRs() error {
-	// heck that we have all the symbols asked for
+	//check that we have all the symbols asked for
 	now := clck.Now()
 	for requestID, handler := range PSRs {
 		reqs := handler.Require(now)
@@ -45,7 +42,7 @@ func InitPSRs() error {
 }
 
 func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
-	// et the requirements
+	//get the requirements
 	reqs := PSRs[requestID].Require(at)
 	values := make(map[string]apiOracle.PriceInfo)
 	minConfidence := math.MaxFloat64
@@ -59,15 +56,15 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 			minConfidence = confidence
 		}
 		values[symbol] = val
-		// mt.Println("Value Updated", symbol, " : ", requestID, ": ", val)
+		//fmt.Println("Value Updated", symbol, " : ", requestID, ": ", val)
 	}
-	// mt.Println("values", values)
+	//fmt.Println("values", values)
 	return PSRs[requestID].ValueAt(values, at), minConfidence
 }
 
 func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	now := clck.Now()
-	// enerate a set of all affected PSRs
+	//generate a set of all affected PSRs
 	var toUpdate []int
 	for requestID, psr := range PSRs {
 		reqs := psr.Require(now)
@@ -80,7 +77,7 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 		}
 	}
 
-	// pdate all affected PSRs
+	//update all affected PSRs
 	for _, requestID := range toUpdate {
 		amt, conf := PSRValueForTime(requestID, now)
 		// if requestID == 10{
@@ -88,27 +85,27 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 		// }
 		cfg := config.GetConfig()
 		if conf < cfg.MinConfidence || math.IsNaN(amt) {
-			// mt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
-			// onfidence in this signal is too low to use
+			//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
+			//confidence in this signal is too low to use
 			continue
 		}
-		// mt.Print("\ntester ", requestID)
+		//fmt.Print("\ntester ", requestID)
 
-		// onvert it directly from a float to a bigInt so that we don't risk overflowing a uint64
+		//convert it directly from a float to a bigInt so that we don't risk overflowing a uint64
 		bigVal := new(big.Float)
 		bigVal.SetFloat64(amt)
 		bigInt := new(big.Int)
 		bigVal.Int(bigInt)
 
-		// ncode it and store to DB
+		//encode it and store to DB
 		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 		enc := hexutil.EncodeBig(bigInt)
-		// mt.Print("\nrequestId: ", requestID, " ", db.QueriedValuePrefix, requestID)
+		//fmt.Print("\nrequestId: ", requestID, " ", db.QueriedValuePrefix, requestID)
 		err := DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
 		if err != nil {
 			return err
 		}
 	}
-	// mt.Print("exited with requestIds: ", toUpdate)
+	//fmt.Print("exited with requestIds: ", toUpdate)
 	return nil
 }

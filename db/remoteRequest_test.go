@@ -97,7 +97,7 @@ func TestRequestReplayAttack(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// hat simulated a call that was decoded. Now we'll wait for timeout on request
+	// That simulated a call that was decoded. Now we'll wait for timeout on request.
 	time.Sleep((_validityThreshold * 1500) * time.Millisecond)
 
 	_, err = decodeRequest(encoded, remote.(*remoteImpl))
@@ -164,11 +164,11 @@ func TestRequestPut(t *testing.T) {
 	}
 	defer DB.Close()
 
-	// et address from config
+	// Get address from config
 	cfg := config.GetConfig()
 	_fromAddress := cfg.PublicAddress
 
-	// onvert to address
+	// Convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 	pubKey := strings.ToLower(fromAddress.Hex())
 	dbKey := pubKey + "-" + CurrentChallengeKey

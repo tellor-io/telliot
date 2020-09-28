@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-const API = "json(https:// pi.gdax.com/products/ETH-USD/ticker).price"
+const API = "json(https://api.gdax.com/products/ETH-USD/ticker).price"
 
 func TestJSONParser(t *testing.T) {
 	res, err := testFetch(API)

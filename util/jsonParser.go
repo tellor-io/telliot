@@ -42,7 +42,7 @@ func ParsePayload(payload []byte, args [][]string) ([]float64, error) {
 	for i, argGroup := range args {
 		result, err := dumpJSON(f, "root", argGroup, &dumpJsonState{})
 		if err != nil {
-			// mt.Println("ERROR", err)
+			// fmt.Println("ERROR", err)
 			return nil, errors.New("JSON Parsing error")
 		}
 		val, _ := strconv.ParseFloat(fmt.Sprintf("%v", result), 64)
@@ -65,7 +65,7 @@ func dumpJSON(v interface{}, kn string, args []string, s *dumpJsonState) (float6
 	iterMap := func(x map[string]interface{}, root string, args []string) (val float64, status bool, good bool) {
 		defer func() {
 			if r := recover(); r != nil {
-				// mt.Println("Problem parsing response", r)
+				// fmt.Println("Problem parsing response", r)
 				val = 0
 				status = false
 				good = false
@@ -102,7 +102,7 @@ func dumpJSON(v interface{}, kn string, args []string, s *dumpJsonState) (float6
 	iterSlice := func(x []interface{}, root string, args []string) (val float64, status bool, good bool) {
 		defer func() {
 			if r := recover(); r != nil {
-				// mt.Println("Problem with parsing response", r)
+				// fmt.Println("Problem with parsing response", r)
 				val = 0
 				status = false
 				good = false
@@ -118,7 +118,7 @@ func dumpJSON(v interface{}, kn string, args []string, s *dumpJsonState) (float6
 				knf = "%s:[%d]"
 			}
 			for k, v := range x {
-				if s.Bi-1 <= len(args) && len(args) > 0 { // ust added this, we need to check that our numbers are still correct...Still not fixed
+				if s.Bi-1 <= len(args) && len(args) > 0 { // Just added this, we need to check that our numbers are still correct...Still not fixed
 					i2, _ := strconv.ParseInt(args[s.Bi-1], 10, 64)
 					if k == int(i2) {
 						_, _ = dumpJSON(v, fmt.Sprintf(knf, root, k), args, s)
@@ -142,11 +142,11 @@ func dumpJSON(v interface{}, kn string, args []string, s *dumpJsonState) (float6
 
 	switch vv := v.(type) {
 	case bool:
-		// mt.Printf("%s => (bool) %v\n", kn, vv)
+		// fmt.Printf("%s => (bool) %v\n", kn, vv)
 	case float64:
-		// mt.Printf("%s => (float64) %f\n", kn, vv)
+		// fmt.Printf("%s => (float64) %f\n", kn, vv)
 	case int:
-		// mt.Printf("%s => (int) %f\n", kn, vv)
+		// fmt.Printf("%s => (int) %f\n", kn, vv)
 	case map[string]interface{}:
 		s.Res, s.Finished, s.Good = iterMap(vv, kn, args)
 		if !s.Good {

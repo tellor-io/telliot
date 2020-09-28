@@ -15,9 +15,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// nfortunate hack to enable json parsing of human readable time strings
-// ee https://github.com/golang/go/issues/10275
-// ode from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations
+// Unfortunate hack to enable json parsing of human readable time strings
+// see https://github.com/golang/go/issues/10275
+// code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations.
 type Duration struct {
 	time.Duration
 }
@@ -54,7 +54,7 @@ type GPUConfig struct {
 	Disabled bool `json:"disabled"`
 }
 
-// onfig holds global config info derived from config.json.
+// Config holds global config info derived from config.json.
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
 	NodeURL                      string                `json:"nodeURL"`
@@ -83,20 +83,20 @@ type Config struct {
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
 	IndexFolder                  string                `json:"indexFolder"`
-	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // gnore data further than this away from the value we are checking
-	DisputeThreshold             float64               `json:"disputeThreshold"` // aximum allowed relative difference between observed and submitted value
+	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking
+	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value
 
-	// onfig parameters excluded from the json config file
+	// Config parameters excluded from the json config file
 	PrivateKey string `json:"privateKey"`
 }
 
-const defaultTimeout = 30 * time.Second // 0 second fetch timeout
+const defaultTimeout = 30 * time.Second // 30 second fetch timeout
 
-const defaultRequestInterval = 30 * time.Second // 0 seconds between data requests (0-value tipping)
-const defaultMiningInterrupt = 15 * time.Second // very 15 seconds, check for new challenges that could interrupt current mining
+const defaultRequestInterval = 30 * time.Second // 30 seconds between data requests (0-value tipping)
+const defaultMiningInterrupt = 15 * time.Second // Every 15 seconds, check for new challenges that could interrupt current mining
 const defaultCores = 2
 
-const defaultHeartbeat = 15 * time.Second // heck miner speed every 10 ^ 8 cycles
+const defaultHeartbeat = 15 * time.Second // Check miner speed every 10 ^ 8 cycles
 var (
 	config *Config
 )
@@ -120,15 +120,14 @@ func ParseConfig(path string) error {
 }
 
 func ParseConfigBytes(data []byte) error {
-	// arse the json
 	err := json.Unmarshal(data, &config)
 	if err != nil {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
 
-	// heck if the env is already set, only try loading .env if its not there
+	// Check if the env is already set, only try loading .env if its not there
 	if config.PrivateKey == "" {
-		// oad the env
+		// Load the env
 		err = godotenv.Load()
 		if err != nil {
 			return fmt.Errorf("error reading .env file: %v", err)

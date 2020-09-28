@@ -45,10 +45,10 @@ func CreateSolutionHandler(
 	submitter tellorCommon.TransactionSubmitter,
 	proxy db.DataServerProxy) *SolutionHandler {
 
-	// et address from config
+	// Get address from config
 	_fromAddress := cfg.PublicAddress
 
-	// onvert to address
+	// Convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 	pubKey := strings.ToLower(fromAddress.Hex())
 

@@ -44,8 +44,8 @@ func CreateServer(ctx context.Context) (*DataServer, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// ake sure channel buffer size 1 since there is no guarantee that anyone
-	// ould be listening to the channel
+	// Make sure channel buffer size 1 since there is no guarantee that anyone
+	// Would be listening to the channel
 	ready := make(chan bool, 1)
 	return &DataServer{server: srv,
 		DB:           DB,

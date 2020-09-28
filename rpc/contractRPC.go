@@ -101,8 +101,6 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 		gasPrice = gasPrice.Mul(gasPrice, big.NewInt(int64(mul)))
 	}
 	for i < 5 {
-		//
-
 		if err != nil {
 			return err
 		}

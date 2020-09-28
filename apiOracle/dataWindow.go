@@ -86,7 +86,7 @@ func (w *Window) Insert(x *PriceStamp) {
 	now := time.Now()
 	t := x.Created
 	latest := w.Latest()
-	// gnore if too old already or if older than current newest
+	// Ignore if too old already or if older than current newest.
 	if now.Sub(t) > w.keep || (latest != nil && t.Sub(latest.Created) < 0) {
 		return
 	}

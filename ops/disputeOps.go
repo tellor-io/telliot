@@ -43,7 +43,7 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 		return fmt.Errorf("failed to fetch balance: %s", err.Error())
 	}
 	var asBytes32 [32]byte
-	copy(asBytes32[:], "0x8b75eb45d88e80f0e4ec77d23936268694c0e7ac2e0c9085c5c6bdfcfbc49239") // eccak256(disputeFee)
+	copy(asBytes32[:], "0x8b75eb45d88e80f0e4ec77d23936268694c0e7ac2e0c9085c5c6bdfcfbc49239") // keccak256(disputeFee).
 	disputeCost, err := instance.GetUintVar(nil, asBytes32)
 	if err != nil {
 		return fmt.Errorf("failed to get dispute cost: %s", err)
@@ -106,7 +106,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
-	// ust use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
+	// Just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
 	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
 
 	allVals, err := instance.GetSubmissionsByTimestamp(nil, dispute.RequestId, dispute.Timestamp)
@@ -173,12 +173,6 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 
 func List(ctx context.Context) error {
 	cfg := config.GetConfig()
-
-	// srs, err := tracker.GetPSRByIDMap()
-	// f err != nil {
-	// return fmt.Errorf("failed to read request info: %v\n", err)
-	//
-
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor1.TellorDisputeABI))
 	if err != nil {
 		return fmt.Errorf("failed to parse abi: %v", err)
@@ -186,7 +180,7 @@ func List(ctx context.Context) error {
 	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
-	// /just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
+	// Just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi.
 	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
 
 	header, err := client.HeaderByNumber(ctx, nil)

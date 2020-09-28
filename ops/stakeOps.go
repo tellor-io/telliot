@@ -22,7 +22,7 @@ import (
  */
 
 func printStakeStatus(bigStatus *big.Int, started *big.Int) {
-	// -not Staked, 1=Staked, 2=LockedForWithdraw 3= OnDispute
+	// 0-not Staked, 1=Staked, 2=LockedForWithdraw 3= OnDispute
 	status := bigStatus.Uint64()
 	stakeTime := time.Unix(started.Int64(), 0)
 	switch status {

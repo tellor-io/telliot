@@ -97,7 +97,6 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	var sortedIndexers []string
 	//set the reverse map
 	for api, symbols := range symbolsForAPI {
-		//fmt.Print("\nAPI: ", api, symbols)
 		indexers[api].Symbols = symbols
 		sortedIndexers = append(sortedIndexers, api)
 	}

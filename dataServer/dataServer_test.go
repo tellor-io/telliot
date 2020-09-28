@@ -54,7 +54,7 @@ func TestDataServer(t *testing.T) {
 
 	time.Sleep(5000 * time.Millisecond)
 
-	resp, err := http.Get("http:// ocalhost:5000/balance")
+	resp, err := http.Get("http://localhost:5000/balance")
 	if err != nil {
 		t.Fatal(err)
 	}

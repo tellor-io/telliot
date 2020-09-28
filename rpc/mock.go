@@ -339,10 +339,7 @@ func (c *mockClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery)
 		Value:            big.NewInt(1),
 		CurrentChallenge: [32]byte{0},
 	}
-	//eventResult := contracts1.TellorLibraryNonceSubmitted{}
 	test, _ := ev.Inputs.NonIndexed().Pack(event1.Nonce, event1.Value, event1.CurrentChallenge)
-	//test, err := ev.Inputs.Pack(event1.Miner, event1.Nonce, event1.RequestId, event1.Value, event1.CurrentChallenge)
-	//fmt.Print("\nresult: ", test," Error: ",  err, "\n", "test: ", common.BigToHash(common.Big1))
 
 	log := types.Log{
 		Address:     common.Address{0},

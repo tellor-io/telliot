@@ -228,19 +228,19 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			currWork = work
 			currHashSettings = NewHashSettings(work.Challenge, work.PublicAddr)
 
-		//read in a result from one of the miners
+		// Read in a result from one of the miners.
 		case result := <-resultChannel:
 			if result.err != nil {
 				log.Fatalf("hasher failed: %s", result.err.Error())
 			}
 			idleWorkers <- result.backend
 
-			//update the backend statistics no matter what
+			// Update the backend statistics no matter what.
 			result.backend.TotalHashes += result.n
 			result.backend.HashSincePrint += result.n
 
-			//only update the hashRateEstimate if we didn't find a solution - otherwise the rate could be wrong
-			// due to returning early
+			// Only update the hashRateEstimate if we didn't find a solution - otherwise the rate could be wrong
+			// due to returning early.
 			if result.nonce == "" {
 				newEst := float64(result.n) / (result.finished.Sub(result.started).Seconds())
 				if result.backend.HashRateEstimate == rateInitialGuess {
@@ -252,12 +252,12 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 				}
 			}
 
-			//ignore out of date results
+			// Ignore out of date results.
 			if result.hash != currHashSettings {
 				break
 			}
 
-			//did we finish the job?
+			// Did we finish the job?
 			recv += result.n
 			if result.nonce != "" || recv >= currWork.N {
 				output <- &Result{Work: currWork, Nonce: result.nonce}
@@ -272,6 +272,6 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			}
 		}
 	}
-	//send a nil value to signal that we're done
+	// Send a nil value to signal that we're done.
 	output <- nil
 }
