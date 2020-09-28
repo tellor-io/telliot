@@ -52,22 +52,3 @@ linters-settings:
   misspell:
     locale: US
 
-issues:
-  exclude-rules:
-    # These are not being checked since these methods exist
-    # so that no one else could implement them.
-    - linters:
-        - unused
-      text: "SourceStoreAPI.implementsStoreAPI"
-    - linters:
-        - unused
-      text: "SourceStoreAPI.producesBlocks"
-    - linters:
-        - unused
-      text: "Source.producesBlocks"
-    - linters:
-        - unused
-      text: "newMockAlertmanager"
-    - linters:
-        - unused
-      text: "ruleAndAssert"

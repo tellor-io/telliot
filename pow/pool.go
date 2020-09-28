@@ -110,7 +110,6 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 				}
 				result := string(r)
 				nonce1 = fmt.Sprintf("%x", []byte(result[7:15]))
-				Info("nonce1 is : %v", nonce1)
 				subscribed = true
 
 				p.stratumClient.Request(

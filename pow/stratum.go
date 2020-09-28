@@ -77,13 +77,13 @@ func (c *StratumClient) Listen() {
 		}
 
 		response := &StratumResponse{}
-		Info("get response from pool %s", result)
+		// c.log.Info("get response from pool %s", result)
 		err = json.Unmarshal([]byte(result), &response)
 		if err != nil {
 			c.log.Error("failed to get response from pool: %s", err.Error())
 			continue
 		}
-		Info("get response : %v", response)
+		// c.log.Info("get response : %v", response)
 		c.msgChan <- response
 	}
 }
@@ -101,7 +101,7 @@ func (c *StratumClient) Send(request *StratumRequest) *StratumResponse {
 	if err != nil {
 		return &StratumResponse{Error: err}
 	}
-	Info("send msg to pool: %s", msg)
+	// .log.Info("send msg to pool: %s", msg)
 	_, err = c.socket.Write([]byte(msg))
 	if err != nil {
 		c.log.Error("failed to send msg to pool: %s", err.Error())

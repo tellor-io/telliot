@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 // ChainedPrice computes a pair that doesn't exist by using multiple symbols

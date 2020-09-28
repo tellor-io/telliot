@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -14,7 +17,7 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 )
 
-//a function to consolidate the recorded API values to a single value
+//IndexProcessor consolidates the recorded API values to a single value.
 type IndexProcessor func([]*IndexTracker, time.Time) (apiOracle.PriceInfo, float64)
 
 type ValueGenerator interface {
