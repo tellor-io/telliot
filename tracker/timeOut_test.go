@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -39,5 +42,7 @@ func TestTimeOutTracker(t *testing.T) {
 
 	tracker := &TimeOutTracker{}
 
-	tracker.Exec(ctx)
+	if err := tracker.Exec(ctx); err != nil {
+		log.Fatal(err)
+	}
 }

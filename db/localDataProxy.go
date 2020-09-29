@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package db
 
 import (
@@ -11,8 +14,8 @@ type localProxy struct {
 	log     *util.Logger
 }
 
-//OpenLocalProxy creates a local data proxy so that the miner operations are seamless regardless
-//whether accessing data remotely or locally
+// OpenLocalProxy creates a local data proxy so that the miner operations are seamless regardless
+// whether accessing data remotely or locally.
 func OpenLocalProxy(localDB DB) (DataServerProxy, error) {
 	log := util.NewLogger("db", "LocalDataProxy")
 	log.Info("Using local data proxy to pull data from local DB")

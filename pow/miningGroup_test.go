@@ -1,12 +1,16 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package pow
 
 import (
 	"fmt"
-	"github.com/tellor-io/TellorMiner/config"
 	"math/big"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/tellor-io/TellorMiner/config"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -31,7 +35,10 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	hashIn := decodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
 	a := new(big.Int)
-	hashFn(hashIn, a)
+
+	if err := hashFn(hashIn, a); err != nil {
+		t.Fatal(err)
+	}
 
 	a.Mod(a, challenge.Difficulty)
 	if !a.IsUint64() || a.Uint64() != 0 {
@@ -52,31 +59,31 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	go group.Mine(input, output)
 
 	testVectors := []int{19, 133, 8, 442, 1231}
-	for _,v := range testVectors {
+	for _, v := range testVectors {
 		challenge := createChallenge(v, diff)
-		input <- &Work{Challenge:challenge, Start:0, PublicAddr:cfg.PublicAddress, N:math.MaxInt64}
+		input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
 
-		//wait for a solution to be found
+		// Wait for a solution to be found.
 		select {
-		case result := <- output:
+		case result := <-output:
 			if result == nil {
 				t.Fatalf("nil result for challenge %d", v)
 			}
 			CheckSolution(t, challenge, result.Nonce)
-		case _ = <-time.After(timeout):
+		case <-time.After(timeout):
 			t.Fatalf("Expected result for challenge in less than %s", timeout.String())
 		}
 	}
-	//tell the mining group to close
+	// Tell the mining group to close.
 	input <- nil
 
-	//wait for it to close
+	// Wait for it to close.
 	select {
-	case result := <- output:
+	case result := <-output:
 		if result != nil {
 			t.Fatalf("expected nil result when closing mining group")
 		}
-	case _ = <-time.After(timeout):
+	case <-time.After(timeout):
 		t.Fatalf("Expected mining group to close in less than %s", timeout.String())
 	}
 }
@@ -94,7 +101,7 @@ func TestGpuMiner(t *testing.T) {
 	}
 	cfg := config.GetConfig()
 
-	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()])
+	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()], false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,8 +123,8 @@ func TestMulti(t *testing.T) {
 		fmt.Println(gpus)
 		t.Fatal(err)
 	}
-	for _,gpu := range gpus {
-		impl, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()])
+	for _, gpu := range gpus {
+		impl, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()], false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -131,15 +138,15 @@ func TestMulti(t *testing.T) {
 	go group.Mine(input, output)
 
 	challenge := createChallenge(0, math.MaxInt64)
-	input <- &Work{Challenge:challenge, Start:0, PublicAddr:cfg.PublicAddress, N:math.MaxInt64}
+	input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
 	time.Sleep(1 * time.Second)
 	input <- nil
 	timeout := 200 * time.Millisecond
 	select {
-		case _ = <-output:
-			group.PrintHashRateSummary()
-		case _ = <-time.After(timeout):
-			t.Fatalf("mining group didn't quit before %s", timeout.String())
+	case <-output:
+		group.PrintHashRateSummary()
+	case <-time.After(timeout):
+		t.Fatalf("mining group didn't quit before %s", timeout.String())
 	}
 }
 
@@ -156,11 +163,13 @@ func TestHashFunction(t *testing.T) {
 	testVectors[1] = "6ad05c010b7ec871d7d72a7e8d12ad69f00f73ada2553ad517185fbfc1e3da82"
 
 	result := new(big.Int)
-	for k,v := range testVectors {
+	for k, v := range testVectors {
 		nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", k))
 		_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
 		bytes := decodeHex(_string)
-		hashFn(bytes, result)
+		if err := hashFn(bytes, result); err != nil {
+			t.Fatal(err)
+		}
 		if result.Text(16) != v {
 			t.Fatalf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16))
 		}
@@ -175,7 +184,9 @@ func BenchmarkHashFunction(b *testing.B) {
 	bytes := decodeHex(_string)
 
 	for i := 0; i < b.N; i++ {
-		hashFn(bytes, result)
+		if err := hashFn(bytes, result); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -194,5 +205,3 @@ func TestMain(m *testing.M) {
 	}
 	os.Exit(m.Run())
 }
-
-

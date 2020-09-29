@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package config
 
 import (
@@ -12,9 +15,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
-//unfortunate hack to enable json parsing of human readable time strings
-//see https://github.com/golang/go/issues/10275
-//code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations
+// Unfortunate hack to enable json parsing of human readable time strings
+// see https://github.com/golang/go/issues/10275
+// code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations.
 type Duration struct {
 	time.Duration
 }
@@ -41,17 +44,17 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 type GPUConfig struct {
-	//number of threads in a workgroup
+	// GroupSize defines the number of threads in a workgroup.
 	GroupSize int `json:"groupSize"`
-	//total number of threads
+	// Groups defines total number of threads.
 	Groups int `json:"groups"`
-	//number of iterations within a thread
+	// Count defines the number of iterations within a thread.
 	Count uint32 `json:"count"`
 
 	Disabled bool `json:"disabled"`
 }
 
-//Config holds global config info derived from config.json
+// Config holds global config info derived from config.json.
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
 	NodeURL                      string                `json:"nodeURL"`
@@ -80,10 +83,10 @@ type Config struct {
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
 	IndexFolder                  string                `json:"indexFolder"`
-	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
-	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
+	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
+	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 
-	//config parameters excluded from the json config file
+	// Config parameters excluded from the json config file.
 	PrivateKey string `json:"privateKey"`
 }
 
@@ -115,7 +118,7 @@ var config = Config{
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 
-//ParseConfig and set a shared config entry
+// ParseConfig and set a shared config entry.
 func ParseConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -126,14 +129,13 @@ func ParseConfig(path string) error {
 }
 
 func ParseConfigBytes(data []byte) error {
-	//parse the json
 	err := json.Unmarshal(data, &config)
 	if err != nil {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
-	//check if the env is already set, only try loading .env if its not there
+	// Check if the env is already set, only try loading .env if its not there.
 	if config.PrivateKey == "" {
-		//load the env
+		// Load the env
 		err = godotenv.Load()
 		if err != nil {
 			return fmt.Errorf("error reading .env file: %v", err.Error())
@@ -211,7 +213,7 @@ func validateConfig(cfg *Config) error {
 	return nil
 }
 
-//GetConfig returns a shared instance of config
+// GetConfig returns a shared instance of config.
 func GetConfig() *Config {
 	return &config
 }

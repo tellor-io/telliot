@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -6,13 +9,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
 	"github.com/tellor-io/TellorMiner/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
 	"github.com/tellor-io/TellorMiner/rpc"
 )
-
-
 
 func TestETHGasStation(t *testing.T) {
 	tracker := &GasTracker{}
@@ -38,8 +40,6 @@ func TestETHGasStation(t *testing.T) {
 	t.Logf("Gas Price stored: %v\n", string(v))
 
 }
-
-
 
 // func TestGas(t *testing.T) {
 // 	opts := &rpc.MockOptions{ETHBalance: big.NewInt(300000), Nonce: 1, GasPrice: big.NewInt(7000000000),

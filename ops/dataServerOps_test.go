@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package ops
 
 import (
@@ -45,7 +48,9 @@ func TestDataServerOps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ops.Start(ctx)
+	if err := ops.Start(ctx); err != nil {
+		t.Fatal("error starting the data server", err)
+	}
 	time.Sleep(2 * time.Second)
 	exitCh <- os.Interrupt
 	time.Sleep(1 * time.Second)

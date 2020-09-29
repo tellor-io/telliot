@@ -1,25 +1,26 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package apiOracle
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/tellor-io/TellorMiner/config"
+	"github.com/tellor-io/TellorMiner/util"
 )
 
 var logger = util.NewLogger("apiOracle", "valueOracle")
 
-//maps symbol to a time window of values
+// maps symbol to a time window of values.
 var valueHistory map[string]*Window
 var valueHistoryMutex sync.RWMutex
-
-//last time PSR windows written to disk
-var lastHistoryWriteAttempt time.Time
 
 func GetNearestTwoRequestValue(id string, at time.Time) (before, after *PriceStamp) {
 	valueHistoryMutex.RLock()
@@ -49,21 +50,21 @@ func SetRequestValue(id string, at time.Time, info PriceInfo) {
 		valueHistory[id] = NewWindow(7 * 24 * time.Hour)
 	}
 	valueHistory[id].Insert(&PriceStamp{
-		Created: at,
-		PriceInfo:info,
+		Created:   at,
+		PriceInfo: info,
 	})
 	valueHistoryMutex.Unlock()
 }
 
 func writeOutHistory() {
 	valueHistoryMutex.Lock()
-	for _,v := range valueHistory {
+	for _, v := range valueHistory {
 		v.Trim()
 	}
 	data, err := json.MarshalIndent(valueHistory, "", "\t")
 
-	//in order to not hold up the rest of the program, we release the mutex while we write out the file
-	//this function is single threaded, but we need mutex to access multithreaded history
+	// In order to not hold up the rest of the program, we release the mutex while we write out the file
+	// this function is single threaded, but we need mutex to access multithreaded history.
 	valueHistoryMutex.Unlock()
 	if err != nil {
 		logger.Error("failed to marshal PSR values: %s", err.Error())
@@ -78,7 +79,7 @@ func writeOutHistory() {
 		logger.Error("failed to write out PSR values to %s: %s", psrSavedDataTmp, err.Error())
 		return
 	}
-	//rename tmp file to old file (should be atomic on most modern OS)
+	// Rename tmp file to old file (should be atomic on most modern OS)
 	err = os.Rename(psrSavedDataTmp, psrSavedData)
 	if err != nil {
 		logger.Error("failed move new PSR save onto old: %s", err.Error())
@@ -94,7 +95,7 @@ func EnsureValueOracle() error {
 	valueHistoryMutex.Lock()
 	defer valueHistoryMutex.Unlock()
 
-	//check again after we grabbed mutex
+	// Check again after we grabbed mutex
 	if valueHistory != nil {
 		return nil
 	}
@@ -125,7 +126,7 @@ func EnsureValueOracle() error {
 	} else {
 		valueHistory = make(map[string]*Window)
 	}
-	//periodically flush the value history to disk to create a record for disputes
+	// Periodically flush the value history to disk to create a record for disputes
 	go func() {
 		for {
 			time.Sleep(2 * time.Minute)
@@ -134,4 +135,3 @@ func EnsureValueOracle() error {
 	}()
 	return nil
 }
-

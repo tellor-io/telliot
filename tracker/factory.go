@@ -1,8 +1,11 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import "fmt"
 
-//CreateTracker a tracker instance by its well-known name
+// CreateTracker a tracker instance by its well-known name.
 func createTracker(name string) ([]Tracker, error) {
 	switch name {
 	case "timeOut":
@@ -24,11 +27,11 @@ func createTracker(name string) ([]Tracker, error) {
 	case "gas":
 		{
 			return []Tracker{&GasTracker{}}, nil
-		}	
+		}
 	case "newCurrentVariables":
-			{
-				return []Tracker{&NewCurrentVariablesTracker{}}, nil
-			}
+		{
+			return []Tracker{&NewCurrentVariablesTracker{}}, nil
+		}
 	case "tributeBalance":
 		{
 			return []Tracker{&TributeTracker{}}, nil

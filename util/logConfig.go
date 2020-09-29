@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package util
 
 import (
@@ -6,13 +9,13 @@ import (
 	"os"
 )
 
-//Entry holds specific component log level
+// Entry holds specific component log level.
 type Entry struct {
 	Level     string `json:"level"`
 	Component string `json:"component"`
 }
 
-//LogConfig holds individual log level settings
+// LogConfig holds individual log level settings.
 type LogConfig struct {
 	levels map[string]LogLevel
 }
@@ -21,7 +24,7 @@ var (
 	sharedConfig *LogConfig
 )
 
-//ParseLoggingConfig parses the given JSON log level config file for use in log configuration
+// ParseLoggingConfig parses the given JSON log level config file for use in log configuration.
 func ParseLoggingConfig(file string) error {
 
 	if len(file) > 0 {
@@ -34,7 +37,12 @@ func ParseLoggingConfig(file string) error {
 		}
 
 		configFile, err := os.Open(file)
-		defer configFile.Close()
+		defer func() {
+			err := configFile.Close()
+			if err != nil {
+				fmt.Print("error closing the file", err)
+			}
+		}()
 		if err != nil {
 			return err
 		}
@@ -57,17 +65,17 @@ func ParseLoggingConfig(file string) error {
 	} else {
 		sharedConfig = &LogConfig{make(map[string]LogLevel)}
 	}
-	//initialize all the loggers that have already been declared as global vars
+	// Initialize all the loggers that have already been declared as global vars.
 	initLoggers(sharedConfig)
 	return nil
 }
 
-//GetLoggingConfig retrieves a shared logging config
+// GetLoggingConfig retrieves a shared logging config.
 func GetLoggingConfig() *LogConfig {
 	return sharedConfig
 }
 
-//GetLevel the log level
+// GetLevel the log level.
 func (cfg *LogConfig) GetLevel(pkg string, component string) LogLevel {
 	key := pkg + "." + component
 	lvl := cfg.levels[key]
