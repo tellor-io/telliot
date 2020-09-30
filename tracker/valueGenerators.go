@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -14,7 +17,7 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 )
 
-//a function to consolidate the recorded API values to a single value
+//IndexProcessor consolidates the recorded API values to a single value.
 type IndexProcessor func([]*IndexTracker, time.Time) (apiOracle.PriceInfo, float64)
 
 type ValueGenerator interface {
@@ -81,15 +84,15 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 	for _, requestID := range toUpdate {
 		amt, conf := PSRValueForTime(requestID, now)
 		// if requestID == 10{
-			// 	fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
-			// }
-			cfg := config.GetConfig()
-			if conf < cfg.MinConfidence || math.IsNaN(amt) {
-				//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
-				//confidence in this signal is too low to use
-				continue
-			}
-			//fmt.Print("\ntester ", requestID)
+		// 	fmt.Println("ID : ",requestID," Confidence: ",conf," || Value: ",amt)
+		// }
+		cfg := config.GetConfig()
+		if conf < cfg.MinConfidence || math.IsNaN(amt) {
+			//fmt.Println("ID : ",requestID," Confidence too low: ",conf," || Min required: ",cfg.MinConfidence)
+			//confidence in this signal is too low to use
+			continue
+		}
+		//fmt.Print("\ntester ", requestID)
 
 		//convert it directly from a float to a bigInt so that we don't risk overflowing a uint64
 		bigVal := new(big.Float)

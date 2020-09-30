@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package ops
 
 import (
@@ -9,12 +12,9 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-/**
- * This is the operational database component. Its purpose is to monitor/track various
- * values and cache those values in a local data store for faster retrieval from a miner.
- */
-
-//DataServerOps is the driver for data server
+// DataServerOps is the driver for data server.
+// It is the operational database component. Its purpose is to monitor/track various
+// values and cache those values in a local data store for faster retrieval from a miner.
 type DataServerOps struct {
 	exitCh  chan os.Signal
 	done    chan int
@@ -23,7 +23,7 @@ type DataServerOps struct {
 	Running bool
 }
 
-//CreateDataServerOps creates a data server instance for runtime
+// CreateDataServerOps creates a data server instance for runtime.
 func CreateDataServerOps(ctx context.Context, exitCh chan os.Signal) (*DataServerOps, error) {
 	ds, err := dataServer.CreateServer(ctx)
 	if err != nil {
@@ -35,9 +35,11 @@ func CreateDataServerOps(ctx context.Context, exitCh chan os.Signal) (*DataServe
 	return ops, nil
 }
 
-//Start the data server
-func (ops *DataServerOps) Start(ctx context.Context) {
-	ops.server.Start(ctx, ops.done)
+// Start the data server.
+func (ops *DataServerOps) Start(ctx context.Context) error {
+	if err := ops.server.Start(ctx, ops.done); err != nil {
+		return err
+	}
 	ops.Running = true
 	go func() {
 		<-ops.exitCh
@@ -58,10 +60,11 @@ func (ops *DataServerOps) Start(ctx context.Context) {
 		ops.Running = false
 		ops.log.Info("Data server shutdown complete")
 	}()
+	return nil
 }
 
-//Ready signals that the data server has completed at least one tracker cycle and any external dependencies
-//should be ready to use its initial output
+// Ready signals that the data server has completed at least one tracker cycle and any external dependencies
+// should be ready to use its initial output.
 func (ops *DataServerOps) Ready() chan bool {
 	return ops.server.Ready()
 }

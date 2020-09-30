@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -21,5 +24,3 @@ func (s SingleSymbol) Require(at time.Time) map[string]IndexProcessor {
 func (s SingleSymbol) ValueAt(vals map[string]apiOracle.PriceInfo, at time.Time) float64 {
 	return vals[s.symbol].Price * s.granularity
 }
-
-

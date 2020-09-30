@@ -1,7 +1,11 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package rest
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -14,17 +18,16 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 )
 
-type BalTest struct {
-	Balance string `json:"balance"`
-}
-
 func TestServer(t *testing.T) {
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_server"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	balInt := big.NewInt(350000)
-	DB.Put(db.BalanceKey, []byte(hexutil.EncodeBig(balInt)))
+	err = DB.Put(db.BalanceKey, []byte(hexutil.EncodeBig(balInt)))
+	if err != nil {
+		t.Fatal(err)
+	}
 	proxy, err := db.OpenRemoteDB(DB)
 	if err != nil {
 		t.Fatal(err)
@@ -38,7 +41,11 @@ func TestServer(t *testing.T) {
 	}
 
 	srv.Start()
-	defer srv.Stop()
+	defer func() {
+		if err := srv.Stop(); err != nil {
+			fmt.Println("error stoping the server", err)
+		}
+	}()
 
 	data, err := proxy.Get(db.BalanceKey)
 	if err != nil {

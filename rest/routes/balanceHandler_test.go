@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package routes
 
 import (
@@ -28,7 +31,9 @@ func TestBalanceHandler(t *testing.T) {
 
 	bigBal := big.NewInt(350000)
 	bal := hexutil.EncodeBig(bigBal)
-	DB.Put(db.BalanceKey, []byte(bal))
+	if err := DB.Put(db.BalanceKey, []byte(bal)); err != nil {
+		t.Fatal(err)
+	}
 
 	ctx := context.WithValue(context.Background(), common.DBContextKey, DB)
 	code, payload := h.Incoming(ctx, nil)

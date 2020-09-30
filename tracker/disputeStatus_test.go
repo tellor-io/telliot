@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package tracker
 
 import (
@@ -16,8 +19,8 @@ import (
 func TestDisputeString(t *testing.T) {
 	tracker := &DisputeTracker{}
 	res := tracker.String()
-	if res != "DisputeTracker" {
-		t.Fatalf("should return 'DisputeTracker' string")
+	if res != DisputeTrackerName {
+		t.Fatal("didn't return expected string", DisputeTrackerName)
 	}
 }
 
@@ -63,13 +66,9 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//tracker := &DisputeTracker{}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	//err = tracker.Exec(ctx)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
+	context.WithValue(ctx, common.DBContextKey, DB)
+
 	v, err := DB.Get(db.DisputeStatusKey)
 	if err != nil {
 		t.Fatal(err)

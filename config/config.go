@@ -1,19 +1,23 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package config
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
-//unfortunate hack to enable json parsing of human readable time strings
-//see https://github.com/golang/go/issues/10275
-//code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations
+// Unfortunate hack to enable json parsing of human readable time strings
+// see https://github.com/golang/go/issues/10275
+// code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations.
 type Duration struct {
 	time.Duration
 }
@@ -40,17 +44,17 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 type GPUConfig struct {
-	//number of threads in a workgroup
+	// GroupSize defines the number of threads in a workgroup.
 	GroupSize int `json:"groupSize"`
-	//total number of threads
+	// Groups defines total number of threads.
 	Groups int `json:"groups"`
-	//number of iterations within a thread
+	// Count defines the number of iterations within a thread.
 	Count uint32 `json:"count"`
 
 	Disabled bool `json:"disabled"`
 }
 
-//Config holds global config info derived from config.json
+// Config holds global config info derived from config.json.
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
 	NodeURL                      string                `json:"nodeURL"`
@@ -58,13 +62,13 @@ type Config struct {
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
-	Trackers                     []string              `json:"trackers"`
+	Trackers                     map[string]bool       `json:"trackers"`
 	DBFile                       string                `json:"dbFile"`
 	ServerHost                   string                `json:"serverHost"`
 	ServerPort                   uint                  `json:"serverPort"`
 	FetchTimeout                 Duration              `json:"fetchTimeout"`
 	RequestData                  uint                  `json:"requestData"`
-	MinConfidence                float64                 `json:"minConfidence"`
+	MinConfidence                float64               `json:"minConfidence"`
 	RequestDataInterval          Duration              `json:"requestDataInterval"`
 	RequestTips                  int64                 `json:"requestTips"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
@@ -78,88 +82,69 @@ type Config struct {
 	Worker                       string                `json:"worker"`
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
-	IndexFolder                  string               `json:"indexFolder"`
-	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` //ignore data further than this away from the value we are checking
-	DisputeThreshold             float64               `json:"disputeThreshold"` //maximum allowed relative difference between observed and submitted value
+	IndexFolder                  string                `json:"indexFolder"`
+	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
+	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 
-	//config parameters excluded from the json config file
-	PrivateKey                   string 			   `json:"privateKey"`
+	// Config parameters excluded from the json config file.
+	PrivateKey string `json:"privateKey"`
 }
 
-const defaultTimeout = 30 * time.Second //30 second fetch timeout
-
-const defaultRequestInterval = 30 * time.Second //30 seconds between data requests (0-value tipping)
-const defaultMiningInterrupt = 15 * time.Second //every 15 seconds, check for new challenges that could interrupt current mining
-const defaultCores = 2
-
-const defaultHeartbeat = 15 * time.Second       //check miner speed every 10 ^ 8 cycles
-var (
-	config *Config
-)
-
-const defaultMaxParallelPSR = 4
-
-const defaultTrackerInterval = 30 * time.Second
-
-const DefaultMaxCheckTimeDelta = 5 * time.Minute
-
-//threshold, a percentage of the expected value
-const DefaultDisputeThreshold = 0.01
+var config = Config{
+	GasMax:                       10,
+	GasMultiplier:                1,
+	MinConfidence:                0.2,
+	DisputeThreshold:             0.01,
+	Heartbeat:                    Duration{15 * time.Second},
+	MiningInterruptCheckInterval: Duration{15 * time.Second},
+	RequestDataInterval:          Duration{30 * time.Second},
+	FetchTimeout:                 Duration{30 * time.Second},
+	TrackerSleepCycle:            Duration{30 * time.Second},
+	DisputeTimeDelta:             Duration{5 * time.Minute},
+	NumProcessors:                2,
+	EthClientTimeout:             3000,
+	Trackers: map[string]bool{
+		"newCurrentVariables": true,
+		"timeOut":             true,
+		"balance":             true,
+		"currentVariables":    true,
+		"disputeStatus":       true,
+		"gas":                 true,
+		"tributeBalance":      true,
+		"indexers":            true,
+		"disputeChecker":      false,
+	},
+}
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 
-//ParseConfig and set a shared config entry
+// ParseConfig and set a shared config entry.
 func ParseConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to open config file %s: %v", path, err)
 	}
+
 	return ParseConfigBytes(data)
 }
 
 func ParseConfigBytes(data []byte) error {
-	//parse the json
 	err := json.Unmarshal(data, &config)
 	if err != nil {
 		return fmt.Errorf("failed to parse json: %s", err.Error())
 	}
-
-	//check if the env is already set, only try loading .env if its not there
+	// Check if the env is already set, only try loading .env if its not there.
 	if config.PrivateKey == "" {
-		//load the env
+		// Load the env
 		err = godotenv.Load()
 		if err != nil {
-			return fmt.Errorf("error reading .env file: %v", err)
+			return fmt.Errorf("error reading .env file: %v", err.Error())
 		}
 
 		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 		if config.PrivateKey == "" {
 			return fmt.Errorf("missing ethereum wallet private key environment variable '%s'", PrivateKeyEnvName)
 		}
-	}
-
-	if config.MinConfidence == 0 {
-		config.MinConfidence = 0.2
-	}
-
-	if config.FetchTimeout.Seconds() == 0 {
-		config.FetchTimeout.Duration = defaultTimeout
-	}
-	if config.RequestDataInterval.Duration == 0 {
-		config.RequestDataInterval.Duration = defaultRequestInterval
-	}
-	if config.MiningInterruptCheckInterval.Seconds() == 0 {
-		config.MiningInterruptCheckInterval.Duration = defaultMiningInterrupt
-	}
-	if config.NumProcessors == 0 {
-		config.NumProcessors = defaultCores
-	}
-	if config.TrackerSleepCycle.Duration == 0 {
-		config.TrackerSleepCycle.Duration = defaultTrackerInterval
-	}
-
-	if config.Heartbeat.Seconds() == 0 {
-		config.Heartbeat.Duration = defaultHeartbeat
 	}
 
 	if len(config.ServerWhitelist) == 0 {
@@ -173,14 +158,7 @@ func ParseConfigBytes(data []byte) error {
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
-	if config.DisputeThreshold == 0 {
-		config.DisputeThreshold = DefaultDisputeThreshold
-	}
-	if config.DisputeTimeDelta.Duration == 0 {
-		config.DisputeTimeDelta.Duration = DefaultMaxCheckTimeDelta
-	}
-
-	err = validateConfig(config)
+	err = validateConfig(&config)
 	if err != nil {
 		return fmt.Errorf("validation failed: %s", err)
 	}
@@ -192,7 +170,7 @@ func validateConfig(cfg *Config) error {
 	if err != nil || len(b) != 20 {
 		return fmt.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
-	if cfg.EnablePoolWorker  {
+	if cfg.EnablePoolWorker {
 		if len(cfg.Worker) == 0 {
 			return fmt.Errorf("worker name required for pool")
 		}
@@ -235,7 +213,7 @@ func validateConfig(cfg *Config) error {
 	return nil
 }
 
-//GetConfig returns a shared instance of config
+// GetConfig returns a shared instance of config.
 func GetConfig() *Config {
-	return config
+	return &config
 }

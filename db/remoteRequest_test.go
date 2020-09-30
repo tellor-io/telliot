@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package db
 
 import (
@@ -94,7 +97,7 @@ func TestRequestReplayAttack(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//that simulated a call that was decoded. Now we'll wait for timeout on request
+	// That simulated a call that was decoded. Now we'll wait for timeout on request.
 	time.Sleep((_validityThreshold * 1500) * time.Millisecond)
 
 	_, err = decodeRequest(encoded, remote.(*remoteImpl))
@@ -109,10 +112,13 @@ func TestRequestForData(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer DB.Close()
-	DB.Delete(RequestIdKey)
-	DB.Delete(DifficultyKey)
-	err = DB.Put(RequestIdKey, []byte("1"))
-	if err != nil {
+	if err := DB.Delete(RequestIdKey); err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Delete(DifficultyKey); err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Put(RequestIdKey, []byte("1")); err != nil {
 		t.Fatal(err)
 	}
 	err = DB.Put(DifficultyKey, []byte("2"))
@@ -133,7 +139,7 @@ func TestRequestForData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := decodeResponse(data, remote.(*remoteImpl))
+	resp, err := decodeResponse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,11 +164,11 @@ func TestRequestPut(t *testing.T) {
 	}
 	defer DB.Close()
 
-	//get address from config
+	// Get address from config
 	cfg := config.GetConfig()
 	_fromAddress := cfg.PublicAddress
 
-	//convert to address
+	// Convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 	pubKey := strings.ToLower(fromAddress.Hex())
 	dbKey := pubKey + "-" + CurrentChallengeKey
@@ -188,7 +194,7 @@ func TestRequestPut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(data, vals[0]) != 0 {
+	if !bytes.Equal(data, vals[0]) {
 		t.Fatalf("DB bytes did not match expected put request data")
 	}
 

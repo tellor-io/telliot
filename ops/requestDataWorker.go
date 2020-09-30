@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package ops
 
 import (
@@ -14,7 +17,7 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-//DataRequester responsible for submitting tips to request data periodically if configured to do so
+// DataRequester responsible for submitting tips to request data periodically if configured to do so.
 type DataRequester struct {
 	submittingRequests bool
 	exitCh             chan os.Signal
@@ -30,7 +33,7 @@ const (
 	statusSuccess
 )
 
-//CreateDataRequester creates a requester instance
+// CreateDataRequester creates a requester instance.
 func CreateDataRequester(exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter, checkIntervalSeconds time.Duration, proxy db.DataServerProxy) *DataRequester {
 	if checkIntervalSeconds == 0 {
 		checkIntervalSeconds = 30
@@ -38,7 +41,7 @@ func CreateDataRequester(exitCh chan os.Signal, submitter tellorCommon.Transacti
 	return &DataRequester{exitCh: exitCh, submitter: submitter, proxy: proxy, checkInterval: checkIntervalSeconds, log: util.NewLogger("ops", "DataRequester")}
 }
 
-//Start kicks of go routines to periodically submit tips if configured to do so
+// Start kicks of go routines to periodically submit tips if configured to do so.
 func (r *DataRequester) Start(ctx context.Context) error {
 	cfg := config.GetConfig()
 
@@ -52,14 +55,14 @@ func (r *DataRequester) Start(ctx context.Context) error {
 	go func() {
 		for {
 			select {
-			case _ = <-r.exitCh:
+			case <-r.exitCh:
 				{
 					r.log.Info("Stopping data requester")
 					r.submittingRequests = false
 					ticker.Stop()
 					return
 				}
-			case _ = <-ticker.C:
+			case <-ticker.C:
 				{
 					r.maybeRequestData(ctx)
 				}
@@ -69,7 +72,7 @@ func (r *DataRequester) Start(ctx context.Context) error {
 	return nil
 }
 
-//IsRunning checks whether this requester is requesting data
+// IsRunning checks whether this requester is requesting data.
 func (r *DataRequester) IsRunning() bool {
 	return r.submittingRequests
 }
@@ -129,7 +132,7 @@ func (r *DataRequester) maybeRequestData(ctx context.Context) {
 }
 
 func (r *DataRequester) getInt(data []byte) (*big.Int, int) {
-	if data == nil || len(data) == 0 {
+	if len(data) == 0 {
 		return nil, statusWaitNext
 	}
 
