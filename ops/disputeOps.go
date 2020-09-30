@@ -1,16 +1,8 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package ops
 
 import (
 	"context"
 	"fmt"
-	"math"
-	"math/big"
-	"strings"
-	"time"
-
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -23,6 +15,10 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 	"github.com/tellor-io/TellorMiner/tracker"
 	"github.com/tellor-io/TellorMiner/util"
+	"math"
+	"math/big"
+	"strings"
+	"time"
 )
 
 /**
@@ -43,8 +39,8 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 		return fmt.Errorf("failed to fetch balance: %s", err.Error())
 	}
 	var asBytes32 [32]byte
-	copy(asBytes32[:], "0x8b75eb45d88e80f0e4ec77d23936268694c0e7ac2e0c9085c5c6bdfcfbc49239") // keccak256(disputeFee).
-	disputeCost, err := instance.GetUintVar(nil, asBytes32)
+	copy(asBytes32[:],"0x8b75eb45d88e80f0e4ec77d23936268694c0e7ac2e0c9085c5c6bdfcfbc49239") //keccak256(disputeFee)
+	disputeCost, err := instance.GetUintVar(nil,asBytes32)
 	if err != nil {
 		return fmt.Errorf("failed to get dispute cost: %s", err)
 	}
@@ -61,7 +57,7 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 	}
 
 	instance2 := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
-	tx, err := instance2.BeginDispute(auth, requestId, timestamp, minerIndex)
+	tx, err := instance2.BeginDispute(auth,requestId,timestamp,minerIndex)
 	if err != nil {
 		return fmt.Errorf("failed to send dispute txn: %s", err.Error())
 	}
@@ -88,7 +84,7 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 	if err != nil {
 		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
-	tx, err := instance2.Vote(auth, _disputeId, _supportsDispute)
+	tx, err := instance2.Vote(auth,_disputeId,_supportsDispute)
 	if err != nil {
 		return fmt.Errorf("failed to submit vote transaction: %s", err.Error())
 	}
@@ -106,8 +102,9 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
-	// Just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
+	//just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
 	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
+
 
 	allVals, err := instance.GetSubmissionsByTimestamp(nil, dispute.RequestId, dispute.Timestamp)
 	if err != nil {
@@ -130,7 +127,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 			FromBlock: big.NewInt(low),
 			ToBlock:   big.NewInt(high),
 			Addresses: []common.Address{contractAddress},
-			Topics:    [][]common.Hash{{nonceSubmitID}},
+			Topics: [][]common.Hash{{nonceSubmitID}},
 		}
 
 		logs, err := client.FilterLogs(ctx, query)
@@ -138,9 +135,9 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 			return nil, fmt.Errorf("failed to get nonce logs: %v", err)
 		}
 
-		for _, l := range logs {
+		for _,l := range logs {
 			nonceSubmit := tellor1.TellorLibraryNonceSubmitted{}
-			err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
+			err := bar.UnpackLog(&nonceSubmit,"NonceSubmitted", l)
 			if err != nil {
 				return nil, fmt.Errorf("failed to unpack into object: %v", err)
 			}
@@ -157,8 +154,8 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 					f, _ := bigF.Float64()
 
 					timedValues[i] = &apiOracle.PriceStamp{
-						Created:   valTime,
-						PriceInfo: apiOracle.PriceInfo{Price: f},
+						Created: valTime,
+						PriceInfo: apiOracle.PriceInfo{Price:f},
 					}
 					found++
 					break
@@ -173,6 +170,12 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 
 func List(ctx context.Context) error {
 	cfg := config.GetConfig()
+
+	//psrs, err := tracker.GetPSRByIDMap()
+	//if err != nil {
+	//	return fmt.Errorf("failed to read request info: %v\n", err)
+	//}
+
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor1.TellorDisputeABI))
 	if err != nil {
 		return fmt.Errorf("failed to parse abi: %v", err)
@@ -180,7 +183,7 @@ func List(ctx context.Context) error {
 	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
-	// Just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi.
+	////just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
 	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
 
 	header, err := client.HeaderByNumber(ctx, nil)
@@ -195,7 +198,7 @@ func List(ctx context.Context) error {
 		FromBlock: startBlock,
 		ToBlock:   nil,
 		Addresses: []common.Address{contractAddress},
-		Topics:    [][]common.Hash{{newDisputeID}},
+		Topics: [][]common.Hash{{newDisputeID}},
 	}
 
 	logs, err := client.FilterLogs(ctx, query)
@@ -207,9 +210,9 @@ func List(ctx context.Context) error {
 
 	fmt.Printf("There are currently %d open disputes\n", len(logs))
 	fmt.Printf("-------------------------------------\n")
-	for _, rawDispute := range logs {
+	for _,rawDispute := range logs {
 		dispute := tellor1.TellorDisputeNewDispute{}
-		err := bar.UnpackLog(&dispute, "NewDispute", rawDispute)
+		err := bar.UnpackLog(&dispute,"NewDispute", rawDispute)
 		if err != nil {
 			return fmt.Errorf("failed to unpack dispute event from logs: %v", err)
 		}
@@ -247,7 +250,7 @@ func List(ctx context.Context) error {
 		}
 		disputedValTime := allSubmitted[uintVars[6].Uint64()].Created
 
-		for i := len(allSubmitted) - 1; i >= 0; i-- {
+		for i := len(allSubmitted)-1; i >= 0; i-- {
 			sub := allSubmitted[i]
 			valStr := fmt.Sprintf("%f\n", sub.Price)
 			var pointerStr string
@@ -284,7 +287,7 @@ func List(ctx context.Context) error {
 			len(result.Datapoints), cfg.DisputeTimeDelta.Duration.Minutes(), numToShow)
 		minTotalDelta := time.Duration(math.MaxInt64)
 		index := 0
-		for i := 0; i < len(result.Datapoints)-numToShow; i++ {
+		for i := 0; i < len(result.Datapoints) - numToShow; i++ {
 			totalDelta := time.Duration(0)
 			for j := 0; j < numToShow; j++ {
 				delta := result.Times[i+j].Sub(disputedValTime)
@@ -298,9 +301,9 @@ func List(ctx context.Context) error {
 				index = i
 			}
 		}
-		for i := 0; i < numToShow; i++ {
-			dp := result.Datapoints[index+i]
-			t := result.Times[index+i]
+		for i := 0 ; i < numToShow; i++ {
+			dp := result.Datapoints[index + i]
+			t := result.Times[index + i]
 			fmt.Printf("        %f, ", dp)
 			delta := disputedValTime.Sub(t)
 			if delta > 0 {

@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package rpc
 
 import (
@@ -29,11 +26,11 @@ var (
 	GWEI = int64(1000000000)
 )
 
-// contractWrapper is internal wrapper of contract instance for calling common contract functions.
+//contractWrapper is internal wrapper of contract instance for calling common contract functions
 type contractWrapper struct {
 	contract    *tellor1.TellorTransactor
 	contract2   *contracts.TellorMaster
-	contract3   *tellor2.TellorTransactor
+	contract3 	*tellor2.TellorTransactor
 	options     *bind.TransactOpts
 	fromAddress common.Address
 }
@@ -54,7 +51,7 @@ func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
 	return c.contract2.DidMine(nil, challenge, c.fromAddress)
 }
 
-func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
+func PrepareContractTxn(ctx context.Context,proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
 
 	cfg := config.GetConfig()
 	client := ctx.Value(tellorCommon.ClientContextKey).(ETHClient)
@@ -94,13 +91,15 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 			fmt.Println("Could not determine gas price to submit txn", err)
 			return err
 		}
-	}
+	} 
 	mul := cfg.GasMultiplier
 	if mul > 0 {
 		fmt.Println("using gas multiplier : ", mul)
-		gasPrice = gasPrice.Mul(gasPrice, big.NewInt(int64(mul)))
+		gasPrice = gasPrice.Mul(gasPrice,big.NewInt(int64(mul)));
 	}
 	for i < 5 {
+		//
+
 		if err != nil {
 			return err
 		}
@@ -180,8 +179,8 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 	return nil
 }
 
-func getInt(data []byte) *big.Int {
-	if len(data) == 0 {
+func getInt(data []byte) (*big.Int) {
+	if data == nil || len(data) == 0 {
 		return nil
 	}
 

@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -22,9 +19,7 @@ func TestMeanAt(t *testing.T) {
 	}
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, common.DBContextKey, db)
-	if _, err := BuildIndexTrackers(); err != nil {
-		t.Fatal(err)
-	}
+	BuildIndexTrackers()
 	ethIndexes := indexes["ETH/USD"]
 	if err != nil {
 		t.Fatal(err)

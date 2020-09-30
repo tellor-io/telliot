@@ -1,18 +1,14 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package ops
 
 import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/rpc"
+	"math/big"
 )
 
 func PrepareEthTransaction(ctx context.Context) (*bind.TransactOpts, error) {

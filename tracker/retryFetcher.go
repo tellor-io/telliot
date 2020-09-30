@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -12,17 +9,18 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-// Client utilized for all HTTP requests.
+// Client utilized for all HTTP requests
 var client http.Client
 
 func init() {
 	client = http.Client{}
 }
 
+
 var retryFetchLog = util.NewLogger("tracker", "FetchWithRetries")
 
-// FetchRequest holds info for a request.
-// TODO: add mock fetch.
+//FetchRequest holds info for a request
+// TODO: add mock fetch
 type FetchRequest struct {
 	queryURL string
 	timeout  time.Duration

@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -16,11 +13,12 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
+
 func TestStringId(t *testing.T) {
 	tracker := &BalanceTracker{}
 	res := tracker.String()
-	if res != BalanceTrackerName {
-		t.Fatal("didn't return expected string", BalanceTrackerName)
+	if res != "BalanceTracker" {
+		t.Fatalf("should return 'BalanceTracker' string")
 	}
 }
 func TestPositiveBalance(t *testing.T) {

@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -46,7 +43,7 @@ var PSRs = map[int]ValueGenerator{
 	},
 	9: &TimedSwitch{
 		before: &SingleSymbol{symbol: "LINK/BTC", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAtEOD},
+		after:  &SingleSymbol{symbol:"ETH/USD", granularity: 1000000, transform: MedianAtEOD},
 		at:     switchTime,
 	},
 	10: &TimedSwitch{
@@ -151,19 +148,19 @@ var PSRs = map[int]ValueGenerator{
 	53: &SingleSymbol{symbol: "BTCDOMINANCE", granularity: 1000000, transform: MedianAt},
 }
 
-// these weight functions map values of x between 0 (brand new) and 1 (old) to weights between 0 and 1
-// also returns the integral of the weight over the range [0,1]
-// weights the oldest data (1) as being 1/3 as important (1/e).
+//these weight functions map values of x between 0 (brand new) and 1 (old) to weights between 0 and 1
+//also returns the integral of the weight over the range [0,1]
+//weights the oldest data (1) as being 1/3 as important (1/e)
 func ExpDecay(x float64) (float64, float64) {
 	return 1 / math.Exp(x), 0.63212
 }
 
-// weights the oldest data at 0.
+//weights the oldest data at 0
 func LinearDecay(x float64) (float64, float64) {
 	return 1 - x, 0.5
 }
 
-// weights all data in the time interval evenly.
+//weights all data in the time interval evenly
 func NoDecay(x float64) (float64, float64) {
 	return 1, 1
 }
@@ -217,7 +214,7 @@ func VolumeWeightedAPIs(processor IndexProcessor) IndexProcessor {
 	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
 		var results []apiOracle.PriceInfo
 		totalConfidence := 0.0
-		for _, api := range apis {
+		for _,api := range apis {
 			value, confidence := processor([]*IndexTracker{api}, at)
 			//fmt.Println("vwAPI's : ",value, "  : ", confidence)
 			if confidence > 0 {
@@ -225,7 +222,7 @@ func VolumeWeightedAPIs(processor IndexProcessor) IndexProcessor {
 				totalConfidence += confidence
 			}
 		}
-		return VolumeWeightedAvg(results), totalConfidence / float64(len(results))
+		return VolumeWeightedAvg(results), totalConfidence/float64(len(results))
 	}
 }
 
@@ -251,6 +248,7 @@ func MedianAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64)
 	return Median(values), confidence
 }
 
+
 func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
 	vals, confidence := getLatest(apis, at)
 	if confidence == 0 {
@@ -258,14 +256,15 @@ func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float
 	}
 	for _, val := range vals {
 		// fmt.Println(int64(val.Volume),time.Now().Unix())
-		if int64(val.Volume) < clck.Now().Unix() {
-			fmt.Println("Pulled Timestamp: ", val.Volume)
+		if int64(val.Volume) < clck.Now().Unix(){
+			fmt.Println("Pulled Timestamp: ",val.Volume)
 			fmt.Println("Warning: Manual Data Entry is expired, please update")
 			return apiOracle.PriceInfo{}, 0
 		}
 	}
 	return Median(vals), confidence
 }
+
 
 func MedianAtEOD(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
 	now := clck.Now().UTC()
@@ -306,6 +305,7 @@ func Mean(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	result.Volume = volSum
 	return result
 }
+
 
 func VolumeWeightedAvg(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	priceSum := 0.0

@@ -1,20 +1,28 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package db
 
 import (
 	"bytes"
 )
 
-// responsePayload from remote request contains either an error message
-// or a map of requested keys and their values.
+//
+// --- Response from remote request contains either an error message
+// --- or a map of requested keys and their values
+//
 type responsePayload struct {
 	errorMsg string
 	dbVals   map[string][]byte
 }
 
-// Encode the given request for transport over the wire.
+/**
+ * Create an outgoing response
+ */
+func createResponse(dbVals map[string][]byte, errorMsg string) (*responsePayload, error) {
+	return &responsePayload{errorMsg: errorMsg, dbVals: dbVals}, nil
+}
+
+/**
+ * Encode the given request for transport over the wire
+ */
 func encodeResponse(r *responsePayload) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	if err := encodeString(buf, r.errorMsg); err != nil {
@@ -42,9 +50,11 @@ func encodeResponse(r *responsePayload) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Decode a request from the given bytes. The signer is used to validate keys
-// and whitelisted miners.
-func decodeResponse(data []byte) (*responsePayload, error) {
+/**
+ * Decode a request from the given bytes. The signer is used to validate keys
+ * and whitelisted miners
+ */
+func decodeResponse(data []byte, validator RequestValidator) (*responsePayload, error) {
 	buf := bytes.NewReader(data)
 	errMsg, err := decodeString(buf)
 	if err != nil {
@@ -70,7 +80,9 @@ func decodeResponse(data []byte) (*responsePayload, error) {
 	return &responsePayload{errorMsg: errMsg, dbVals: dbVals}, nil
 }
 
-// convenience function to encode an error message for remote caller.
+/**
+ * convenience function to encode an error message for remote caller
+ */
 func errorResponse(msg string) ([]byte, error) {
 	r := &responsePayload{errorMsg: msg}
 	return encodeResponse(r)

@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -21,7 +18,7 @@ import (
 
 func TestRunner(t *testing.T) {
 	exitCh := make(chan int)
-
+	
 	startBal := big.NewInt(356000)
 
 	hash := math.PaddedBigBytes(big.NewInt(256), 32)
@@ -43,9 +40,9 @@ func TestRunner(t *testing.T) {
 		Difficulty: big.NewInt(500), QueryString: queryStr,
 		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
-		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: top50, CurrentChallenge: chal, DisputeStatus: big.NewInt(1), QueryMetadata: paramsMap}
+		TokenBalance: big.NewInt(0),MiningStatus:true, Top50Requests:top50, CurrentChallenge: chal,DisputeStatus: big.NewInt(1),QueryMetadata: paramsMap}
 	client := rpc.NewMockClientWithValues(opts)
-
+	
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_leveldb"))
 	if err != nil {
 		log.Fatal(err)
@@ -55,9 +52,7 @@ func TestRunner(t *testing.T) {
 
 	ctx := context.Background()
 	runner.Ready()
-	if err := runner.Start(ctx, exitCh); err != nil {
-		log.Fatal(err)
-	}
+	runner.Start(ctx, exitCh)
 	fmt.Println("runner done")
 	time.Sleep(2 * time.Second)
 	close(exitCh)

@@ -1,20 +1,16 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package ops
 
 import (
 	"context"
 	"fmt"
-	"math/big"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	tellor "github.com/tellor-io/TellorMiner/contracts"
 	tellor1 "github.com/tellor-io/TellorMiner/contracts1"
 	"github.com/tellor-io/TellorMiner/util"
+	"math/big"
+	"time"
 )
 
 /**
@@ -22,7 +18,7 @@ import (
  */
 
 func printStakeStatus(bigStatus *big.Int, started *big.Int) {
-	// 0-not Staked, 1=Staked, 2=LockedForWithdraw 3= OnDispute
+	//0-not Staked, 1=Staked, 2=LockedForWithdraw 3= OnDispute
 	status := bigStatus.Uint64()
 	stakeTime := time.Unix(started.Int64(), 0)
 	switch status {
@@ -34,7 +30,7 @@ func printStakeStatus(bigStatus *big.Int, started *big.Int) {
 		startedRound := started.Int64()
 		startedRound = ((startedRound + 86399) / 86400) * 86400
 		target := time.Unix(startedRound, 0)
-		timePassed := time.Since(target)
+		timePassed := time.Now().Sub(target)
 		delta := timePassed - (time.Hour * 24 * 7)
 		if delta > 0 {
 			fmt.Printf("Stake has been eligbile to withdraw for %s\n", delta)
@@ -131,7 +127,7 @@ func RequestStakingWithdraw(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-	fmt.Printf("Withdrawal request sent with txn: %s\n", tx.Hash().Hex())
+	fmt.Printf("Withdrawl request sent with txn: %s\n", tx.Hash().Hex())
 
 	return nil
 }

@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package db
 
 import (
@@ -11,11 +8,7 @@ import (
 
 func TestDB(t *testing.T) {
 	db, err := Open(filepath.Join(os.TempDir(), "test_db"))
-	defer func() {
-		if err := db.Close(); err != nil {
-			t.Error(err)
-		}
-	}()
+	defer db.Close()
 
 	if err != nil {
 		t.Error(err)
@@ -32,9 +25,6 @@ func TestDB(t *testing.T) {
 		t.Error("Expected key to be present in DB")
 	}
 	v, err := db.Get("sample")
-	if err != nil {
-		t.Error(err)
-	}
 	s := string(v)
 	if s != "sample_value" {
 		t.Error("Get value doesn't match original: " + s + " != sample_value")

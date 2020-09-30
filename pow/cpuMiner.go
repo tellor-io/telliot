@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package pow
 
 import (
@@ -10,9 +7,10 @@ import (
 	"strconv"
 
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
-	// nolint:staticcheck
 	"golang.org/x/crypto/ripemd160"
 )
+
+
 
 type CpuMiner int64
 
@@ -21,17 +19,17 @@ func NewCpuMiner(id int64) *CpuMiner {
 	return &x
 }
 
-func (c *CpuMiner) StepSize() uint64 {
+func (c *CpuMiner)StepSize() uint64 {
 	return 1
 }
 
-func (c *CpuMiner) Name() string {
+func (c *CpuMiner)Name() string {
 	return fmt.Sprintf("CPU %d", *c)
 }
 
-func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
+func (c *CpuMiner)CheckRange(hash *HashSettings,  start uint64, n uint64) (string, uint64, error) {
 	baseLen := len(hash.prefix)
-	hashInput := make([]byte, len(hash.prefix))
+	hashInput := make([]byte, len(hash.prefix), len(hash.prefix))
 	copy(hashInput, hash.prefix)
 
 	numHash := new(big.Int)
@@ -42,29 +40,24 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		nn := strconv.FormatUint(i, 10)
 		hashInput = hashInput[:baseLen]
 		hashInput = append(hashInput, []byte(nn)...)
-		if err := hashFn(hashInput, numHash); err != nil {
-			return "", 0, err
-		}
+		hashFn(hashInput, numHash)
 		x.Mod(numHash, hash.difficulty)
 		if x.Cmp(compareZero) == 0 {
-			return nn, (i - start) + 1, nil
+			return nn, (i-start)+1, nil
 		}
 	}
 	return "", n, nil
 }
 
-func hashFn(data []byte, result *big.Int) error {
+func hashFn(data []byte, result *big.Int) {
 
 	hash := solsha3.SoliditySHA3(data)
 
-	// Consider moving hasher constructor outside loop and replacing with hasher.Reset()
+	//Consider moving hasher constructor outside loop and replacing with hasher.Reset()
 	hasher := ripemd160.New()
 
-	if _, err := hasher.Write(hash); err != nil {
-		return err
-	}
+	hasher.Write(hash)
 	hash1 := hasher.Sum(nil)
 	n := sha256.Sum256(hash1)
 	result.SetBytes(n[:])
-	return nil
 }

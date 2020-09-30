@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package routes
 
 import (
@@ -13,9 +10,11 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 )
 
+//BalanceHandler handles balance requests
 type Top50Handler struct {
 }
 
+//Incoming implementation for  handler
 func (h *Top50Handler) Incoming(ctx context.Context, req *http.Request) (int, string) {
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	v, err := DB.Get(db.Top50Key)

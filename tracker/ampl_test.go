@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -35,9 +32,7 @@ func TestAmpl(t *testing.T) {
 	mock.Set(time.Now())
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, common.DBContextKey, db)
-	if _, err := BuildIndexTrackers(); err != nil {
-		t.Fatal(err)
-	}
+	BuildIndexTrackers()
 	amplTrackers := indexes["AMPL/USD"]
 	btcTrackers := indexes["BTC/USD"]
 	amplBtcTrackers := indexes["AMPL/BTC"]
@@ -48,11 +43,9 @@ func TestAmpl(t *testing.T) {
 	indexers = append(indexers, amplBtcTrackers...)
 	for i := 0; i < 288; i++ {
 		for _, indexer := range indexers {
-			if err := indexer.Exec(ctx); err != nil {
-				t.Fatal(err)
-			}
+			indexer.Exec(ctx)
 		}
-		mock.Add(10 * time.Minute)
+		mock.Add(10*time.Minute)
 	}
 
 	// reset mocks
@@ -67,10 +60,10 @@ func contains(req *http.Request, segment string) bool {
 func mockAPI(req *http.Request) *http.Response {
 	var reqBody string
 	switch {
-	// Ampleforth/BTC
+	//Ampleforth/BTC
 	case contains(req, "https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-BTC"):
 		reqBody = `{"code":"200000","data":{"time":1598943308068,"symbol":"AMPL-BTC","buy":"0.00018337","sell":"0.00018422","changeRate":"0.2536","changePrice":"0.00003726","high":"0.00019398","low":"0.00013484","vol":"2104825.78672","volValue":"354.2575905596620409","last":"0.00018416","averagePrice":"0.00015212"}}`
-	case contains(req, "https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC"):
+	case contains(req,"https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC"):
 		reqBody = `[["tAMPBTC",0.00017945,35968.96882899,0.00018267,22481.02421014,0.00003498,0.2375,0.00018226,201846.40489022,0.00019297,0.00013474]]`
 	// Ampleforth/USD
 	case contains(req, "https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd"):
@@ -104,13 +97,13 @@ func mockAPI(req *http.Request) *http.Response {
 		reqBody = `{"bitcoin":{"usd":11684.26}}`
 	default:
 		reqBody = `{"USD":2.193}`
-	}
-	// Test request parameters
-	return &http.Response{
+	 }
+	 // Test request parameters
+	 return &http.Response{
 		StatusCode: 200,
 		// Send response to be tested
-		Body: ioutil.NopCloser(bytes.NewBufferString(reqBody)),
-		// Must be set to non-nil value or it panics
-		Header: make(http.Header),
-	}
+		Body:       ioutil.NopCloser(bytes.NewBufferString(reqBody)),
+		 // Must be set to non-nil value or it panics
+		Header:     make(http.Header),
+	 }
 }

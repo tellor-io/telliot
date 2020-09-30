@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package ops
 
 import (
@@ -17,14 +14,14 @@ import (
 )
 
 type WorkSource interface {
-	GetWork(input chan *pow.Work) (*pow.Work, bool)
+	GetWork(input chan *pow.Work) (*pow.Work,bool)
 }
 
 type SolutionSink interface {
 	Submit(context.Context, *pow.Result) bool
 }
 
-// MiningMgr holds items for mining and requesting data.
+//MiningMgr holds items for mining and requesting data
 type MiningMgr struct {
 	//primary exit channel
 	exitCh  chan os.Signal
@@ -37,9 +34,11 @@ type MiningMgr struct {
 	solution   *pow.Result
 
 	dataRequester *DataRequester
+	//data requester's exit channel
+	requesterExit chan os.Signal
 }
 
-// CreateMiningManager creates a new manager that mananges mining and data requests.
+//CreateMiningManager creates a new manager that mananges mining and data requests
 func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter) (*MiningMgr, error) {
 	cfg := config.GetConfig()
 
@@ -54,7 +53,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		Running:    false,
 		group:      group,
 		tasker:     nil,
-		solution:   nil,
+		solution: 	nil,
 		solHandler: nil,
 	}
 
@@ -74,7 +73,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 	return mng, nil
 }
 
-// Start will start the mining run loop.
+//Start will start the mining run loop
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.Running = true
 	go func(ctx context.Context) {
@@ -86,9 +85,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		input := make(chan *pow.Work)
 		output := make(chan *pow.Result)
 		if cfg.RequestData > 0 {
-			if err := mgr.dataRequester.Start(ctx); err != nil {
-				fmt.Println("error starting the data requester", err)
-			}
+			mgr.dataRequester.Start(ctx)
 		}
 
 		//start the mining group
@@ -99,27 +96,31 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			if cfg.EnablePoolWorker {
 				mgr.tasker.GetWork(input)
 			} else {
-				work, instantSubmit := mgr.tasker.GetWork(input)
-				if instantSubmit {
+				work,instantSubmit := mgr.tasker.GetWork(input)
+				if instantSubmit{
 					if mgr.solution == nil {
 						fmt.Println("Instant Submit Called! ")
-						mgr.solution = &pow.Result{Work: work, Nonce: "1"}
-						goodSubmit := mgr.solHandler.Submit(ctx, mgr.solution)
-						if goodSubmit {
-							fmt.Println("good submit")
-						}
+						mgr.solution = &pow.Result{Work:work, Nonce:"1"}
+					} else{
+						fmt.Println("Trying Resubmit...")
 					}
-				} else if work != nil {
+				}else if work != nil {
 					mgr.solution = nil
 					input <- work
 				}
+				if mgr.solution != nil{
+					goodSubmit := mgr.solHandler.Submit(ctx,mgr.solution)
+					if goodSubmit {
+						mgr.solution = nil
+					}
+				} 
 			}
 		}
-		// Send the initial challenge.
-		sendWork()
+		//send the initial challenge
+		sendWork()	
 		for {
 			select {
-			// Boss wants us to quit for the day.
+			//boss wants us to quit for the day
 			case <-mgr.exitCh:
 				//exit
 				input <- nil
@@ -131,14 +132,14 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 					return
 				}
 				mgr.solution = result
-				goodSubmit := mgr.solHandler.Submit(ctx, mgr.solution)
+				goodSubmit := mgr.solHandler.Submit(ctx,mgr.solution)
 				if goodSubmit {
-					fmt.Println("solution submitted") //mgr.solution = nil
+					mgr.solution = nil
 				}
 				sendWork()
 
 			//time to check for a new challenge
-			case <-ticker.C:
+			case _ = <-ticker.C:
 				sendWork()
 			}
 		}

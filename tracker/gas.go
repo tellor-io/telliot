@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -17,15 +14,15 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-// GWEI constant is the multiplier from Wei.
+// GWEI constant is the multiplier from Wei
 const GWEI = 1000000000
 
 // GasTracker is the struct that maintains the latest gasprices.
-// note the prices are actually stored in the DB.
+// note the prices are actually stored in the DB
 type GasTracker struct {
 }
 
-// GasPriceModel is what ETHGasStation returns from queries. Not all fields are filled in.
+//GasPriceModel is what ETHGasStation returns from queries. Not all fields are filled in
 type GasPriceModel struct {
 	Fast    float32 `json:"fast"`
 	Fastest float32 `json:"fastest"`
@@ -36,6 +33,7 @@ func (b *GasTracker) String() string {
 	return "GasTracker"
 }
 
+// Exec queries EthGasStation for the current Gas Prices
 func (b *GasTracker) Exec(ctx context.Context) error {
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
@@ -54,18 +52,12 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 		payload, err := fetchWithRetries(req)
 		if err != nil {
 			gasPrice, err = client.SuggestGasPrice(context.Background())
-			if err != nil {
-				log.Println("couldn't get suggested gas price", err)
-			}
 		} else {
 			gpModel := GasPriceModel{}
 			err = json.Unmarshal(payload, &gpModel)
 			if err != nil {
 				log.Printf("Problem with ETH gas station json: %v\n", err)
 				gasPrice, err = client.SuggestGasPrice(context.Background())
-				if err != nil {
-					log.Println("couldn't get suggested gas price", err)
-				}
 			} else {
 				gasPrice = big.NewInt(int64(gpModel.Fast / 10))
 				gasPrice = gasPrice.Mul(gasPrice, big.NewInt(GWEI))
@@ -74,9 +66,6 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 		}
 	} else {
 		gasPrice, err = client.SuggestGasPrice(context.Background())
-		if err != nil {
-			log.Println("couldn't get suggested gas price", err)
-		}
 	}
 
 	enc := hexutil.EncodeBig(gasPrice)

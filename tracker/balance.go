@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -16,28 +13,28 @@ import (
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
-const BalanceTrackerName = "BalanceTracker"
-
+//BalanceTracker concrete tracker type
 type BalanceTracker struct {
 }
 
 func (b *BalanceTracker) String() string {
-	return BalanceTrackerName
+	return "BalanceTracker"
 }
 
+//Exec implementation for tracker
 func (b *BalanceTracker) Exec(ctx context.Context) error {
 
-	// cast client using type assertion since context holds generic interface{}.
+	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	// get the single config instance.
+	//get the single config instance
 	cfg := config.GetConfig()
 
-	// get address from config.
+	//get address from config
 	_fromAddress := cfg.PublicAddress
 
-	// convert to address.
+	//convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)

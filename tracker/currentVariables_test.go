@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -25,8 +22,8 @@ import (
 func TestCurrentVarableString(t *testing.T) {
 	tracker := &CurrentVariablesTracker{}
 	res := tracker.String()
-	if res != CurrentVariablesTrackerName {
-		t.Fatal("should return string", CurrentVariablesTrackerName)
+	if res != "CurrentVariablesTracker" {
+		t.Fatalf("should return 'CurrentVariablesTracker' string")
 	}
 }
 
@@ -44,7 +41,7 @@ func TestCurrentVariables(t *testing.T) {
 		Difficulty: big.NewInt(500), QueryString: queryStr,
 		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
-		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: []*big.Int{}, CurrentChallenge: chal}
+		TokenBalance: big.NewInt(0), MiningStatus:true,Top50Requests: []*big.Int{}, CurrentChallenge: chal}
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_currentVariables"))
@@ -60,14 +57,14 @@ func TestCurrentVariables(t *testing.T) {
 	if masterInstance == nil {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		// TODO create error state flag for mock client
-		masterInstance, err = tellor.NewTellorMaster(contractAddress, client)
+		masterInstance, err = tellor.NewTellorMaster(contractAddress,client)
 		if err != nil {
 			runnerLog.Error("Problem creating tellor master instance: %v\n", err)
 			return
 		}
 		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 	}
-
+	
 	fmt.Println("Working to Line 41")
 	err = tracker.Exec(ctx)
 	if err != nil {

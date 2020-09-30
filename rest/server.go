@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package rest
 
 import (
@@ -16,13 +13,13 @@ import (
 
 var serverLog = util.NewLogger("rest", "Server")
 
-// Server wraps http server with pre-configured paths.
+//Server wraps http server with pre-configured paths
 type Server struct {
 	server    *http.Server
 	dataProxy db.DataServerProxy
 }
 
-// Create a new server instance for the given host/port.
+//Create a new server instance for the given host/port
 func Create(ctx context.Context, host string, port uint) (*Server, error) {
 	proxy := ctx.Value(common.DataProxyKey).(db.DataServerProxy)
 	srv := &http.Server{Addr: fmt.Sprintf("%s:%d", host, port)}
@@ -39,7 +36,7 @@ func Create(ctx context.Context, host string, port uint) (*Server, error) {
 	return &Server{server: srv, dataProxy: proxy}, nil
 }
 
-// Start the server listening for incoming requests.
+//Start the server listening for incoming requests
 func (s *Server) Start() {
 	go func() {
 		serverLog.Info("Starting server on %+v\n", s.server.Addr)
@@ -54,7 +51,7 @@ func (s *Server) Start() {
 	}()
 }
 
-// Stop stops the server listening.
+//Stop stops the server listening
 func (s *Server) Stop() error {
 	serverLog.Info("Stopping server")
 	return s.server.Close()

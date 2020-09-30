@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package util
 
 import (
@@ -13,7 +10,7 @@ func TestLogConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg := GetLoggingConfig()
+	cfg,_ := GetLoggingConfig()
 	if cfg.levels["config.Config"] == 0 {
 		t.Fatalf("Config did not parse correctly: %v", cfg.levels)
 	} else {

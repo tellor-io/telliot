@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package rpc
 
 import (
@@ -21,10 +18,10 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-// ETHClient is the main abstraction interface for client operations.
+//ETHClient is the main abstraction interface for client operations
 type ETHClient interface {
 
-	// Close the client.
+	//close the client
 	Close()
 
 	// CodeAt returns the code of the given account. This is needed to differentiate
@@ -54,7 +51,7 @@ type ETHClient interface {
 	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
 }
 
-// clientInstance is the concrete implementation of the ETHClient.
+//clientInstance is the concrete implementation of the ETHClient
 type clientInstance struct {
 	ethClient *ethclient.Client
 	timeout   time.Duration
@@ -62,14 +59,14 @@ type clientInstance struct {
 }
 
 var (
-	// retry delays that range from 100ms to 2mins.
+	//retry delays that range from 100ms to 2mins
 	backoff = []uint64{100, 500, 1000, 2000, 5000, 10000, 15000, 30000, 60000, 120000}
 
-	// rate to print errors if continue to occur in retry loop.
+	//rate to print errors if continue to occur in retry loop
 	errorPrintTick = time.Duration(5000)
 )
 
-// NewClient creates a new client instance.
+//NewClient creates a new client instance
 func NewClient(url string) (ETHClient, error) {
 	cfg := config.GetConfig()
 	timeout := time.Duration(cfg.EthClientTimeout) * time.Second

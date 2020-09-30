@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -10,17 +7,17 @@ import (
 func TestCreateTracker(t *testing.T) {
 
 	balanceTracker, _ := createTracker("balance")
-	if balanceTracker[0].String() != BalanceTrackerName {
+	if balanceTracker[0].String() != "BalanceTracker" {
 		t.Fatalf("Expected BalanceTracker but got %s", balanceTracker[0].String())
 	}
 
 	currentVariablesTracker, _ := createTracker("currentVariables")
-	if currentVariablesTracker[0].String() != CurrentVariablesTrackerName {
+	if currentVariablesTracker[0].String() != "CurrentVariablesTracker" {
 		t.Fatalf("Expected CurrentVariablesTracker but got %s", currentVariablesTracker[0].String())
 	}
 
 	disputeStatusTracker, _ := createTracker("disputeStatus")
-	if disputeStatusTracker[0].String() != DisputeTrackerName {
+	if disputeStatusTracker[0].String() != "DisputeTracker" {
 		t.Fatalf("Expected DisputeTracker but got %s", disputeStatusTracker[0].String())
 	}
 

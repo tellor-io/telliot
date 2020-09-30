@@ -1,12 +1,8 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
-	"time"
-
 	"github.com/tellor-io/TellorMiner/apiOracle"
+	"time"
 )
 
 type TimedSwitch struct {
@@ -24,8 +20,8 @@ func (t *TimedSwitch) Require(at time.Time) map[string]IndexProcessor {
 }
 
 func (t *TimedSwitch) ValueAt(vals map[string]apiOracle.PriceInfo, at time.Time) float64 {
-	// Don't check time here, only in require. we don't want this to change mid-cycle
-	// and pass the old requirements to the new processor
+	//dont check time here, only in require. we don't want this to change mid-cycle
+	//and pass the old requirements to the new processor
 	if at.After(t.at) {
 		return t.after.ValueAt(vals, at)
 	} else {

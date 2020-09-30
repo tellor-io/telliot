@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package routes
 
 import (
@@ -13,9 +10,11 @@ import (
 	"github.com/tellor-io/TellorMiner/db"
 )
 
+//BalanceHandler handles balance requests
 type MiningStatusHandler struct {
 }
 
+//Incoming implementation for  handler
 func (h *MiningStatusHandler) Incoming(ctx context.Context, req *http.Request) (int, string) {
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	v, err := DB.Get(db.MiningStatusKey)

@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package dataServer
 
 import (
@@ -47,10 +44,7 @@ func TestDataServer(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	if err := ds.Start(ctx, exitCh); err != nil {
-		t.Fatal(err)
-	}
+	ds.Start(ctx, exitCh)
 
 	time.Sleep(5000 * time.Millisecond)
 

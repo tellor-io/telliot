@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package rpc
 
 import (
@@ -24,7 +21,7 @@ func TestABICodec(t *testing.T) {
 		t.Fatalf("Method name is unexpected. %s != getRequestVars", m.Name)
 	}
 
-	// string, string, bytes32,  uint, uint, uint.
+	//string, string, bytes32,  uint, uint, uint
 	var hash [32]byte
 	copy([]byte("12345"), hash[:])
 	data, err := m.Outputs.Pack("someQueryString", "ETH/USD", hash, big.NewInt(1000), big.NewInt(0), big.NewInt(0))
@@ -36,4 +33,5 @@ func TestABICodec(t *testing.T) {
 		hex := hexutil.Encode(data[i : i+32])
 		fmt.Println(hex)
 	}
+	//fmt.Printf("Encoded payload: %s\n", hexutil.Encode(data))
 }

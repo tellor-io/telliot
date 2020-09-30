@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package tracker
 
 import (
@@ -9,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"

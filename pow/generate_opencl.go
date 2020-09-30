@@ -1,7 +1,5 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 // +build ignore
+
 
 package main
 
@@ -12,12 +10,12 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"text/template"
 	"time"
+	"text/template"
 )
 
 const (
-	sourceDir  = "opencl_sources"
+	sourceDir = "opencl_sources"
 	resultFile = "kernelSource.go"
 	headerFile = "header.c"
 	kernelFile = "kernel.cl"
@@ -25,6 +23,7 @@ const (
 
 // This program compiles all the opencl code into a single string
 // which is then baked into the final go executable
+
 
 func compileSources() (string, error) {
 	_, filename, _, ok := runtime.Caller(0)
@@ -60,7 +59,7 @@ func compileSources() (string, error) {
 	}
 	delete(contents, kernelFile)
 
-	for _, data := range contents {
+	for _,data := range contents {
 		out.Write(data)
 	}
 	out.Write(mainSrc)
@@ -100,6 +99,6 @@ var packageTemplate = template.Must(template.New("").Parse(`
 // using data from {{ .Directory }}
 package pow
 
-const KernelSource = ` + "`" + `
+const KernelSource = `+ "`" + `
 {{ .Source }}
 ` + "`"))

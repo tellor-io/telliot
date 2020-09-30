@@ -1,6 +1,3 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package db
 
 import (
@@ -19,7 +16,7 @@ import (
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-// how long a signed request is good for before reject it. Semi-protection against replays.
+//how long a signed request is good for before reject it. Semi-protection against replays
 const _validityThreshold = 2 //seconds
 
 var rdbLog *util.Logger
@@ -47,7 +44,7 @@ type remoteImpl struct {
 	rwLock        sync.RWMutex
 }
 
-// OpenRemoteDB establishes a proxy to a remote data server.
+//OpenRemoteDB establishes a proxy to a remote data server
 func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
 	rdbLog = util.NewLogger("db", "RemoteDBProxy")
 
@@ -91,9 +88,9 @@ func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
 	return i, nil
 }
 
-// Check whether an incoming storage request key is prefixed by one of our known miner
-// keys. Otherwise, we have to reject the request as invalid or not coming from this
-// codebase.
+//check whether an incoming storage request key is prefixed by one of our known miner
+//keys. Otherwise, we have to reject the request as invalid or not coming from this
+//codebase
 func (i *remoteImpl) hasAddressPrefix(key string) bool {
 	for k := range i.whitelist {
 		if strings.HasPrefix(key, k) {
@@ -209,7 +206,7 @@ func (i *remoteImpl) BatchGet(keys []string) (map[string][]byte, error) {
 		//return nil, err
 		log.Fatalf("Could not retrieve data after retries. Cannot do anything without access to data server: %v", err)
 	}
-	remResp, err := decodeResponse(respData)
+	remResp, err := decodeResponse(respData, i)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +245,7 @@ func (i *remoteImpl) BatchPut(keys []string, values [][]byte) (map[string][]byte
 		//return nil, err
 		log.Fatalf("Could not put data after retries. Cannot do anything without access to data server: %v", err)
 	}
-	remResp, err := decodeResponse(respData)
+	remResp, err := decodeResponse(respData, i)
 	if err != nil {
 		return nil, err
 	}

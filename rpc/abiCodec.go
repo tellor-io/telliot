@@ -1,13 +1,9 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package rpc
 
 import (
 	"encoding/json"
-	"strings"
-
 	"github.com/tellor-io/TellorMiner/contracts1"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -17,15 +13,15 @@ import (
 
 var abiCodecLog = util.NewLogger("rpc", "ABICodec")
 
-// ABICodec holds abi definitions for encoding/decoding contract methods and events.
+//ABICodec holds abi definitions for encoding/decoding contract methods and events
 type ABICodec struct {
 	abiStruct abi.ABI
 	methods   map[string]*abi.Method
 	Events    map[string]*abi.Event
 }
 
-// BuildCodec constructs a merged abi structure representing all methods/events for Tellor contracts. This is primarily
-// used for mock encoding/decoding parameters but could also be used for manual RPC operations that do not rely on geth's contract impl.
+//BuildCodec constructs a merged abi structure representing all methods/events for Tellor contracts. This is primarily
+//used for mock encoding/decoding parameters but could also be used for manual RPC operations that do not rely on geth's contract impl
 func BuildCodec() (*ABICodec, error) {
 	all := []string{
 		contracts.TellorDisputeABI,
@@ -41,7 +37,9 @@ func BuildCodec() (*ABICodec, error) {
 			return nil, err
 		}
 		asList := f.([]interface{})
-		parsed = append(parsed, asList...)
+		for _, parsedABI := range asList {
+			parsed = append(parsed, parsedABI)
+		}
 	}
 	j, err := json.Marshal(parsed)
 	if err != nil {
@@ -67,7 +65,7 @@ func BuildCodec() (*ABICodec, error) {
 	return &ABICodec{abiStruct, methodMap, eventMap}, nil
 }
 
-// AllEventsthis lets you quickly find the type of each event. It is helpful for debugging.
+//this is helpful for debugging, lets you quickly find the type of each event
 func AllEvents() (map[[32]byte]abi.Event, error) {
 	all := []string{
 		contracts1.TellorABI,
@@ -88,7 +86,9 @@ func AllEvents() (map[[32]byte]abi.Event, error) {
 			return nil, err
 		}
 		asList := f.([]interface{})
-		parsed = append(parsed, asList...)
+		for _, parsedABI := range asList {
+			parsed = append(parsed, parsedABI)
+		}
 	}
 	j, err := json.Marshal(parsed)
 	if err != nil {
@@ -105,3 +105,4 @@ func AllEvents() (map[[32]byte]abi.Event, error) {
 
 	return eventMap, nil
 }
+

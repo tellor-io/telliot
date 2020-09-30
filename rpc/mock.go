@@ -1,9 +1,7 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
-
 package rpc
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -11,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/tellor-io/TellorMiner/contracts1"
 	"github.com/tellor-io/TellorMiner/util"
 
@@ -28,13 +27,12 @@ const (
 	currentVarsFN   = "0xa22e407a"
 	disputeStatusFN = "0x733bdef0"
 	getRequestVars  = "0xe1eee6d6"
-	didMineFN       = "0x63bb82ad"
-	getUintVarFN    = "0x612c8f7f"
+	didMineFN		= "0x63bb82ad"
 )
 
 var mockClientLog = util.NewLogger("rpc", "mockClient")
 
-// CurrentChallenge holds details about the current mining challenge.
+//CurrentChallenge holds details about the current mining challenge
 type CurrentChallenge struct {
 	ChallengeHash [32]byte
 	RequestID     *big.Int
@@ -44,16 +42,16 @@ type CurrentChallenge struct {
 	Tip           *big.Int
 }
 
-// MockQueryMeta is hardcoded query metadata to use for testing.
+//MockQueryMeta is hardcoded query metadata to use for testing
 type MockQueryMeta struct {
 	QueryString string
 	Granularity int
 }
 
-// MockOptions are config options for the mock client.
+//MockOptions are config options for the mock client
 type MockOptions struct {
 	ETHBalance       *big.Int
-	MiningStatus     bool
+	MiningStatus	 bool
 	Nonce            uint64
 	GasPrice         *big.Int
 	TokenBalance     *big.Int
@@ -66,7 +64,7 @@ type MockOptions struct {
 type mockClient struct {
 	balance          *big.Int
 	nonce            uint64
-	miningStatus     bool
+	miningStatus	  bool
 	gasPrice         *big.Int
 	tokenBalance     *big.Int
 	top50Requests    []*big.Int
@@ -85,19 +83,19 @@ func (e *mockError) Error() string {
 		e.codeVal)
 }
 
-// NewMockClient returns instance of mock client.
+//NewMockClient returns instance of mock client
 func NewMockClient() ETHClient {
 	return &mockClient{}
 }
 
-// NewMockClientWithValues creates a mock client with default values to return for calls.
+//NewMockClientWithValues creates a mock client with default values to return for calls
 func NewMockClientWithValues(opts *MockOptions) ETHClient {
 	codec, err := BuildCodec()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Mining Status", opts.MiningStatus)
-	return &mockClient{balance: opts.ETHBalance, miningStatus: opts.MiningStatus, nonce: opts.Nonce,
+	fmt.Println("Mining Status",opts.MiningStatus)
+	return &mockClient{balance: opts.ETHBalance, miningStatus:opts.MiningStatus ,nonce: opts.Nonce,
 		gasPrice: opts.GasPrice, tokenBalance: opts.TokenBalance,
 		top50Requests: opts.Top50Requests, currentChallenge: opts.CurrentChallenge,
 		disputeStatus: opts.DisputeStatus, mockQueryMeta: opts.QueryMetadata, abiCodec: codec}
@@ -134,7 +132,7 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		}
 	case didMineFN:
 		{
-			fmt.Println("getting Mining Status", c.miningStatus)
+		    fmt.Println("getting Mining Status",c.miningStatus)
 			return meth.Outputs.Pack(c.miningStatus)
 		}
 	case top50FN:
@@ -301,10 +299,6 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 				return b.Bytes(), nil
 			*/
 		}
-	case getUintVarFN:
-		{
-			return meth.Outputs.Pack(big.NewInt(1))
-		}
 	}
 
 	mockClientLog.Warn("Call unhandled Fn: %s\n", fn)
@@ -338,24 +332,27 @@ func (c *mockClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery)
 	tokenAbi, _ := abi.JSON(strings.NewReader(contracts1.TellorLibraryABI))
 	ev := tokenAbi.Events["NonceSubmitted"]
 	event1 := contracts1.TellorLibraryNonceSubmitted{
-		Miner:            common.Address{0},
-		Nonce:            "0",
-		RequestId:        big.NewInt(1),
-		Value:            big.NewInt(1),
+		Miner: common.Address{0}, 
+		Nonce: "0", 
+		RequestId: big.NewInt(1),
+		Value: big.NewInt(1), 
 		CurrentChallenge: [32]byte{0},
-	}
+		}
+	//eventResult := contracts1.TellorLibraryNonceSubmitted{}
 	test, _ := ev.Inputs.NonIndexed().Pack(event1.Nonce, event1.Value, event1.CurrentChallenge)
+	//test, err := ev.Inputs.Pack(event1.Miner, event1.Nonce, event1.RequestId, event1.Value, event1.CurrentChallenge)
+	//fmt.Print("\nresult: ", test," Error: ",  err, "\n", "test: ", common.BigToHash(common.Big1))
 
 	log := types.Log{
-		Address:     common.Address{0},
-		Topics:      []common.Hash{ev.ID(), common.BigToHash(common.Big0), common.BigToHash(common.Big1)},
-		Data:        test,
+		Address: common.Address{0},
+		Topics: []common.Hash{ev.ID(), common.BigToHash(common.Big0), common.BigToHash(common.Big1)},
+		Data: test,
 		BlockNumber: 9,
 	}
 
 	var logs []types.Log
 
-	logs = append(logs, log)
+	logs = append(logs,log)
 
 	return logs, nil
 }
@@ -382,11 +379,26 @@ func (c *mockClient) NetworkID(ctx context.Context) (*big.Int, error) {
 func (c *mockClient) HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
 	header := types.Header{
 		Difficulty: math.BigPow(11, 11),
-		Number:     math.BigPow(1, 0),
+		Number:     math.BigPow(1,0),
 		GasLimit:   12345678,
 		GasUsed:    1476322,
 		Extra:      []byte("coolest block on chain"),
 	}
 	header.Time = uint64(time.Now().Unix())
 	return &header, nil
+}
+
+func paddedRLP(w *bytes.Buffer, val interface{}) error {
+	b, err := rlp.EncodeToBytes(val)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(common.LeftPadBytes(b, 32))
+	return err
+}
+
+func paddedInt(w *bytes.Buffer, val *big.Int) error {
+	hex := math.PaddedBigBytes(math.U256(val), 32)
+	_, err := w.Write(hex)
+	return err
 }
