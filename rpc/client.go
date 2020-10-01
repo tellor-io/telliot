@@ -60,8 +60,7 @@ type clientInstance struct {
 
 var (
 	//retry delays that range from 100ms to 2mins
-	backoff = []uint64{100, 500, 1000, 2000, 5000, 10000, 15000, 30000, 60000, 120000}
-
+	backoff = []uint64{1000, 5000, 10000, 20000, 50000, 100000, 150000, 300000, 600000, 1200000}
 	//rate to print errors if continue to occur in retry loop
 	errorPrintTick = time.Duration(5000)
 )
@@ -82,7 +81,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 	defer cancel()
 	tryCount := 0
 	nextTick := time.Now().Add(errorPrintTick)
-	for tryCount < 20 {
+	for tryCount < 10 {
 		err := fn(&wTo)
 		if err == nil {
 			return nil

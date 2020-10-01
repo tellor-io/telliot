@@ -256,6 +256,7 @@ func mineCmd(cmd *cli.Cmd) {
 			fmt.Println("ignoring --- could not get dispute status.  Check if staked")
 		}
 		status,_ := hexutil.DecodeBig(string(v))
+		fmt.Println(status)
 		if status.Cmp(big.NewInt(1)) != 0 {
 			log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
 		}
