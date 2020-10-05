@@ -4,17 +4,16 @@
 package routes
 
 import (
-	"context"
 	"encoding/json"
 	"math/big"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/TellorMiner/common"
+	tellorCommon "github.com/tellor-io/TellorMiner/common"
+	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 type BalResult struct {
@@ -22,12 +21,12 @@ type BalResult struct {
 }
 
 func TestBalanceHandler(t *testing.T) {
-	h := &BalanceHandler{}
+	config.OpenTestConfig(t)
+	ctx, _, cleanup := testutil.CreateContext(t)
+	defer t.Cleanup(cleanup)
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance_rest"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	h := &BalanceHandler{}
 
 	bigBal := big.NewInt(350000)
 	bal := hexutil.EncodeBig(bigBal)
@@ -35,7 +34,6 @@ func TestBalanceHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx := context.WithValue(context.Background(), common.DBContextKey, DB)
 	code, payload := h.Incoming(ctx, nil)
 	t.Logf("JSON payload: %s\n", payload)
 	if code != 200 {
@@ -45,8 +43,7 @@ func TestBalanceHandler(t *testing.T) {
 	}
 
 	var res BalResult
-	err = json.Unmarshal([]byte(payload), &res)
-	if err != nil {
+	if err := json.Unmarshal([]byte(payload), &res); err != nil {
 		t.Fatal(err)
 	}
 	resBal, err := hexutil.DecodeBig(res.Balance)

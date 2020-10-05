@@ -57,6 +57,9 @@ else
 	@echo >&2 "No git binary found."; exit 1
 endif
 
+.PHONY: test
+test:
+	go test $(GOTEST_OPTS) ./...
 
 .PHONY: go-format
 go-format: ## Formats Go code including imports.

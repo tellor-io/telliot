@@ -4,38 +4,37 @@
 package rest
 
 import (
-	"context"
 	"fmt"
 	"math/big"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
+	"github.com/phayes/freeport"
 	"github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestServer(t *testing.T) {
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_server"))
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	ctx, cfg, cleanup := testutil.CreateContext(t)
+	defer t.Cleanup(cleanup)
+	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
+
+	DB := ctx.Value(common.DBContextKey).(db.DB)
+
 	balInt := big.NewInt(350000)
-	err = DB.Put(db.BalanceKey, []byte(hexutil.EncodeBig(balInt)))
+	err := DB.Put(db.BalanceKey, []byte(hexutil.EncodeBig(balInt)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	proxy, err := db.OpenRemoteDB(DB)
+
+	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg := config.GetConfig()
-	ctx := context.WithValue(context.Background(), common.DBContextKey, DB)
-	ctx = context.WithValue(ctx, common.DataProxyKey, proxy)
-	srv, err := Create(ctx, cfg.ServerHost, cfg.ServerPort)
+	srv, err := Create(ctx, cfg.ServerHost, uint(port))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,6 +46,7 @@ func TestServer(t *testing.T) {
 		}
 	}()
 
+	proxy := ctx.Value(common.DataProxyKey).(db.DataServerProxy)
 	data, err := proxy.Get(db.BalanceKey)
 	if err != nil {
 		t.Fatal(err)

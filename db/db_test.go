@@ -4,23 +4,17 @@
 package db
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
+
+	"github.com/tellor-io/TellorMiner/config"
 )
 
 func TestDB(t *testing.T) {
-	db, err := Open(filepath.Join(os.TempDir(), "test_db"))
-	defer func() {
-		if err := db.Close(); err != nil {
-			t.Error(err)
-		}
-	}()
+	config.OpenTestConfig(t)
+	db, cleanup := OpenTestDB(t)
+	defer t.Cleanup(cleanup)
 
-	if err != nil {
-		t.Error(err)
-	}
-	err = db.Put("sample", []byte("sample_value"))
+	err := db.Put("sample", []byte("sample_value"))
 	if err != nil {
 		t.Error(err)
 	}

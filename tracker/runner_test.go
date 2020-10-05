@@ -4,22 +4,23 @@
 package tracker
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math/big"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/math"
-
+	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/rpc"
 )
 
 func TestRunner(t *testing.T) {
+	ctx, _, cleanup := testutil.CreateContext(t)
+	defer t.Cleanup(cleanup)
+
 	exitCh := make(chan int)
 
 	startBal := big.NewInt(356000)
@@ -46,14 +47,8 @@ func TestRunner(t *testing.T) {
 		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: top50, CurrentChallenge: chal, DisputeStatus: big.NewInt(1), QueryMetadata: paramsMap}
 	client := rpc.NewMockClientWithValues(opts)
 
-	db, err := db.Open(filepath.Join(os.TempDir(), "test_leveldb"))
-	if err != nil {
-		log.Fatal(err)
-		panic(err.Error())
-	}
-	runner, _ := NewRunner(client, db)
+	runner, _ := NewRunner(client, ctx.Value(common.DBContextKey).(db.DB))
 
-	ctx := context.Background()
 	runner.Ready()
 	if err := runner.Start(ctx, exitCh); err != nil {
 		log.Fatal(err)

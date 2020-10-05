@@ -13,6 +13,8 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -148,7 +150,14 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work, bool) {
 		}
 		val := m2[valKey]
 		if len(val) == 0 {
-			jsonFile, err := os.Open("manualData.json")
+			e, err := os.Executable()
+			if err != nil {
+				e = "."
+				log.Print("couldn't get executable dir path", err)
+			}
+			path := path.Dir(e)
+			// TODO(krasi) Make it configurable with a sane default.
+			jsonFile, err := os.Open(filepath.Join(path, "manualData.json"))
 			if err != nil {
 				fmt.Println("manualData read error", err)
 				return nil, false

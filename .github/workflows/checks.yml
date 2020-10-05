@@ -1,0 +1,58 @@
+name: Checks
+on:
+  push:
+    branches:
+      - master
+        dev
+    tags:
+  pull_request:
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Linting
+    steps:
+      - name: Checkout code into the Go module directory.
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15.x
+
+      - name : install dependancies
+        run: sudo apt-get install ocl-icd-opencl-dev && cd pow && go generate
+
+      - uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+      - name: Format.
+        run: make format
+
+      - name: Linting & vetting.
+        run: make lint
+  test:
+    runs-on: ubuntu-latest
+    name: Testing
+    env:
+      GOBIN: /tmp/.bin
+    steps:
+      - name: Install Go.
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15.x
+
+      - name: Check out code into the Go module directory.
+        uses: actions/checkout@v2
+
+      - uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          
+      - name : install dependancies
+        run: sudo apt-get install ocl-icd-opencl-dev && cd pow && go generate
+
+      - name: Go testing.
+        run: make test

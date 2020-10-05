@@ -15,8 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 var (
@@ -56,54 +56,59 @@ func (t testSubmit) PrepareTransaction(ctx context.Context, proxy db.DataServerP
 }
 
 func TestRequestDataOps(t *testing.T) {
+	ctx, cfg, cleanup := testutil.CreateContext(t)
+	defer t.Cleanup(cleanup)
+
 	exitCh := make(chan os.Signal)
-	cfg := config.GetConfig()
 
 	con := &testContract{}
 	submitter := testSubmit{contract: con}
-	DB, err := db.Open(cfg.DBFile)
-	if err != nil {
+	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+
+	// Delete any request keys.
+	if err := DB.Delete(db.RequestIdKey); err != nil {
 		log.Fatal(err)
 	}
-	// Delete any request id.
-	err = DB.Delete(db.RequestIdKey)
-	if err != nil {
+	if err := DB.Delete(db.TributeBalanceKey); err != nil {
 		log.Fatal(err)
 	}
 
-	ctx := context.WithValue(context.Background(), tellorCommon.DBContextKey, DB)
-	reqData := CreateDataRequester(exitCh, submitter, 2, ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy))
+	reqData := CreateDataRequester(exitCh, submitter, 2*time.Second, ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy))
 
 	// It should not request data if not configured to do it.
 	cfg.RequestData = 0
-	err = reqData.Start(ctx)
-	if err != nil {
+	if err := reqData.Start(ctx); err != nil {
 		log.Fatal(err)
 	}
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	if reqData.submittingRequests {
 		t.Fatal("Should not be submitting requests without configured request id")
 	}
 
 	cfg.RequestData = 1
-	err = DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(0))))
-	if err != nil {
+	if err := DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(0)))); err != nil {
 		log.Fatal(err)
 	}
-	err = reqData.Start(ctx)
-	if err != nil {
+	i, success := new(big.Int).SetString("999999999999999999999999999999999999999999999", 10)
+	if !success {
+		t.Fatal("creating a big int")
+	}
+	if err := DB.Put(db.TributeBalanceKey, []byte(hexutil.EncodeBig(i))); err != nil {
 		log.Fatal(err)
 	}
-	time.Sleep(2500 * time.Millisecond)
+
+	if err := reqData.Start(ctx); err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(3 * time.Second)
 	if requestID == nil {
 		t.Fatal("Should have requested data")
 	}
 	requestID = nil
-	err = DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(1))))
-	if err != nil {
+	if err := DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(1)))); err != nil {
 		log.Fatal(err)
 	}
-	time.Sleep(2500 * time.Millisecond)
+	time.Sleep(3 * time.Second)
 	if requestID != nil {
 		t.Fatal("Should not have requested data when a challenge request is in progress")
 	}
