@@ -5,11 +5,12 @@ package util
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // QueryStruct holds query result fields as a map.
@@ -42,8 +43,7 @@ func ParsePayload(payload []byte, args [][]string) ([]float64, error) {
 	for i, argGroup := range args {
 		result, err := dumpJSON(f, "root", argGroup, &dumpJsonState{})
 		if err != nil {
-			// fmt.Println("ERROR", err)
-			return nil, errors.New("JSON Parsing error")
+			return nil, errors.Wrap(err, "JSON Parsing error")
 		}
 		val, _ := strconv.ParseFloat(fmt.Sprintf("%v", result), 64)
 		results[i] = val

@@ -2,14 +2,14 @@
 	"ALGO/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1).0.4"
 	],
-	"AMPL/USD":[
+	"AMPL/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd).ampleforth.usd",
 		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).data.last,.data.vol",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.7,.0.8",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.7,.0.8",
 		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD"
 	],
-	"AMPL/BTC":[
+	"AMPL/BTC": [
 		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-BTC).data.last,.data.vol",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC).0.7,.0.8"
 	],
@@ -37,10 +37,10 @@
 		"json(https://api.binance.com/api/v1/klines?symbol=BNBUSDT&interval=1d&limit=1).0.4",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd).binancecoin.usd"
 	],
-	"BSV/USD":[
+	"BSV/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash-sv&vs_currencies=usd).bitcoin-cash-sv.usd"
 	],
-	"BTCDOMINANCE":[
+	"BTCDOMINANCE": [
 		"json(https://api.coingecko.com/api/v3/global).data.market_cap_percentage.btc"
 	],
 	"BTC/USD": [
@@ -143,7 +143,7 @@
 	"USDC/USDT": [
 		"json(https://api.binance.com/api/v1/klines?symbol=USDCUSDT&interval=1d&limit=1).0.4"
 	],
-	"USPCE":[
+	"USPCE": [
 		"json(manualData.json).USPCE.VALUE,.USPCE.DATE"
 	],
 	"WAN/BTC": [
@@ -175,7 +175,7 @@
 		"json(https://api.kraken.com/0/public/Ticker?pair=XRPUSD).result.XXRPZUSD.c.0",
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd).ripple.usd"
 	],
-	"XTZ/USD":[
+	"XTZ/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd).tezos.usd"
 	],
 	"ZEC/ETH": [

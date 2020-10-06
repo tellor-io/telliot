@@ -27,7 +27,7 @@ type Runner struct {
 
 // NewRunner will create a new runner instance.
 func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
-	return &Runner{client: client, db: db, readyChannel: make(chan bool)}, nil
+	return &Runner{client: client, db: db, readyChannel: make(chan bool, 1)}, nil
 }
 
 // Start will kick off the runner until the given exit channel selects.
@@ -46,6 +46,11 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		}
 	}
 	if len(trackers) == 0 {
+		// Set as ready and listen the exit channel to not block.
+		r.readyChannel <- true
+		go func() {
+			<-exitCh
+		}()
 		return nil
 	}
 	runnerLog.Info("Created %d trackers", len(trackers))

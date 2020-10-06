@@ -5,36 +5,26 @@ package tracker
 
 import (
 	"bytes"
-	"context"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/util"
 )
 
 func TestAmpl(t *testing.T) {
 	util.CreateTestClient(&client, mockAPI)
 
-	db, err := db.Open(filepath.Join(os.TempDir(), "test_MeanAt"))
-	if err != nil {
-		log.Fatal(err)
-		panic(err.Error())
-	}
-	defer db.Close()
+	ctx, _, cleanup := testutil.CreateContext(t)
+	defer t.Cleanup(cleanup)
+
 	mock := clock.NewMock()
 	clck = mock
 	mock.Set(time.Now())
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, common.DBContextKey, db)
 	if _, err := BuildIndexTrackers(); err != nil {
 		t.Fatal(err)
 	}
@@ -83,6 +73,8 @@ func mockAPI(req *http.Request) *http.Response {
 		reqBody = `[["tAMPUSD",1.9711,30215.46857231,2.0035,34257.8592384,0.1128,0.0606,1.9729,558433.75188253,2.255,1.5608]]`
 	case contains(req, "https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD"):
 		reqBody = `{"USD":2.193}`
+	case contains(req, "https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST"):
+		reqBody = `[["tAMPUST",0.6608,47736.78043824,0.66429,74484.21865398,-0.00608,-0.0092,0.65544,75030.61631492,0.67534,0.62829]]`
 	// Bitcoin
 	case contains(req, "https://api.pro.coinbase.com/products/BTC-USD/ticker"):
 		reqBody = `{"trade_id":101831363,"price":"11694.23","size":"0.02110914","time":"2020-09-01T03:58:00.728546Z","bid":"11693.47","ask":"11694.23","volume":"10139.22817438"}`

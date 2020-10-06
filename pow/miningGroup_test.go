@@ -94,10 +94,14 @@ func TestCpuMiner(t *testing.T) {
 }
 
 func TestGpuMiner(t *testing.T) {
+	config.OpenTestConfig(t)
 	gpus, err := GetOpenCLGPUs()
 	if err != nil {
 		fmt.Println(gpus)
 		t.Fatal(err)
+	}
+	if len(gpus) == 0 {
+		t.Skip("no mining gpus")
 	}
 	cfg := config.GetConfig()
 
@@ -112,7 +116,7 @@ func TestMulti(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
-	cfg := config.GetConfig()
+	cfg := config.OpenTestConfig(t)
 
 	var hashers []Hasher
 	for i := 0; i < 4; i++ {

@@ -30,6 +30,9 @@ func TestPSR(t *testing.T) {
 		t.Fatal(err)
 	}
 	for idx := range psr {
+		if _, ok := psr[idx].(*IndexTracker).Source.(*JSONfile); ok {
+			psr[idx].(*IndexTracker).Source = &JSONfile{"../manualData.json"}
+		}
 		err = psr[idx].Exec(ctx)
 		psrStr := psr[idx].String()
 		if err != nil {

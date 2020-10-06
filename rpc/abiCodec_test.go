@@ -9,9 +9,11 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/tellor-io/TellorMiner/config"
 )
 
 func TestABICodec(t *testing.T) {
+	config.OpenTestConfig(t)
 	codec, err := BuildCodec()
 	if err != nil {
 		t.Fatal(err)

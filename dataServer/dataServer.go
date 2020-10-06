@@ -89,19 +89,24 @@ func (ds *DataServer) Ready() chan bool {
 }
 
 func (ds *DataServer) stop() error {
+	var final error
 	// Stop tracker run loop.
 	ds.runnerExitCh <- 1
 
 	// Stop REST erver.
-	err := ds.server.Stop()
+	if err := ds.server.Stop(); err != nil {
+		final = multierror.Append(final, err)
+	}
 
 	// Stop the DB.
-	err = multierror.Append(err, ds.DB.Close())
+	if err := ds.DB.Close(); err != nil {
+		final = multierror.Append(final, err)
+	}
 
 	// Stop the eth RPC client.
 	ds.ethClient.Close()
 
 	// All done.
 	ds.Stopped = true
-	return err
+	return final
 }

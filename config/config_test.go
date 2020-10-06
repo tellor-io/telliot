@@ -5,7 +5,6 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -25,16 +24,9 @@ func TestConfig(t *testing.T) {
 	//Creating a mock .ENV file to go around this issue with godotenv:
 	//https://github.com/joho/godotenv/issues/43
 	createEnvFile(t)
-	dir, err := filepath.Abs("../config/config1.test.json")
-	if err != nil {
-		t.Fatal("Error reading config directory")
-	}
-	err = ParseConfig(dir)
-	if err != nil {
-		println(err)
-		t.Fatal("")
-	}
-	cfg := GetConfig()
+
+	cfg := OpenTestConfig(t)
+
 	//Asserting Default Values
 	if cfg.GasMax == 0 {
 		t.Fatal("GasMax should have value")

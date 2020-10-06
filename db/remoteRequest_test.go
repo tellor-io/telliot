@@ -14,22 +14,16 @@ import (
 	"github.com/tellor-io/TellorMiner/config"
 )
 
-func setup() (DataServerProxy, DB, error) {
-	DB, err := Open("/tmp/test_remoteRequest")
-	if err != nil {
-		DB.Close()
-		return nil, DB, err
-	}
-	remote, err := OpenRemoteDB(DB)
-	return remote, DB, err
-}
-
 func TestRemoteRequestCodec(t *testing.T) {
-	remote, DB, err := setup()
+	cfg := config.OpenTestConfig(t)
+	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
+
+	DB, cleanup := OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+	remote, err := OpenRemoteDB(DB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer DB.Close()
 
 	keys := []string{RequestIdKey, DifficultyKey}
 	req, err := createRequest(keys, nil, remote.(*remoteImpl))
@@ -66,12 +60,15 @@ func TestRemoteRequestCodec(t *testing.T) {
 }
 
 func TestRequestReplayAttack(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
+	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
 
-	remote, DB, err := setup()
+	DB, cleanup := OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+	remote, err := OpenRemoteDB(DB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer DB.Close()
 
 	keys := []string{RequestIdKey, DifficultyKey}
 	req, err := createRequest(keys, nil, remote.(*remoteImpl))
@@ -107,11 +104,16 @@ func TestRequestReplayAttack(t *testing.T) {
 }
 
 func TestRequestForData(t *testing.T) {
-	remote, DB, err := setup()
+	cfg := config.OpenTestConfig(t)
+	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
+
+	DB, cleanup := OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+	remote, err := OpenRemoteDB(DB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer DB.Close()
+
 	if err := DB.Delete(RequestIdKey); err != nil {
 		t.Fatal(err)
 	}
@@ -158,14 +160,16 @@ func TestRequestForData(t *testing.T) {
 }
 
 func TestRequestPut(t *testing.T) {
-	remote, DB, err := setup()
+	cfg := config.OpenTestConfig(t)
+	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
+
+	DB, cleanup := OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+	remote, err := OpenRemoteDB(DB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer DB.Close()
 
-	// Get address from config
-	cfg := config.GetConfig()
 	_fromAddress := cfg.PublicAddress
 
 	// Convert to address
@@ -178,7 +182,7 @@ func TestRequestPut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = DB.Delete(dbKey)
+	err = DB.Put(dbKey, vals[0])
 	if err != nil {
 		t.Fatal(err)
 	}
