@@ -3,7 +3,7 @@ package testutil
 import (
 	"context"
 	"log"
-	"path/filepath"
+	"math/big"
 	"testing"
 
 	eth_common "github.com/ethereum/go-ethereum/common"
@@ -17,17 +17,20 @@ import (
 
 func CreateContext(t *testing.T) (context.Context, *config.Config, func()) {
 	cfg := config.OpenTestConfig(t)
-	cfg.IndexFolder = filepath.Join("..")
 	// Don't need any trackers for the tests.
 	cfg.Trackers = make(map[string]bool)
 
 	dbLocal, cleanup := db.OpenTestDB(t)
 	ctx := context.WithValue(context.Background(), common.DBContextKey, dbLocal)
 
-	client, err := rpc.NewClient(cfg.NodeURL)
-	if err != nil {
-		log.Fatal(err)
+	opts := &rpc.MockOptions{
+		ETHBalance:    big.NewInt(300000),
+		Nonce:         1,
+		GasPrice:      big.NewInt(7000000000),
+		TokenBalance:  big.NewInt(0),
+		Top50Requests: []*big.Int{},
 	}
+	client := rpc.NewMockClientWithValues(opts)
 	ctx = context.WithValue(ctx, common.ClientContextKey, client)
 
 	contractAddress := eth_common.HexToAddress(cfg.ContractAddress)

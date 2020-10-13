@@ -4,10 +4,7 @@
 package tracker
 
 import (
-	"context"
 	"fmt"
-	"log"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -15,23 +12,19 @@ import (
 
 	"github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/db"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestPSR(t *testing.T) {
-	db, err := db.Open(filepath.Join(os.TempDir(), "test_psrFetch"))
-	if err != nil {
-		log.Fatal(err)
-		panic(err.Error())
-	}
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, common.DBContextKey, db)
+	ctx, _, cleanup := testutil.CreateContext(t)
+	t.Cleanup(cleanup)
 	psr, err := BuildIndexTrackers()
 	if err != nil {
 		t.Fatal(err)
 	}
 	for idx := range psr {
 		if _, ok := psr[idx].(*IndexTracker).Source.(*JSONfile); ok {
-			psr[idx].(*IndexTracker).Source = &JSONfile{"../manualData.json"}
+			psr[idx].(*IndexTracker).Source = &JSONfile{filepath.Join("../", "configs", "manualData.json")}
 		}
 		err = psr[idx].Exec(ctx)
 		psrStr := psr[idx].String()
@@ -39,7 +32,7 @@ func TestPSR(t *testing.T) {
 			t.Fatalf("failed to execute psr: %s %v", psrStr, err)
 		}
 	}
-	val, err := db.Get(fmt.Sprintf("qv_%d", 1))
+	val, err := ctx.Value(common.DBContextKey).(db.DB).Get(fmt.Sprintf("qv_%d", 1))
 	if err != nil {
 		t.Fatal(err)
 	}

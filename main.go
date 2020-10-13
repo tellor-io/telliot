@@ -143,8 +143,8 @@ func App() *cli.Cli {
 	app := cli.App("TellorMiner", "The tellor.io official miner")
 
 	// App wide config options
-	configPath := app.StringOpt("config", "config.json", "Path to the primary JSON config file")
-	logPath := app.StringOpt("logConfig", "loggingConfig.json", "Path to a JSON logging config file")
+	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
+	logPath := app.StringOpt("logConfig", "configs/loggingConfig.json", "Path to a JSON logging config file")
 
 	// This will get run before any of the commands
 	app.Before = func() {
