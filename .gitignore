@@ -34,3 +34,5 @@ libOpenCL.a
 
 .env
 /.env
+
+pow/kernelSource.go

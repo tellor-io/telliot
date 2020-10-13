@@ -49,6 +49,10 @@ deps: ## Ensures fresh go.mod and go.sum.
 	@go mod tidy
 	@go mod verify
 
+.PHONY: generate
+generate: ## Ensures kernelSource.go is generated.
+	@cd pow && go generate
+
 .PHONY: check-git
 check-git:
 ifneq ($(GIT),)
@@ -58,7 +62,7 @@ else
 endif
 
 .PHONY: test
-test:
+test: generate
 	go test $(GOTEST_OPTS) ./...
 
 .PHONY: go-format
@@ -87,7 +91,7 @@ lint: go-lint shell-lint
 #      --mem-profile-path string   Path to memory profile output file
 # to debug big allocations during linting.
 .PHONY: go-lint
-go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT)
+go-lint: generate check-git deps $(GOLANGCI_LINT) $(FAILLINT)
 	$(call require_clean_work_tree,'detected not clean master before running lint, previous job changed something?')
 	@echo ">> verifying modules being imported"
 	@echo ">> linting all of the Go files GOGC=${GOGC}"
