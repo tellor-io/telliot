@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func createEnvFile(t *testing.T) {
+func createEnvFile(t *testing.T) func() {
 	f, err := os.Create(".env")
 	if err != nil {
 		t.Fatal(err)
@@ -18,12 +18,17 @@ func createEnvFile(t *testing.T) {
 		f.Close()
 		t.Fatal(err)
 	}
+
+	return func() {
+		os.Remove(".env")
+	}
 }
 
 func TestConfig(t *testing.T) {
 	//Creating a mock .ENV file to go around this issue with godotenv:
 	//https://github.com/joho/godotenv/issues/43
-	createEnvFile(t)
+	cleanup := createEnvFile(t)
+	defer t.Cleanup(cleanup)
 
 	cfg := OpenTestConfig(t)
 

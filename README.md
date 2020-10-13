@@ -16,9 +16,9 @@
 This is the workhorse of the Miner system as it takes on solving the PoW challenge.
 It's built on Go and utilizes a split structure.  The database piece is a LevelDB that keeps track of all variables (challenges, difficulty, values to submit, etc.) and the miner simply solves the PoW challenge.  This enables parties to split the pieces for optimization.
 
-**The Tellor system is a way to push data on-chain.  What the pieces of data are are specificied in the psr.json file. Note that the data corresponds to a specific API.  The tellor mining system is set up to pull api data to generate these values to submit on-chain once a correct nonce is mined. These specific apis are just suggestions.  The system is not guarunteed to work for everyone.  It is up to the consnesus of the Tellor token holders to determine what a correct value is. As an example, request ID 4 is BTC/USD.  If the api's all go down, it is the responsibility of the miner to still submit a valid BTC/USD price.  If they do not, they risk being disputed and slashed.  For these reasons, please contribute openly to the official Tellor miner (or an open source variant), as consensus here is key.  If you're miner gets a different value than the majority of the of the other miners, you risk being punished.**
+**The Tellor system is a way to push data on-chain.  What pieces of data are pushed are specificied in the psr.json file. Note that the data corresponds to a specific API. The tellor mining system is set up to pull api data to generate these values to submit on-chain once a correct nonce is mined. These specific apis are just suggestions.  The system is not guarunteed to work for everyone.  It is up to the consnesus of the Tellor token holders to determine what a correct value is. As an example, request ID 4 is BTC/USD.  If the api's all go down, it is the responsibility of the miner to still submit a valid BTC/USD price. If they do not, they risk being disputed and slashed. For these reasons, please contribute openly to the official Tellor miner (or an open source variant), as consensus here is key.  If you're miner gets a different value than the majority of the of the other miners, you risk being punished.**
 
-A list of all PSR's and the data expected can be found here: [https://docs.google.com/spreadsheets/d/1rRRklc4_LvzJFCHqIgiiNEc7eo_MUw3NRvYmh1HyV14](https://docs.google.com/spreadsheets/d/1rRRklc4_LvzJFCHqIgiiNEc7eo_MUw3NRvYmh1HyV14)
+A list of all PSR's(Price-To-Sales Ratio) and the data expected can be found here: [https://docs.google.com/spreadsheets/d/1rRRklc4_LvzJFCHqIgiiNEc7eo_MUw3NRvYmh1HyV14](https://docs.google.com/spreadsheets/d/1rRRklc4_LvzJFCHqIgiiNEc7eo_MUw3NRvYmh1HyV14)
 
 <p align="center">
     <img src= './public/minerspecs.png' width="450" alt='MinerSpecs' />
@@ -27,23 +27,17 @@ A list of all PSR's and the data expected can be found here: [https://docs.googl
 
 ### Tellor Deployed Addresses
 
-Mainnet - [0x0ba45a8b5d5575935b8158a88c631e9f9c95a2e5](https://etherscan.io/address/0x0ba45a8b5d5575935b8158a88c631e9f9c95a2e5)
+ - Mainnet - [0x0ba45a8b5d5575935b8158a88c631e9f9c95a2e5](https://etherscan.io/address/0x0ba45a8b5d5575935b8158a88c631e9f9c95a2e5)
+ - Rinkeby - [0xFe41Cb708CD98C5B20423433309E55b53F79134a](https://rinkeby.etherscan.io/address/0xFe41Cb708CD98C5B20423433309E55b53F79134a)
 
-Rinkeby - [0xFe41Cb708CD98C5B20423433309E55b53F79134a](https://rinkeby.etherscan.io/address/0xFe41Cb708CD98C5B20423433309E55b53F79134a)
-
-</br>
 
 ### Instructions for deployment
+ - [Tellor Miner Instructions](https://tellor.readthedocs.io/en/latest/MinerSetup/)
+ - [Tellor Deployment Instructions -- From Source](https://tellor.readthedocs.io/en/latest/MinerSetupFromSource/)
 
 
-[Tellor Miner Instructions](https://tellor.readthedocs.io/en/latest/MinerSetup/)
-
-
-[Tellor Deployment Instructions -- From Source](https://tellor.readthedocs.io/en/latest/MinerSetupFromSource/)
-
-
-#### How to Contribute<a name="how2contribute"> </a>
-Join our Discord or Telegram:
+### How to Contribute and project updates<a name="how2contribute"> </a>
+ - Join our Discord or Telegram:
 [<img src="./public/telegram.png" width="24" height="24">](https://t.me/tellor)
 [<img src="./public/discord.png" width="24" height="24">](https://discord.gg/zFcM3G)
 
@@ -56,20 +50,14 @@ Join our Discord or Telegram:
 
     Mining also requires submitting on-chain transactions on Ethereum.  These transactions cost gas (ETH) and can sometimes be signifiant if the cost of gas on EThereum is high (i.e. the network is clogged).  Please reach out to the community to find the best tips for keeping gas costs under control or at least being aware of the costs.
 
-    If you are building a competing client, please contact us.  The miner specifications are off-chain and a the validity of the mining process hinges on the consensus of the Tellor community to determine what proper values are.  Competing clients that change different pieces run the risk of being disputed by the commmunity.
+    If you are building a competing client, please contact us.  The miner specifications are off-chain and the validity of the mining process hinges on the consensus of the Tellor community to determine what proper values are.  Competing clients that change different pieces run the risk of being disputed by the commmunity.
 
     There is no guaruntee of profit from mining.
 
     There is no promise that Tellor Tributes currently hold or will ever hold any value.
 
-Please join our Discord for more information and community updates.
-
-
-#### Contributors<a name="contributors"> </a>
-
-This repository is maintained by the Tellor team - [www.tellor.io](https://www.tellor.io)
-
 
 #### Copyright
-
 Tellor Inc. 2019
+
+This repository is maintained by the Tellor team - [www.tellor.io](https://www.tellor.io)
