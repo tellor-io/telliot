@@ -7,5 +7,6 @@
     "serverHost": "localhost",
     "serverPort": 5000,
     "gasMax": 10,
-    "dbFile": "/tellorDB"
+    "dbFile": "/tellorDB",
+    "indexFolder": "configs"
 }

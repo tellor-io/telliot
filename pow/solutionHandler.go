@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -122,7 +123,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool {
 				if challenge.RequestIDs[i].Uint64() > 53 && len(val) == 0 {
 					s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
 				} else {
-					jsonFile, err := os.Open("manualData.json")
+					jsonFile, err := os.Open(filepath.Join("configs", "manualData.json"))
 					if err != nil {
 						fmt.Println("manualData read error", err)
 						return false
@@ -173,7 +174,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool {
 			if challenge.RequestID.Uint64() > 51 && len(val) == 0 {
 				s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestID.Uint64())
 			} else {
-				jsonFile, err := os.Open("manualData.json")
+				jsonFile, err := os.Open(filepath.Join("configs", "manualData.json"))
 				if err != nil {
 					fmt.Println(err)
 				}

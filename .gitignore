@@ -1,32 +1,3 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.vscode
-bin
-pkg/darwin_amd64
-*/vendor
-
-# Test binary, build with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-/myconfig.json
-*/myconfig.json
-/myconfig2.json
-*/myconfig2.json
-
-/dist
-
-./GPUMiner2
-
-TellorMiner
-OpenCL.def
-saved.json
 */saved.json
 /saved.json
 libOpenCL.a

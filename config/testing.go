@@ -6,13 +6,14 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/phayes/freeport"
 	"github.com/tellor-io/TellorMiner/util"
 )
 
-const mainConfig = `
+var mainConfig = `
 {
     "contractAddress": "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5",
     "nodeURL": "https://mainnet.infura.io/v3/7f11ed6dfxxxxxxxxxxxxxxxxx",
@@ -24,7 +25,8 @@ const mainConfig = `
     "trackerCycle": 1,
     "trackers": {},
     "dbFile": "/tellorDB",
-    "requestTips": 1
+    "requestTips": 1,
+    "indexFolder": "` + filepath.Join("..", "configs") + `"
 }`
 
 const loggingConfig = `

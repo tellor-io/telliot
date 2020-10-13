@@ -17,7 +17,6 @@ import (
 )
 
 func TestServer(t *testing.T) {
-
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}

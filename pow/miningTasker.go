@@ -157,7 +157,7 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work, bool) {
 			}
 			path := path.Dir(e)
 			// TODO(krasi) Make it configurable with a sane default.
-			jsonFile, err := os.Open(filepath.Join(path, "manualData.json"))
+			jsonFile, err := os.Open(filepath.Join(path, "configs", "manualData.json"))
 			if err != nil {
 				fmt.Println("manualData read error", err)
 				return nil, false

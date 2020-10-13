@@ -4,11 +4,12 @@
 package util
 
 import (
+	"path/filepath"
 	"testing"
 )
 
 func TestLogConfig(t *testing.T) {
-	path := "./testConfig.json"
+	path := filepath.Join("..", "configs", "loggingConfig.json")
 	err := ParseLoggingConfig(path)
 	if err != nil {
 		t.Fatal(err)
