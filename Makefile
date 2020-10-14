@@ -53,6 +53,10 @@ deps: ## Ensures fresh go.mod and go.sum.
 generate: ## Ensures kernelSource.go is generated.
 	@cd pow && go generate
 
+.PHONY: build
+build: generate
+	@go build
+
 .PHONY: check-git
 check-git:
 ifneq ($(GIT),)
@@ -112,4 +116,10 @@ shell-lint: $(SHELLCHECK)
 	@echo ">> linting all of the shell script files"
 	@$(SHELLCHECK) --severity=error -o all -s bash $(shell find . -type f -name "*.sh" -not -path "*vendor*" -not -path "tmp/*" -not -path "*node_modules*")
 
-
+.PHONY: update-go-deps
+update-go-deps:
+	@echo ">> updating Go dependencies"
+	@for m in $$($(GO) list -mod=readonly -m -f '{{ if and (not .Indirect) (not .Main)}}{{.Path}}{{end}}' all); do \
+		$(GO) get $$m; \
+	done
+	$(GO) mod tidy
