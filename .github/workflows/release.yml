@@ -40,9 +40,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BINARY_NAME: $(ls -Art | tail -n 1 | awk 'NF>1{printf $NF}')
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: $BINARY_NAME
-          asset_name: $BINARY_NAME
+          asset_path: TellorMiner # TODO instead of hard coding the name try to grab it from the build output. tried with `go build -a -v |   basename -a` but didn't work. 
+          asset_name: TellorMiner
           asset_content_type: application/octet-stream

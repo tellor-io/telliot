@@ -55,7 +55,7 @@ generate: ## Ensures kernelSource.go is generated.
 
 .PHONY: build
 build: generate
-	@go build
+	@go build -v
 
 .PHONY: check-git
 check-git:

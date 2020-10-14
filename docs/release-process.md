@@ -48,14 +48,14 @@ later follow-up.
 
 # Cutting a release
 
-At the start of a new major or minor release cycle create the corresponding release branch based on the master branch. For example if we're releasing `0.2.0` and the previous stable release is `0.1.0` we need to create a `release-0.2` branch. 
+At the start of a new major or minor release cycle create the corresponding release branch based on the master branch. For example if we're releasing `0.2.0` and the previous stable release is `0.1.0` we need to create a `release-0.2` branch.
 
 ```bash
 $ git checkout -b release-0.2
 $ git push origin release-0.2
 ```
 
-Note that all releases are handled in protected release branches. Patch releases for any given major or minor release happen in the same `release-<major>.<minor>` branch. Do not create a new branch for patch releases. 
+Note that all releases are handled in protected release branches. Patch releases for any given major or minor release happen in the same `release-<major>.<minor>` branch. Do not create a new branch for patch releases.
 
 Update `CHANGELOG.md`. Do this in a proper PR pointing to the release branch as this gives others the opportunity to chime in on the release in general and on the addition to the changelog in particular.
 
