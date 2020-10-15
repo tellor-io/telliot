@@ -1,8 +1,6 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-// +build ignore
-
 package main
 
 import (
@@ -17,11 +15,12 @@ import (
 )
 
 const (
-	sourceDir  = "opencl_sources"
-	resultFile = "kernelSource.go"
+	sourceDir  = "sources"
 	headerFile = "header.c"
 	kernelFile = "kernel.cl"
 )
+
+var resultFile = filepath.Join("pkg", "pow", "kernelSource.go")
 
 // This program compiles all the opencl code into a single string
 // which is then baked into the final go executable
@@ -32,7 +31,7 @@ func compileSources() (string, error) {
 		return "", fmt.Errorf("couldn't find opencl source directory")
 	}
 
-	dir := filepath.Dir(filename) + "/" + sourceDir
+	dir := filepath.Join(filepath.Dir(filename), sourceDir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return "", fmt.Errorf("couldn't read directory %s: %s", dir, err.Error())
@@ -81,7 +80,7 @@ func main() {
 	}
 	defer outFile.Close()
 
-	packageTemplate.Execute(outFile, struct {
+	err = packageTemplate.Execute(outFile, struct {
 		Timestamp time.Time
 		Directory string
 		Source    string
@@ -90,6 +89,9 @@ func main() {
 		Directory: sourceDir,
 		Source:    kernelStr,
 	})
+	if err != nil {
+		fmt.Print("failed to execute template", err.Error())
+	}
 
 }
 
