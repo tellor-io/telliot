@@ -1,9 +1,7 @@
 */saved.json
-/saved.json
-libOpenCL.a
-./tracker/possible-dispute*
-
 .env
-/.env
+*/.env
 
 pow/kernelSource.go
+
+TellorMiner
