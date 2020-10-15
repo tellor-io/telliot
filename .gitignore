@@ -1,6 +1,7 @@
 */saved.json
 .env
 */.env
+coverage.out
 
 pow/kernelSource.go
 
