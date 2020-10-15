@@ -2,6 +2,6 @@
 .env
 */.env
 
-pow/kernelSource.go
+pkg/pow/kernelSource.go
 
 tellor
