@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	eth_common "github.com/ethereum/go-ethereum/common"
-	"github.com/tellor-io/TellorMiner/common"
-	"github.com/tellor-io/TellorMiner/config"
-	"github.com/tellor-io/TellorMiner/contracts"
-	"github.com/tellor-io/TellorMiner/contracts2"
-	"github.com/tellor-io/TellorMiner/db"
-	"github.com/tellor-io/TellorMiner/rpc"
+	"github.com/tellor-io/TellorMiner/abi/contracts"
+	"github.com/tellor-io/TellorMiner/abi/contracts2"
+	"github.com/tellor-io/TellorMiner/pkg/common"
+	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/db"
+	"github.com/tellor-io/TellorMiner/pkg/rpc"
 )
 
 func CreateContext(t *testing.T) (context.Context, *config.Config, func()) {

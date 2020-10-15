@@ -8,7 +8,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tellor-io/TellorMiner/util"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 type TRBAmount struct {

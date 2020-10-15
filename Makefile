@@ -51,7 +51,7 @@ deps: ## Ensures fresh go.mod and go.sum.
 
 .PHONY: generate
 generate: ## Ensures kernelSource.go is generated.
-	@cd pow && go generate
+	@cd pkg/pow && go generate
 
 .PHONY: build
 build: generate
