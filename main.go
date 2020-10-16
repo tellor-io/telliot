@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"os/signal"
@@ -17,6 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	cli "github.com/jawher/mow.cli"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -31,6 +32,15 @@ import (
 
 var ctx context.Context
 
+func setupLogger() log.Logger {
+	lvl := level.AllowError()
+
+	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	// logger = level.NewFilter(logger, lvl)
+
+	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+}
+
 func ErrorHandler(err error, operation string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s failed: %s\n", operation, err.Error())
@@ -38,32 +48,32 @@ func ErrorHandler(err error, operation string) {
 	}
 }
 
-func buildContext() error {
+func buildContext(logger log.Logger) error {
 	cfg := config.GetConfig()
 
 	if !cfg.EnablePoolWorker {
 		// Create an rpc client
 		client, err := rpc.NewClient(cfg.NodeURL)
 		if err != nil {
-			log.Fatal(err)
+			level.Error(logger).Log("err", err)
 		}
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
 		if err != nil {
-			log.Fatal(err)
+			level.Error(logger).Log("err", err)
 		}
 		transactorInstance, err := contracts1.NewTellorTransactor(contractAddress, client)
 		if err != nil {
-			log.Fatal(err)
+			level.Error(logger).Log("err", err)
 		}
 		newTellorInstance, err := contracts2.NewTellor(contractAddress, client)
 		if err != nil {
-			log.Fatal(err)
+			level.Error(logger).Log("err", err)
 		}
 		newTransactorInstance, err := contracts2.NewTellorTransactor(contractAddress, client)
 		if err != nil {
-			log.Fatal(err)
+			level.Error(logger).Log("err", err)
 		}
 
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
@@ -146,11 +156,14 @@ func App() *cli.Cli {
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
 	logPath := app.StringOpt("logConfig", "configs/loggingConfig.json", "Path to a JSON logging config file")
 
+	//Ignoring loging Config for now
+	logger := setupLogger()
+
 	// This will get run before any of the commands
 	app.Before = func() {
 		ErrorHandler(config.ParseConfig(*configPath), "parsing config file")
 		ErrorHandler(util.ParseLoggingConfig(*logPath), "parsing log file")
-		ErrorHandler(buildContext(), "building context")
+		ErrorHandler(buildContext(logger), "building context")
 	}
 
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
@@ -213,15 +226,17 @@ func disputeCmd(cmd *cli.Cmd) {
 }
 
 func voteCmd(cmd *cli.Cmd) {
+	logger := setupLogger()
 	disputeID := EthereumInt{}
 	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
 	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
 	cmd.Action = func() {
-		ErrorHandler(ops.Vote(disputeID.Int, *supports, ctx), "vote")
+		ErrorHandler(ops.Vote(disputeID.Int, *supports, ctx, logger), "vote")
 	}
 }
 
 func newDisputeCmd(cmd *cli.Cmd) {
+	logger := setupLogger()
 	requestID := EthereumInt{}
 	timestamp := EthereumInt{}
 	minerIndex := EthereumInt{}
@@ -229,11 +244,13 @@ func newDisputeCmd(cmd *cli.Cmd) {
 	cmd.VarArg("TIMESTAMP", &timestamp, "timestamp")
 	cmd.VarArg("MINER_INDEX", &minerIndex, "miner to dispute (0-4)")
 	cmd.Action = func() {
-		ErrorHandler(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
+		ErrorHandler(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx, logger), "new dipsute")
 	}
 }
 
 func mineCmd(cmd *cli.Cmd) {
+	//Can't pass this as an argument, so I initialized another one
+	logger := setupLogger()
 	remoteDS := cmd.BoolOpt("remote r", false, "connect to remote dataserver")
 	cmd.Action = func() {
 		// Create os kill sig listener.
@@ -252,11 +269,11 @@ func mineCmd(cmd *cli.Cmd) {
 				var err error
 				ds, err = ops.CreateDataServerOps(ctx, ch)
 				if err != nil {
-					log.Fatal(err)
+					level.Error(logger).Log("err", err)
 				}
 				// Start and wait for it to be ready.
 				if err := ds.Start(ctx); err != nil {
-					log.Fatal(err)
+					level.Error(logger).Log("err", err)
 				}
 				<-ds.Ready()
 			}
@@ -265,17 +282,17 @@ func mineCmd(cmd *cli.Cmd) {
 		DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 		v, err := DB.Get(db.DisputeStatusKey)
 		if err != nil {
-			fmt.Println("ignoring --- could not get dispute status.  Check if staked")
+			level.Warn(logger).Log("msg", "ignoring --- could not get dispute status.  Check if staked")
 		}
 		status, _ := hexutil.DecodeBig(string(v))
 		if status.Cmp(big.NewInt(1)) != 0 {
-			log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
+			level.Error(logger).Log("err", "Miner is not able to mine with status %v. Stopping all mining immediately", status)
 		}
 		ch := make(chan os.Signal)
 		exitChannels = append(exitChannels, &ch)
-		miner, err := ops.CreateMiningManager(ctx, ch, ops.NewSubmitter())
+		miner, err := ops.CreateMiningManager(ctx, ch, ops.NewSubmitter(), logger)
 		if err != nil {
-			log.Fatal(err)
+			level.Error(logger).Log("err", err)
 		}
 		miner.Start(ctx)
 
@@ -305,17 +322,19 @@ func mineCmd(cmd *cli.Cmd) {
 			}
 
 			if !dsStopped && !minerStopped && cnt > 60 {
-				fmt.Printf("Taking longer than expected to stop operations. Waited %v so far\n", time.Since(start))
+				//I Think this will log in a weird format
+				level.Warn(logger).Log("warn", "Taking longer than expected to stop operations. Waited %v so far\n", time.Since(start))
 			} else if dsStopped && minerStopped {
 				break
 			}
 			time.Sleep(500 * time.Millisecond)
 		}
-		fmt.Printf("Main shutdown complete\n")
+		level.Info(logger).Log("Main shutdown complete\n")
 	}
 }
 
 func dataserverCmd(cmd *cli.Cmd) {
+	logger := setupLogger()
 	cmd.Action = func() {
 		// Create os kill sig listener.
 		c := make(chan os.Signal, 1)
@@ -327,11 +346,11 @@ func dataserverCmd(cmd *cli.Cmd) {
 		var err error
 		ds, err = ops.CreateDataServerOps(ctx, ch)
 		if err != nil {
-			log.Fatal(err)
+			level.Error(logger).Log("err", err)
 		}
 		// Start and wait for it to be ready
 		if err := ds.Start(ctx); err != nil {
-			log.Fatal(err)
+			level.Error(logger).Log("err", err)
 		}
 		<-ds.Ready()
 
@@ -359,7 +378,7 @@ func dataserverCmd(cmd *cli.Cmd) {
 			}
 			time.Sleep(500 * time.Millisecond)
 		}
-		fmt.Printf("Main shutdown complete\n")
+		level.Info(logger).Log("msg", "Main shutdown complete\n")
 	}
 
 }

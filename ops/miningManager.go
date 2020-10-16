@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
 	"github.com/tellor-io/TellorMiner/db"
@@ -40,11 +42,12 @@ type MiningMgr struct {
 }
 
 // CreateMiningManager creates a new manager that mananges mining and data requests.
-func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter) (*MiningMgr, error) {
+func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter tellorCommon.TransactionSubmitter, logger log.Logger) (*MiningMgr, error) {
 	cfg := config.GetConfig()
 
 	group, err := pow.SetupMiningGroup(cfg)
 	if err != nil {
+
 		return nil, fmt.Errorf("failed to setup miners: %s", err.Error())
 	}
 
@@ -67,7 +70,7 @@ func CreateMiningManager(ctx context.Context, exitCh chan os.Signal, submitter t
 		mng.tasker = pow.CreateTasker(cfg, proxy)
 		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, proxy)
 		if cfg.RequestData > 0 {
-			fmt.Println("dataRequester created")
+			level.Info(logger).Log("msg", "dataRequester created")
 			mng.dataRequester = CreateDataRequester(exitCh, submitter, cfg.RequestDataInterval.Duration, proxy)
 		}
 	}
@@ -87,7 +90,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		output := make(chan *pow.Result)
 		if cfg.RequestData > 0 {
 			if err := mgr.dataRequester.Start(ctx); err != nil {
-				fmt.Println("error starting the data requester", err)
+				level.Error(logger).Log("error starting the data requester", err)
 			}
 		}
 
@@ -102,11 +105,11 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				work, instantSubmit := mgr.tasker.GetWork(input)
 				if instantSubmit {
 					if mgr.solution == nil {
-						fmt.Println("Instant Submit Called! ")
+						level.Info(logger).Log("msg", "Instant Submit Called! ")
 						mgr.solution = &pow.Result{Work: work, Nonce: "1"}
 						goodSubmit := mgr.solHandler.Submit(ctx, mgr.solution)
 						if goodSubmit {
-							fmt.Println("good submit")
+							level.Info(logger).Log("msg", "good submit")
 						}
 					}
 				} else if work != nil {
@@ -133,7 +136,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				mgr.solution = result
 				goodSubmit := mgr.solHandler.Submit(ctx, mgr.solution)
 				if goodSubmit {
-					fmt.Println("solution submitted") //mgr.solution = nil
+					level.Info(logger).Log("msg", "solution submitted")
 				}
 				sendWork()
 

@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/common"
 	"github.com/tellor-io/TellorMiner/config"
@@ -29,7 +31,7 @@ import (
  * This file handles all operations related to disputes
  */
 
-func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx context.Context) error {
+func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx context.Context, logger log.Logger) error {
 
 	if !minerIndex.IsUint64() || minerIndex.Uint64() > 4 {
 		return fmt.Errorf("miner index should be between 0 and 4 (got %s)", minerIndex.Text(10))
@@ -65,11 +67,11 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 	if err != nil {
 		return fmt.Errorf("failed to send dispute txn: %s", err.Error())
 	}
-	fmt.Printf("dispute started with txn: %s\n", tx.Hash().Hex())
+	level.Info(logger).Log("dispute started with txn", tx.Hash().Hex())
 	return nil
 }
 
-func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error {
+func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context, logger log.Logger) error {
 
 	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
 	addr := ctx.Value(tellorCommon.PublicAddress).(common.Address)
@@ -78,7 +80,7 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 		return fmt.Errorf("failed to check if you've already voted: %v", err)
 	}
 	if voted {
-		fmt.Printf("You have already voted on this dispute\n")
+		level.Warn(logger).Log("warn", "You have already voted on this dispute\n")
 		return nil
 	}
 
@@ -93,7 +95,7 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 		return fmt.Errorf("failed to submit vote transaction: %s", err.Error())
 	}
 
-	fmt.Printf("Vote submitted with transaction %s\n", tx.Hash().Hex())
+	level.Info(logger).Log("Vote submitted with transaction %s\n", tx.Hash().Hex())
 	return nil
 }
 
@@ -205,6 +207,7 @@ func List(ctx context.Context) error {
 
 	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
 
+	// Not sure if we should handle this with logger??
 	fmt.Printf("There are currently %d open disputes\n", len(logs))
 	fmt.Printf("-------------------------------------\n")
 	for _, rawDispute := range logs {
