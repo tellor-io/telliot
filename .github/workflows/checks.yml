@@ -25,12 +25,14 @@ jobs:
         run: make format
       - name: Linting & vetting.
         run: make lint
-  Testing:
+  Testing_and_building:
     runs-on: ubuntu-latest
     steps:
       - name : install dependancies
         run: sudo apt-get install ocl-icd-opencl-dev
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Fetch all tags as well.
       - uses: actions/setup-go@v2
         with:
           go-version: 1.15.x
@@ -39,8 +41,10 @@ jobs:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
-      - name: Go testing.
+      - name: Testing
         run: make test
+      - name: Building
+        run: make build
   Coverage:
     runs-on: ubuntu-latest
     steps:

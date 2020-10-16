@@ -23,7 +23,7 @@ x86_64-w64-mingw32-dlltool -d OpenCL.def -l libOpenCL.a
 mv libOpenCL.a /usr/x86_64-w64-mingw32/lib/
 rm OpenCL.def
 
-
+GOOS=windows GOARCH=amd64 CGO_ENABLED=1 go build -ldflags "$LDFLAGS"
 
 
 
