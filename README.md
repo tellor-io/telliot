@@ -1,7 +1,7 @@
 
 <p align="center">
   <a href='https://www.tellor.io/'>
-    <img src= './public/Tellor.png' width="250" height="200" alt='tellor.io' />
+    <img src= './assets/Tellor.png' width="250" height="200" alt='tellor.io' />
   </a>
 </p>
 
@@ -21,7 +21,7 @@ It's built on Go and utilizes a split structure.  The database piece is a LevelD
 A list of all PSR's(pre specified requests) and the expected data can be found [here](https://docs.google.com/spreadsheets/d/1rRRklc4_LvzJFCHqIgiiNEc7eo_MUw3NRvYmh1HyV14).
 
 <p align="center">
-    <img src= './public/minerspecs.png' width="450" alt='MinerSpecs' />
+    <img src= './assets/minerspecs.png' width="450" alt='MinerSpecs' />
 </p>
 
 

@@ -3,6 +3,6 @@
 */.env
 coverage.out
 
-pow/kernelSource.go
+pkg/pow/kernelSource.go
 
-TellorMiner
+tellor

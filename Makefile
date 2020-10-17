@@ -53,7 +53,7 @@ deps: ## Ensures fresh go.mod and go.sum.
 
 .PHONY: generate
 generate: ## Ensures kernelSource.go is generated.
-	@cd pow && go generate
+	@go run ./scripts/opencl
 
 .PHONY: build
 build: check-git generate
@@ -63,7 +63,7 @@ endif
 ifeq ($(GIT_HASH),)
 	@echo "GIT_HASH is empty" && exit 1
 endif
-	@go build -v -ldflags "-X main.GitTag=${GIT_TAG} -X main.GitHash=${GIT_HASH} -s -w"
+	@go build -v -ldflags "-X main.GitTag=${GIT_TAG} -X main.GitHash=${GIT_HASH} -s -w" ./cmd/tellor
 
 .PHONY: check-git
 check-git:
