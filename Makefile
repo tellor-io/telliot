@@ -10,8 +10,10 @@ GOBIN             ?= $(firstword $(subst :, ,${GOPATH}))/bin
 
 # Support gsed on OSX (installed via brew), falling back to sed. On Linux
 # systems gsed won't be installed, so will use sed as expected.
-SED ?= $(shell which gsed 2>/dev/null || which sed)
-GIT               ?= $(shell which git)
+SED     ?= $(shell which gsed 2>/dev/null || which sed)
+GIT     ?= $(shell which git)
+GIT_TAG  = $(shell git describe --tags)
+GIT_HASH = $(shell git rev-parse --short HEAD)
 
 export GO111MODULE=on
 GOPROXY           ?= https://proxy.golang.org
@@ -54,8 +56,14 @@ generate: ## Ensures kernelSource.go is generated.
 	@go run ./scripts/opencl
 
 .PHONY: build
-build: generate
-	@go build -v ./cmd/tellor
+build: check-git generate
+ifeq ($(GIT_TAG),)
+	@echo "GIT_TAG is empty" && exit 1
+endif
+ifeq ($(GIT_HASH),)
+	@echo "GIT_HASH is empty" && exit 1
+endif
+	@go build -v -ldflags "-X main.GitTag=${GIT_TAG} -X main.GitHash=${GIT_HASH} -s -w" ./cmd/tellor
 
 .PHONY: check-git
 check-git:
