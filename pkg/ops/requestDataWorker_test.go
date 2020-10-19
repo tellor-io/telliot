@@ -38,7 +38,7 @@ func (t testContract) AddTip(_requestID *big.Int, _amount *big.Int) (*types.Tran
 	return nil, nil
 }
 
-func (t testContract) SubmitSolution(solution string, requestID *big.Int, value *big.Int) (*types.Transaction, error) {
+func (t testContract) SubmitSolution(solution string, requestID [5]*big.Int, value [5]*big.Int) (*types.Transaction, error) {
 	return nil, nil
 }
 

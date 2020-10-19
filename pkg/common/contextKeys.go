@@ -17,15 +17,11 @@ var (
 	// Tellor Contract Address.
 	ContractAddress = util.NewKey("common", "contractAddress")
 
-	// MasterContractContextKey is the shared context key to get shared master tellor contract instance.
-	MasterContractContextKey = util.NewKey("common", "masterContract")
+	// ContractsTellorContextKey is the shared context key to get the tellor contract instance.
+	ContractsTellorContextKey = util.NewKey("common", "ContractsTellorInstance")
 
-	NewTellorContractContextKey = util.NewKey("common", "newTellorContract")
-
-	// TransactorContractContextKey is the shared context key to get shared transactor tellor contract instance.
-	TransactorContractContextKey = util.NewKey("common", "transactorContract")
-
-	NewTransactorContractContextKey = util.NewKey("common", "newTransactorContract")
+	// ContractsGetterContextKey is the shared context key to get the getter contract instance.
+	ContractsGetterContextKey = util.NewKey("common", "ContractsGetterInstance")
 
 	// DataProxyKey used to access the local or remote data server proxy.
 	DataProxyKey = util.NewKey("common", "DataServerProxy")

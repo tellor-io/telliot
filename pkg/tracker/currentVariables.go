@@ -9,9 +9,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/TellorMiner/abi/contracts"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -39,11 +40,10 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	// convert to address.
 	fromAddress := common.HexToAddress(_fromAddress)
 
-	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
+	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	currentChallenge, requestID, difficulty, queryString, granularity, totalTip, err := instance.GetCurrentVariables(nil)
 	if err != nil {
-		fmt.Println("Current Variables Retrieval Error")
-		return err
+		return errors.Wrap(err, "retrieve current variables")
 	}
 
 	// if we've mined it, don't save it.

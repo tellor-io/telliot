@@ -16,9 +16,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tellor-io/TellorMiner/abi/contracts1"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -110,7 +110,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 		return nil
 	}
 
-	tokenAbi, err := abi.JSON(strings.NewReader(contracts1.TellorLibraryABI))
+	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
 	if err != nil {
 		return fmt.Errorf("failed to parse abi: %v", err)
 	}
@@ -120,7 +120,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
 
 	checkUntil := toCheck - blockDelay
-	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID()
+	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(c.lastCheckedBlock)),
 		ToBlock:   big.NewInt(int64(checkUntil)),
@@ -133,7 +133,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 	}
 	blockTimes := make(map[uint64]time.Time)
 	for _, l := range logs {
-		nonceSubmit := contracts1.TellorLibraryNonceSubmitted{}
+		nonceSubmit := tellor.TellorLibraryNonceSubmitted{}
 		err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 		if err != nil {
 			return fmt.Errorf("failed to unpack into object: %v", err)
@@ -147,8 +147,8 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 			blockTime = time.Unix(int64(header.Time), 0)
 			blockTimes[l.BlockNumber] = blockTime
 		}
-		reqID := nonceSubmit.RequestId.Uint64()
-		result := CheckValueAtTime(reqID, nonceSubmit.Value, blockTime)
+		reqID := nonceSubmit.RequestId[0].Uint64()                         // ???????????????????????
+		result := CheckValueAtTime(reqID, nonceSubmit.Value[0], blockTime) // ??????????????????
 		if result == nil {
 			disputeLogger.Warn("no value data for reqID %d at %s", reqID, blockTime)
 			continue

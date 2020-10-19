@@ -225,8 +225,9 @@ func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.Cont
 
 	txn, err := contract.SubmitSolution(
 		s.currentNonce,
-		s.currentChallenge.RequestID,
-		s.currentValue)
+		[5]*big.Int{s.currentChallenge.RequestID}, // ?????????????
+		[5]*big.Int{s.currentValue},               // ???????????????
+	)
 	if err != nil {
 		s.log.Error("Problem submitting solution: %v", err)
 		return txn, err

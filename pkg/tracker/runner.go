@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	tellor "github.com/tellor-io/TellorMiner/abi/contracts"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/util"
@@ -56,15 +56,15 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	runnerLog.Info("Created %d trackers", len(trackers))
 
 	var err error
-	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
+	masterInstance := ctx.Value(tellorCommon.ContractsTellorContextKey)
 	if masterInstance == nil {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		masterInstance, err = tellor.NewTellorMaster(contractAddress, r.client)
+		masterInstance, err = tellor.NewTellor(contractAddress, r.client)
 		if err != nil {
 			runnerLog.Error("Problem creating tellor master instance: %v\n", err)
 			return err
 		}
-		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
+		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, masterInstance)
 	}
 
 	runnerLog.Info("Trackers will run every %v\n", cfg.TrackerSleepCycle)
