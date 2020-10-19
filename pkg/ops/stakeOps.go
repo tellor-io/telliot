@@ -11,6 +11,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	tellor "github.com/tellor-io/TellorMiner/abi/contracts"
 	tellor1 "github.com/tellor-io/TellorMiner/abi/contracts1"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
@@ -46,7 +48,7 @@ func printStakeStatus(bigStatus *big.Int, started *big.Int) {
 	}
 }
 
-func Deposit(ctx context.Context) error {
+func Deposit(ctx context.Context, logger log.Logger) error {
 
 	tmaster := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
 
@@ -90,12 +92,11 @@ func Deposit(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-	fmt.Printf("Stake depositied with txn %s\n", tx.Hash().Hex())
-
+	level.Info(logger).Log("info", "Stake depositied", "txHash", tx.Hash().Hex())
 	return nil
 }
 
-func ShowStatus(ctx context.Context) error {
+func ShowStatus(ctx context.Context, logger log.Logger) error {
 	tmaster := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
 
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
@@ -108,7 +109,7 @@ func ShowStatus(ctx context.Context) error {
 	return nil
 }
 
-func RequestStakingWithdraw(ctx context.Context) error {
+func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
 
 	tmaster := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
@@ -131,12 +132,12 @@ func RequestStakingWithdraw(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-	fmt.Printf("Withdrawal request sent with txn: %s\n", tx.Hash().Hex())
 
+	level.Info(logger).Log("info", "Withdrawal request sent", "txHash", tx.Hash().Hex())
 	return nil
 }
 
-func WithdrawStake(ctx context.Context) error {
+func WithdrawStake(ctx context.Context, logger log.Logger) error {
 
 	tmaster := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
@@ -145,6 +146,7 @@ func WithdrawStake(ctx context.Context) error {
 		return fmt.Errorf("failed to get stake status: %s", err.Error())
 	}
 	if status.Uint64() != 2 {
+
 		fmt.Printf("Can't withdraw")
 		printStakeStatus(status, startTime)
 		return nil
@@ -160,6 +162,6 @@ func WithdrawStake(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-	fmt.Printf("Withdrew stake with txn %s\n", tx.Hash().Hex())
+	level.Info(logger).Log("info", "Withdrew stake", "txHash", tx.Hash().Hex())
 	return nil
 }

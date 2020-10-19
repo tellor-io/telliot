@@ -5,7 +5,9 @@ package dataServer
 
 import (
 	"context"
-	"log"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/tellor-io/TellorMiner/pkg/common"
@@ -31,18 +33,21 @@ type DataServer struct {
 }
 
 // CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data.
-func CreateServer(ctx context.Context) (*DataServer, error) {
+func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
 	cfg := config.GetConfig()
 
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	client := ctx.Value(common.ClientContextKey).(rpc.ETHClient)
 	run, err := tracker.NewRunner(client, DB)
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "erro rcreating tracker runner instance", "err", err)
+		//Here the fatal does not exit with Exit.os(). Shou
+		//log.Fatal(err)
 	}
 	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "erro rcreating tracker runner instance", "err", err)
+		//log.Fatal(err)
 	}
 	// Make sure channel buffer size 1 since there is no guarantee that anyone
 	// Would be listening to the channel
