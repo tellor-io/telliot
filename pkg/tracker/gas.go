@@ -7,11 +7,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
@@ -36,7 +37,7 @@ func (b *GasTracker) String() string {
 	return "GasTracker"
 }
 
-func (b *GasTracker) Exec(ctx context.Context) error {
+func (b *GasTracker) Exec(ctx context.Context, logger log.Logger) error {
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
@@ -55,27 +56,27 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 		if err != nil {
 			gasPrice, err = client.SuggestGasPrice(context.Background())
 			if err != nil {
-				log.Println("couldn't get suggested gas price", err)
+				level.Warn(logger).Log("msg", "couldn't get suggested gas price", "err", err)
 			}
 		} else {
 			gpModel := GasPriceModel{}
 			err = json.Unmarshal(payload, &gpModel)
 			if err != nil {
-				log.Printf("Problem with ETH gas station json: %v\n", err)
+				level.Warn(logger).Log("msg", "Problem with ETH gas station json", "err", err)
 				gasPrice, err = client.SuggestGasPrice(context.Background())
 				if err != nil {
-					log.Println("couldn't get suggested gas price", err)
+					level.Warn(logger).Log("msg", "couldn't get suggested gas price", "err", err)
 				}
 			} else {
 				gasPrice = big.NewInt(int64(gpModel.Fast / 10))
 				gasPrice = gasPrice.Mul(gasPrice, big.NewInt(GWEI))
-				log.Println("Using ETHGasStation fast price: ", gasPrice)
+				level.Info(logger).Log("msg", "Using ETHGasStation fast price", "price", gasPrice)
 			}
 		}
 	} else {
 		gasPrice, err = client.SuggestGasPrice(context.Background())
 		if err != nil {
-			log.Println("couldn't get suggested gas price", err)
+			level.Warn(logger).Log("msg", "couldn't get suggested gas price", "err", err)
 		}
 	}
 

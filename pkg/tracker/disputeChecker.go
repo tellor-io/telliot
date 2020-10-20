@@ -16,6 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/abi/contracts1"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
@@ -91,7 +93,7 @@ func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResul
 	}
 }
 
-func (c *disputeChecker) Exec(ctx context.Context) error {
+func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
@@ -150,7 +152,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 		reqID := nonceSubmit.RequestId.Uint64()
 		result := CheckValueAtTime(reqID, nonceSubmit.Value, blockTime)
 		if result == nil {
-			disputeLogger.Warn("no value data for reqID %d at %s", reqID, blockTime)
+			level.Warn(logger).Log("msg", "no value data", "reqid", reqID, "blockTime", blockTime)
 			continue
 		}
 		if !result.WithinRange {
@@ -172,7 +174,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 				disputeLogger.Error("failed to save dispute data to %s: %v", filename, err)
 			}
 		} else {
-			disputeLogger.Info("value of %s for requestid %d at %s appears to be within expected range", nonceSubmit.Value, reqID, blockTime.String())
+			level.Info(logger).Log("msg", "value appears to be within expected range", "reqID", reqID, "value", nonceSubmit.Value, "blockTime", blockTime.String())
 		}
 
 	}

@@ -6,11 +6,12 @@ package tracker
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	tellor "github.com/tellor-io/TellorMiner/abi/contracts"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
@@ -25,7 +26,7 @@ func (b *TributeTracker) String() string {
 	return "TributeTracker"
 }
 
-func (b *TributeTracker) Exec(ctx context.Context) error {
+func (b *TributeTracker) Exec(ctx context.Context, logger log.Logger) error {
 	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
@@ -46,7 +47,7 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 
 	instance, err := tellor.NewTellorMaster(contractAddress, client)
 	if err != nil {
-		fmt.Println("Instance error - TributeBalance")
+		level.Error(logger).Log("msg", "error creating instance", "err", err)
 		return err
 	}
 
@@ -69,9 +70,9 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	}
 
 	//numTributes, _ := balanceInTributes.Float64()
-	log.Printf("Tribute Balance: %v (%v tributes)\n", balance, balanceInTributes)
+	fmt.Printf("Tribute Balance: %v (%v tributes)\n", balance, balanceInTributes)
 	if err != nil {
-		fmt.Println("Balance Retrieval Error - Tribute Balance")
+		level.Error(logger).Log("msg", "error retrieving balance", "err", err)
 		return err
 	}
 	enc := hexutil.EncodeBig(balance)

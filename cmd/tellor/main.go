@@ -332,7 +332,7 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 				}
 				time.Sleep(500 * time.Millisecond)
 			}
-			level.Info(logger).Log("info", "Main shutdown complete")
+			level.Info(logger).Log("msg", "Main shutdown complete")
 		}
 	}
 }
@@ -385,7 +385,7 @@ func dataserverCmd(logger log.Logger) func(*cli.Cmd) {
 				}
 				time.Sleep(500 * time.Millisecond)
 			}
-			level.Info(logger).Log("info", "Main shutdown complete")
+			level.Info(logger).Log("msg", "Main shutdown complete")
 		}
 
 	}

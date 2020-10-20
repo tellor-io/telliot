@@ -9,6 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	"github.com/tellor-io/TellorMiner/abi/contracts"
 	"github.com/tellor-io/TellorMiner/abi/contracts2"
@@ -24,7 +26,7 @@ func (b *NewCurrentVariablesTracker) String() string {
 	return "NewCurrentVariablesTracker"
 }
 
-func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
+func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger) error {
 	//cast client using type assertion since context holds generic interface{}
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	//get the single config instance
@@ -39,11 +41,11 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	instance := ctx.Value(tellorCommon.NewTellorContractContextKey).(*contracts2.Tellor)
 	returnNewVariables, err := instance.GetNewCurrentVariables(nil)
 	if err != nil {
-		fmt.Println("New Current Variables Retrieval Error - Contract might not be upgraded")
+		level.Warn(logger).Log("msg", "New Current Variables Retrieval Error - Contract might not be upgraded", "err", err)
 		return nil
 	}
 	if returnNewVariables.RequestIds[0].Int64() > int64(100) || returnNewVariables.RequestIds[0].Int64() == 0 {
-		fmt.Println("New Current Variables Request ID not correct - Contract about to be upgraded")
+		level.Warn(logger).Log("msg", "New Current Variables Request ID not correct - Contract about to be upgraded")
 		return nil
 	}
 	fmt.Println(returnNewVariables)
@@ -53,7 +55,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
 	myStatus, err := instance2.DidMine(nil, returnNewVariables.Challenge, fromAddress)
 	if err != nil {
-		fmt.Println("My Status Retrieval Error")
+		level.Error(logger).Log("msg", "My Status Retrieval Error", "err", err)
 		return err
 	}
 	bitSetVar := []byte{0}
@@ -73,17 +75,17 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	copy(ret[:], hash)
 	timeOfLastNewValue, err := instance2.GetUintVar(nil, ret)
 	if err != nil {
-		fmt.Println("Time of Last New Value Retrieval Error")
+		level.Error(logger).Log("msg", "Time of Last New Value Retrieval Error", "err", err)
 		return err
 	}
 	err = DB.Put(db.LastNewValueKey, []byte(hexutil.EncodeBig(timeOfLastNewValue)))
 	if err != nil {
-		fmt.Println("New Current Variables Put Error")
+		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "lastnewValue", "err", err)
 		return err
 	}
 	err = DB.Put(db.CurrentChallengeKey, returnNewVariables.Challenge[:])
 	if err != nil {
-		fmt.Println("New Current Variables Put Error")
+		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "currentChallenge", "err", err)
 		return err
 	}
 
@@ -91,20 +93,20 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 		conc := fmt.Sprintf("%s%d", "current_requestId", i)
 		err = DB.Put(conc, []byte(hexutil.EncodeBig(returnNewVariables.RequestIds[i])))
 		if err != nil {
-			fmt.Println("New Current Variables Put Error")
+			level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "requestIds", "err", err)
 			return err
 		}
 	}
 
 	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficulty)))
 	if err != nil {
-		fmt.Println("New Current Variables Put Error")
+		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "difficulty", "err", err)
 		return err
 	}
 
 	err = DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(returnNewVariables.Tip)))
 	if err != nil {
-		fmt.Println("New Current Variables Put Error")
+		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "totaltip", "err", err)
 		return err
 	}
 

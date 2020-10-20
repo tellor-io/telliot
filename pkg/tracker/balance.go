@@ -5,8 +5,9 @@ package tracker
 
 import (
 	"context"
-	"fmt"
-	"log"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -25,7 +26,7 @@ func (b *BalanceTracker) String() string {
 	return BalanceTrackerName
 }
 
-func (b *BalanceTracker) Exec(ctx context.Context) error {
+func (b *BalanceTracker) Exec(ctx context.Context, logger log.Logger) error {
 
 	// cast client using type assertion since context holds generic interface{}.
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
@@ -43,10 +44,12 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)
 
 	if err != nil {
-		fmt.Println("balance Error, balance.go")
+		level.Error(logger).Log("msg", "error getting balance", "err", err)
 		return err
 	}
 	enc := hexutil.EncodeBig(balance)
-	log.Printf("Balance: %v", enc)
+
+	// log.Printf("Balance: %v", enc)
+	level.Info(logger).Log("msg", "Got balance", "balance", enc)
 	return DB.Put(db.BalanceKey, []byte(enc))
 }

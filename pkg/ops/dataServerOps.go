@@ -38,13 +38,13 @@ func CreateDataServerOps(ctx context.Context, logger log.Logger, exitCh chan os.
 
 // Start the data server.
 func (ops *DataServerOps) Start(ctx context.Context, logger log.Logger) error {
-	if err := ops.server.Start(ctx, ops.done); err != nil {
+	if err := ops.server.Start(ctx, logger, ops.done); err != nil {
 		return err
 	}
 	ops.Running = true
 	go func() {
 		<-ops.exitCh
-		level.Info(logger).Log("info", "Shutting down data server...")
+		level.Info(logger).Log("msg", "Shutting down data server...")
 		ops.done <- 1
 		cnt := 0
 		for {
@@ -54,12 +54,12 @@ func (ops *DataServerOps) Start(ctx context.Context, logger log.Logger) error {
 				break
 			}
 			if cnt > 60 {
-				level.Warn(logger).Log("warn", "Expected data server to stop by now, Giving up...")
+				level.Warn(logger).Log("msg", "Expected data server to stop by now, Giving up...")
 				return
 			}
 		}
 		ops.Running = false
-		level.Info(logger).Log("info", "Data server shutdown complete")
+		level.Info(logger).Log("msg", "Data server shutdown complete")
 	}()
 	return nil
 }

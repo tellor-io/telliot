@@ -64,11 +64,11 @@ func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
 }
 
 // Start the data server and all underlying resources.
-func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
+func (ds *DataServer) Start(ctx context.Context, logger log.Logger, exitCh chan int) error {
 	ds.exitCh = exitCh
 	ds.runnerExitCh = make(chan int)
 	ds.Stopped = false
-	err := ds.runner.Start(ctx, ds.runnerExitCh)
+	err := ds.runner.Start(ctx, logger, ds.runnerExitCh)
 	if err != nil {
 		return err
 	}
@@ -76,13 +76,13 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 	ds.server.Start()
 	go func() {
 		<-ds.runner.Ready()
-		ds.log.Info("Runner signaled it is ready")
+		level.Info(logger).Log("msg", "Runner signaled it is ready")
 		ds.readyChannel <- true
-		ds.log.Info("DataServer ready for use")
+		level.Info(logger).Log("msg", "DataServer ready for use")
 		<-ds.exitCh
-		ds.log.Info("DataServer received signal to stop")
+		level.Info(logger).Log("msg", "DataServer received signal to stop")
 		if err := ds.stop(); err != nil {
-			ds.log.Info("error stopping the data server:%v", err)
+			level.Info(logger).Log("msg", "error stopping the data server", "err", err)
 		}
 	}()
 	return nil
