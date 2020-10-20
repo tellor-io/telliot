@@ -136,7 +136,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 					Difficulty: miningNotify.MedianDifficulty,
 					// Difficulty: big.NewInt(10000000),
 					// Difficulty: big.NewInt(6377077812),
-					RequestID: big.NewInt(1),
+					RequestIDs: [5]*big.Int{big.NewInt(1)},
 				}
 
 				p.currChallenge = newChallenge

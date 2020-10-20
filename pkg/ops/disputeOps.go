@@ -71,9 +71,9 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 
 func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error {
 
-	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	addr := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-	voted, err := instance.DidVote(nil, _disputeId, addr)
+	voted, err := instanceGetter.DidVote(nil, _disputeId, addr)
 	if err != nil {
 		return fmt.Errorf("failed to check if you've already voted: %v", err)
 	}
@@ -82,13 +82,13 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 		return nil
 	}
 
-	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
+	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
-	tx, err := instance2.Vote(auth, _disputeId, _supportsDispute)
+	tx, err := instanceTellor.Vote(auth, _disputeId, _supportsDispute)
 	if err != nil {
 		return fmt.Errorf("failed to submit vote transaction: %s", err.Error())
 	}

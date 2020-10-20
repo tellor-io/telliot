@@ -86,7 +86,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	}(len(trackers))
 	runnerLog.Info("Waiting for trackers to complete initial requests")
 
-	//run the trackers until we quit
+	// Run the trackers until sigterm.
 	go func() {
 		i := 0
 		for {
@@ -106,7 +106,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 						if err != nil {
 							runnerLog.Error("Problem in tracker %s: %v\n", trackers[idx].String(), err)
 						}
-						//only increment this the first time a tracker is run
+						// Only the first trackers round execution.
 						if count < len(trackers) {
 							doneFirstExec <- true
 						}

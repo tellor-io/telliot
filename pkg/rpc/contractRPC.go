@@ -45,10 +45,6 @@ func (c contractWrapper) SubmitSolution(solution string, requestID [5]*big.Int, 
 	return c.Tellor.SubmitMiningSolution(c.options, solution, requestID, value)
 }
 
-func (c contractWrapper) NewSubmitSolution(solution string, requestID [5]*big.Int, value [5]*big.Int) (*types.Transaction, error) {
-	return c.Tellor.SubmitMiningSolution(c.options, solution, requestID, value)
-}
-
 func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
 	return c.TellorGetters.DidMine(nil, challenge, c.fromAddress)
 }
@@ -146,7 +142,7 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 		}
 
 		fmt.Println("Using gas price", gasPrice)
-		//create a wrapper to callback the actual txn generator fn
+		// Цcreate a wrapper to callback the actual txn generator fn.
 		instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 		instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 

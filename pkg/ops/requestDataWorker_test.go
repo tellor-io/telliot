@@ -27,10 +27,6 @@ var (
 type testContract struct {
 }
 
-func (t testContract) NewSubmitSolution(solution string, requestID [5]*big.Int, value [5]*big.Int) (*types.Transaction, error) {
-	return nil, nil
-}
-
 func (t testContract) AddTip(_requestID *big.Int, _amount *big.Int) (*types.Transaction, error) {
 	fmt.Printf("Contract simulation adding tip: %v, %v\n", _requestID, _amount)
 	requestID = _requestID
