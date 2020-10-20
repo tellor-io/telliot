@@ -14,6 +14,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestStringId(t *testing.T) {
@@ -34,6 +35,7 @@ func TestZeroBalance(t *testing.T) {
 }
 
 func TestNegativeBalance(t *testing.T) {
+	logger := testutil.SetupLogger()
 	startBal := big.NewInt(-753)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
@@ -46,13 +48,14 @@ func TestNegativeBalance(t *testing.T) {
 	tracker := &BalanceTracker{}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
+	err = tracker.Exec(ctx, logger)
 	if err == nil {
 		t.Fatal(err)
 	}
 }
 
 func dbBalanceTest(startBal *big.Int, t *testing.T) {
+	logger := testutil.SetupLogger()
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
@@ -64,7 +67,7 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 	tracker := &BalanceTracker{}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
+	err = tracker.Exec(ctx, logger)
 	if err != nil {
 		t.Fatal(err)
 	}

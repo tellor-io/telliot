@@ -22,13 +22,14 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	if _, err := BuildIndexTrackers(); err != nil {
 		t.Fatal(err)
 	}
+	logger := testutil.SetupLogger()
 	ethUSDPairs := indexes["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	ctx = context.WithValue(ctx, tellorCommon.ContractAddress, common.Address{0x0000000000000000000000000000000000000000})
 	disputeChecker := &disputeChecker{lastCheckedBlock: 500}
-	err := disputeChecker.Exec(ctx)
+	err := disputeChecker.Exec(ctx, logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,6 +37,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
 	ctx, cfg, cleanup := testutil.CreateContext(t)
+	logger := testutil.SetupLogger()
 	t.Cleanup(cleanup)
 	cfg.DisputeThreshold = 0.000000001
 	disputeChecker := &disputeChecker{lastCheckedBlock: 500}
@@ -47,7 +49,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	ctx = context.WithValue(ctx, tellorCommon.ContractAddress, common.Address{0x0000000000000000000000000000000000000000})
-	err := disputeChecker.Exec(ctx)
+	err := disputeChecker.Exec(ctx, logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,8 +70,9 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 }
 
 func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
+	logger := testutil.SetupLogger()
 	for _, psr := range psrs {
-		err := psr.Exec(ctx)
+		err := psr.Exec(ctx, logger)
 		if err != nil {
 			t.Fatalf("failed to execute psr: %v", err)
 		}

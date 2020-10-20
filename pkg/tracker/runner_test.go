@@ -19,6 +19,7 @@ import (
 
 func TestRunner(t *testing.T) {
 	ctx, _, cleanup := testutil.CreateContext(t)
+	logger := testutil.SetupLogger()
 	defer t.Cleanup(cleanup)
 
 	exitCh := make(chan int)
@@ -50,7 +51,7 @@ func TestRunner(t *testing.T) {
 	runner, _ := NewRunner(client, ctx.Value(common.DBContextKey).(db.DB))
 
 	runner.Ready()
-	if err := runner.Start(ctx, exitCh); err != nil {
+	if err := runner.Start(ctx, logger, exitCh); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("runner done")

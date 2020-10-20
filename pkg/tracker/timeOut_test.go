@@ -14,6 +14,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestTimeOutString(t *testing.T) {
@@ -41,8 +42,8 @@ func TestTimeOutTracker(t *testing.T) {
 	ctx = context.WithValue(ctx, common.DBContextKey, db)
 
 	tracker := &TimeOutTracker{}
-
-	if err := tracker.Exec(ctx); err != nil {
+	logger := testutil.SetupLogger()
+	if err := tracker.Exec(ctx, logger); err != nil {
 		log.Fatal(err)
 	}
 }

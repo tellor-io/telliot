@@ -17,6 +17,7 @@ import (
 
 func TestPSR(t *testing.T) {
 	ctx, _, cleanup := testutil.CreateContext(t)
+	logger := testutil.SetupLogger()
 	t.Cleanup(cleanup)
 	psr, err := BuildIndexTrackers()
 	if err != nil {
@@ -26,7 +27,7 @@ func TestPSR(t *testing.T) {
 		if _, ok := psr[idx].(*IndexTracker).Source.(*JSONfile); ok {
 			psr[idx].(*IndexTracker).Source = &JSONfile{filepath.Join("..", "..", "configs", "manualData.json")}
 		}
-		err = psr[idx].Exec(ctx)
+		err = psr[idx].Exec(ctx, logger)
 		psrStr := psr[idx].String()
 		if err != nil {
 			t.Fatalf("failed to execute psr: %s %v", psrStr, err)

@@ -2,11 +2,13 @@ package testutil
 
 import (
 	"context"
-	"log"
 	"math/big"
+	"os"
 	"testing"
 
 	eth_common "github.com/ethereum/go-ethereum/common"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/abi/contracts"
 	"github.com/tellor-io/TellorMiner/abi/contracts2"
 	"github.com/tellor-io/TellorMiner/pkg/common"
@@ -42,15 +44,24 @@ func CreateContext(t *testing.T) (context.Context, *config.Config, func()) {
 
 	instance, err := contracts2.NewTellor(contractAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatalf("Problem creating tellor master instance: %v\n", err)
 	}
 	ctx = context.WithValue(ctx, common.NewTellorContractContextKey, instance)
 
 	proxy, err := db.OpenLocalProxy(dbLocal)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatalf("Problem creating proxy: %v\n", err)
 	}
 	ctx = context.WithValue(ctx, common.DataProxyKey, proxy)
 
 	return ctx, cfg, cleanup
+}
+
+func SetupLogger() log.Logger {
+	lvl := level.AllowInfo()
+
+	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = level.NewFilter(logger, lvl)
+
+	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 }

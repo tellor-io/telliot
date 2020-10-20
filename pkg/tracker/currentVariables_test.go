@@ -15,6 +15,7 @@ import (
 	tellor "github.com/tellor-io/TellorMiner/abi/contracts"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -67,9 +68,9 @@ func TestCurrentVariables(t *testing.T) {
 		}
 		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
 	}
-
+	logger := testutil.SetupLogger()
 	fmt.Println("Working to Line 41")
-	err = tracker.Exec(ctx)
+	err = tracker.Exec(ctx, logger)
 	if err != nil {
 		t.Fatal(err)
 	}

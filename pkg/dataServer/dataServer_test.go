@@ -12,22 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
-func setupLogger() log.Logger {
-	lvl := level.AllowInfo()
-
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = level.NewFilter(logger, lvl)
-
-	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
-}
 func TestDataServer(t *testing.T) {
 	exitCh := make(chan int)
-	logger := setupLogger()
+	logger := testutil.SetupLogger()
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 

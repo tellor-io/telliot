@@ -13,10 +13,12 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestETHGasStation(t *testing.T) {
 	tracker := &GasTracker{}
+	logger := testutil.SetupLogger()
 	opts := &rpc.MockOptions{ETHBalance: big.NewInt(300000), Nonce: 1, GasPrice: big.NewInt(7000000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
@@ -27,7 +29,7 @@ func TestETHGasStation(t *testing.T) {
 	}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
+	err = tracker.Exec(ctx, logger)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestDisputeString(t *testing.T) {
@@ -25,6 +26,7 @@ func TestDisputeString(t *testing.T) {
 }
 
 func TestDisputeStatus(t *testing.T) {
+	logger := testutil.SetupLogger()
 	startBal := big.NewInt(356000)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, DisputeStatus: big.NewInt(1)}
@@ -37,7 +39,7 @@ func TestDisputeStatus(t *testing.T) {
 	tracker := &DisputeTracker{}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
+	err = tracker.Exec(ctx, logger)
 	if err != nil {
 		t.Fatal(err)
 	}
