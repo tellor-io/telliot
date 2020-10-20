@@ -5,26 +5,38 @@ package dataServer
 
 import (
 	"fmt"
-	"log"
+
 	"net/http"
+	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
+func setupLogger() log.Logger {
+	lvl := level.AllowInfo()
+
+	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = level.NewFilter(logger, lvl)
+
+	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+}
 func TestDataServer(t *testing.T) {
 	exitCh := make(chan int)
-
+	logger := setupLogger()
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 
-	ds, err := CreateServer(ctx)
+	ds, err := CreateServer(ctx, logger)
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "error creating server in test", "err", err)
+		os.Exit(1)
 	}
-	if err := ds.Start(ctx, exitCh); err != nil {
+	if err := ds.Start(ctx, logger, exitCh); err != nil {
 		t.Fatal(err)
 	}
 
