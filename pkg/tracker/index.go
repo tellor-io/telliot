@@ -71,8 +71,8 @@ func BuildIndexTrackers() ([]Tracker, error) {
 					}
 					name = u.Host
 				} else {
-					source = &JSONfile{filepath: pathStr}
-					name = filepath.Base(pathStr)
+					source = &Raw{raw: []byte(pathStr)}
+					name = "manual" + symbol
 				}
 				indexers[api] = &IndexTracker{
 					Name:       name,
@@ -145,6 +145,14 @@ type JSONfile struct {
 
 func (j *JSONfile) Get() ([]byte, error) {
 	return ioutil.ReadFile(j.filepath)
+}
+
+type Raw struct {
+	raw []byte
+}
+
+func (j *Raw) Get() ([]byte, error) {
+	return j.raw, nil
 }
 
 func (i *IndexTracker) Exec(ctx context.Context) error {
