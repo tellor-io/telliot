@@ -6,11 +6,10 @@ package tracker
 import (
 	"context"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/db"

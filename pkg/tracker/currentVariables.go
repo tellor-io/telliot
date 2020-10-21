@@ -14,10 +14,7 @@ import (
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
-
-var currentVarsLog = util.NewLogger("tracker", "CurrentVarsTracker")
 
 const CurrentVariablesTrackerName = "CurrentVariablesTracker"
 
