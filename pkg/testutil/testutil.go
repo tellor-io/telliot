@@ -58,7 +58,7 @@ func CreateContext(t *testing.T) (context.Context, *config.Config, func()) {
 }
 
 func SetupLogger() log.Logger {
-	lvl := level.AllowInfo()
+	lvl := level.AllowDebug()
 
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewFilter(logger, lvl)
