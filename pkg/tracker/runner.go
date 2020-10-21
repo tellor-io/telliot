@@ -16,10 +16,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
-
-var runnerLog = util.NewLogger("tracker", "Runner")
 
 // Runner will execute all configured trackers.
 type Runner struct {

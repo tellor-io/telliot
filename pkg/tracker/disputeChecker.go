@@ -22,10 +22,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
-
-var disputeLogger = util.NewLogger("tracker", "disputeChecker")
 
 type disputeChecker struct {
 	lastCheckedBlock uint64
