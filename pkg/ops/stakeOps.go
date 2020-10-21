@@ -96,7 +96,7 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 	return nil
 }
 
-func ShowStatus(ctx context.Context) error {
+func ShowStatus(ctx context.Context, logger log.Logger) error {
 	tmaster := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)

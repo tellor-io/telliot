@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	eth_common "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -63,7 +63,7 @@ func CreateContext(t *testing.T) (context.Context, *config.Config, func()) {
 
 	instanceGetter, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		log.Fatal("Problem creating tellor master instance", err)
+		t.Fatalf("Problem creating tellor master instance: %v\n", err)
 	}
 	ctx = context.WithValue(ctx, common.ContractsGetterContextKey, instanceGetter)
 

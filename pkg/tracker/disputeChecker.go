@@ -149,22 +149,11 @@ func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 			blockTime = time.Unix(int64(header.Time), 0)
 			blockTimes[l.BlockNumber] = blockTime
 		}
-		reqID := nonceSubmit.RequestId.Uint64()
-		result := CheckValueAtTime(reqID, nonceSubmit.Value, blockTime)
-		if result == nil {
-			level.Warn(logger).Log("msg", "no value data", "reqid", reqID, "blockTime", blockTime)
-			continue
-		}
-		if !result.WithinRange {
-			s := fmt.Sprintf("suspected incorrect value for requestID %d at %s:\n , nearest values:\n", reqID, blockTime)
-			for i, pt := range result.Datapoints {
-				s += fmt.Sprintf("\t%.0f, ", pt)
-				delta := blockTime.Sub(result.Times[i])
-				if delta > 0 {
-					s += fmt.Sprintf("%s before\n", delta.String())
-				} else {
-					s += fmt.Sprintf("%s after\n", (-delta).String())
-				}
+		for i, reqID := range nonceSubmit.RequestId {
+			result := CheckValueAtTime(nonceSubmit.RequestId[i].Uint64(), nonceSubmit.Value[i], blockTime)
+			if result == nil {
+				level.Warn(logger).Log("msg", "no value data", "reqid", reqID, "blockTime", blockTime)
+				continue
 			}
 
 			if !result.WithinRange {
@@ -179,16 +168,15 @@ func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 					}
 				}
 				s += fmt.Sprintf("value submitted by miner with address %s", nonceSubmit.Miner)
-				disputeLogger.Error(s)
+				level.Error(logger).Log("msg", s)
 				filename := fmt.Sprintf("possible-dispute-%s.txt", blockTime)
 				err := ioutil.WriteFile(filename, []byte(s), 0655)
 				if err != nil {
-					disputeLogger.Error("failed to save dispute data to %s: %v", filename, err)
+					level.Error(logger).Log("msg", "failed to save dispute data", "filename", filename, "err", err)
 				}
-			} 
-		} else {
-			level.Info(logger).Log("msg", "value appears to be within expected range", "reqID", reqID, "value", nonceSubmit.Value, "blockTime", blockTime.String())
-		}
+			} else {
+				level.Info(logger).Log("msg", "value appears to be within expected range", "reqID", reqID, "value", nonceSubmit.Value, "blockTime", blockTime.String())
+			}
 
 		}
 	}

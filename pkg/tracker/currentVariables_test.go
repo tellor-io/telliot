@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -27,26 +26,11 @@ func TestCurrentVarableString(t *testing.T) {
 func TestCurrentVariables(t *testing.T) {
 	ctx, _, cleanup := testutil.CreateContext(t)
 	t.Cleanup(cleanup)
-
+	logger := testutil.SetupLogger()
 	tracker := &CurrentVariablesTracker{}
 
-	ctx := context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
-	ctx = context.WithValue(ctx, tellorCommon.DBContextKey, DB)
-
-	masterInstance := ctx.Value(tellorCommon.MasterContractContextKey)
-	if masterInstance == nil {
-		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		// TODO create error state flag for mock client
-		masterInstance, err = tellor.NewTellorMaster(contractAddress, client)
-		if err != nil {
-			runnerLog.Error("Problem creating tellor master instance: %v\n", err)
-			return
-		}
-		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
-	}
-	logger := testutil.SetupLogger()
 	fmt.Println("Working to Line 41")
-	err = tracker.Exec(ctx, logger)
+	err := tracker.Exec(ctx, logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,5 +56,4 @@ func TestCurrentVariables(t *testing.T) {
 	if string(v) != "json(https://coinbase.com)" {
 		t.Fatalf("Expected query string to match test input: %s != %s\n", string(v), "json(https://coinbase.com)")
 	}
-
 }

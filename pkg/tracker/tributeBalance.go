@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	tellor "github.com/tellor-io/TellorMiner/abi/contracts"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
