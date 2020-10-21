@@ -27,13 +27,24 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/ops"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 var ctx context.Context
 
-func setupLogger() log.Logger {
-	lvl := level.AllowInfo()
+func setupLogger(logLevel string) log.Logger {
+	var lvl level.Option
+	switch logLevel {
+	case "error":
+		lvl = level.AllowError()
+	case "warn":
+		lvl = level.AllowWarn()
+	case "info":
+		lvl = level.AllowInfo()
+	case "debug":
+		lvl = level.AllowDebug()
+	default:
+		panic("unexpected log level")
+	}
 
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewFilter(logger, lvl)
@@ -156,13 +167,12 @@ func App() *cli.Cli {
 
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
-	logPath := app.StringOpt("logConfig", "configs/loggingConfig.json", "Path to a JSON logging config file")
+	logLevel := app.StringOpt("logLevel", "Error", "The level of log messages")
 
-	logger := setupLogger()
+	logger := setupLogger(*logLevel)
 	// This will get run before any of the commands
 	app.Before = func() {
 		ErrorHandler(config.ParseConfig(*configPath), "parsing config file")
-		ErrorHandler(util.ParseLoggingConfig(*logPath), "parsing log file")
 		ErrorHandler(buildContext(), "building context")
 	}
 
