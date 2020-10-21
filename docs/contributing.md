@@ -1,6 +1,6 @@
 # Contributing
 
-This document explain the process of contributing to the TellorMiner project.
+This document explain the process of contributing to the project.
 
 
 ## Philosophy
@@ -71,7 +71,7 @@ $ git push fork <your_PR_branch>
 
 ### Dependency management
 
-The TellorMiner project uses [Go modules](https://golang.org/cmd/go/#hdr-Modules__module_versions__and_more) to manage dependencies on external packages. This requires a working Go environment with version 1.11 or greater and git installed.
+The project uses [Go modules](https://golang.org/cmd/go/#hdr-Modules__module_versions__and_more) to manage dependencies on external packages. This requires a working Go environment with version 1.11 or greater and git installed.
 
 To add or update a new dependency, use the `go get` command:
 
@@ -90,3 +90,7 @@ make deps
 git add go.mod go.sum
 git commit
 ```
+
+### Project development go tools
+
+The project uses [Bingo](../.bingo/README.md) for adding any go tools required by the project.

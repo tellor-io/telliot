@@ -18,11 +18,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	cli "github.com/jawher/mow.cli"
-	"github.com/tellor-io/TellorMiner/abi/contracts"
-	"github.com/tellor-io/TellorMiner/abi/contracts1"
-	"github.com/tellor-io/TellorMiner/abi/contracts2"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/ops"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
@@ -49,29 +48,19 @@ func buildContext() error {
 		}
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		masterInstance, err := contracts.NewTellorMaster(contractAddress, client)
+		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
 		if err != nil {
 			log.Fatal(err)
 		}
-		transactorInstance, err := contracts1.NewTellorTransactor(contractAddress, client)
-		if err != nil {
-			log.Fatal(err)
-		}
-		newTellorInstance, err := contracts2.NewTellor(contractAddress, client)
-		if err != nil {
-			log.Fatal(err)
-		}
-		newTransactorInstance, err := contracts2.NewTellorTransactor(contractAddress, client)
+		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
-		ctx = context.WithValue(ctx, tellorCommon.MasterContractContextKey, masterInstance)
-		ctx = context.WithValue(ctx, tellorCommon.TransactorContractContextKey, transactorInstance)
-		ctx = context.WithValue(ctx, tellorCommon.NewTellorContractContextKey, newTellorInstance)
-		ctx = context.WithValue(ctx, tellorCommon.NewTransactorContractContextKey, newTransactorInstance)
+		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
+		ctx = context.WithValue(ctx, tellorCommon.ContractsGetterContextKey, contractGetterInstance)
 
 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {

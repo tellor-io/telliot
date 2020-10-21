@@ -5,13 +5,14 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/tellor-io/TellorMiner/abi/contracts1"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -335,26 +336,31 @@ func (c *mockClient) BalanceAt(ctx context.Context, address common.Address, bloc
 }
 
 func (c *mockClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
-	tokenAbi, _ := abi.JSON(strings.NewReader(contracts1.TellorLibraryABI))
-	ev := tokenAbi.Events["NonceSubmitted"]
-	event1 := contracts1.TellorLibraryNonceSubmitted{
+	var logs []types.Log
+
+	tokenAbi, _ := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
+	ev, ok := tokenAbi.Events["NonceSubmitted"]
+	if !ok {
+		return logs, errors.New("NonceSubmitted event not foind in the ABI")
+	}
+	event := tellor.TellorLibraryNonceSubmitted{
 		Miner:            common.Address{0},
 		Nonce:            "0",
-		RequestId:        big.NewInt(1),
-		Value:            big.NewInt(1),
+		RequestId:        [5]*big.Int{big.NewInt(1), big.NewInt(1), big.NewInt(1), big.NewInt(1), big.NewInt(1)},
+		Value:            [5]*big.Int{big.NewInt(1), big.NewInt(1), big.NewInt(1), big.NewInt(1), big.NewInt(1)},
 		CurrentChallenge: [32]byte{0},
 	}
-	test, _ := ev.Inputs.NonIndexed().Pack(event1.Nonce, event1.Value, event1.CurrentChallenge)
+	test, err := ev.Inputs.NonIndexed().Pack(event.Nonce, event.RequestId, event.Value)
+	if err != nil {
+		return logs, err
+	}
 
 	log := types.Log{
 		Address:     common.Address{0},
-		Topics:      []common.Hash{ev.ID(), common.BigToHash(common.Big0), common.BigToHash(common.Big1)},
+		Topics:      []common.Hash{ev.ID, common.BigToHash(common.Big0), common.BigToHash(common.Big1)},
 		Data:        test,
 		BlockNumber: 9,
 	}
-
-	var logs []types.Log
-
 	logs = append(logs, log)
 
 	return logs, nil

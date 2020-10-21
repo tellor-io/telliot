@@ -2,11 +2,12 @@ include .bingo/Variables.mk
 
 FILES_TO_FMT      ?= $(shell find . -name '*.go' -print)
 
-
 # Ensure everything works even if GOPATH is not set, which is often the case.
 # The `go env GOPATH` will work for all cases for Go 1.8+.
-GOPATH            ?= $(shell go env GOPATH)
-GOBIN             ?= $(firstword $(subst :, ,${GOPATH}))/bin
+GOPATH      ?= $(shell go env GOPATH)
+GOBIN       ?= $(firstword $(subst :, ,${GOPATH}))/bin
+GOTEST_OPTS ?= -failfast -timeout 10m -v
+GOPROXY     ?= https://proxy.golang.org
 
 # Support gsed on OSX (installed via brew), falling back to sed. On Linux
 # systems gsed won't be installed, so will use sed as expected.
@@ -15,14 +16,12 @@ GIT     ?= $(shell which git)
 GIT_TAG  = $(shell git describe --tags)
 GIT_HASH = $(shell git rev-parse --short HEAD)
 
-export GO111MODULE=on
-GOPROXY           ?= https://proxy.golang.org
-export GOPROXY
+BIN_DIR ?= /tmp/bin
+OS      ?= $(shell uname -s | tr '[A-Z]' '[a-z]')
+ARCH    ?= $(shell uname -m)
 
-GOTEST_OPTS ?= -failfast -timeout 10m -v
-TMP_DIR ?= /tmp
-OS ?= $(shell uname -s | tr '[A-Z]' '[a-z]')
-ARCH ?= $(shell uname -m)
+SOLCCHECK  ?= $(BIN_DIR)/solc
+SHELLCHECK ?= $(BIN_DIR)/shellcheck
 
 define require_clean_work_tree
 	@git update-index -q --ignore-submodules --refresh
@@ -44,7 +43,7 @@ define require_clean_work_tree
 endef
 
 help: ## Displays help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-z0-9A-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-z0-9A-Z_-]+:.*?##/ { printf "  \033[36m%-17s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 .PHONY: deps
 deps: ## Ensures fresh go.mod and go.sum.
@@ -52,10 +51,23 @@ deps: ## Ensures fresh go.mod and go.sum.
 	@go mod verify
 
 .PHONY: generate
-generate: ## Ensures kernelSource.go is generated.
+generate: ## Generate all dynamic files.
+generate: generate-pow generate-sol
+
+.PHONY: generate-pow
+generate-pow:
 	@go run ./scripts/opencl
 
+.PHONY: generate-sol
+generate-sol: $(SOLCCHECK) $(ABIGEN)
+	@rm -Rf pkg/contracts/
+	@mkdir -p pkg/contracts/tellor
+	@mkdir -p pkg/contracts/getter
+	$(ABIGEN) --sol=contracts/Tellor.sol --solc=$(SOLCCHECK) --pkg=tellor --type=Tellor --out=pkg/contracts/tellor/tellor.go
+	$(ABIGEN) --sol=contracts/TellorGetters.sol --solc=$(SOLCCHECK) --pkg=getter --type=Tellor --out=pkg/contracts/getter/getter.go
+	
 .PHONY: build
+build: ## Build the project.
 build: check-git generate
 ifeq ($(GIT_TAG),)
 	@echo "GIT_TAG is empty" && exit 1
@@ -63,7 +75,7 @@ endif
 ifeq ($(GIT_HASH),)
 	@echo "GIT_HASH is empty" && exit 1
 endif
-	@go build -v -ldflags "-X main.GitTag=${GIT_TAG} -X main.GitHash=${GIT_HASH} -s -w" ./cmd/tellor
+	go build -ldflags "-X main.GitTag=${GIT_TAG} -X main.GitHash=${GIT_HASH} -s -w" ./cmd/tellor
 
 .PHONY: check-git
 check-git:
@@ -74,8 +86,19 @@ else
 endif
 
 .PHONY: test
+test: ## Run all project tests.
 test: generate
 	go test $(GOTEST_OPTS) ./...
+
+.PHONY: abi
+abi: ## Download the latest smart contracts and generate the go bindings.
+abi: contracts-download generate-sol
+
+.PHONY: contracts-download
+contracts-download:
+	@rm -Rf contracts/*
+	@svn checkout https://github.com/tellor-io/TellorCore/trunk/contracts contracts
+	@rm -Rf contracts/.svn
 
 .PHONY: go-format
 go-format: ## Formats Go code including imports.
@@ -112,22 +135,31 @@ go-lint: generate check-git deps $(GOLANGCI_LINT) $(FAILLINT)
 	@go run ./scripts/copyright
 	$(call require_clean_work_tree,'detected files without copyright, run make lint and commit changes')
 
-SHELLCHECK ?= $(TMP_DIR)/shellcheck
-$(SHELLCHECK):
-	@echo "Downloading Shellcheck"
-	curl -sNL "https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.$(OS).$(ARCH).tar.xz" | tar --strip-components=1 -xJf - -C /tmp
-
-
 .PHONY:shell-lint
-shell-lint: ## Runs static analysis against our shell scripts.
 shell-lint: $(SHELLCHECK)
 	@echo ">> linting all of the shell script files"
 	@$(SHELLCHECK) --severity=error -o all -s bash $(shell find . -type f -name "*.sh" -not -path "*vendor*" -not -path "tmp/*" -not -path "*node_modules*")
 
 .PHONY: update-go-deps
-update-go-deps:
+update-go-deps: ## Update all golang dependencies.
 	@echo ">> updating Go dependencies"
 	@for m in $$($(GO) list -mod=readonly -m -f '{{ if and (not .Indirect) (not .Main)}}{{.Path}}{{end}}' all); do \
 		$(GO) get $$m; \
 	done
 	$(GO) mod tidy
+
+
+##### NON-phony targets
+
+$(BIN_DIR):
+	@mkdir -p $(BIN_DIR)
+
+$(SHELLCHECK): $(BIN_DIR)
+	@echo "Downloading Shellcheck"
+	curl -sNL "https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.$(OS).$(ARCH).tar.xz" | tar --strip-components=1 -xJf - -C $(BIN_DIR)
+
+$(SOLCCHECK): $(BIN_DIR)
+	@echo "Downloading Solc"
+	@curl -sNL -o $(SOLCCHECK) "https://github.com/ethereum/solidity/releases/download/v0.5.16/solc-static-linux"
+	@chmod 766 $(SOLCCHECK)
+	

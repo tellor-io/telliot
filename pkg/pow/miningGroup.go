@@ -42,7 +42,6 @@ type Backend struct {
 type MiningChallenge struct {
 	Challenge  []byte
 	Difficulty *big.Int
-	RequestID  *big.Int
 	RequestIDs [5]*big.Int
 }
 
