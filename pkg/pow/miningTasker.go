@@ -5,17 +5,11 @@ package pow
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"math/big"
 	"math/rand"
-	"os"
-	"path"
-	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -137,34 +131,8 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		}
 		val := m2[valKey]
 		if len(val) == 0 {
-			e, err := os.Executable()
-			if err != nil {
-				e = "."
-				log.Print("couldn't get executable dir path", err)
-			}
-			path := path.Dir(e)
-			// TODO(krasi) Make it configurable with a sane default.
-			jsonFile, err := os.Open(filepath.Join(path, "configs", "manualData.json"))
-			if err != nil {
-				fmt.Println("manualData read error", err)
-				return nil, false
-			}
-			defer jsonFile.Close()
-			byteValue, _ := ioutil.ReadAll(jsonFile)
-			var result map[string]map[string]uint
-			if err := json.Unmarshal([]byte(byteValue), &result); err != nil {
-				fmt.Println("error unmarshaling the result", err)
-				return nil, false
-			}
-			_id := strconv.FormatUint(reqIDs[i].Uint64(), 10)
-			val := result[_id]["VALUE"]
-			if val == 0 {
-				fmt.Println(reqIDs[i].Uint64(), val)
-				mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
-				return nil, false
-			} else {
-				fmt.Println("Using Manually entered value: ", val)
-			}
+			mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
+			return nil, false
 		}
 	}
 

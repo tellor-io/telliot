@@ -144,7 +144,7 @@
 		"json(https://api.binance.com/api/v1/klines?symbol=USDCUSDT&interval=1d&limit=1).0.4"
 	],
 	"USPCE": [
-		"json(manualData.json).USPCE.VALUE,.USPCE.DATE"
+		"json({\"USPCE\": {\"VALUE\": 110,\"DATE\": 1601544600}}).USPCE.VALUE,.USPCE.DATE"
 	],
 	"WAN/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=WANBTC&interval=1d&limit=1).0.4"
