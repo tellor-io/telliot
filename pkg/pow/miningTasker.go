@@ -60,7 +60,7 @@ func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 	}
 }
 
-func (mt *MiningTasker) GetWork(input chan *Work) (*Work, bool) {
+func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
 		db.DifficultyKey,
@@ -95,53 +95,40 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work, bool) {
 
 	l, _ := mt.getInt(m[db.LastNewValueKey])
 	instantSubmit := false
-	looper := 1
-	if l != nil {
-		looper = 5
-		today := time.Now()
-		tm := time.Unix(l.Int64(), 0)
-		fmt.Println("This long since last value:  ", today.Sub(tm))
-		if today.Sub(tm) >= time.Duration(15)*time.Minute {
-			instantSubmit = true
-		}
-		r, stat := mt.getInt(m[db.RequestIdKey0])
-		if stat == statusWaitNext || stat == statusFailure {
-			return nil, false
-		}
-		reqIDs[0] = r
-		r, stat = mt.getInt(m[db.RequestIdKey1])
-		if stat == statusWaitNext || stat == statusFailure {
-			return nil, false
-		}
-		reqIDs[1] = r
-		r, stat = mt.getInt(m[db.RequestIdKey2])
-		if stat == statusWaitNext || stat == statusFailure {
-			return nil, false
-		}
-		reqIDs[2] = r
-		r, stat = mt.getInt(m[db.RequestIdKey3])
-		if stat == statusWaitNext || stat == statusFailure {
-			return nil, false
-		}
-		reqIDs[3] = r
-		r, stat = mt.getInt(m[db.RequestIdKey4])
-		if stat == statusWaitNext || stat == statusFailure {
-			return nil, false
-		}
-		reqIDs[4] = r
-	} else {
-		r, stat := mt.getInt(m[db.RequestIdKey])
-		if stat == statusWaitNext || stat == statusFailure {
-			return nil, false
-		}
-		reqIDs[0] = r
 
-		if reqIDs[0].Uint64() == 0 {
-			mt.log.Info("Request ID is zero")
-			return nil, false
-		}
+	today := time.Now()
+	tm := time.Unix(l.Int64(), 0)
+	fmt.Println("This long since last value:  ", today.Sub(tm))
+	if today.Sub(tm) >= time.Duration(15)*time.Minute {
+		instantSubmit = true
 	}
-	for i := 0; i < looper; i++ {
+	r, stat := mt.getInt(m[db.RequestIdKey0])
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil, false
+	}
+	reqIDs[0] = r
+	r, stat = mt.getInt(m[db.RequestIdKey1])
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil, false
+	}
+	reqIDs[1] = r
+	r, stat = mt.getInt(m[db.RequestIdKey2])
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil, false
+	}
+	reqIDs[2] = r
+	r, stat = mt.getInt(m[db.RequestIdKey3])
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil, false
+	}
+	reqIDs[3] = r
+	r, stat = mt.getInt(m[db.RequestIdKey4])
+	if stat == statusWaitNext || stat == statusFailure {
+		return nil, false
+	}
+	reqIDs[4] = r
+
+	for i := 0; i < 5; i++ {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
 		m2, err := mt.proxy.BatchGet([]string{valKey})
 		if err != nil {
@@ -184,7 +171,6 @@ func (mt *MiningTasker) GetWork(input chan *Work) (*Work, bool) {
 	newChallenge := &MiningChallenge{
 		Challenge:  m[db.CurrentChallengeKey],
 		Difficulty: diff,
-		RequestID:  reqIDs[0],
 		RequestIDs: reqIDs,
 	}
 

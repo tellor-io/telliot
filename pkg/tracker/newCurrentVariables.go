@@ -12,10 +12,10 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
-	"github.com/tellor-io/TellorMiner/abi/contracts"
-	"github.com/tellor-io/TellorMiner/abi/contracts2"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 )
 
@@ -38,8 +38,8 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger
 	//convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 
-	instance := ctx.Value(tellorCommon.NewTellorContractContextKey).(*contracts2.Tellor)
-	returnNewVariables, err := instance.GetNewCurrentVariables(nil)
+	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
+	returnNewVariables, err := instanceTellor.GetNewCurrentVariables(nil)
 	if err != nil {
 		level.Warn(logger).Log("msg", "New Current Variables Retrieval Error - Contract might not be upgraded", "err", err)
 		return nil
@@ -52,8 +52,8 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger
 
 	//if we've mined it, don't save it
 
-	instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
-	myStatus, err := instance2.DidMine(nil, returnNewVariables.Challenge, fromAddress)
+	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+	myStatus, err := instanceGetter.DidMine(nil, returnNewVariables.Challenge, fromAddress)
 	if err != nil {
 		level.Error(logger).Log("msg", "My Status Retrieval Error", "err", err)
 		return err
@@ -73,7 +73,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger
 	)
 	var ret [32]byte
 	copy(ret[:], hash)
-	timeOfLastNewValue, err := instance2.GetUintVar(nil, ret)
+	timeOfLastNewValue, err := instanceGetter.GetUintVar(nil, ret)
 	if err != nil {
 		level.Error(logger).Log("msg", "Time of Last New Value Retrieval Error", "err", err)
 		return err
@@ -98,7 +98,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger
 		}
 	}
 
-	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficulty)))
+	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficutly)))
 	if err != nil {
 		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "difficulty", "err", err)
 		return err

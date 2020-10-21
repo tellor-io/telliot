@@ -25,7 +25,7 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 	return &MiningChallenge{
 		Challenge:  b32[:],
 		Difficulty: big.NewInt(difficulty),
-		RequestID:  big.NewInt(1),
+		RequestIDs: [5]*big.Int{big.NewInt(1)},
 	}
 }
 

@@ -18,9 +18,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/tellor-io/TellorMiner/abi/contracts1"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -112,7 +112,7 @@ func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 		return nil
 	}
 
-	tokenAbi, err := abi.JSON(strings.NewReader(contracts1.TellorLibraryABI))
+	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
 	if err != nil {
 		return fmt.Errorf("failed to parse abi: %v", err)
 	}
@@ -122,7 +122,7 @@ func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
 
 	checkUntil := toCheck - blockDelay
-	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID()
+	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(c.lastCheckedBlock)),
 		ToBlock:   big.NewInt(int64(checkUntil)),
@@ -135,7 +135,7 @@ func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 	}
 	blockTimes := make(map[uint64]time.Time)
 	for _, l := range logs {
-		nonceSubmit := contracts1.TellorLibraryNonceSubmitted{}
+		nonceSubmit := tellor.TellorLibraryNonceSubmitted{}
 		err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 		if err != nil {
 			return fmt.Errorf("failed to unpack into object: %v", err)
@@ -166,17 +166,31 @@ func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 					s += fmt.Sprintf("%s after\n", (-delta).String())
 				}
 			}
-			s += fmt.Sprintf("value submitted by miner with address %s", nonceSubmit.Miner)
-			disputeLogger.Error(s)
-			filename := fmt.Sprintf("possible-dispute-%s.txt", blockTime)
-			err := ioutil.WriteFile(filename, []byte(s), 0655)
-			if err != nil {
-				disputeLogger.Error("failed to save dispute data to %s: %v", filename, err)
-			}
+
+			if !result.WithinRange {
+				s := fmt.Sprintf("suspected incorrect value for requestID %d at %s:\n , nearest values:\n", reqID, blockTime)
+				for i, pt := range result.Datapoints {
+					s += fmt.Sprintf("\t%.0f, ", pt)
+					delta := blockTime.Sub(result.Times[i])
+					if delta > 0 {
+						s += fmt.Sprintf("%s before\n", delta.String())
+					} else {
+						s += fmt.Sprintf("%s after\n", (-delta).String())
+					}
+				}
+				s += fmt.Sprintf("value submitted by miner with address %s", nonceSubmit.Miner)
+				disputeLogger.Error(s)
+				filename := fmt.Sprintf("possible-dispute-%s.txt", blockTime)
+				err := ioutil.WriteFile(filename, []byte(s), 0655)
+				if err != nil {
+					disputeLogger.Error("failed to save dispute data to %s: %v", filename, err)
+				}
+			} 
 		} else {
 			level.Info(logger).Log("msg", "value appears to be within expected range", "reqID", reqID, "value", nonceSubmit.Value, "blockTime", blockTime.String())
 		}
 
+		}
 	}
 	c.lastCheckedBlock = checkUntil
 	return nil

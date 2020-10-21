@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -39,7 +40,7 @@ func compileSources() (string, error) {
 
 	contents := make(map[string][]byte)
 	for _, file := range files {
-		filepath := dir + "/" + file.Name()
+		filepath := filepath.Join(dir, file.Name())
 		data, err := ioutil.ReadFile(filepath)
 		if err != nil {
 			return "", fmt.Errorf("couldn't read file %s: %s", filepath, err.Error())
@@ -70,13 +71,12 @@ func compileSources() (string, error) {
 func main() {
 	kernelStr, err := compileSources()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to compile opencl sources: %s\n", err.Error())
-		return
+		log.Fatal("failed to compile opencl sources", err.Error())
 	}
 
 	outFile, err := os.Create(resultFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create output file: %s: %s\n", resultFile, err.Error())
+		log.Fatalf("failed to create output file: %s: %s\n", resultFile, err.Error())
 	}
 	defer outFile.Close()
 
@@ -90,9 +90,8 @@ func main() {
 		Source:    kernelStr,
 	})
 	if err != nil {
-		fmt.Print("failed to execute template", err.Error())
+		log.Fatal("failed to execute template", err.Error())
 	}
-
 }
 
 var packageTemplate = template.Must(template.New("").Parse(`

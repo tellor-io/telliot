@@ -16,11 +16,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log"
-	tellor "github.com/tellor-io/TellorMiner/abi/contracts"
-	tellor1 "github.com/tellor-io/TellorMiner/abi/contracts1"
 	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/tracker"
 	"github.com/tellor-io/TellorMiner/pkg/util"
@@ -36,7 +36,7 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 		return fmt.Errorf("miner index should be between 0 and 4 (got %s)", minerIndex.Text(10))
 	}
 
-	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
+	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	addr := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 
 	balance, err := instance.BalanceOf(nil, addr)
@@ -61,7 +61,7 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
 
-	instance2 := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	tx, err := instance2.BeginDispute(auth, requestId, timestamp, minerIndex)
 	if err != nil {
 		return fmt.Errorf("failed to send dispute txn: %s", err.Error())
@@ -72,9 +72,9 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 
 func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error {
 
-	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
+	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	addr := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-	voted, err := instance.DidVote(nil, _disputeId, addr)
+	voted, err := instanceGetter.DidVote(nil, _disputeId, addr)
 	if err != nil {
 		return fmt.Errorf("failed to check if you've already voted: %v", err)
 	}
@@ -83,13 +83,13 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 		return nil
 	}
 
-	instance2 := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
-	tx, err := instance2.Vote(auth, _disputeId, _supportsDispute)
+	tx, err := instanceTellor.Vote(auth, _disputeId, _supportsDispute)
 	if err != nil {
 		return fmt.Errorf("failed to submit vote transaction: %s", err.Error())
 	}
@@ -98,9 +98,9 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 	return nil
 }
 
-func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tellor1.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
-	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
-	tokenAbi, err := abi.JSON(strings.NewReader(tellor1.TellorLibraryABI))
+func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tellor.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
+	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse abi: %v", err)
 	}
@@ -123,7 +123,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 	const blockStep = 100
 	high := int64(valueBlock.Uint64())
 	low := high - blockStep
-	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID()
+	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID
 	timedValues := make([]*apiOracle.PriceStamp, 5)
 	found := 0
 	for found < 5 {
@@ -140,7 +140,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 		}
 
 		for _, l := range logs {
-			nonceSubmit := tellor1.TellorLibraryNonceSubmitted{}
+			nonceSubmit := tellor.TellorLibraryNonceSubmitted{}
 			err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 			if err != nil {
 				return nil, fmt.Errorf("failed to unpack into object: %v", err)
@@ -174,7 +174,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 
 func List(ctx context.Context, logger log.Logger) error {
 	cfg := config.GetConfig()
-	tokenAbi, err := abi.JSON(strings.NewReader(tellor1.TellorDisputeABI))
+	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorDisputeABI))
 	if err != nil {
 		return fmt.Errorf("failed to parse abi: %v", err)
 	}
@@ -191,7 +191,7 @@ func List(ctx context.Context, logger log.Logger) error {
 
 	startBlock := big.NewInt(10e3 * 14)
 	startBlock.Sub(header.Number, startBlock)
-	newDisputeID := tokenAbi.Events["NewDispute"].ID()
+	newDisputeID := tokenAbi.Events["NewDispute"].ID
 	query := ethereum.FilterQuery{
 		FromBlock: startBlock,
 		ToBlock:   nil,
@@ -204,12 +204,12 @@ func List(ctx context.Context, logger log.Logger) error {
 		return fmt.Errorf("failed to filter eth logs: %v", err)
 	}
 
-	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
+	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 
 	fmt.Printf("There are currently %d open disputes\n", len(logs))
 	fmt.Printf("-------------------------------------\n")
 	for _, rawDispute := range logs {
-		dispute := tellor1.TellorDisputeNewDispute{}
+		dispute := tellor.TellorDisputeNewDispute{}
 		err := bar.UnpackLog(&dispute, "NewDispute", rawDispute)
 		if err != nil {
 			return fmt.Errorf("failed to unpack dispute event from logs: %v", err)

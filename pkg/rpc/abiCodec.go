@@ -7,11 +7,10 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/tellor-io/TellorMiner/abi/contracts1"
-
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/TellorMiner/abi/contracts"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -24,15 +23,17 @@ type ABICodec struct {
 	Events    map[string]*abi.Event
 }
 
-// BuildCodec constructs a merged abi structure representing all methods/events for Tellor contracts. This is primarily
+// BuildCodec constructs a merged abi structure representing all methods/events for Tellor tellor. This is primarily
 // used for mock encoding/decoding parameters but could also be used for manual RPC operations that do not rely on geth's contract impl.
 func BuildCodec() (*ABICodec, error) {
 	all := []string{
-		contracts.TellorDisputeABI,
-		contracts.TellorGettersABI,
-		contracts.TellorGettersLibraryABI,
-		contracts.TellorStakeABI,
-		contracts.TellorTransferABI}
+		tellor.TellorDisputeABI,
+		tellor.TellorLibraryABI,
+		tellor.TellorGettersLibraryABI,
+		tellor.TellorStakeABI,
+		tellor.TellorTransferABI,
+		getter.TellorGettersABI,
+	}
 
 	parsed := make([]interface{}, 0)
 	for _, abi := range all {
@@ -54,12 +55,12 @@ func BuildCodec() (*ABICodec, error) {
 	methodMap := make(map[string]*abi.Method)
 	eventMap := make(map[string]*abi.Event)
 	for _, a := range abiStruct.Methods {
-		sig := hexutil.Encode(a.ID())
+		sig := hexutil.Encode(a.ID)
 		abiCodecLog.Debug("Mapping method sig: %s to method: %s", sig, a.Name)
-		methodMap[sig] = &abi.Method{Name: a.Name, Const: a.Const, Inputs: a.Inputs, Outputs: a.Outputs}
+		methodMap[sig] = &abi.Method{Name: a.Name, Constant: a.Constant, Inputs: a.Inputs, Outputs: a.Outputs}
 	}
 	for _, e := range abiStruct.Events {
-		sig := hexutil.Encode(e.ID().Bytes())
+		sig := hexutil.Encode(e.ID.Bytes())
 		abiCodecLog.Debug("Mapping event sig: %s to event %s", sig, e.Name)
 		eventMap[sig] = &abi.Event{Name: e.Name, Anonymous: e.Anonymous, Inputs: e.Inputs}
 	}
@@ -70,15 +71,13 @@ func BuildCodec() (*ABICodec, error) {
 // AllEventsthis lets you quickly find the type of each event. It is helpful for debugging.
 func AllEvents() (map[[32]byte]abi.Event, error) {
 	all := []string{
-		contracts1.TellorABI,
-		contracts.TellorDisputeABI,
-		contracts.TellorGettersABI,
-		contracts.TellorGettersLibraryABI,
-		contracts1.TellorLibraryABI,
-		contracts.TellorMasterABI,
-		contracts.TellorStakeABI,
-		contracts.TellorStorageABI,
-		contracts.TellorTransferABI,
+		tellor.TellorABI,
+		tellor.TellorDisputeABI,
+		tellor.TellorGettersLibraryABI,
+		tellor.TellorLibraryABI,
+		tellor.TellorStakeABI,
+		tellor.TellorStorageABI,
+		tellor.TellorTransferABI,
 	}
 
 	parsed := make([]interface{}, 0)
@@ -100,7 +99,7 @@ func AllEvents() (map[[32]byte]abi.Event, error) {
 	}
 	eventMap := make(map[[32]byte]abi.Event)
 	for _, e := range abiStruct.Events {
-		eventMap[e.ID()] = e
+		eventMap[e.ID] = e
 	}
 
 	return eventMap, nil

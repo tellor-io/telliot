@@ -15,6 +15,7 @@ import (
 	tellor "github.com/tellor-io/TellorMiner/abi/contracts"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 )
@@ -45,7 +46,7 @@ func (b *TributeTracker) Exec(ctx context.Context, logger log.Logger) error {
 	//convert to address
 	contractAddress := common.HexToAddress(_conAddress)
 
-	instance, err := tellor.NewTellorMaster(contractAddress, client)
+	instance, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
 		level.Error(logger).Log("msg", "error creating instance", "err", err)
 		return err

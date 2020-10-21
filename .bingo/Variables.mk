@@ -6,16 +6,22 @@ GO     ?= $(shell which go)
 
 # Bellow generated variables ensure that every time a tool under each variable is invoked, the correct version
 # will be used; reinstalling only if needed.
-# For example for faillint variable:
+# For example for abigen variable:
 #
 # In your main Makefile (for non array binaries):
 #
 #include .bingo/Variables.mk # Assuming -dir was set to .bingo .
 #
-#command: $(FAILLINT)
-#	@echo "Running faillint"
-#	@$(FAILLINT) <flags/args..>
+#command: $(ABIGEN)
+#	@echo "Running abigen"
+#	@$(ABIGEN) <flags/args..>
 #
+ABIGEN := $(GOBIN)/abigen-v1.9.23
+$(ABIGEN): .bingo/abigen.mod
+	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
+	@echo "(re)installing $(GOBIN)/abigen-v1.9.23"
+	@cd .bingo && $(GO) build -modfile=abigen.mod -o=$(GOBIN)/abigen-v1.9.23 "github.com/ethereum/go-ethereum/cmd/abigen"
+
 FAILLINT := $(GOBIN)/faillint-v1.5.0
 $(FAILLINT): .bingo/faillint.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.

@@ -12,9 +12,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	tellor "github.com/tellor-io/TellorMiner/abi/contracts"
-	tellor1 "github.com/tellor-io/TellorMiner/abi/contracts1"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -24,7 +24,7 @@ import (
  */
 
 func prepareTransfer(amt *big.Int, ctx context.Context) (*bind.TransactOpts, error) {
-	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
+	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	senderPubAddr := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 
 	balance, err := instance.BalanceOf(nil, senderPubAddr)
@@ -50,7 +50,7 @@ func Transfer(ctx context.Context, logger log.Logger, toAddress common.Address, 
 		return err
 	}
 
-	instance2 := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	tx, err := instance2.Transfer(auth, toAddress, amt)
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
@@ -65,7 +65,7 @@ func Approve(ctx context.Context, logger log.Logger, _spender common.Address, am
 		return err
 	}
 
-	instance2 := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
+	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	tx, err := instance2.Approve(auth, _spender, amt)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func Balance(ctx context.Context, addr common.Address) error {
 		return fmt.Errorf("problem getting balance: %+v", err)
 	}
 
-	instance := ctx.Value(tellorCommon.MasterContractContextKey).(*tellor.TellorMaster)
+	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	trbBalance, err := instance.BalanceOf(nil, addr)
 	if err != nil {
 		return fmt.Errorf("problem getting balance: %+v", err)

@@ -16,12 +16,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/tellor-io/TellorMiner/abi/contracts"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
+	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 
-	tellor1 "github.com/tellor-io/TellorMiner/abi/contracts1"
-	tellor2 "github.com/tellor-io/TellorMiner/abi/contracts2"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 )
 
@@ -31,27 +30,23 @@ var (
 
 // contractWrapper is internal wrapper of contract instance for calling common contract functions.
 type contractWrapper struct {
-	contract    *tellor1.TellorTransactor
-	contract2   *contracts.TellorMaster
-	contract3   *tellor2.TellorTransactor
 	options     *bind.TransactOpts
 	fromAddress common.Address
+
+	*tellor.Tellor
+	*getter.TellorGetters
 }
 
 func (c contractWrapper) AddTip(requestID *big.Int, amount *big.Int) (*types.Transaction, error) {
-	return c.contract.AddTip(c.options, requestID, amount)
+	return c.Tellor.AddTip(c.options, requestID, amount)
 }
 
-func (c contractWrapper) SubmitSolution(solution string, requestID *big.Int, value *big.Int) (*types.Transaction, error) {
-	return c.contract.SubmitMiningSolution(c.options, solution, requestID, value)
-}
-
-func (c contractWrapper) NewSubmitSolution(solution string, requestID [5]*big.Int, value [5]*big.Int) (*types.Transaction, error) {
-	return c.contract3.SubmitMiningSolution(c.options, solution, requestID, value)
+func (c contractWrapper) SubmitSolution(solution string, requestID [5]*big.Int, value [5]*big.Int) (*types.Transaction, error) {
+	return c.Tellor.SubmitMiningSolution(c.options, solution, requestID, value)
 }
 
 func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
-	return c.contract2.DidMine(nil, challenge, c.fromAddress)
+	return c.TellorGetters.DidMine(nil, challenge, c.fromAddress)
 }
 
 func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
@@ -147,12 +142,11 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 		}
 
 		fmt.Println("Using gas price", gasPrice)
-		//create a wrapper to callback the actual txn generator fn
-		instance := ctx.Value(tellorCommon.TransactorContractContextKey).(*tellor1.TellorTransactor)
-		instance2 := ctx.Value(tellorCommon.MasterContractContextKey).(*contracts.TellorMaster)
-		instance3 := ctx.Value(tellorCommon.NewTransactorContractContextKey).(*tellor2.TellorTransactor)
+		// Цcreate a wrapper to callback the actual txn generator fn.
+		instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
+		instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 
-		wrapper := contractWrapper{options: auth, contract: instance, contract2: instance2, contract3: instance3, fromAddress: fromAddress}
+		wrapper := contractWrapper{auth, fromAddress, instanceTellor, instanceGetter}
 		tx, err := callback(ctx, wrapper)
 
 		if err != nil {
