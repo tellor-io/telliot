@@ -26,7 +26,7 @@ var mainConfig = `
     "trackers": {},
     "dbFile": "/tellorDB",
     "requestTips": 1,
-    "indexFolder": "` + filepath.Join("..", "..", "configs") + `"
+    "configFolder": "` + filepath.Join("..", "..", "configs") + `"
 }`
 
 const loggingConfig = `

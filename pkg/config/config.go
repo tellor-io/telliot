@@ -82,7 +82,7 @@ type Config struct {
 	Worker                       string                `json:"worker"`
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
-	IndexFolder                  string                `json:"indexFolder"`
+	ConfigFolder                 string                `json:"configFolder"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 
