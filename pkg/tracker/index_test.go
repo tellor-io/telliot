@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -25,9 +24,6 @@ func TestPSR(t *testing.T) {
 		t.Fatal(err)
 	}
 	for idx := range psr {
-		if _, ok := psr[idx].(*IndexTracker).Source.(*JSONfile); ok {
-			psr[idx].(*IndexTracker).Source = &JSONfile{filepath.Join("..", "..", "configs", "manualData.json")}
-		}
 		err = psr[idx].Exec(ctx, logger)
 		psrStr := psr[idx].String()
 		if err != nil {

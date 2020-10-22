@@ -72,7 +72,7 @@ func writeOutHistory() {
 	}
 
 	cfg := config.GetConfig()
-	psrSavedData := filepath.Join(cfg.IndexFolder, "saved.json")
+	psrSavedData := filepath.Join(cfg.ConfigFolder, "saved.json")
 	psrSavedDataTmp := psrSavedData + ".tmp"
 	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
 	if err != nil {
@@ -102,7 +102,7 @@ func EnsureValueOracle() error {
 
 	cfg := config.GetConfig()
 
-	historyPath := filepath.Join(cfg.IndexFolder, "saved.json")
+	historyPath := filepath.Join(cfg.ConfigFolder, "saved.json")
 
 	_, err := os.Stat(historyPath)
 	exists := true
