@@ -52,20 +52,18 @@ deps: ## Ensures fresh go.mod and go.sum.
 
 .PHONY: generate
 generate: ## Generate all dynamic files.
-generate: generate-pow generate-sol
+generate: pkg/pow/kernelSource.go pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go
 
-.PHONY: generate-pow
-generate-pow:
-	@go run ./scripts/opencl
+pkg/pow/kernelSource.go: scripts/opencl/sources/*
+	go run ./scripts/opencl
 
-.PHONY: generate-sol
-generate-sol: $(SOLCCHECK) $(ABIGEN)
-	@rm -Rf pkg/contracts/
+pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go: contracts/* $(SOLCCHECK) $(ABIGEN)
+	@rm -Rf pkg/contracts
 	@mkdir -p pkg/contracts/tellor
 	@mkdir -p pkg/contracts/getter
 	$(ABIGEN) --sol=contracts/Tellor.sol --solc=$(SOLCCHECK) --pkg=tellor --type=Tellor --out=pkg/contracts/tellor/tellor.go
 	$(ABIGEN) --sol=contracts/TellorGetters.sol --solc=$(SOLCCHECK) --pkg=getter --type=Tellor --out=pkg/contracts/getter/getter.go
-	
+
 .PHONY: build
 build: ## Build the project.
 build: check-git generate
