@@ -92,7 +92,7 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-	level.Info(logger).Log("info", "Stake depositied", "txHash", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "Stake depositied", "txHash", tx.Hash().Hex())
 	return nil
 }
 
@@ -133,7 +133,7 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
 
-	level.Info(logger).Log("info", "Withdrawal request sent", "txHash", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "Withdrawal request sent", "txHash", tx.Hash().Hex())
 	return nil
 }
 
@@ -162,6 +162,6 @@ func WithdrawStake(ctx context.Context, logger log.Logger) error {
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-	level.Info(logger).Log("info", "Withdrew stake", "txHash", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "Withdrew stake", "txHash", tx.Hash().Hex())
 	return nil
 }

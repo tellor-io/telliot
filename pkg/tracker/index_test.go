@@ -13,11 +13,12 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestPSR(t *testing.T) {
 	ctx, _, cleanup := testutil.CreateContext(t)
-	logger := testutil.SetupLogger()
+	logger := util.SetupLogger("debug")
 	t.Cleanup(cleanup)
 	psr, err := BuildIndexTrackers()
 	if err != nil {

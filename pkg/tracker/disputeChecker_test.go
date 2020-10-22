@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestDisputeCheckerInRange(t *testing.T) {
@@ -22,7 +23,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	if _, err := BuildIndexTrackers(); err != nil {
 		t.Fatal(err)
 	}
-	logger := testutil.SetupLogger()
+	logger := util.SetupLogger("debug")
 	ethUSDPairs := indexes["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
@@ -36,7 +37,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
 	ctx, cfg, cleanup := testutil.CreateContext(t)
-	logger := testutil.SetupLogger()
+	logger := util.SetupLogger("debug")
 	t.Cleanup(cleanup)
 	cfg.DisputeThreshold = 0.000000001
 	disputeChecker := &disputeChecker{lastCheckedBlock: 500}
@@ -70,7 +71,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 }
 
 func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
-	logger := testutil.SetupLogger()
+	logger := util.SetupLogger("debug")
 	for _, psr := range psrs {
 		err := psr.Exec(ctx, logger)
 		if err != nil {

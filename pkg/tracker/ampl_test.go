@@ -18,7 +18,7 @@ import (
 
 func TestAmpl(t *testing.T) {
 	util.CreateTestClient(&client, mockAPI)
-	logger := testutil.SetupLogger()
+	logger := util.SetupLogger("debug")
 	ctx, _, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 

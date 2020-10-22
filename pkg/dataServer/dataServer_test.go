@@ -7,25 +7,23 @@ import (
 	"fmt"
 
 	"net/http"
-	"os"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestDataServer(t *testing.T) {
 	exitCh := make(chan int)
-	logger := testutil.SetupLogger()
+	logger := util.SetupLogger("debug")
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 
 	ds, err := CreateServer(ctx, logger)
 	if err != nil {
-		level.Error(logger).Log("msg", "error creating server in test", "err", err)
-		os.Exit(1)
+		t.Fatalf("error creating server in test: %s", err)
 	}
 	if err := ds.Start(ctx, logger, exitCh); err != nil {
 		t.Fatal(err)

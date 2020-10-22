@@ -48,7 +48,6 @@ func (b *BalanceTracker) Exec(ctx context.Context, logger log.Logger) error {
 	}
 	enc := hexutil.EncodeBig(balance)
 
-	// log.Printf("Balance: %v", enc)
 	level.Info(logger).Log("msg", "Got balance", "balance", enc)
 	return DB.Put(db.BalanceKey, []byte(enc))
 }

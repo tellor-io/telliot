@@ -10,6 +10,7 @@ import (
 
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/pkg/db"
@@ -26,7 +27,7 @@ func TestCurrentVarableString(t *testing.T) {
 func TestCurrentVariables(t *testing.T) {
 	ctx, _, cleanup := testutil.CreateContext(t)
 	t.Cleanup(cleanup)
-	logger := testutil.SetupLogger()
+	logger := util.SetupLogger("debug")
 	tracker := &CurrentVariablesTracker{}
 
 	fmt.Println("Working to Line 41")

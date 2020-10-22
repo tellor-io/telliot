@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestDataServerOps(t *testing.T) {
 
 	exitCh := make(chan os.Signal)
-	logger := testutil.SetupLogger()
+	logger := util.SetupLogger("debug")
 	ctx, _, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 

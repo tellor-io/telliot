@@ -89,6 +89,5 @@ func (b *DisputeTracker) Exec(ctx context.Context, logger log.Logger) error {
 			level.Error(logger).Log("msg", "Problem storing staker dispute status", "err", err)
 		}
 	}
-	//fmt.Println("Finished updated dispute status")
 	return nil
 }

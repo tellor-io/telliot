@@ -5,9 +5,12 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/sirupsen/logrus"
 )
 
@@ -146,4 +149,25 @@ func xlateLevel(level LogLevel) logrus.Level {
 		return logrus.InfoLevel
 	}
 
+}
+
+func SetupLogger(logLevel string) log.Logger {
+	var lvl level.Option
+	switch logLevel {
+	case "error":
+		lvl = level.AllowError()
+	case "warn":
+		lvl = level.AllowWarn()
+	case "info":
+		lvl = level.AllowInfo()
+	case "debug":
+		lvl = level.AllowDebug()
+	default:
+		panic("unexpected log level")
+	}
+
+	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = level.NewFilter(logger, lvl)
+
+	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 }

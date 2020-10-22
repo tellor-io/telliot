@@ -5,6 +5,7 @@ package tracker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -39,10 +40,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 		if activated {
 			t, err := createTracker(name)
 			if err != nil {
-				level.Warn(logger).Log("msg", "Problem creating tracker", "name", name, "err", err)
-				//Logging seems to be different here:
-				// runnerLog.Error("Problem creating tracker: %s\n", err.Error())
-				continue
+				return errors.New(fmt.Sprintf("Problem creating tracker. Name: %s\n, err: %s\n", name, err))
 			}
 			trackers = append(trackers, t...)
 		}
@@ -63,9 +61,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		masterInstance, err = tellor.NewTellor(contractAddress, r.client)
 		if err != nil {
-			//I believe the dataSerever will handle the os.Exit(1)
-			level.Error(logger).Log("msg", "Problem creating tellor master instance", "err", err)
-			return err
+			return errors.New(fmt.Sprintf("Problem creating tellor master instance: %s\n", err))
 		}
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, masterInstance)
 	}
@@ -103,12 +99,12 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 			case <-ticker.C:
 				{
 					//runnerLog.Info("Running trackers...")
+					level.Debug(logger).Log("msg", "Running trackers")
 					go func(count int) {
 						idx := count % len(trackers)
 						err := trackers[idx].Exec(ctx, logger)
 						if err != nil {
 							level.Warn(logger).Log("msg", "problem in traker", "tracker", trackers[idx].String(), "err", err)
-							//runnerLog.Error("Problem in tracker %s: %v\n", trackers[idx].String(), err)
 						}
 						// Only the first trackers round execution.
 						if count < len(trackers) {

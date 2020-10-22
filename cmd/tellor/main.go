@@ -26,32 +26,12 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/ops"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 var ctx context.Context
 
-func setupLogger(logLevel string) log.Logger {
-	var lvl level.Option
-	switch logLevel {
-	case "error":
-		lvl = level.AllowError()
-	case "warn":
-		lvl = level.AllowWarn()
-	case "info":
-		lvl = level.AllowInfo()
-	case "debug":
-		lvl = level.AllowDebug()
-	default:
-		panic("unexpected log level")
-	}
-
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = level.NewFilter(logger, lvl)
-
-	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
-}
-
-func ErrorHandler(err error, operation string) {
+func ExitOnError(err error, operation string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s failed: %s\n", operation, err.Error())
 		cli.Exit(-1)
@@ -158,13 +138,13 @@ func App() *cli.Cli {
 
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
-	logLevel := app.StringOpt("logLevel", "Error", "The level of log messages")
+	logLevel := app.StringOpt("logLevel", "error", "The level of log messages")
 
-	logger := setupLogger(*logLevel)
+	logger := util.SetupLogger(*logLevel)
 	// This will get run before any of the commands
 	app.Before = func() {
-		ErrorHandler(config.ParseConfig(*configPath), "parsing config file")
-		ErrorHandler(buildContext(), "building context")
+		ExitOnError(config.ParseConfig(*configPath), "parsing config file")
+		ExitOnError(buildContext(), "building context")
 	}
 
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
@@ -192,7 +172,7 @@ func stakeCmd(logger log.Logger) func(*cli.Cmd) {
 func simpleCmd(f func(context.Context, log.Logger) error, logger log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			ErrorHandler(f(ctx, logger), "")
+			ExitOnError(f(ctx, logger), "")
 		}
 	}
 }
@@ -204,7 +184,7 @@ func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error
 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 		cmd.Action = func() {
-			ErrorHandler(f(ctx, logger, addr.addr, amt.Int), "move")
+			ExitOnError(f(ctx, logger, addr.addr, amt.Int), "move")
 		}
 	}
 }
@@ -218,7 +198,7 @@ func balanceCmd(cmd *cli.Cmd) {
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
 			addr.addr = ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		}
-		ErrorHandler(ops.Balance(ctx, addr.addr), "checking balance")
+		ExitOnError(ops.Balance(ctx, addr.addr), "checking balance")
 	}
 }
 
@@ -235,7 +215,7 @@ func voteCmd(cmd *cli.Cmd) {
 	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
 	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
 	cmd.Action = func() {
-		ErrorHandler(ops.Vote(disputeID.Int, *supports, ctx), "vote")
+		ExitOnError(ops.Vote(disputeID.Int, *supports, ctx), "vote")
 	}
 }
 
@@ -247,7 +227,7 @@ func newDisputeCmd(cmd *cli.Cmd) {
 	cmd.VarArg("TIMESTAMP", &timestamp, "timestamp")
 	cmd.VarArg("MINER_INDEX", &minerIndex, "miner to dispute (0-4)")
 	cmd.Action = func() {
-		ErrorHandler(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
+		ExitOnError(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
 	}
 }
 
@@ -263,7 +243,7 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 			cfg := config.GetConfig()
 			var ds *ops.DataServerOps
 			if !cfg.EnablePoolWorker {
-				ErrorHandler(AddDBToCtx(*remoteDS), "initializing database")
+				ExitOnError(AddDBToCtx(*remoteDS), "initializing database")
 				if !*remoteDS {
 					ch := make(chan os.Signal)
 					exitChannels = append(exitChannels, &ch)
@@ -285,7 +265,7 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 			DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 			v, err := DB.Get(db.DisputeStatusKey)
 			if err != nil {
-				level.Warn(logger).Log("info", "could not get dispute status. Check if staked")
+				level.Warn(logger).Log("msg", "could not get dispute status. Check if staked")
 			}
 			status, _ := hexutil.DecodeBig(string(v))
 			if status.Cmp(big.NewInt(1)) != 0 {
@@ -346,7 +326,7 @@ func dataserverCmd(logger log.Logger) func(*cli.Cmd) {
 			signal.Notify(c, os.Interrupt)
 
 			var ds *ops.DataServerOps
-			ErrorHandler(AddDBToCtx(true), "initializing database")
+			ExitOnError(AddDBToCtx(true), "initializing database")
 			ch := make(chan os.Signal)
 			var err error
 			ds, err = ops.CreateDataServerOps(ctx, logger, ch)
@@ -356,7 +336,7 @@ func dataserverCmd(logger log.Logger) func(*cli.Cmd) {
 			}
 			// Start and wait for it to be ready
 			if err := ds.Start(ctx, logger); err != nil {
-				//Should we do this here or pass it down to errorhandler func for consistency?
+				//Should we do this here or pass it down to ExitOnError func for consistency?
 				level.Error(logger).Log("msg", "error starting data server", "err", err)
 				os.Exit(1)
 			}
