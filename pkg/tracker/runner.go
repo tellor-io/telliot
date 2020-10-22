@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -40,7 +39,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 		if activated {
 			t, err := createTracker(name)
 			if err != nil {
-				return errors.New(fmt.Sprintf("Problem creating tracker. Name: %s\n, err: %s\n", name, err))
+				return fmt.Errorf("problem creating tracker. Name: %s, err: %s", name, err)
 			}
 			trackers = append(trackers, t...)
 		}
@@ -61,7 +60,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		masterInstance, err = tellor.NewTellor(contractAddress, r.client)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Problem creating tellor master instance: %s\n", err))
+			return fmt.Errorf("Problem creating tellor master instance: %s", err)
 		}
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, masterInstance)
 	}
