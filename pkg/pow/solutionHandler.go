@@ -5,13 +5,8 @@ package pow
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -96,30 +91,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool {
 		}
 		val := m[valKey]
 		if len(val) == 0 {
-			if challenge.RequestIDs[i].Uint64() > 53 && len(val) == 0 {
-				s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestIDs[i].Uint64())
-			} else {
-				jsonFile, err := os.Open(filepath.Join("configs", "manualData.json"))
-				if err != nil {
-					fmt.Println("manualData read error", err)
-					return false
-				}
-				defer jsonFile.Close()
-				byteValue, _ := ioutil.ReadAll(jsonFile)
-				var result map[string]map[string]uint
-				if err := json.Unmarshal([]byte(byteValue), &result); err != nil {
-					s.log.Error("error unmarshaling the result : %v", err)
-					return false
-				}
-				_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
-				manualVal = int64(result[_id]["VALUE"])
-				if manualVal == 0 {
-					s.log.Error("No Value in database, not submitting.", challenge.RequestIDs[i].Uint64(), 2)
-					return false
-				} else {
-					fmt.Println("Using Manually entered value: ", manualVal)
-				}
-			}
+			s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestIDs[i].Uint64())
 		}
 		value, err := hexutil.DecodeBig(string(val))
 		if err != nil {
