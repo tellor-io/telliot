@@ -14,7 +14,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -54,11 +53,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	hash := solsha3.SoliditySHA3(decoded)
-	var data [32]byte
-	copy(data[:], hash)
-	fmt.Println(instance)
-	status, err := instance.GetUintVar(nil, data)
+	status, err := instance.GetUintVar(nil, rpc.Keccak256(decoded))
 
 	if err != nil {
 		fmt.Println("instance Error, disputeStatus")
@@ -83,10 +78,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		hash := solsha3.SoliditySHA3(decoded)
-		var data [32]byte
-		copy(data[:], hash)
-		status, err := instance.GetUintVar(nil, data)
+		status, err := instance.GetUintVar(nil, rpc.Keccak256(decoded))
 		if err != nil {
 			fmt.Printf("Could not get staker timeOut status for miner address %s: %v\n", addr, err)
 		}

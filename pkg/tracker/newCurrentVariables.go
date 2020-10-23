@@ -9,12 +9,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/db"
+	"github.com/tellor-io/TellorMiner/pkg/rpc"
 )
 
 type NewCurrentVariablesTracker struct {
@@ -61,17 +61,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 		bitSetVar = []byte{1}
 	}
 
-	hash := solsha3.SoliditySHA3(
-		// types
-		[]string{"string"},
-		// values
-		[]interface{}{
-			"timeOfLastNewValue",
-		},
-	)
-	var ret [32]byte
-	copy(ret[:], hash)
-	timeOfLastNewValue, err := instanceGetter.GetUintVar(nil, ret)
+	timeOfLastNewValue, err := instanceGetter.GetUintVar(nil, rpc.Keccak256("timeOfLastNewValue"))
 	if err != nil {
 		fmt.Println("Time of Last New Value Retrieval Error")
 		return err
