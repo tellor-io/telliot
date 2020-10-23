@@ -36,7 +36,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	hashIn = append(hashIn, []byte(nonce)...)
 	a := new(big.Int)
 
-	if err := hashFn(hashIn, a); err != nil {
+	if err := rpc.HashFn(hashIn, a); err != nil {
 		t.Fatal(err)
 	}
 
@@ -171,7 +171,7 @@ func TestHashFunction(t *testing.T) {
 		nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", k))
 		_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
 		bytes := decodeHex(_string)
-		if err := hashFn(bytes, result); err != nil {
+		if err := rpc.HashFn(bytes, result); err != nil {
 			t.Fatal(err)
 		}
 		if result.Text(16) != v {
@@ -188,7 +188,7 @@ func BenchmarkHashFunction(b *testing.B) {
 	bytes := decodeHex(_string)
 
 	for i := 0; i < b.N; i++ {
-		if err := hashFn(bytes, result); err != nil {
+		if err := rpc.HashFn(bytes, result); err != nil {
 			b.Fatal(err)
 		}
 	}
