@@ -32,7 +32,6 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 	hashInput := make([]byte, len(hash.prefix))
 	copy(hashInput, hash.prefix)
 
-	numHash := new(big.Int)
 	x := new(big.Int)
 	compareZero := big.NewInt(0)
 
@@ -40,7 +39,8 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		nn := strconv.FormatUint(i, 10)
 		hashInput = hashInput[:baseLen]
 		hashInput = append(hashInput, []byte(nn)...)
-		if err := rpc.HashFn(hashInput, numHash); err != nil {
+		numHash, err := rpc.HashFn(hashInput)
+		if err != nil {
 			return "", 0, err
 		}
 		x.Mod(numHash, hash.difficulty)

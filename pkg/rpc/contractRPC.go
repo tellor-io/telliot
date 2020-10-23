@@ -188,32 +188,24 @@ func getInt(data []byte) *big.Int {
 	return val
 }
 
-func Keccak256(input) [32]byte {
-	hash := solsha3.SoliditySHA3(
-		// Types.
-		[]string{"string"},
-		// Values.
-		[]interface{}{
-			input,
-		},
-	)
+func Keccak256(input interface{}) [32]byte {
+	hash := solsha3.SoliditySHA3(input)
 	var hashed [32]byte
 	copy(hashed[:], hash)
+
 	return hashed
 }
 
-func HashFn(data []byte, result *big.Int) error {
-
-	hash := solsha3.SoliditySHA3(data)
-
-	// Consider moving hasher constructor outside loop and replacing with hasher.Reset()
+func HashFn(input []byte) (*big.Int, error) {
+	hash := solsha3.SoliditySHA3(input)
 	hasher := ripemd160.New()
-
 	if _, err := hasher.Write(hash); err != nil {
-		return err
+		return nil, err
 	}
 	hash1 := hasher.Sum(nil)
 	n := sha256.Sum256(hash1)
+	result := new(big.Int)
 	result.SetBytes(n[:])
-	return nil
+
+	return result, nil
 }
