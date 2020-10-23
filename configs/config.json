@@ -8,8 +8,5 @@
     "serverPort": 5000,
     "gasMax": 10,
     "dbFile": "/tellorDB",
-    "indexFolder": "configs",
-    "trackers": {
-        "indexers": true
-    }
+    "confgFolder": "configs"
 }

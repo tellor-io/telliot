@@ -37,7 +37,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 
 	cfg := config.GetConfig()
 
-	indexPath := filepath.Join(cfg.IndexFolder, "indexes.json")
+	indexPath := filepath.Join(cfg.ConfigFolder, "indexes.json")
 	byteValue, err := ioutil.ReadFile(indexPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read index file @ %s: %v", indexPath, err)
@@ -71,8 +71,8 @@ func BuildIndexTrackers() ([]Tracker, error) {
 					}
 					name = u.Host
 				} else {
-					source = &Raw{raw: []byte(pathStr)}
-					name = "manual" + symbol
+					source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, pathStr)}
+					name = filepath.Base(pathStr)
 				}
 				indexers[api] = &IndexTracker{
 					Name:       name,
@@ -145,14 +145,6 @@ type JSONfile struct {
 
 func (j *JSONfile) Get() ([]byte, error) {
 	return ioutil.ReadFile(j.filepath)
-}
-
-type Raw struct {
-	raw []byte
-}
-
-func (j *Raw) Get() ([]byte, error) {
-	return j.raw, nil
 }
 
 func (i *IndexTracker) Exec(ctx context.Context) error {
