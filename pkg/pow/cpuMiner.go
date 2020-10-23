@@ -4,14 +4,12 @@
 package pow
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"strconv"
 
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
+	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	// nolint:staticcheck
-	"golang.org/x/crypto/ripemd160"
 )
 
 type CpuMiner int64
@@ -42,7 +40,7 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		nn := strconv.FormatUint(i, 10)
 		hashInput = hashInput[:baseLen]
 		hashInput = append(hashInput, []byte(nn)...)
-		if err := hashFn(hashInput, numHash); err != nil {
+		if err := rpc.HashFn(hashInput, numHash); err != nil {
 			return "", 0, err
 		}
 		x.Mod(numHash, hash.difficulty)
@@ -51,20 +49,4 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		}
 	}
 	return "", n, nil
-}
-
-func hashFn(data []byte, result *big.Int) error {
-
-	hash := solsha3.SoliditySHA3(data)
-
-	// Consider moving hasher constructor outside loop and replacing with hasher.Reset()
-	hasher := ripemd160.New()
-
-	if _, err := hasher.Write(hash); err != nil {
-		return err
-	}
-	hash1 := hasher.Sum(nil)
-	n := sha256.Sum256(hash1)
-	result.SetBytes(n[:])
-	return nil
 }

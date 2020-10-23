@@ -6,6 +6,7 @@ package rpc
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"strings"
@@ -16,12 +17,13 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
-
 	"github.com/tellor-io/TellorMiner/pkg/db"
+	"golang.org/x/crypto/ripemd160"
 )
 
 var (
@@ -184,4 +186,34 @@ func getInt(data []byte) *big.Int {
 		return nil
 	}
 	return val
+}
+
+func Keccak256(input) [32]byte {
+	hash := solsha3.SoliditySHA3(
+		// Types.
+		[]string{"string"},
+		// Values.
+		[]interface{}{
+			input,
+		},
+	)
+	var hashed [32]byte
+	copy(hashed[:], hash)
+	return hashed
+}
+
+func HashFn(data []byte, result *big.Int) error {
+
+	hash := solsha3.SoliditySHA3(data)
+
+	// Consider moving hasher constructor outside loop and replacing with hasher.Reset()
+	hasher := ripemd160.New()
+
+	if _, err := hasher.Write(hash); err != nil {
+		return err
+	}
+	hash1 := hasher.Sum(nil)
+	n := sha256.Sum256(hash1)
+	result.SetBytes(n[:])
+	return nil
 }
