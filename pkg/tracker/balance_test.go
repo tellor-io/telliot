@@ -18,7 +18,7 @@ import (
 )
 
 func TestStringId(t *testing.T) {
-	tracker := &BalanceTracker{logger: util.SetupLogger("debug")}
+	tracker := NewBalanceTracker(util.SetupLogger("debug"))
 	res := tracker.String()
 	if res != BalanceTrackerName {
 		t.Fatal("didn't return expected string", BalanceTrackerName)
@@ -44,7 +44,7 @@ func TestNegativeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &BalanceTracker{logger: util.SetupLogger("debug")}
+	tracker := NewBalanceTracker(util.SetupLogger("debug"))
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
@@ -62,7 +62,7 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &BalanceTracker{logger: util.SetupLogger("debug")}
+	tracker := NewBalanceTracker(util.SetupLogger("debug"))
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)

@@ -23,21 +23,22 @@ type Runner struct {
 	client       rpc.ETHClient
 	db           db.DB
 	readyChannel chan bool
+	logger       log.Logger
 }
 
 // NewRunner will create a new runner instance.
-func NewRunner(client rpc.ETHClient, db db.DB) (*Runner, error) {
-	return &Runner{client: client, db: db, readyChannel: make(chan bool, 1)}, nil
+func NewRunner(client rpc.ETHClient, db db.DB, logger log.Logger) (*Runner, error) {
+	return &Runner{client: client, db: db, readyChannel: make(chan bool, 1), logger: log.With(logger, "component", "runner")}, nil
 }
 
 // Start will kick off the runner until the given exit channel selects.
-func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) error {
+func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	cfg := config.GetConfig()
 	trackerNames := cfg.Trackers
 	var trackers []Tracker
 	for name, activated := range trackerNames {
 		if activated {
-			t, err := createTracker(name, logger)
+			t, err := createTracker(name, r.logger)
 			if err != nil {
 				return fmt.Errorf("problem creating tracker. Name: %s, err: %s", name, err)
 			}
@@ -52,7 +53,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 		}()
 		return nil
 	}
-	level.Info(logger).Log("msg", fmt.Sprintf("Created %d trackers", len(trackers)))
+	level.Info(r.logger).Log("msg", fmt.Sprintf("created %d trackers", len(trackers)))
 
 	var err error
 	masterInstance := ctx.Value(tellorCommon.ContractsTellorContextKey)
@@ -65,7 +66,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, masterInstance)
 	}
 
-	level.Info(logger).Log("msg", "Trackers will run", "sleepCycle", cfg.TrackerSleepCycle)
+	level.Info(r.logger).Log("msg", "trackers will run", "sleepCycle", cfg.TrackerSleepCycle)
 	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration / time.Duration(len(trackers)))
 	if ctx.Value(tellorCommon.ClientContextKey) == nil {
 		ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)
@@ -82,7 +83,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 		}
 		r.readyChannel <- true
 	}(len(trackers))
-	level.Info(logger).Log("msg", "Waiting for trackers to complete initial requests")
+	level.Info(r.logger).Log("msg", "waiting for trackers to complete initial requests")
 
 	// Run the trackers until sigterm.
 	go func() {
@@ -91,19 +92,19 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 			select {
 			case <-exitCh:
 				{
-					level.Info(logger).Log("msg", "Exiting run loop")
+					level.Info(r.logger).Log("msg", "exiting run loop")
 					ticker.Stop()
 					return
 				}
 			case <-ticker.C:
 				{
 					//runnerLog.Info("Running trackers...")
-					level.Debug(logger).Log("msg", "Running trackers")
+					level.Debug(r.logger).Log("msg", "running trackers")
 					go func(count int) {
 						idx := count % len(trackers)
 						err := trackers[idx].Exec(ctx)
 						if err != nil {
-							level.Warn(logger).Log("msg", "problem in traker", "tracker", trackers[idx].String(), "err", err)
+							level.Warn(r.logger).Log("msg", "problem in traker", "tracker", trackers[idx].String(), "err", err)
 						}
 						// Only the first trackers round execution.
 						if count < len(trackers) {

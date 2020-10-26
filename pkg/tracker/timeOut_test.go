@@ -18,7 +18,7 @@ import (
 )
 
 func TestTimeOutString(t *testing.T) {
-	tracker := &TimeOutTracker{logger: util.SetupLogger("debug")}
+	tracker := NewTimeOutTracker(util.SetupLogger("debug"))
 	res := tracker.String()
 	if res != "TimeOutTracker" {
 		t.Fatalf("should return 'TimeOutTracker' string")
@@ -41,7 +41,7 @@ func TestTimeOutTracker(t *testing.T) {
 	ctx = context.WithValue(ctx, common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, db)
 
-	tracker := &TimeOutTracker{logger: util.SetupLogger("debug")}
+	tracker := NewTimeOutTracker(util.SetupLogger("debug"))
 	if err := tracker.Exec(ctx); err != nil {
 		log.Fatal(err)
 	}

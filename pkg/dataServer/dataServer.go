@@ -17,7 +17,6 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/rest"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/tracker"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 // DataServer holds refs to primary stack of utilities for data retrieval and serving.
@@ -30,7 +29,7 @@ type DataServer struct {
 	runnerExitCh chan int
 	Stopped      bool
 	readyChannel chan bool
-	log          *util.Logger
+	logger       log.Logger
 }
 
 // CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data.
@@ -39,7 +38,7 @@ func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
 
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	client := ctx.Value(common.ClientContextKey).(rpc.ETHClient)
-	run, err := tracker.NewRunner(client, DB)
+	run, err := tracker.NewRunner(client, DB, logger)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating  tracker runner instance")
 	}
@@ -58,15 +57,16 @@ func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
 		Stopped:      true,
 		runnerExitCh: nil,
 		readyChannel: ready,
-		log:          util.NewLogger("dataServer", "DataServer")}, nil
+		logger:       log.With(logger, "component", "data server")}, nil
+
 }
 
 // Start the data server and all underlying resources.
-func (ds *DataServer) Start(ctx context.Context, logger log.Logger, exitCh chan int) error {
+func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 	ds.exitCh = exitCh
 	ds.runnerExitCh = make(chan int)
 	ds.Stopped = false
-	err := ds.runner.Start(ctx, logger, ds.runnerExitCh)
+	err := ds.runner.Start(ctx, ds.runnerExitCh)
 	if err != nil {
 		return errors.Wrap(err, "starting runner")
 	}
@@ -74,13 +74,13 @@ func (ds *DataServer) Start(ctx context.Context, logger log.Logger, exitCh chan 
 	ds.server.Start()
 	go func() {
 		<-ds.runner.Ready()
-		level.Info(logger).Log("msg", "Runner signaled it is ready")
+		level.Info(ds.logger).Log("msg", "runner signaled it is ready")
 		ds.readyChannel <- true
-		level.Info(logger).Log("msg", "DataServer ready for use")
+		level.Info(ds.logger).Log("msg", "dataServer ready for use")
 		<-ds.exitCh
-		level.Info(logger).Log("msg", "DataServer received signal to stop")
+		level.Info(ds.logger).Log("msg", "dataServer received signal to stop")
 		if err := ds.stop(); err != nil {
-			level.Info(logger).Log("msg", "error stopping the data server", "err", err)
+			level.Info(ds.logger).Log("msg", "stopping the data server", "err", err)
 		}
 	}()
 	return nil

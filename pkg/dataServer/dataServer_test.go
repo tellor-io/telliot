@@ -25,7 +25,7 @@ func TestDataServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating server in test: %s", err)
 	}
-	if err := ds.Start(ctx, logger, exitCh); err != nil {
+	if err := ds.Start(ctx, exitCh); err != nil {
 		t.Fatal(err)
 	}
 

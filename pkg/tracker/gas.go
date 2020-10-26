@@ -70,21 +70,21 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 			gpModel := GasPriceModel{}
 			err = json.Unmarshal(payload, &gpModel)
 			if err != nil {
-				level.Warn(b.logger).Log("msg", "Problem with ETH gas station json", "err", err)
+				level.Warn(b.logger).Log("msg", "eth gas station json", "err", err)
 				gasPrice, err = client.SuggestGasPrice(context.Background())
 				if err != nil {
-					level.Warn(b.logger).Log("msg", "couldn't get suggested gas price", "err", err)
+					level.Warn(b.logger).Log("msg", "getting suggested gas price", "err", err)
 				}
 			} else {
 				gasPrice = big.NewInt(int64(gpModel.Fast / 10))
 				gasPrice = gasPrice.Mul(gasPrice, big.NewInt(GWEI))
-				level.Info(b.logger).Log("msg", "Using ETHGasStation fast price", "price", gasPrice)
+				level.Info(b.logger).Log("msg", "using ETHGasStation fast price", "price", gasPrice)
 			}
 		}
 	} else {
 		gasPrice, err = client.SuggestGasPrice(context.Background())
 		if err != nil {
-			level.Warn(b.logger).Log("msg", "couldn't get suggested gas price", "err", err)
+			level.Warn(b.logger).Log("msg", "getting suggested gas price", "err", err)
 		}
 	}
 

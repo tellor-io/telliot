@@ -49,10 +49,10 @@ func TestRunner(t *testing.T) {
 		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: top50, CurrentChallenge: chal, DisputeStatus: big.NewInt(1), QueryMetadata: paramsMap}
 	client := rpc.NewMockClientWithValues(opts)
 
-	runner, _ := NewRunner(client, ctx.Value(common.DBContextKey).(db.DB))
+	runner, _ := NewRunner(client, ctx.Value(common.DBContextKey).(db.DB), logger)
 
 	runner.Ready()
-	if err := runner.Start(ctx, logger, exitCh); err != nil {
+	if err := runner.Start(ctx, exitCh); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("runner done")

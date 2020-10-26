@@ -55,13 +55,13 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 
 	instance, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		level.Error(b.logger).Log("msg", "instance Error, disputeStatus", "err", err)
+		level.Error(b.logger).Log("msg", "instance, disputeStatus", "err", err)
 		return err
 	}
 	address := "000000000000000000000000" + _fromAddress[2:]
 	decoded, err := hex.DecodeString(address)
 	if err != nil {
-		level.Error(b.logger).Log("msg", "error decoding address", "err", err)
+		level.Error(b.logger).Log("msg", " decoding address", "err", err)
 		os.Exit(1)
 		//Does log.Fatal terminates the execution automatically?
 		//log.Fatal(err)
@@ -73,13 +73,13 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	status, err := instance.GetUintVar(nil, data)
 
 	if err != nil {
-		level.Error(b.logger).Log("msg", "error getting dispute status", "err", err)
+		level.Error(b.logger).Log("msg", " getting dispute status", "err", err)
 		return err
 	}
 	enc := hexutil.EncodeBig(status)
 	err = DB.Put(db.TimeOutKey, []byte(enc))
 	if err != nil {
-		level.Error(b.logger).Log("msg", "Problem storing dispute info", "err", err)
+		level.Error(b.logger).Log("msg", " storing dispute info", "err", err)
 		return err
 	}
 	// Issue #50, bail out of not able to mine
@@ -93,7 +93,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		address := "000000000000000000000000" + addr[2:]
 		decoded, err := hex.DecodeString(address)
 		if err != nil {
-			level.Error(b.logger).Log("msg", "error decoding address", "err", err)
+			level.Error(b.logger).Log("msg", " decoding address", "err", err)
 			os.Exit(1)
 		}
 		hash := solsha3.SoliditySHA3(decoded)
@@ -101,7 +101,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		copy(data[:], hash)
 		status, err := instance.GetUintVar(nil, data)
 		if err != nil {
-			level.Error(b.logger).Log("msg", "Could not get staker timeOut status for miner", "address", addr, "err", err)
+			level.Error(b.logger).Log("msg", "getting staker timeOut status for miner", "address", addr, "err", err)
 		}
 		if status.Int64() > 0 {
 			fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, time.Unix(status.Int64(), 0))
@@ -110,7 +110,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)
 		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
-			level.Error(b.logger).Log("msg", "error storing last time mined address", "err", err)
+			level.Error(b.logger).Log("msg", " storing last time mined address", "err", err)
 		}
 	}
 	//fmt.Println("Finished updated dispute status")

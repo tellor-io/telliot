@@ -46,19 +46,19 @@ func buildContext() error {
 		// Create an rpc client
 		client, err := rpc.NewClient(cfg.NodeURL)
 		if err != nil {
-			return fmt.Errorf("Couldn't create client instance")
+			return fmt.Errorf("Couldn't create client instance: %s", err)
 		}
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
 		if err != nil {
-			return fmt.Errorf("Couldn't create Tellor Master instance")
+			return fmt.Errorf("Couldn't create Tellor Master instance: %s", err)
 		}
 
 		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
 
 		if err != nil {
-			return fmt.Errorf("Couldn't create New Tellor transactor instance")
+			return fmt.Errorf("Couldn't create New Tellor transactor instance: %s", err)
 		}
 
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
@@ -84,7 +84,7 @@ func buildContext() error {
 		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
 		if err != nil {
-			return fmt.Errorf("could not determine if Ethereum client is syncing: %v\n", err)
+			return fmt.Errorf("could not determine if Ethereum client is syncing: %v", err)
 		}
 		if s {
 			return fmt.Errorf("ethereum node is still syncing with the network")
@@ -252,12 +252,12 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 					var err error
 					ds, err = ops.CreateDataServerOps(ctx, logger, ch)
 					if err != nil {
-						level.Error(logger).Log("msg", "error creating data server", "err", err)
+						level.Error(logger).Log("msg", "creating data server", "err", err)
 						os.Exit(1)
 					}
 					// Start and wait for it to be ready.
 					if err := ds.Start(ctx); err != nil {
-						level.Error(logger).Log("msg", "error starting data server", "err", err)
+						level.Error(logger).Log("msg", "starting data server", "err", err)
 					}
 					<-ds.Ready()
 				}
@@ -266,18 +266,18 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 			DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 			v, err := DB.Get(db.DisputeStatusKey)
 			if err != nil {
-				level.Warn(logger).Log("msg", "could not get dispute status. Check if staked")
+				level.Warn(logger).Log("msg", "geting dispute status. Check if staked")
 			}
 			status, _ := hexutil.DecodeBig(string(v))
 			if status.Cmp(big.NewInt(1)) != 0 {
-				level.Error(logger).Log("msg", "Miner is not able to mine with status", "status", status, "info", "Stopping all mining immediately")
+				level.Error(logger).Log("msg", "miner is not able to mine with status", "status", status, "info", "Stopping all mining immediately")
 				os.Exit(1)
 			}
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
 			miner, err := ops.CreateMiningManager(ctx, ch, ops.NewSubmitter())
 			if err != nil {
-				level.Error(logger).Log("msg", "unable to create miner", "err", err)
+				level.Error(logger).Log("msg", "creating miner", "err", err)
 				os.Exit(1)
 			}
 			miner.Start(ctx)
@@ -308,13 +308,13 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 				}
 
 				if !dsStopped && !minerStopped && cnt > 60 {
-					level.Warn(logger).Log("msg", "Taking longer than expected to stop operations", "waited", time.Since(start))
+					level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
 				} else if dsStopped && minerStopped {
 					break
 				}
 				time.Sleep(500 * time.Millisecond)
 			}
-			level.Info(logger).Log("msg", "Main shutdown complete")
+			level.Info(logger).Log("msg", "main shutdown complete")
 		}
 	}
 }
@@ -332,13 +332,13 @@ func dataserverCmd(logger log.Logger) func(*cli.Cmd) {
 			var err error
 			ds, err = ops.CreateDataServerOps(ctx, logger, ch)
 			if err != nil {
-				level.Error(logger).Log("msg", "error creating data server", "err", err)
+				level.Error(logger).Log("msg", "creating data server", "err", err)
 				os.Exit(1)
 			}
 			// Start and wait for it to be ready
 			if err := ds.Start(ctx); err != nil {
 				//Should we do this here or pass it down to ExitOnError func for consistency?
-				level.Error(logger).Log("msg", "error starting data server", "err", err)
+				level.Error(logger).Log("msg", "starting data server", "err", err)
 				os.Exit(1)
 			}
 			<-ds.Ready()
@@ -361,13 +361,13 @@ func dataserverCmd(logger log.Logger) func(*cli.Cmd) {
 				}
 
 				if !dsStopped && cnt > 60 {
-					level.Warn(logger).Log("msg", "Taking longer than expected to stop operations", "waited", time.Since(start))
+					level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
 				} else if dsStopped {
 					break
 				}
 				time.Sleep(500 * time.Millisecond)
 			}
-			level.Info(logger).Log("msg", "Main shutdown complete")
+			level.Info(logger).Log("msg", "main shutdown complete")
 		}
 
 	}

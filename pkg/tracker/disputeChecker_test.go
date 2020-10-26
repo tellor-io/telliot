@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -38,7 +36,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	t.Cleanup(cleanup)
 	cfg.DisputeThreshold = 0.000000001
-	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: util.SetupLogger("debug")}
+	disputeChecker := NewDisputeChecker(500, util.SetupLogger("debug"))
 	if _, err := BuildIndexTrackers(); err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +44,6 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-	ctx = context.WithValue(ctx, tellorCommon.ContractAddress, common.Address{0x0000000000000000000000000000000000000000})
 	err := disputeChecker.Exec(ctx)
 
 	if err != nil {

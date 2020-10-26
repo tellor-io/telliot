@@ -87,7 +87,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	}
 	err = DB.Put(db.LastNewValueKey, []byte(hexutil.EncodeBig(timeOfLastNewValue)))
 	if err != nil {
-		level.Error(b.logger).Log("msg", "new Current variables put", "var", "lastnewValue", "err", err)
+		level.Error(b.logger).Log("msg", "new current variables put", "var", "lastnewValue", "err", err)
 		return err
 	}
 	err = DB.Put(db.CurrentChallengeKey, returnNewVariables.Challenge[:])

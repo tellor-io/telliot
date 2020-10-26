@@ -20,31 +20,31 @@ type DataServerOps struct {
 	exitCh  chan os.Signal
 	done    chan int
 	server  *dataServer.DataServer
-	log     log.Logger
+	logger  log.Logger
 	Running bool
 }
 
 // CreateDataServerOps creates a data server instance for runtime.
 func CreateDataServerOps(ctx context.Context, logger log.Logger, exitCh chan os.Signal) (*DataServerOps, error) {
-	ds, err := dataServer.CreateServer(ctx, log.With(logger, "component", "ops"))
+	ds, err := dataServer.CreateServer(ctx, logger)
 	if err != nil {
 		return nil, err
 	}
 	done := make(chan int)
-	ops := &DataServerOps{exitCh: exitCh, server: ds, log: logger, done: done, Running: false}
+	ops := &DataServerOps{exitCh: exitCh, server: ds, logger: log.With(logger, "component", "ops"), done: done, Running: false}
 
 	return ops, nil
 }
 
 // Start the data server.
 func (ops *DataServerOps) Start(ctx context.Context) error {
-	if err := ops.server.Start(ctx, ops.log, ops.done); err != nil {
+	if err := ops.server.Start(ctx, ops.done); err != nil {
 		return err
 	}
 	ops.Running = true
 	go func() {
 		<-ops.exitCh
-		level.Info(ops.log).Log("msg", "Shutting down data server...")
+		level.Info(ops.logger).Log("msg", "shutting down data server...")
 		ops.done <- 1
 		cnt := 0
 		for {
@@ -54,12 +54,12 @@ func (ops *DataServerOps) Start(ctx context.Context) error {
 				break
 			}
 			if cnt > 60 {
-				level.Warn(ops.log).Log("msg", "Expected data server to stop by now, Giving up...")
+				level.Warn(ops.logger).Log("msg", "expected data server to stop by now, Giving up...")
 				return
 			}
 		}
 		ops.Running = false
-		level.Info(ops.log).Log("msg", "Data server shutdown complete")
+		level.Info(ops.logger).Log("msg", "data server shutdown complete")
 	}()
 	return nil
 }

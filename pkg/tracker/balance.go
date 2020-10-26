@@ -50,11 +50,11 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)
 
 	if err != nil {
-		level.Error(b.logger).Log("msg", "error getting balance", "err", err)
+		level.Error(b.logger).Log("msg", "getting balance", "err", err)
 		return err
 	}
 	enc := hexutil.EncodeBig(balance)
 
-	level.Info(b.logger).Log("msg", "Got balance", "balance", enc)
+	level.Info(b.logger).Log("msg", "got balance", "balance", enc)
 	return DB.Put(db.BalanceKey, []byte(enc))
 }

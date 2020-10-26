@@ -54,13 +54,13 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	// if we've mined it, don't save it.
 	myStatus, err := instance.DidMine(nil, currentChallenge, fromAddress)
 	if err != nil {
-		return errors.Wrap(err, "Status Retrieval")
+		return errors.Wrap(err, "status Retrieval")
 	}
 	bitSetVar := []byte{0}
 	if myStatus {
 		bitSetVar = []byte{1}
 	}
-	level.Info(b.logger).Log("msg", "Retrieved variables", "challengeHash", currentChallenge)
+	level.Info(b.logger).Log("msg", "retrieved variables", "challengeHash", currentChallenge)
 
 	err = DB.Put(db.CurrentChallengeKey, currentChallenge[:])
 	if err != nil {

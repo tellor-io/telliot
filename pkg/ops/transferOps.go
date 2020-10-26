@@ -56,7 +56,7 @@ func Transfer(ctx context.Context, logger log.Logger, toAddress common.Address, 
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-	level.Info(logger).Log("msg", "Transferred", "amount", util.FormatERC20Balance(amt), "to", toAddress.String()[:12], "tx Hash", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "transferred", "amount", util.FormatERC20Balance(amt), "to", toAddress.String()[:12], "tx Hash", tx.Hash().Hex())
 	return nil
 }
 
@@ -71,7 +71,7 @@ func Approve(ctx context.Context, logger log.Logger, _spender common.Address, am
 	if err != nil {
 		return err
 	}
-	level.Info(logger).Log("msg", "Approved", "amount", util.FormatERC20Balance(amt), "spender", _spender.String()[:12], "tx Hash", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "approved", "amount", util.FormatERC20Balance(amt), "spender", _spender.String()[:12], "tx Hash", tx.Hash().Hex())
 	return nil
 }
 

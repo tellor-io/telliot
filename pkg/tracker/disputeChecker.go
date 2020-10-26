@@ -91,9 +91,10 @@ func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResul
 	}
 }
 
-func NewDisputeChecker(logger log.Logger) *disputeChecker {
+func NewDisputeChecker(lastCheckedBlock uint64, logger log.Logger) *disputeChecker {
 	return &disputeChecker{
-		logger: log.With(logger, "component", "dispute checker"),
+		lastCheckedBlock: lastCheckedBlock,
+		logger:           log.With(logger, "component", "dispute checker"),
 	}
 }
 
@@ -176,7 +177,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 				filename := fmt.Sprintf("possible-dispute-%s.txt", blockTime)
 				err := ioutil.WriteFile(filename, []byte(s), 0655)
 				if err != nil {
-					level.Error(c.logger).Log("msg", "failed to save dispute data", "filename", filename, "err", err)
+					level.Error(c.logger).Log("msg", "saving dispute data", "filename", filename, "err", err)
 				}
 			} else {
 				level.Info(c.logger).Log("msg", "value appears to be within expected range", "reqID", reqID, "value", nonceSubmit.Value, "blockTime", blockTime.String())
