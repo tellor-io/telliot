@@ -31,4 +31,8 @@ var (
 
 	// Ethereum wallet public address.
 	PublicAddress = util.NewKey("common", "PublicAddress")
+
+	// PriceTXs is the key used to save transactions cost
+	// These are used to calculate the profitability when submitting a solution.
+	PriceTXs = "PriceTXSlot"
 )

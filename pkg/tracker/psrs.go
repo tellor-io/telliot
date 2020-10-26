@@ -15,6 +15,8 @@ import (
 
 var switchTime, _ = time.Parse(time.RFC3339, "2020-06-26T00:00:00+00:00")
 
+const RequestID_TRB_ETH int = 43
+
 var PSRs = map[int]ValueGenerator{
 	1: &TimedSwitch{
 		before: &SingleSymbol{symbol: "ETH/USD", granularity: 1000, transform: MedianAt},
@@ -114,7 +116,7 @@ var PSRs = map[int]ValueGenerator{
 		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAtEOD},
 		at:     switchTime,
 	},
-	43: &TimedSwitch{
+	RequestID_TRB_ETH: &TimedSwitch{
 		before: &SingleSymbol{symbol: "GNT/ETH", granularity: 1000000, transform: MedianAt},
 		after:  &SingleSymbol{symbol: "TRB/ETH", granularity: 1000000, transform: MedianAt},
 		at:     switchTime,
@@ -151,19 +153,19 @@ var PSRs = map[int]ValueGenerator{
 	53: &SingleSymbol{symbol: "BTCDOMINANCE", granularity: 1000000, transform: MedianAt},
 }
 
-// these weight functions map values of x between 0 (brand new) and 1 (old) to weights between 0 and 1
+// ExpDecay maps values of x between 0 (brand new) and 1 (old) to weights between 0 and 1
 // also returns the integral of the weight over the range [0,1]
 // weights the oldest data (1) as being 1/3 as important (1/e).
 func ExpDecay(x float64) (float64, float64) {
 	return 1 / math.Exp(x), 0.63212
 }
 
-// weights the oldest data at 0.
+// LinearDecay weights the oldest data at 0.
 func LinearDecay(x float64) (float64, float64) {
 	return 1 - x, 0.5
 }
 
-// weights all data in the time interval evenly.
+// NoDecay weights all data in the time interval evenly.
 func NoDecay(x float64) (float64, float64) {
 	return 1, 1
 }
@@ -192,16 +194,17 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 				}
 			}
 		}
-		// number of APIs * rate * interval
+		// Number of APIs * rate * interval.
 		maxWeight := float64(len(apis)) * (1 / cfg.TrackerSleepCycle.Duration.Seconds()) * interval.Seconds()
-		//average weight is the integral of the weight fn over [0,1]
+		// Average weight is the integral of the weight fn over [0,1].
 		_, avgWeight := weightFn(0)
 		targetWeight := maxWeight * avgWeight
 
 		var result apiOracle.PriceInfo
 		result.Price = sum / weightSum
 
-		//use the highest volume seen over all values. works well when the time averaging window is equal to the interval of volume reporting
+		// Use the highest volume seen over all values.
+		// Works well when the time averaging window is equal to the interval of volume reporting
 		// ie, 24 hour average on an api that returns 24hr volume
 		result.Volume = maxVolume
 		// if math.Min(weightSum/targetWeight, 1.0) < .5{
@@ -219,7 +222,6 @@ func VolumeWeightedAPIs(processor IndexProcessor) IndexProcessor {
 		totalConfidence := 0.0
 		for _, api := range apis {
 			value, confidence := processor([]*IndexTracker{api}, at)
-			//fmt.Println("vwAPI's : ",value, "  : ", confidence)
 			if confidence > 0 {
 				results = append(results, value)
 				totalConfidence += confidence
@@ -235,7 +237,7 @@ func getLatest(apis []*IndexTracker, at time.Time) ([]apiOracle.PriceInfo, float
 	for _, api := range apis {
 		b, _ := apiOracle.GetNearestTwoRequestValue(api.Identifier, at)
 		if b != nil {
-			//penalize values more than 5 minutes old
+			// Penalize values more than 5 minutes old.
 			totalConf += math.Min(5/at.Sub(b.Created).Minutes(), 1.0)
 			values = append(values, b.PriceInfo)
 		}

@@ -202,9 +202,9 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 	var currHashSettings *HashSettings
 	var currWork *Work
 
-	// mine until we receive a null challenge
-	// each time a hasher finishes a chunk, give it a new one to work on.
-	// always waits for all miners to finish their chunks before returning (thread safety with OpenCL)
+	// Mine until a null challenge is received.
+	// Each time a hasher finishes a chunk, give it a new one to work on.
+	// Always waits for all miners to finish their chunks before returning (thread safety with OpenCL)
 	// EXCEPT in the case of an error, but then the app is almost certainly just quitting anyways!
 	shouldRun := true
 	for shouldRun || (len(idleWorkers) < len(g.Backends)) {
@@ -214,7 +214,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			nextHeartbeat = elapsed + cfg.Heartbeat.Duration
 		}
 		select {
-		//read in a new work block
+		// Read in a new work block.
 		case work := <-input:
 			if work == nil {
 				shouldRun = false
@@ -256,7 +256,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 				break
 			}
 
-			// Did we finish the job?
+			// Did it finish the job?
 			recv += result.n
 			if result.nonce != "" || recv >= currWork.N {
 				output <- &Result{Work: currWork, Nonce: result.nonce}
@@ -271,6 +271,6 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			}
 		}
 	}
-	// Send a nil value to signal that we're done.
+	// Send a nil value to signal that it is done.
 	output <- nil
 }

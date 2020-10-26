@@ -4,12 +4,14 @@
 package pow
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"strconv"
 
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/ethereum/go-ethereum/crypto"
 	// nolint:staticcheck
+	"golang.org/x/crypto/ripemd160"
 )
 
 type CpuMiner int64
@@ -39,7 +41,7 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		nn := strconv.FormatUint(i, 10)
 		hashInput = hashInput[:baseLen]
 		hashInput = append(hashInput, []byte(nn)...)
-		numHash, err := rpc.HashFn(hashInput)
+		numHash, err := hashFn(hashInput)
 		if err != nil {
 			return "", 0, err
 		}
@@ -49,4 +51,18 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		}
 	}
 	return "", n, nil
+}
+
+func hashFn(input []byte) (*big.Int, error) {
+	hash := crypto.Keccak256(input)
+	hasher := ripemd160.New()
+	if _, err := hasher.Write(hash); err != nil {
+		return nil, err
+	}
+	hash1 := hasher.Sum(nil)
+	n := sha256.Sum256(hash1)
+	result := new(big.Int)
+	result.SetBytes(n[:])
+
+	return result, nil
 }

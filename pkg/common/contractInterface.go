@@ -29,7 +29,7 @@ type ContractInterface interface {
 // is an abstraction mainly so we can test isolated functionality.
 type TransactionSubmitter interface {
 
-	// PrepareTransaction creates a ContractInterface and sends it to the generatorFN. The ctxName is
-	// primarily for logging under which context the transaction is being prepared.
-	PrepareTransaction(ctx context.Context, proxy db.DataServerProxy, ctxName string, factoryFn TransactionGeneratorFN) error
+	// Submit prepares a transaction and sends it to the generatorFN.
+	// The ctxName is primarily for logging under which context the transaction is being prepared.
+	Submit(ctx context.Context, proxy db.DataServerProxy, ctxName string, factoryFn TransactionGeneratorFN) (*types.Transaction, error)
 }

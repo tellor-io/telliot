@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -36,7 +35,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	hashIn := decodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
 
-	a, err := rpc.HashFn(hashIn)
+	a, err := hashFn(hashIn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +170,7 @@ func TestHashFunction(t *testing.T) {
 		nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", k))
 		_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
 		bytes := decodeHex(_string)
-		result, err := rpc.HashFn(bytes)
+		result, err := hashFn(bytes)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -188,7 +187,7 @@ func BenchmarkHashFunction(b *testing.B) {
 	bytes := decodeHex(_string)
 
 	for i := 0; i < b.N; i++ {
-		_, err := rpc.HashFn(bytes)
+		_, err := hashFn(bytes)
 		if err != nil {
 			b.Fatal(err)
 		}

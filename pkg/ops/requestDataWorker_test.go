@@ -46,9 +46,8 @@ type testSubmit struct {
 	contract *testContract
 }
 
-func (t testSubmit) PrepareTransaction(ctx context.Context, proxy db.DataServerProxy, ctxName string, factoryFn tellorCommon.TransactionGeneratorFN) error {
-	_, err := factoryFn(ctx, *t.contract)
-	return err
+func (t testSubmit) Submit(ctx context.Context, proxy db.DataServerProxy, ctxName string, factoryFn tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
+	return factoryFn(ctx, *t.contract)
 }
 
 func TestRequestDataOps(t *testing.T) {

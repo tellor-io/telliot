@@ -6,28 +6,22 @@ package rpc
 import (
 	"context"
 	"crypto/ecdsa"
-	"crypto/sha256"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/db"
-	"golang.org/x/crypto/ripemd160"
-)
-
-var (
-	GWEI = int64(1000000000)
 )
 
 // contractWrapper is internal wrapper of contract instance for calling common contract functions.
@@ -51,45 +45,41 @@ func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
 	return c.TellorGetters.DidMine(nil, challenge, c.fromAddress)
 }
 
-func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
+func SubmitContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
 
 	cfg := config.GetConfig()
 	client := ctx.Value(tellorCommon.ClientContextKey).(ETHClient)
 
 	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 	if err != nil {
-		fmt.Println("Problem decoding private key", err)
-		return err
+		return nil, errors.Wrap(err, "decoding private key")
 	}
 
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		return fmt.Errorf("error casting public key to ECDSA")
+		return nil, errors.New("casting public key to ECDSA")
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := client.NonceAt(context.Background(), fromAddress)
 	if err != nil {
-		fmt.Println("Problem getting nonce for miner address", err)
-		return err
+		return nil, errors.Wrap(err, "getting nonce for miner address")
 	}
 	IntNonce := int64(nonce)
-	i := 1
 	keys := []string{
 		db.GasKey,
 	}
 	m, err := proxy.BatchGet(keys)
 	if err != nil {
-		return nil
+		return nil, errors.Wrap(err, "getting data from the db")
 	}
 	gasPrice := getInt(m[db.GasKey])
 	if gasPrice.Cmp(big.NewInt(0)) == 0 {
 		fmt.Println("Missing gas price from DB, falling back to client suggested gas price")
 		gasPrice, err = client.SuggestGasPrice(context.Background())
 		if err != nil {
-			fmt.Println("Could not determine gas price to submit txn", err)
-			return err
+			return nil, errors.Wrap(err, "determine gas price to submit txn")
 		}
 	}
 	mul := cfg.GasMultiplier
@@ -97,21 +87,21 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 		fmt.Println("using gas multiplier : ", mul)
 		gasPrice = gasPrice.Mul(gasPrice, big.NewInt(int64(mul)))
 	}
-	for i < 5 {
-		if err != nil {
-			return err
-		}
 
+	var finalError error
+	for i := 0; i <= 5; i++ {
 		balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
 		if err != nil {
-			return err
+			finalError = err
+			continue
 		}
 
 		cost := big.NewInt(1)
 		cost = cost.Mul(gasPrice, big.NewInt(200000))
 		if balance.Cmp(cost) < 0 {
-			//FIXME: notify someone that we're out of funds!
-			return fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
+			// FIXME: notify someone that we're out of funds!
+			finalError = fmt.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
+			continue
 		}
 
 		auth := bind.NewKeyedTransactor(privateKey)
@@ -126,12 +116,12 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 			gasPrice1.Mul(gasPrice1, big.NewInt(int64(i*11))).Div(gasPrice1, big.NewInt(int64(100)))
 			auth.GasPrice = gasPrice1.Add(gasPrice, gasPrice1)
 		} else {
-			//first time, try base gas price
+			// First time, try base gas price.
 			auth.GasPrice = gasPrice
 		}
 		max := cfg.GasMax
 		var maxGasPrice *big.Int
-		gasPrice1 := big.NewInt(GWEI)
+		gasPrice1 := big.NewInt(tellorCommon.GWEI)
 		if max > 0 {
 			maxGasPrice = gasPrice1.Mul(gasPrice1, big.NewInt(int64(max)))
 		} else {
@@ -144,7 +134,7 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 		}
 
 		fmt.Println("Using gas price", gasPrice)
-		// Цcreate a wrapper to callback the actual txn generator fn.
+		// Create a wrapper to callback the actual txn generator fn.
 		instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 		instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 
@@ -152,28 +142,26 @@ func PrepareContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName s
 		tx, err := callback(ctx, wrapper)
 
 		if err != nil {
-			if strings.Contains(err.Error(), "nonce too low") {
+			if errors.Is(err, core.ErrNonceTooLow) {
 				IntNonce = IntNonce + 1
-			} else if strings.Contains(err.Error(), "replacement transaction underpriced") {
-				fmt.Println("replacement transaction underpriced")
+			} else if errors.Is(err, core.ErrReplaceUnderpriced) {
+				finalError = err
+				continue
 			} else {
 				fmt.Println("Unspecified Request Data  Error ", err)
-				return nil
+				finalError = err
+				continue
 			}
-		} else {
-			if tx != nil {
-				fmt.Printf("%s tx sent: %s\n", ctxName, tx.Hash().Hex())
-			}
-
-			return nil
 		}
 
-		//wait a bit and try again
+		if tx != nil {
+			return tx, nil
+		}
+
 		time.Sleep(15 * time.Second)
-		i++
 	}
-	fmt.Printf("%s Could not submit txn after 5 attempts\n", ctxName)
-	return nil
+
+	return nil, errors.Wrapf(finalError, "could not submit txn after 5 attempts ctx:%v", ctxName)
 }
 
 func getInt(data []byte) *big.Int {
@@ -188,24 +176,10 @@ func getInt(data []byte) *big.Int {
 	return val
 }
 
-func Keccak256(input interface{}) [32]byte {
-	hash := solsha3.SoliditySHA3(input)
+func Keccak256(input []byte) [32]byte {
+	hash := crypto.Keccak256(input)
 	var hashed [32]byte
 	copy(hashed[:], hash)
 
 	return hashed
-}
-
-func HashFn(input []byte) (*big.Int, error) {
-	hash := solsha3.SoliditySHA3(input)
-	hasher := ripemd160.New()
-	if _, err := hasher.Write(hash); err != nil {
-		return nil, err
-	}
-	hash1 := hasher.Sum(nil)
-	n := sha256.Sum256(hash1)
-	result := new(big.Int)
-	result.SetBytes(n[:])
-
-	return result, nil
 }

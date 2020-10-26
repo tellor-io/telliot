@@ -25,15 +25,9 @@ func (b *NewCurrentVariablesTracker) String() string {
 }
 
 func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
-	//cast client using type assertion since context holds generic interface{}
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	//get the single config instance
 	cfg := config.GetConfig()
-
-	//get address from config
 	_fromAddress := cfg.PublicAddress
-
-	//convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 
 	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
@@ -48,8 +42,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	}
 	fmt.Println(returnNewVariables)
 
-	//if we've mined it, don't save it
-
+	// If it has been mined, don't save it.
 	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	myStatus, err := instanceGetter.DidMine(nil, returnNewVariables.Challenge, fromAddress)
 	if err != nil {
@@ -61,7 +54,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 		bitSetVar = []byte{1}
 	}
 
-	timeOfLastNewValue, err := instanceGetter.GetUintVar(nil, rpc.Keccak256("timeOfLastNewValue"))
+	timeOfLastNewValue, err := instanceGetter.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
 	if err != nil {
 		fmt.Println("Time of Last New Value Retrieval Error")
 		return err

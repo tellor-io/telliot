@@ -262,7 +262,7 @@ func mineCmd(cmd *cli.Cmd) {
 		}
 		ch := make(chan os.Signal)
 		exitChannels = append(exitChannels, &ch)
-		miner, err := ops.CreateMiningManager(ctx, ch, ops.NewSubmitter())
+		miner, err := ops.CreateMiningManager(ch, cfg, DB)
 		if err != nil {
 			log.Fatal(err)
 		}
