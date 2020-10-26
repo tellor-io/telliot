@@ -266,7 +266,7 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 			DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 			v, err := DB.Get(db.DisputeStatusKey)
 			if err != nil {
-				level.Warn(logger).Log("msg", "geting dispute status. Check if staked")
+				level.Warn(logger).Log("msg", "getting dispute status. Check if staked")
 			}
 			status, _ := hexutil.DecodeBig(string(v))
 			if status.Cmp(big.NewInt(1)) != 0 {
