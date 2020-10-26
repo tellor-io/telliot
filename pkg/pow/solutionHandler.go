@@ -56,7 +56,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool {
 	nonce := result.Nonce
 	s.currentChallenge = challenge
 	s.currentNonce = nonce
-	manualVal := int64(0)
 
 	s.log.Info("Getting pending txn and value from data server...")
 
@@ -99,14 +98,12 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool {
 				s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
 				if len(val) == 0 {
 					s.log.Error("0 value being submitted")
-					value = big.NewInt(0)
+					s.currentValues[i] = big.NewInt(0)
 				}
-			} else if manualVal > 0 {
-				value = big.NewInt(manualVal)
-			} else {
-				s.log.Error("No Value in database, not submitting here2.", challenge.RequestIDs[i].Uint64())
-				return false
+				continue
 			}
+			s.log.Error("No Value in database, not submitting here2.", challenge.RequestIDs[i].Uint64())
+			return false
 		}
 		s.currentValues[i] = value
 	}
