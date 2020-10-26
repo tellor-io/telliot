@@ -20,13 +20,20 @@ import (
 )
 
 type TributeTracker struct {
+	logger log.Logger
 }
 
 func (b *TributeTracker) String() string {
 	return "TributeTracker"
 }
 
-func (b *TributeTracker) Exec(ctx context.Context, logger log.Logger) error {
+func NewTributeTracker(logger log.Logger) *TributeTracker {
+	return &TributeTracker{
+		logger: log.With(logger, "component", "tribure tracker"),
+	}
+}
+
+func (b *TributeTracker) Exec(ctx context.Context) error {
 	//cast client using type assertion since context holds generic interface{}
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
@@ -47,7 +54,7 @@ func (b *TributeTracker) Exec(ctx context.Context, logger log.Logger) error {
 
 	instance, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		level.Error(logger).Log("msg", "error creating instance", "err", err)
+		level.Error(b.logger).Log("msg", "error creating instance", "err", err)
 		return err
 	}
 
@@ -72,7 +79,7 @@ func (b *TributeTracker) Exec(ctx context.Context, logger log.Logger) error {
 	//numTributes, _ := balanceInTributes.Float64()
 	fmt.Printf("Tribute Balance: %v (%v tributes)\n", balance, balanceInTributes)
 	if err != nil {
-		level.Error(logger).Log("msg", "error retrieving balance", "err", err)
+		level.Error(b.logger).Log("msg", "error retrieving balance", "err", err)
 		return err
 	}
 	enc := hexutil.EncodeBig(balance)

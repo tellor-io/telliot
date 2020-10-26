@@ -18,7 +18,6 @@ import (
 
 func TestAmpl(t *testing.T) {
 	util.CreateTestClient(&client, mockAPI)
-	logger := util.SetupLogger("debug")
 	ctx, _, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 
@@ -38,7 +37,7 @@ func TestAmpl(t *testing.T) {
 	indexers = append(indexers, amplBtcTrackers...)
 	for i := 0; i < 288; i++ {
 		for _, indexer := range indexers {
-			if err := indexer.Exec(ctx, logger); err != nil {
+			if err := indexer.Exec(ctx); err != nil {
 				t.Fatal(err)
 			}
 		}

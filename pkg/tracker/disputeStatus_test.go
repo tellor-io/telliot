@@ -18,7 +18,7 @@ import (
 )
 
 func TestDisputeString(t *testing.T) {
-	tracker := &DisputeTracker{}
+	tracker := &DisputeTracker{logger: util.SetupLogger("debug")}
 	res := tracker.String()
 	if res != DisputeTrackerName {
 		t.Fatal("didn't return expected string", DisputeTrackerName)
@@ -26,7 +26,6 @@ func TestDisputeString(t *testing.T) {
 }
 
 func TestDisputeStatus(t *testing.T) {
-	logger := util.SetupLogger("debug")
 	startBal := big.NewInt(356000)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, DisputeStatus: big.NewInt(1)}
@@ -36,10 +35,10 @@ func TestDisputeStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &DisputeTracker{}
+	tracker := &DisputeTracker{logger: util.SetupLogger("debug")}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx, logger)
+	err = tracker.Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

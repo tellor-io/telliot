@@ -3,13 +3,10 @@ package testutil
 import (
 	"context"
 	"math/big"
-	"os"
 	"testing"
 
 	eth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -74,13 +71,4 @@ func CreateContext(t *testing.T) (context.Context, *config.Config, func()) {
 	ctx = context.WithValue(ctx, common.DataProxyKey, proxy)
 
 	return ctx, cfg, cleanup
-}
-
-func SetupLogger() log.Logger {
-	lvl := level.AllowDebug()
-
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = level.NewFilter(logger, lvl)
-
-	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 }

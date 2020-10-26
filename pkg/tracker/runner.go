@@ -37,7 +37,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 	var trackers []Tracker
 	for name, activated := range trackerNames {
 		if activated {
-			t, err := createTracker(name)
+			t, err := createTracker(name, logger)
 			if err != nil {
 				return fmt.Errorf("problem creating tracker. Name: %s, err: %s", name, err)
 			}
@@ -101,7 +101,7 @@ func (r *Runner) Start(ctx context.Context, logger log.Logger, exitCh chan int) 
 					level.Debug(logger).Log("msg", "Running trackers")
 					go func(count int) {
 						idx := count % len(trackers)
-						err := trackers[idx].Exec(ctx, logger)
+						err := trackers[idx].Exec(ctx)
 						if err != nil {
 							level.Warn(logger).Log("msg", "problem in traker", "tracker", trackers[idx].String(), "err", err)
 						}

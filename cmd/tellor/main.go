@@ -19,6 +19,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	cli "github.com/jawher/mow.cli"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -98,21 +99,21 @@ func AddDBToCtx(remote bool) error {
 	os.RemoveAll(cfg.DBFile)
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
-		return fmt.Errorf("Error opening DB: %v\n", err)
+		return errors.Wrapf(err, "opening DB")
 	}
 
 	var dataProxy db.DataServerProxy
 	if remote {
 		proxy, err := db.OpenRemoteDB(DB)
 		if err != nil {
-			return fmt.Errorf("Error remote DB: %v\n", err)
+			return errors.Wrapf(err, "open remote DB")
 
 		}
 		dataProxy = proxy
 	} else {
 		proxy, err := db.OpenLocalProxy(DB)
 		if err != nil {
-			return fmt.Errorf("Error opening local DB: %v\n", err)
+			return errors.Wrapf(err, "opening local DB:")
 
 		}
 		dataProxy = proxy
@@ -255,7 +256,7 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 						os.Exit(1)
 					}
 					// Start and wait for it to be ready.
-					if err := ds.Start(ctx, logger); err != nil {
+					if err := ds.Start(ctx); err != nil {
 						level.Error(logger).Log("msg", "error starting data server", "err", err)
 					}
 					<-ds.Ready()
@@ -335,7 +336,7 @@ func dataserverCmd(logger log.Logger) func(*cli.Cmd) {
 				os.Exit(1)
 			}
 			// Start and wait for it to be ready
-			if err := ds.Start(ctx, logger); err != nil {
+			if err := ds.Start(ctx); err != nil {
 				//Should we do this here or pass it down to ExitOnError func for consistency?
 				level.Error(logger).Log("msg", "error starting data server", "err", err)
 				os.Exit(1)

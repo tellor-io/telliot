@@ -20,13 +20,20 @@ import (
 )
 
 type NewCurrentVariablesTracker struct {
+	logger log.Logger
 }
 
 func (b *NewCurrentVariablesTracker) String() string {
 	return "NewCurrentVariablesTracker"
 }
 
-func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger) error {
+func NewNewCurrentVariablesTracker(logger log.Logger) *NewCurrentVariablesTracker {
+	return &NewCurrentVariablesTracker{
+		logger: log.With(logger, "component", "new current variables"),
+	}
+}
+
+func (b *NewCurrentVariablesTracker) Exec(ctx context.Context) error {
 	//cast client using type assertion since context holds generic interface{}
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	//get the single config instance
@@ -41,11 +48,11 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger
 	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	returnNewVariables, err := instanceTellor.GetNewCurrentVariables(nil)
 	if err != nil {
-		level.Warn(logger).Log("msg", "New Current Variables Retrieval Error - Contract might not be upgraded", "err", err)
+		level.Warn(b.logger).Log("msg", "new current variables retrieval - contract might not be upgraded", "err", err)
 		return nil
 	}
 	if returnNewVariables.RequestIds[0].Int64() > int64(100) || returnNewVariables.RequestIds[0].Int64() == 0 {
-		level.Warn(logger).Log("msg", "New Current Variables Request ID not correct - Contract about to be upgraded")
+		level.Warn(b.logger).Log("msg", "new current variables request ID not correct - contract about to be upgraded")
 		return nil
 	}
 	fmt.Println(returnNewVariables)
@@ -55,7 +62,7 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger
 	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	myStatus, err := instanceGetter.DidMine(nil, returnNewVariables.Challenge, fromAddress)
 	if err != nil {
-		level.Error(logger).Log("msg", "My Status Retrieval Error", "err", err)
+		level.Error(b.logger).Log("msg", "my status retrieval", "err", err)
 		return err
 	}
 	bitSetVar := []byte{0}
@@ -75,17 +82,17 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger
 	copy(ret[:], hash)
 	timeOfLastNewValue, err := instanceGetter.GetUintVar(nil, ret)
 	if err != nil {
-		level.Error(logger).Log("msg", "Time of Last New Value Retrieval Error", "err", err)
+		level.Error(b.logger).Log("msg", "time of last new value retrieval", "err", err)
 		return err
 	}
 	err = DB.Put(db.LastNewValueKey, []byte(hexutil.EncodeBig(timeOfLastNewValue)))
 	if err != nil {
-		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "lastnewValue", "err", err)
+		level.Error(b.logger).Log("msg", "new Current variables put", "var", "lastnewValue", "err", err)
 		return err
 	}
 	err = DB.Put(db.CurrentChallengeKey, returnNewVariables.Challenge[:])
 	if err != nil {
-		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "currentChallenge", "err", err)
+		level.Error(b.logger).Log("msg", "new current variables put", "var", "currentChallenge", "err", err)
 		return err
 	}
 
@@ -93,20 +100,20 @@ func (b *NewCurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger
 		conc := fmt.Sprintf("%s%d", "current_requestId", i)
 		err = DB.Put(conc, []byte(hexutil.EncodeBig(returnNewVariables.RequestIds[i])))
 		if err != nil {
-			level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "requestIds", "err", err)
+			level.Error(b.logger).Log("msg", "new current variables put", "var", "requestIds", "err", err)
 			return err
 		}
 	}
 
 	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficutly)))
 	if err != nil {
-		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "difficulty", "err", err)
+		level.Error(b.logger).Log("msg", "new current variables put", "var", "difficulty", "err", err)
 		return err
 	}
 
 	err = DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(returnNewVariables.Tip)))
 	if err != nil {
-		level.Error(logger).Log("msg", "New Current Variables Put Error", "var", "totaltip", "err", err)
+		level.Error(b.logger).Log("msg", "new current variables put", "var", "totaltip", "err", err)
 		return err
 	}
 

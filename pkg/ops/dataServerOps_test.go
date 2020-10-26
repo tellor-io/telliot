@@ -23,7 +23,7 @@ func TestDataServerOps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := ops.Start(ctx, logger); err != nil {
+	if err := ops.Start(ctx); err != nil {
 		t.Fatal("error starting the data server", err)
 	}
 	time.Sleep(2 * time.Second)

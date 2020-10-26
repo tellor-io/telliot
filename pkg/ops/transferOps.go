@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
@@ -85,7 +86,7 @@ func Balance(ctx context.Context, addr common.Address) error {
 	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	trbBalance, err := instance.BalanceOf(nil, addr)
 	if err != nil {
-		return fmt.Errorf("problem getting balance: %+v", err)
+		return errors.Wrapf(err, "getting balance")
 	}
 	fmt.Printf("%s\n", addr.String())
 	fmt.Printf("%10s ETH\n", util.FormatERC20Balance(ethBalance))

@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/tellor-io/TellorMiner/pkg/common"
@@ -40,14 +41,11 @@ func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
 	client := ctx.Value(common.ClientContextKey).(rpc.ETHClient)
 	run, err := tracker.NewRunner(client, DB)
 	if err != nil {
-		level.Error(logger).Log("msg", "erro rcreating tracker runner instance", "err", err)
-		//Here the fatal does not exit with Exit.os(). Shou
-		//log.Fatal(err)
+		return nil, errors.Wrapf(err, "creating  tracker runner instance")
 	}
 	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
 	if err != nil {
-		level.Error(logger).Log("msg", "erro rcreating tracker runner instance", "err", err)
-		//log.Fatal(err)
+		return nil, errors.Wrapf(err, "creating runner instance")
 	}
 	// Make sure channel buffer size 1 since there is no guarantee that anyone
 	// Would be listening to the channel
@@ -70,7 +68,7 @@ func (ds *DataServer) Start(ctx context.Context, logger log.Logger, exitCh chan 
 	ds.Stopped = false
 	err := ds.runner.Start(ctx, logger, ds.runnerExitCh)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "starting runner")
 	}
 
 	ds.server.Start()

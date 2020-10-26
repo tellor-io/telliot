@@ -17,7 +17,7 @@ import (
 )
 
 func TestCurrentVarableString(t *testing.T) {
-	tracker := &CurrentVariablesTracker{}
+	tracker := &CurrentVariablesTracker{logger: util.SetupLogger("debug")}
 	res := tracker.String()
 	if res != CurrentVariablesTrackerName {
 		t.Fatal("should return string", CurrentVariablesTrackerName)
@@ -27,11 +27,10 @@ func TestCurrentVarableString(t *testing.T) {
 func TestCurrentVariables(t *testing.T) {
 	ctx, _, cleanup := testutil.CreateContext(t)
 	t.Cleanup(cleanup)
-	logger := util.SetupLogger("debug")
-	tracker := &CurrentVariablesTracker{}
+	tracker := &CurrentVariablesTracker{logger: util.SetupLogger("debug")}
 
 	fmt.Println("Working to Line 41")
-	err := tracker.Exec(ctx, logger)
+	err := tracker.Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

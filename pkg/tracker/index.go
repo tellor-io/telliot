@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/benbjohnson/clock"
-	"github.com/go-kit/kit/log"
 	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/util"
@@ -148,7 +147,7 @@ func (j *JSONfile) Get() ([]byte, error) {
 	return ioutil.ReadFile(j.filepath)
 }
 
-func (i *IndexTracker) Exec(ctx context.Context, logger log.Logger) error {
+func (i *IndexTracker) Exec(ctx context.Context) error {
 	payload, err := i.Source.Get()
 	if err != nil {
 		return err

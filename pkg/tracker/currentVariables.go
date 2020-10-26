@@ -20,13 +20,20 @@ import (
 const CurrentVariablesTrackerName = "CurrentVariablesTracker"
 
 type CurrentVariablesTracker struct {
+	logger log.Logger
 }
 
 func (b *CurrentVariablesTracker) String() string {
 	return CurrentVariablesTrackerName
 }
 
-func (b *CurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger) error {
+func New_CurrentVariablesTracker(logger log.Logger) *CurrentVariablesTracker {
+	return &CurrentVariablesTracker{
+		logger: log.With(logger, "component", "current variables tracker"),
+	}
+}
+
+func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	// cast client using type assertion since context holds generic interface{}.
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 	//get the single config instance
@@ -47,44 +54,37 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context, logger log.Logger) e
 	// if we've mined it, don't save it.
 	myStatus, err := instance.DidMine(nil, currentChallenge, fromAddress)
 	if err != nil {
-		level.Error(logger).Log("msg", "My Status Retrieval Error", "err", err)
-		return err
+		return errors.Wrap(err, "Status Retrieval")
 	}
 	bitSetVar := []byte{0}
 	if myStatus {
 		bitSetVar = []byte{1}
 	}
-	level.Info(logger).Log("msg", "Retrieved variables", "challengeHash", currentChallenge)
+	level.Info(b.logger).Log("msg", "Retrieved variables", "challengeHash", currentChallenge)
 
 	err = DB.Put(db.CurrentChallengeKey, currentChallenge[:])
 	if err != nil {
-		level.Error(logger).Log("msg", "Current Variables Put Error", "var", "currentChallenge", "err", err)
-		return err
+		return errors.Wrap(err, "current challenge")
 	}
 	err = DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(requestID)))
 	if err != nil {
-		level.Error(logger).Log("msg", "Current Variables Put Error", "var", "requestId", "err", err)
-		return err
+		return errors.Wrap(err, "request Id")
 	}
 	err = DB.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(difficulty)))
 	if err != nil {
-		level.Error(logger).Log("msg", "Current Variables Put Error", "var", "difficulty", "err", err)
-		return err
+		return errors.Wrap(err, "difficulty key")
 	}
 	err = DB.Put(db.QueryStringKey, []byte(queryString))
 	if err != nil {
-		level.Error(logger).Log("msg", "Current Variables Put Error", "var", "queryString", "err", err)
-		return err
+		return errors.Wrap(err, "query string")
 	}
 	err = DB.Put(db.GranularityKey, []byte(hexutil.EncodeBig(granularity)))
 	if err != nil {
-		level.Error(logger).Log("msg", "Current Variables Put Error", "var", "granularity", "err", err)
-		return err
+		return errors.Wrap(err, "granularity")
 	}
 	err = DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(totalTip)))
 	if err != nil {
-		level.Error(logger).Log("msg", "Current Variables Put Error", "var", "totaltip", "err", err)
-		return err
+		return errors.Wrap(err, "total tip")
 	}
 
 	return DB.Put(db.MiningStatusKey, bitSetVar)

@@ -13,12 +13,10 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestPSR(t *testing.T) {
 	ctx, _, cleanup := testutil.CreateContext(t)
-	logger := util.SetupLogger("debug")
 	t.Cleanup(cleanup)
 	psr, err := BuildIndexTrackers()
 	if err != nil {
@@ -28,7 +26,7 @@ func TestPSR(t *testing.T) {
 		if _, ok := psr[idx].(*IndexTracker).Source.(*JSONfile); ok {
 			psr[idx].(*IndexTracker).Source = &JSONfile{filepath.Join("..", "..", "configs", "manualData.json")}
 		}
-		err = psr[idx].Exec(ctx, logger)
+		err = psr[idx].Exec(ctx)
 		psrStr := psr[idx].String()
 		if err != nil {
 			t.Fatalf("failed to execute psr: %s %v", psrStr, err)

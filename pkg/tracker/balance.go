@@ -19,13 +19,20 @@ import (
 const BalanceTrackerName = "BalanceTracker"
 
 type BalanceTracker struct {
+	logger log.Logger
 }
 
 func (b *BalanceTracker) String() string {
 	return BalanceTrackerName
 }
 
-func (b *BalanceTracker) Exec(ctx context.Context, logger log.Logger) error {
+func NewBalanceTracker(logger log.Logger) *BalanceTracker {
+	return &BalanceTracker{
+		logger: log.With(logger, "component", "balance tracker"),
+	}
+}
+
+func (b *BalanceTracker) Exec(ctx context.Context) error {
 
 	// cast client using type assertion since context holds generic interface{}.
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
@@ -43,11 +50,11 @@ func (b *BalanceTracker) Exec(ctx context.Context, logger log.Logger) error {
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)
 
 	if err != nil {
-		level.Error(logger).Log("msg", "error getting balance", "err", err)
+		level.Error(b.logger).Log("msg", "error getting balance", "err", err)
 		return err
 	}
 	enc := hexutil.EncodeBig(balance)
 
-	level.Info(logger).Log("msg", "Got balance", "balance", enc)
+	level.Info(b.logger).Log("msg", "Got balance", "balance", enc)
 	return DB.Put(db.BalanceKey, []byte(enc))
 }

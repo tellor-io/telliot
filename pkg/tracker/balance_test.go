@@ -18,7 +18,7 @@ import (
 )
 
 func TestStringId(t *testing.T) {
-	tracker := &BalanceTracker{}
+	tracker := &BalanceTracker{logger: util.SetupLogger("debug")}
 	res := tracker.String()
 	if res != BalanceTrackerName {
 		t.Fatal("didn't return expected string", BalanceTrackerName)
@@ -35,7 +35,6 @@ func TestZeroBalance(t *testing.T) {
 }
 
 func TestNegativeBalance(t *testing.T) {
-	logger := util.SetupLogger("debug")
 	startBal := big.NewInt(-753)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
@@ -45,17 +44,16 @@ func TestNegativeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &BalanceTracker{}
+	tracker := &BalanceTracker{logger: util.SetupLogger("debug")}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx, logger)
+	err = tracker.Exec(ctx)
 	if err == nil {
 		t.Fatal(err)
 	}
 }
 
 func dbBalanceTest(startBal *big.Int, t *testing.T) {
-	logger := util.SetupLogger("debug")
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
@@ -64,10 +62,10 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &BalanceTracker{}
+	tracker := &BalanceTracker{logger: util.SetupLogger("debug")}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx, logger)
+	err = tracker.Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

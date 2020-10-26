@@ -26,6 +26,7 @@ import (
 
 type disputeChecker struct {
 	lastCheckedBlock uint64
+	logger           log.Logger
 }
 
 func (c *disputeChecker) String() string {
@@ -90,7 +91,13 @@ func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResul
 	}
 }
 
-func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
+func NewDisputeChecker(logger log.Logger) *disputeChecker {
+	return &disputeChecker{
+		logger: log.With(logger, "component", "dispute checker"),
+	}
+}
+
+func (c *disputeChecker) Exec(ctx context.Context) error {
 
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
@@ -149,7 +156,7 @@ func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 		for i, reqID := range nonceSubmit.RequestId {
 			result := CheckValueAtTime(nonceSubmit.RequestId[i].Uint64(), nonceSubmit.Value[i], blockTime)
 			if result == nil {
-				level.Warn(logger).Log("msg", "no value data", "reqid", reqID, "blockTime", blockTime)
+				level.Warn(c.logger).Log("msg", "no value data", "reqid", reqID, "blockTime", blockTime)
 				continue
 			}
 
@@ -165,14 +172,14 @@ func (c *disputeChecker) Exec(ctx context.Context, logger log.Logger) error {
 					}
 				}
 				s += fmt.Sprintf("value submitted by miner with address %s", nonceSubmit.Miner)
-				level.Error(logger).Log("msg", s)
+				level.Error(c.logger).Log("msg", s)
 				filename := fmt.Sprintf("possible-dispute-%s.txt", blockTime)
 				err := ioutil.WriteFile(filename, []byte(s), 0655)
 				if err != nil {
-					level.Error(logger).Log("msg", "failed to save dispute data", "filename", filename, "err", err)
+					level.Error(c.logger).Log("msg", "failed to save dispute data", "filename", filename, "err", err)
 				}
 			} else {
-				level.Info(logger).Log("msg", "value appears to be within expected range", "reqID", reqID, "value", nonceSubmit.Value, "blockTime", blockTime.String())
+				level.Info(c.logger).Log("msg", "value appears to be within expected range", "reqID", reqID, "value", nonceSubmit.Value, "blockTime", blockTime.String())
 			}
 
 		}
