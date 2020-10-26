@@ -154,7 +154,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 							mgr.log.Error("submiting a solution transaction err:%v", err)
 							return
 						}
-						mgr.log.Debug("submited a solution tx:%v", tx)
+						mgr.log.Debug("submited a solution tx:%+v", tx)
 						mgr.saveTXCost(ctx, tx)
 					}
 				} else if work != nil {
@@ -286,7 +286,7 @@ func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
 		if receipt.Status != 1 {
 			mgr.log.Error("skiping unsuccessful transaction for calculating transaction cost err:%v", err)
 		}
-		mgr.log.Debug("submit transaction receipt", "txHash:%v", receipt.TxHash)
+		mgr.log.Debug("transaction completed txHash:%v", receipt.TxHash.String())
 		gasUsed := big.NewInt(int64(receipt.GasUsed))
 		txCost := gasUsed.Mul(gasUsed, tx.GasPrice())
 
