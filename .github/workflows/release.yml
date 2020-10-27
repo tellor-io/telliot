@@ -5,7 +5,7 @@ on:
 
 name: New Release from a tag
 jobs:
-  build:
+  release:
     name: Build, upload and create a release
     runs-on: ubuntu-latest
     steps:
@@ -20,6 +20,10 @@ jobs:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
+      - name: Source code zip
+        run: |
+          zip -r source.zip . -x '*.git*'
+
       - name: Build
         run: make build
 
@@ -31,16 +35,26 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          draft: false
+          draft: true
           prerelease: false
+          body: "[CHANGELOG.md](../master/CHANGELOG.md) contains all release changes"
 
-      - name: Upload Release Asset
-        id: upload-release-asset 
+      - name: Upload Source
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: TellorMiner # TODO instead of hard coding the name try to grab it from the build output. tried with `go build -a -v |   basename -a` but didn't work. 
-          asset_name: TellorMiner
+          asset_path: source.zip
+          asset_name: source.zip
+          asset_content_type: application/zip
+
+      - name: Upload Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: tellor # TODO instead of hard coding the name try to grab it from the build output. tried with `go build -a -v |   basename -a` but didn't work.
+          asset_name: tellor
           asset_content_type: application/octet-stream
