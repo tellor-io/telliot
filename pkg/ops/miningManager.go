@@ -53,7 +53,7 @@ type MiningMgr struct {
 	dataRequester   *DataRequester
 	database        db.DataServerProxy
 	contractGetter  *getter.TellorGetters
-	profitThreshold int64
+	profitThreshold uint64
 }
 
 // CreateMiningManager is the MiningMgr contructor.
@@ -134,17 +134,14 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				mgr.tasker.GetWork(input)
 			} else {
 				work, instantSubmit := mgr.tasker.GetWork(input)
+				// instantSubmit means 15mins have passed so
+				// the difficulty now is zero and any solution/nonce will work.
 				if instantSubmit {
 					if mgr.solution == nil {
 						if mgr.profitThreshold > 0 {
-							isProftable, err := mgr.isProfitable()
+							err := mgr.waitProfitable()
 							if err != nil {
-								mgr.log.Warn("error calculating the solution submition profitability so skiping")
-								return
-							}
-							if !isProftable {
-								mgr.log.Warn("solution submition not profitable so skiping")
-								return
+								mgr.log.Warn("error calculating the solution submition profitability so will submit anyway err:%v", err)
 							}
 						}
 						mgr.log.Debug("instant submit called!")
@@ -174,14 +171,9 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			// Found a solution.
 			case result := <-output:
 				if mgr.profitThreshold > 0 {
-					isProftable, err := mgr.isProfitable()
+					err := mgr.waitProfitable()
 					if err != nil {
-						mgr.log.Warn("error calculating the solution submition profitability so skiping")
-						return
-					}
-					if !isProftable {
-						mgr.log.Warn("solution submition not profitable so skiping")
-						return
+						mgr.log.Warn("error calculating the solution submition profitability so will submit anyway err:%v", err)
 					}
 				}
 				if result == nil {
@@ -207,6 +199,9 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 }
 
 // currentReward returns the current TRB rewards converted to ETH.
+// TODO[Krasi] This is a duplicate code from the tellor conract so
+// Should add `currentReward` func to the contract to avoid this code duplication.
+// Tracking issue https://github.com/tellor-io/TellorCore/issues/101
 func (mgr *MiningMgr) currentReward() (*big.Int, error) {
 	timeOfLastNewValue, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
 	if err != nil {
@@ -277,6 +272,12 @@ func (mgr *MiningMgr) txCost() (*big.Int, error) {
 // Since the transaction doesn't include the slot number it was submited for
 // it gets the slot number as soon as the transaction passes and
 // saves it in the database for profit calculations use.
+// TODO[Krasi] To be more detirministic and simplify this
+// should get the `slotProgress` and `gasUsed` from the `NonceSubmitted` event.
+// At the moment there is a slight chance of a race condition if
+// another transaction has passed between checking the transaction cost and
+// checking the `slotProgress`
+// Tracking issue https://github.com/tellor-io/TellorCore/issues/101
 func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
 	go func(tx *types.Transaction) {
 		receipt, err := bind.WaitMined(ctx, mgr.ethClient, tx)
@@ -301,6 +302,22 @@ func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
 			mgr.log.Error("saving transaction cost in the db err:%v", err)
 		}
 	}(tx)
+}
+
+func (mgr *MiningMgr) waitProfitable() error {
+	for {
+		isProftable, err := mgr.isProfitable()
+		if err != nil {
+			return err
+
+		}
+		if !isProftable {
+			mgr.log.Debug("transaction not profitable, so will check in 1 sec again.")
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		return nil
+	}
 }
 
 func (mgr *MiningMgr) isProfitable() (bool, error) {
@@ -328,7 +345,7 @@ func (mgr *MiningMgr) isProfitable() (bool, error) {
 		fmt.Sprintf("%.2e", float64(profit.Int64())),
 		profitPercent, mgr.profitThreshold,
 	)
-	if profitPercent > mgr.profitThreshold {
+	if profitPercent > int64(mgr.profitThreshold) {
 		return true, nil
 	}
 	return false, nil
