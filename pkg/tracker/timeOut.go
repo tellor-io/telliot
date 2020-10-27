@@ -6,7 +6,6 @@ package tracker
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"encoding/hex"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -61,10 +61,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	address := "000000000000000000000000" + _fromAddress[2:]
 	decoded, err := hex.DecodeString(address)
 	if err != nil {
-		level.Error(b.logger).Log("msg", " decoding address", "err", err)
-		os.Exit(1)
-		//Does log.Fatal terminates the execution automatically?
-		//log.Fatal(err)
+		return errors.Wrapf(err, "decoding address")
 	}
 	hash := solsha3.SoliditySHA3(decoded)
 	var data [32]byte
@@ -73,14 +70,12 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	status, err := instance.GetUintVar(nil, data)
 
 	if err != nil {
-		level.Error(b.logger).Log("msg", " getting dispute status", "err", err)
-		return err
+		return errors.Wrapf(err, "getting dispute status")
 	}
 	enc := hexutil.EncodeBig(status)
 	err = DB.Put(db.TimeOutKey, []byte(enc))
 	if err != nil {
-		level.Error(b.logger).Log("msg", " storing dispute info", "err", err)
-		return err
+		return errors.Wrapf(err, "storing dispute info")
 	}
 	// Issue #50, bail out of not able to mine
 	// if status.Cmp(big.NewInt(1)) != 0 {
@@ -93,8 +88,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		address := "000000000000000000000000" + addr[2:]
 		decoded, err := hex.DecodeString(address)
 		if err != nil {
-			level.Error(b.logger).Log("msg", " decoding address", "err", err)
-			os.Exit(1)
+			return errors.Wrapf(err, "decoding address")
 		}
 		hash := solsha3.SoliditySHA3(decoded)
 		var data [32]byte
@@ -110,9 +104,8 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)
 		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
-			level.Error(b.logger).Log("msg", " storing last time mined address", "err", err)
+			return errors.Wrapf(err, "storing last time mined")
 		}
 	}
-	//fmt.Println("Finished updated dispute status")
 	return nil
 }
