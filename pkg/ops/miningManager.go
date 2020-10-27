@@ -255,8 +255,8 @@ func (mgr *MiningMgr) txCost() (*big.Int, error) {
 	// Slots numbers should be from 0 to 4 so
 	// use mod of 5 in order to save 5 as slot 0.
 	slotNum.Add(slotNum, big.NewInt(1)).Mod(slotNum, big.NewInt(5))
-	dbtxCostName := tellorCommon.PriceTXs + slotNum.String()
-	cost, err := mgr.database.Get(dbtxCostName)
+	txCostID := tellorCommon.PriceTXs + slotNum.String()
+	cost, err := mgr.database.Get(txCostID)
 	if err != nil {
 		return nil, errors.New("getting the tx eth cost from the db")
 	}
@@ -285,19 +285,20 @@ func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
 			mgr.log.Error("waiting for transaction completion for  calculating transaction cost err:%v", err)
 		}
 		if receipt.Status != 1 {
-			mgr.log.Error("skiping unsuccessful transaction for calculating transaction cost err:%v", err)
+			mgr.log.Error("unsuccessful submitSolution transaction, not saving the tx cost in the db err:%v", err)
+			return
 		}
-		mgr.log.Debug("transaction completed txHash:%v", receipt.TxHash.String())
+
 		gasUsed := big.NewInt(int64(receipt.GasUsed))
 		txCost := gasUsed.Mul(gasUsed, tx.GasPrice())
-
 		slotNum, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
 		if err != nil {
 			mgr.log.Error("getting slotProgress for calculating transaction cost err:%v", err)
 		}
 
-		dbtxCostName := tellorCommon.PriceTXs + slotNum.String()
-		_, err = mgr.database.Put(dbtxCostName, txCost.Bytes())
+		mgr.log.Debug("saving transaction cost txHash:%v cost GWEI:%v slot:%v", receipt.TxHash.String(), txCost.Int64()/tellorCommon.GWEI, slotNum.Int64())
+		txCostID := tellorCommon.PriceTXs + slotNum.String()
+		_, err = mgr.database.Put(txCostID, txCost.Bytes())
 		if err != nil {
 			mgr.log.Error("saving transaction cost in the db err:%v", err)
 		}
