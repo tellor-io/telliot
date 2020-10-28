@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"log"
 	"math/big"
 	"testing"
 
@@ -55,19 +54,19 @@ func CreateContext(t *testing.T) (context.Context, *config.Config, func()) {
 
 	instanceTellor, err := tellor.NewTellor(contractAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatalf("Problem creating tellor master instance: %v\n", err)
 	}
 	ctx = context.WithValue(ctx, common.ContractsTellorContextKey, instanceTellor)
 
 	instanceGetter, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		log.Fatal("Problem creating tellor master instance", err)
+		t.Fatalf("Problem creating tellor master instance: %v\n", err)
 	}
 	ctx = context.WithValue(ctx, common.ContractsGetterContextKey, instanceGetter)
 
 	proxy, err := db.OpenLocalProxy(dbLocal)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatalf("Problem creating proxy: %v\n", err)
 	}
 	ctx = context.WithValue(ctx, common.DataProxyKey, proxy)
 

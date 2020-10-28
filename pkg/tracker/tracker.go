@@ -3,7 +3,9 @@
 
 package tracker
 
-import "context"
+import (
+	"context"
+)
 
 // Tracker is the primary interface for the various tracking options.
 type Tracker interface {

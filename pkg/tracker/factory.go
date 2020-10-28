@@ -3,45 +3,45 @@
 
 package tracker
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/go-kit/kit/log"
+)
 
 // CreateTracker a tracker instance by its well-known name.
-func createTracker(name string) ([]Tracker, error) {
+func createTracker(name string, logger log.Logger) ([]Tracker, error) {
 	switch name {
 	case "timeOut":
 		{
-			return []Tracker{&TimeOutTracker{}}, nil
+			return []Tracker{NewTimeOutTracker(logger)}, nil
 		}
 	case "balance":
 		{
-			return []Tracker{&BalanceTracker{}}, nil
-		}
-	case "currentVariables":
-		{
-			return []Tracker{&CurrentVariablesTracker{}}, nil
+			return []Tracker{NewBalanceTracker(logger)}, nil
 		}
 	case "disputeStatus":
 		{
-			return []Tracker{&DisputeTracker{}}, nil
+			return []Tracker{NewDisputeTracker(logger)}, nil
 		}
 	case "gas":
 		{
-			return []Tracker{&GasTracker{}}, nil
+			return []Tracker{NewGasTracker(logger)}, nil
 		}
-	case "newCurrentVariables":
+	case "currentVariables":
 		{
-			return []Tracker{&NewCurrentVariablesTracker{}}, nil
+			return []Tracker{NewCurrentVariablesTracker(logger)}, nil
 		}
 	case "tributeBalance":
 		{
-			return []Tracker{&TributeTracker{}}, nil
+			return []Tracker{NewTributeTracker(logger)}, nil
 		}
 	case "indexers":
 		{
 			return BuildIndexTrackers()
 		}
 	case "disputeChecker":
-		return []Tracker{&disputeChecker{}}, nil
+		return []Tracker{NewDisputeChecker(logger, 0)}, nil
 	default:
 		return nil, fmt.Errorf("no tracker with the name %s", name)
 	}

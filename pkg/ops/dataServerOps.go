@@ -8,8 +8,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/pkg/dataServer"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 // DataServerOps is the driver for data server.
@@ -19,18 +20,18 @@ type DataServerOps struct {
 	exitCh  chan os.Signal
 	done    chan int
 	server  *dataServer.DataServer
-	log     *util.Logger
+	logger  log.Logger
 	Running bool
 }
 
 // CreateDataServerOps creates a data server instance for runtime.
-func CreateDataServerOps(ctx context.Context, exitCh chan os.Signal) (*DataServerOps, error) {
-	ds, err := dataServer.CreateServer(ctx)
+func CreateDataServerOps(ctx context.Context, logger log.Logger, exitCh chan os.Signal) (*DataServerOps, error) {
+	ds, err := dataServer.CreateServer(ctx, logger)
 	if err != nil {
 		return nil, err
 	}
 	done := make(chan int)
-	ops := &DataServerOps{exitCh: exitCh, server: ds, log: util.NewLogger("ops", "DataServerOps"), done: done, Running: false}
+	ops := &DataServerOps{exitCh: exitCh, server: ds, logger: log.With(logger, "component", "ops"), done: done, Running: false}
 
 	return ops, nil
 }
@@ -43,7 +44,7 @@ func (ops *DataServerOps) Start(ctx context.Context) error {
 	ops.Running = true
 	go func() {
 		<-ops.exitCh
-		ops.log.Info("Shutting down data server...")
+		level.Info(ops.logger).Log("msg", "shutting down data server...")
 		ops.done <- 1
 		cnt := 0
 		for {
@@ -53,12 +54,12 @@ func (ops *DataServerOps) Start(ctx context.Context) error {
 				break
 			}
 			if cnt > 60 {
-				ops.log.Warn("Expected data server to stop by now, Giving up...")
+				level.Warn(ops.logger).Log("msg", "expected data server to stop by now, Giving up...")
 				return
 			}
 		}
 		ops.Running = false
-		ops.log.Info("Data server shutdown complete")
+		level.Info(ops.logger).Log("msg", "data server shutdown complete")
 	}()
 	return nil
 }

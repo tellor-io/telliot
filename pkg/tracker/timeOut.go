@@ -6,7 +6,6 @@ package tracker
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"encoding/hex"
 	"strings"
@@ -14,7 +13,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -23,10 +25,17 @@ import (
 )
 
 type TimeOutTracker struct {
+	logger log.Logger
 }
 
 func (b *TimeOutTracker) String() string {
 	return "TimeOutTracker"
+}
+
+func NewTimeOutTracker(logger log.Logger) *TimeOutTracker {
+	return &TimeOutTracker{
+		logger: log.With(logger, "component", "timeout tracker"),
+	}
 }
 
 func (b *TimeOutTracker) Exec(ctx context.Context) error {
@@ -46,13 +55,12 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 
 	instance, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		fmt.Println("instance Error, disputeStatus")
-		return err
+		return errors.Wrap(err, "creating instance")
 	}
 	address := "000000000000000000000000" + _fromAddress[2:]
 	decoded, err := hex.DecodeString(address)
 	if err != nil {
-		log.Fatal(err)
+		return errors.Wrapf(err, "decoding address")
 	}
 	hash := solsha3.SoliditySHA3(decoded)
 	var data [32]byte
@@ -61,14 +69,12 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	status, err := instance.GetUintVar(nil, data)
 
 	if err != nil {
-		fmt.Println("instance Error, disputeStatus")
-		return err
+		return errors.Wrapf(err, "getting dispute status")
 	}
 	enc := hexutil.EncodeBig(status)
 	err = DB.Put(db.TimeOutKey, []byte(enc))
 	if err != nil {
-		fmt.Printf("Problem storing dispute info: %v\n", err)
-		return err
+		return errors.Wrapf(err, "storing dispute info")
 	}
 	// Issue #50, bail out of not able to mine
 	// if status.Cmp(big.NewInt(1)) != 0 {
@@ -81,14 +87,14 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		address := "000000000000000000000000" + addr[2:]
 		decoded, err := hex.DecodeString(address)
 		if err != nil {
-			log.Fatal(err)
+			return errors.Wrapf(err, "decoding address")
 		}
 		hash := solsha3.SoliditySHA3(decoded)
 		var data [32]byte
 		copy(data[:], hash)
 		status, err := instance.GetUintVar(nil, data)
 		if err != nil {
-			fmt.Printf("Could not get staker timeOut status for miner address %s: %v\n", addr, err)
+			level.Error(b.logger).Log("msg", "getting staker timeOut status for miner", "address", addr, "err", err)
 		}
 		if status.Int64() > 0 {
 			fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, time.Unix(status.Int64(), 0))
@@ -97,9 +103,8 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)
 		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
-			fmt.Printf("Problem storing staker last time mined: %v\n", err)
+			return errors.Wrapf(err, "storing last time mined")
 		}
 	}
-	//fmt.Println("Finished updated dispute status")
 	return nil
 }

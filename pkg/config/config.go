@@ -104,15 +104,14 @@ var config = Config{
 	NumProcessors:                2,
 	EthClientTimeout:             3000,
 	Trackers: map[string]bool{
-		"newCurrentVariables": true,
-		"timeOut":             true,
-		"balance":             true,
-		"currentVariables":    true,
-		"disputeStatus":       true,
-		"gas":                 true,
-		"tributeBalance":      true,
-		"indexers":            true,
-		"disputeChecker":      false,
+		"timeOut":          true,
+		"balance":          true,
+		"currentVariables": true,
+		"disputeStatus":    true,
+		"gas":              true,
+		"tributeBalance":   true,
+		"indexers":         true,
+		"disputeChecker":   false,
 	},
 }
 

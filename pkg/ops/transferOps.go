@@ -6,11 +6,13 @@ package ops
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
@@ -43,7 +45,7 @@ func prepareTransfer(amt *big.Int, ctx context.Context) (*bind.TransactOpts, err
 	return auth, nil
 }
 
-func Transfer(toAddress common.Address, amt *big.Int, ctx context.Context) error {
+func Transfer(ctx context.Context, logger log.Logger, toAddress common.Address, amt *big.Int) error {
 	auth, err := prepareTransfer(amt, ctx)
 	if err != nil {
 		return err
@@ -54,11 +56,11 @@ func Transfer(toAddress common.Address, amt *big.Int, ctx context.Context) error
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
-	fmt.Printf("Transferred %s to %s... with tx:\n%s\n", util.FormatERC20Balance(amt), toAddress.String()[:12], tx.Hash().Hex())
+	level.Info(logger).Log("msg", "transferred", "amount", util.FormatERC20Balance(amt), "to", toAddress.String()[:12], "tx Hash", tx.Hash().Hex())
 	return nil
 }
 
-func Approve(_spender common.Address, amt *big.Int, ctx context.Context) error {
+func Approve(ctx context.Context, logger log.Logger, _spender common.Address, amt *big.Int) error {
 	auth, err := prepareTransfer(amt, ctx)
 	if err != nil {
 		return err
@@ -69,7 +71,7 @@ func Approve(_spender common.Address, amt *big.Int, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Approved %s to %s... with tx:\n%s\n", util.FormatERC20Balance(amt), _spender.String()[:12], tx.Hash().Hex())
+	level.Info(logger).Log("msg", "approved", "amount", util.FormatERC20Balance(amt), "spender", _spender.String()[:12], "tx Hash", tx.Hash().Hex())
 	return nil
 }
 
@@ -84,8 +86,7 @@ func Balance(ctx context.Context, addr common.Address) error {
 	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	trbBalance, err := instance.BalanceOf(nil, addr)
 	if err != nil {
-		log.Fatal(err)
-		return err
+		return errors.Wrapf(err, "getting balance")
 	}
 	fmt.Printf("%s\n", addr.String())
 	fmt.Printf("%10s ETH\n", util.FormatERC20Balance(ethBalance))
