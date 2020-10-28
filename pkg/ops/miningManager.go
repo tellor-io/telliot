@@ -28,7 +28,7 @@ import (
 )
 
 type WorkSource interface {
-	GetWork(input chan *pow.Work) (*pow.Work, bool)
+	GetWork(toMine chan *pow.Work) (*pow.Work, bool)
 }
 
 type SolutionSink interface {
@@ -42,18 +42,21 @@ type SolutionSink interface {
 // Transaction cost for submitting in each slot might be different so because of this
 // the manager needs to complete few transaction to gather the tx cost for each slot.
 type MiningMgr struct {
-	exitCh          chan os.Signal
-	log             *util.Logger
-	Running         bool
-	ethClient       rpc.ETHClient
-	group           *pow.MiningGroup
-	tasker          WorkSource
-	solHandler      SolutionSink
-	solution        *pow.Result
-	dataRequester   *DataRequester
-	database        db.DataServerProxy
-	contractGetter  *getter.TellorGetters
-	profitThreshold uint64
+	exitCh         chan os.Signal
+	log            *util.Logger
+	Running        bool
+	ethClient      rpc.ETHClient
+	group          *pow.MiningGroup
+	tasker         WorkSource
+	solHandler     SolutionSink
+	solution       *pow.Result
+	dataRequester  *DataRequester
+	database       db.DataServerProxy
+	contractGetter *getter.TellorGetters
+	cfg            *config.Config
+
+	toMineInput    chan *pow.Work
+	solutionOutput chan *pow.Result
 }
 
 // CreateMiningManager is the MiningMgr contructor.
@@ -80,17 +83,19 @@ func CreateMiningManager(
 
 	submitter := NewSubmitter()
 	mng := &MiningMgr{
-		exitCh:          exitCh,
-		log:             util.NewLogger("ops", "MiningMgr"),
-		Running:         false,
-		group:           group,
-		tasker:          nil,
-		solution:        nil,
-		solHandler:      nil,
-		contractGetter:  getter,
-		profitThreshold: cfg.ProfitThreshold,
-		database:        database,
-		ethClient:       client,
+		exitCh:         exitCh,
+		log:            util.NewLogger("ops", "MiningMgr"),
+		Running:        false,
+		group:          group,
+		tasker:         nil,
+		solution:       nil,
+		solHandler:     nil,
+		contractGetter: getter,
+		cfg:            cfg,
+		database:       database,
+		ethClient:      client,
+		toMineInput:    make(chan *pow.Work),
+		solutionOutput: make(chan *pow.Result),
 	}
 
 	if cfg.EnablePoolWorker {
@@ -111,91 +116,74 @@ func CreateMiningManager(
 // Start will start the mining run loop.
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.Running = true
-	go func(ctx context.Context) {
-		cfg := config.GetConfig()
+	ticker := time.NewTicker(mgr.cfg.MiningInterruptCheckInterval.Duration)
 
-		ticker := time.NewTicker(cfg.MiningInterruptCheckInterval.Duration)
-
-		//if you make these buffered, think about the effects on synchronization!
-		input := make(chan *pow.Work)
-		output := make(chan *pow.Result)
-		if cfg.RequestData > 0 {
-			if err := mgr.dataRequester.Start(ctx); err != nil {
-				mgr.log.Error("error starting the data requester error:%v", err)
-			}
+	if mgr.cfg.RequestData > 0 {
+		if err := mgr.dataRequester.Start(ctx); err != nil {
+			mgr.log.Error("error starting the data requester error:%v", err)
 		}
+	}
 
-		//start the mining group
-		go mgr.group.Mine(input, output)
+	//start the mining group
+	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)
 
-		// sends work to the mining group
-		sendWork := func() {
-			if cfg.EnablePoolWorker {
-				mgr.tasker.GetWork(input)
-			} else {
-				work, instantSubmit := mgr.tasker.GetWork(input)
-				// instantSubmit means 15mins have passed so
-				// the difficulty now is zero and any solution/nonce will work.
-				if instantSubmit {
-					if mgr.solution == nil {
-						if mgr.profitThreshold > 0 {
-							err := mgr.waitProfitable()
-							if err != nil {
-								mgr.log.Warn("error calculating the solution submition profitability so will submit anyway err:%v", err)
-							}
-						}
-						mgr.log.Debug("instant submit called!")
-						mgr.solution = &pow.Result{Work: work, Nonce: "1"}
-						tx, err := mgr.solHandler.Submit(ctx, mgr.solution)
-						if err != nil {
-							mgr.log.Error("submiting a solution transaction err:%v", err)
-							return
-						}
-						mgr.log.Debug("submited a solution tx:%+v", tx)
-						mgr.saveTXCost(ctx, tx)
-					}
-				} else if work != nil {
-					mgr.solution = nil
-					input <- work
-				}
+	// Request the first work task.
+	mgr.newWork()
+
+	for {
+		select {
+		// Boss wants us to quit for the day.
+		case <-mgr.exitCh:
+			mgr.Running = false
+			return
+		// Found a solution.
+		case solution := <-mgr.solutionOutput:
+			if solution == nil {
+				mgr.Running = false
+				return
 			}
-		}
-		// Send the initial challenge.
-		sendWork()
-		for {
-			select {
-			// Boss wants us to quit for the day.
-			case <-mgr.exitCh:
-				input <- nil
-
-			// Found a solution.
-			case result := <-output:
-				if mgr.profitThreshold > 0 {
-					err := mgr.waitProfitable()
-					if err != nil {
-						mgr.log.Warn("error calculating the solution submition profitability so will submit anyway err:%v", err)
-					}
-				}
-				if result == nil {
-					mgr.Running = false
-					return
-				}
-				mgr.solution = result
-				tx, err := mgr.solHandler.Submit(ctx, mgr.solution)
+			if mgr.cfg.ProfitThreshold > 0 {
+				isProftable, err := mgr.isProfitable()
 				if err != nil {
-					mgr.log.Error("submiting a solution transaction err:%v", err)
+					mgr.log.Error("calculating submit solution profit err:%v", err)
+				} else if !isProftable {
+					mgr.log.Debug("transaction not profitable, so will wait for the next cycle")
 					continue
 				}
-				mgr.log.Debug("submited a solution:%+v tx hash:%+v", &mgr.solution, &tx)
-				mgr.saveTXCost(ctx, tx)
-				sendWork()
+			}
+			tx, err := mgr.solHandler.Submit(ctx, solution)
+			if err != nil {
+				mgr.log.Error("submiting a solution transaction err:%v", err)
+				continue
+			}
+			mgr.log.Debug("submited a solution tx:%v", tx.Hash().String())
+			mgr.saveTXCost(ctx, tx)
+		// Time to check for a new challenge.
+		case <-ticker.C:
+			mgr.newWork()
+		}
+	}
+}
 
-			// Time to check for a new challenge.
-			case <-ticker.C:
-				sendWork()
+func (mgr *MiningMgr) newWork() {
+	go func() {
+		if mgr.cfg.EnablePoolWorker {
+			mgr.tasker.GetWork(mgr.toMineInput)
+		} else {
+			work, instantSubmit := mgr.tasker.GetWork(nil)
+
+			// instantSubmit means 15 mins have passed so
+			// the difficulty now is zero and any solution/nonce will work and
+			// can just submit without sending to the miner.
+			if instantSubmit {
+				mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
+			} else {
+				if work != nil {
+					mgr.toMineInput <- work
+				}
 			}
 		}
-	}(ctx)
+	}()
 }
 
 // currentReward returns the current TRB rewards converted to ETH.
@@ -305,22 +293,6 @@ func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
 	}(tx)
 }
 
-func (mgr *MiningMgr) waitProfitable() error {
-	for {
-		isProftable, err := mgr.isProfitable()
-		if err != nil {
-			return err
-
-		}
-		if !isProftable {
-			mgr.log.Debug("transaction not profitable, so will check in 1 sec again.")
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		return nil
-	}
-}
-
 func (mgr *MiningMgr) isProfitable() (bool, error) {
 	txCost, slotNum, err := mgr.txCost()
 	if err != nil {
@@ -345,9 +317,9 @@ func (mgr *MiningMgr) isProfitable() (bool, error) {
 		fmt.Sprintf("%.2e", float64(reward.Int64())),
 		fmt.Sprintf("%.2e", float64(txCost.Int64())),
 		fmt.Sprintf("%.2e", float64(profit.Int64())),
-		profitPercent, mgr.profitThreshold,
+		profitPercent, mgr.cfg.ProfitThreshold,
 	)
-	if profitPercent > int64(mgr.profitThreshold) {
+	if profitPercent > int64(mgr.cfg.ProfitThreshold) {
 		return true, nil
 	}
 	return false, nil

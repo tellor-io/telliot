@@ -277,7 +277,9 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 			if err != nil {
 				ExitOnError(err, "creating miner")
 			}
-			miner.Start(ctx)
+			go func() {
+				miner.Start(ctx)
+			}()
 
 			// Wait for kill sig.
 			<-c
