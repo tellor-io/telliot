@@ -245,10 +245,10 @@ func (mgr *MiningMgr) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
 	return eth, nil
 }
 
-func (mgr *MiningMgr) txCost() (*big.Int, error) {
+func (mgr *MiningMgr) txCost() (*big.Int, *big.Int, error) {
 	slotNum, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
 	if err != nil {
-		return nil, errors.Wrap(err, "getting slotProgress")
+		return nil, nil, errors.Wrap(err, "getting slotProgress")
 	}
 	// This is the price for the last transaction so increment +1
 	// to get the price for next slot transaction.
@@ -258,14 +258,14 @@ func (mgr *MiningMgr) txCost() (*big.Int, error) {
 	txCostID := tellorCommon.PriceTXs + slotNum.String()
 	cost, err := mgr.database.Get(txCostID)
 	if err != nil {
-		return nil, errors.New("getting the tx eth cost from the db")
+		return nil, nil, errors.New("getting the tx eth cost from the db")
 	}
 	// No price record in the db yet.
 	if cost == nil {
-		return big.NewInt(0), nil
+		return big.NewInt(0), slotNum, nil
 	}
 
-	return big.NewInt(0).SetBytes(cost), nil
+	return big.NewInt(0).SetBytes(cost), slotNum, nil
 }
 
 // saveTXCost calculates the price for a given slot.
@@ -322,7 +322,7 @@ func (mgr *MiningMgr) waitProfitable() error {
 }
 
 func (mgr *MiningMgr) isProfitable() (bool, error) {
-	txCost, err := mgr.txCost()
+	txCost, slotNum, err := mgr.txCost()
 	if err != nil {
 		return false, errors.Wrap(err, "getting TX cost")
 	}
@@ -340,7 +340,8 @@ func (mgr *MiningMgr) isProfitable() (bool, error) {
 	profit := big.NewInt(0).Sub(reward, txCost)
 	profitPercent := big.NewInt(0).Div(profit, txCost).Int64() * 100
 	mgr.log.Debug(
-		"profit threshold checking - reward:%v, txCost:%v, profit:%v, profit margin:%v%%, profit threshold:%v%%",
+		"profit threshold checking - reward:%v, txCost:%v, slot:%v, profit:%v, profit margin:%v%%, profit threshold:%v%%",
+		slotNum,
 		fmt.Sprintf("%.2e", float64(reward.Int64())),
 		fmt.Sprintf("%.2e", float64(txCost.Int64())),
 		fmt.Sprintf("%.2e", float64(profit.Int64())),
