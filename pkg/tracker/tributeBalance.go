@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -54,8 +55,7 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 
 	instance, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		level.Error(b.logger).Log("msg", "error creating instance", "err", err)
-		return err
+		return errors.Wrap(err, "creating instance")
 	}
 
 	balance, err := instance.BalanceOf(nil, fromAddress)
@@ -78,9 +78,9 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 
 	//numTributes, _ := balanceInTributes.Float64()
 	fmt.Printf("Tribute Balance: %v (%v tributes)\n", balance, balanceInTributes)
+	level.Info(b.logger).Log("msg", "tribute", "balance", balance, "balance in tributes", balanceInTributes)
 	if err != nil {
-		level.Error(b.logger).Log("msg", "error retrieving balance", "err", err)
-		return err
+		return errors.Wrap(err, "retrieving balance")
 	}
 	enc := hexutil.EncodeBig(balance)
 	return DB.Put(db.TributeBalanceKey, []byte(enc))

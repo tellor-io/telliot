@@ -46,19 +46,19 @@ func buildContext() error {
 		// Create an rpc client
 		client, err := rpc.NewClient(cfg.NodeURL)
 		if err != nil {
-			return fmt.Errorf("Couldn't create client instance: %s", err)
+			return errors.Wrap(err, "create client instance")
 		}
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
 		if err != nil {
-			return fmt.Errorf("Couldn't create Tellor Master instance: %s", err)
+			return errors.Wrap(err, "create tellor master instance")
 		}
 
 		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
 
 		if err != nil {
-			return fmt.Errorf("Couldn't create New Tellor transactor instance: %s", err)
+			return errors.Wrap(err, "create tellor transactor instance")
 		}
 
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
@@ -68,14 +68,14 @@ func buildContext() error {
 
 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {
-			return fmt.Errorf("problem getting private key: %s", err.Error())
+			return errors.Wrap(err, "getting private key")
 		}
 		ctx = context.WithValue(ctx, tellorCommon.PrivateKey, privateKey)
 
 		publicKey := privateKey.Public()
 		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 		if !ok {
-			return fmt.Errorf("error casting public key to ECDSA")
+			return errors.New("casting public key to ECDSA")
 		}
 
 		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
@@ -84,10 +84,10 @@ func buildContext() error {
 		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
 		if err != nil {
-			return fmt.Errorf("could not determine if Ethereum client is syncing: %v", err)
+			return errors.Wrap(err, "determining if Ethereum client is syncing")
 		}
 		if s {
-			return fmt.Errorf("ethereum node is still syncing with the network")
+			return errors.New("ethereum node is still syncing with the network")
 		}
 	}
 	return nil
@@ -258,6 +258,7 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 					// Start and wait for it to be ready.
 					if err := ds.Start(ctx); err != nil {
 						level.Error(logger).Log("msg", "starting data server", "err", err)
+						os.Exit(1)
 					}
 					<-ds.Ready()
 				}

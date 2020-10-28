@@ -55,8 +55,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 
 	instance, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		level.Error(b.logger).Log("msg", "instance, disputeStatus", "err", err)
-		return err
+		return errors.Wrap(err, "creating instance")
 	}
 	address := "000000000000000000000000" + _fromAddress[2:]
 	decoded, err := hex.DecodeString(address)

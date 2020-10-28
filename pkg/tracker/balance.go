@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/db"
@@ -50,8 +51,7 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)
 
 	if err != nil {
-		level.Error(b.logger).Log("msg", "getting balance", "err", err)
-		return err
+		return errors.Wrap(err, "getting balance")
 	}
 	enc := hexutil.EncodeBig(balance)
 

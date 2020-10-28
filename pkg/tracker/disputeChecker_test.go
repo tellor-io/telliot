@@ -36,7 +36,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	t.Cleanup(cleanup)
 	cfg.DisputeThreshold = 0.000000001
-	disputeChecker := NewDisputeChecker(500, util.SetupLogger("debug"))
+	disputeChecker := NewDisputeChecker(util.SetupLogger("debug"), 500)
 	if _, err := BuildIndexTrackers(); err != nil {
 		t.Fatal(err)
 	}

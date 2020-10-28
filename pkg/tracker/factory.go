@@ -20,10 +20,6 @@ func createTracker(name string, logger log.Logger) ([]Tracker, error) {
 		{
 			return []Tracker{NewBalanceTracker(logger)}, nil
 		}
-	case "currentVariables":
-		{
-			return []Tracker{New_CurrentVariablesTracker(logger)}, nil
-		}
 	case "disputeStatus":
 		{
 			return []Tracker{NewDisputeTracker(logger)}, nil
@@ -32,9 +28,9 @@ func createTracker(name string, logger log.Logger) ([]Tracker, error) {
 		{
 			return []Tracker{NewGasTracker(logger)}, nil
 		}
-	case "newCurrentVariables":
+	case "currentVariables":
 		{
-			return []Tracker{NewNewCurrentVariablesTracker(logger)}, nil
+			return []Tracker{NewCurrentVariablesTracker(logger)}, nil
 		}
 	case "tributeBalance":
 		{
@@ -45,7 +41,7 @@ func createTracker(name string, logger log.Logger) ([]Tracker, error) {
 			return BuildIndexTrackers()
 		}
 	case "disputeChecker":
-		return []Tracker{NewDisputeChecker(0, logger)}, nil
+		return []Tracker{NewDisputeChecker(logger, 0)}, nil
 	default:
 		return nil, fmt.Errorf("no tracker with the name %s", name)
 	}

@@ -91,7 +91,7 @@ func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResul
 	}
 }
 
-func NewDisputeChecker(lastCheckedBlock uint64, logger log.Logger) *disputeChecker {
+func NewDisputeChecker(logger log.Logger, lastCheckedBlock uint64) *disputeChecker {
 	return &disputeChecker{
 		lastCheckedBlock: lastCheckedBlock,
 		logger:           log.With(logger, "component", "dispute checker"),

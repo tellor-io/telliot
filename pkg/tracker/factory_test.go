@@ -18,7 +18,7 @@ func TestCreateTracker(t *testing.T) {
 	}
 
 	currentVariablesTracker, _ := createTracker("currentVariables", logger)
-	if currentVariablesTracker[0].String() != CurrentVariablesTrackerName {
+	if currentVariablesTracker[0].String() != "CurrentVariablesTracker" {
 		t.Fatalf("Expected CurrentVariablesTracker but got %s", currentVariablesTracker[0].String())
 	}
 

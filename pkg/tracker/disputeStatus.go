@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -57,22 +58,19 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 
 	instance, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		level.Error(b.logger).Log("msg", "getting master instance", "err", err)
-		return err
+		return errors.Wrap(err, "getting master instance")
 	}
 
 	status, _, err := instance.GetStakerInfo(nil, fromAddress)
 
 	if err != nil {
-		level.Error(b.logger).Log("msg", "getting staker info ", "err", err)
-		return err
+		return errors.Wrap(err, "getting staker info")
 	}
 	enc := hexutil.EncodeBig(status)
 	level.Info(b.logger).Log("msg", "staker status", "status", enc)
 	err = DB.Put(db.DisputeStatusKey, []byte(enc))
 	if err != nil {
-		level.Error(b.logger).Log("msg", "storing dispute info", "err", err)
-		return err
+		return errors.Wrap(err, "storing dispute")
 	}
 	// Issue #50, bail out of not able to mine
 	// if status.Cmp(big.NewInt(1)) != 0 {
@@ -83,12 +81,10 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	//asking for dispute status
 	for _, addr := range cfg.ServerWhitelist {
 		address := common.HexToAddress(addr)
-		//fmt.Println("Getting staker info for address", addr)
 		status, _, err := instance.GetStakerInfo(nil, address)
 		if err != nil {
 			level.Error(b.logger).Log("msg", "getting staker dispute status for miner", "address", addr, "err", err)
 		}
-		fmt.Printf("Whitelisted Miner %s Dispute Status: %v\n", addr, status)
 		level.Info(b.logger).Log("msg", "whitelisted miner", "address", addr, "status", status)
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.DisputeStatusKey)
 		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
