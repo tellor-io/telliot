@@ -9,3 +9,9 @@ NOTE: As semantic versioning states all 0.y.z releases can contain breaking chan
 
 We use *breaking :warning:* to mark changes that are not backward compatible (relates only to v0.y.z releases.)
 
+## [v0.1.0](https://github.com/tellor-io/TellorMiner/releases) - 2020.10.28
+
+### Added
+ - Profitability calculations which is set through the `ProfitThreshold`(in percents) settings in the config,
+ - Docs how to contribute.
+
