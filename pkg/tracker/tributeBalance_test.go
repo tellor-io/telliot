@@ -14,6 +14,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestTributeBalance(t *testing.T) {
@@ -26,7 +27,7 @@ func TestTributeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := &TributeTracker{}
+	tracker := NewTributeTracker(util.SetupLogger("debug"))
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)

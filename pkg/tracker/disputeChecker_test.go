@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestDisputeCheckerInRange(t *testing.T) {
@@ -24,7 +25,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-	disputeChecker := &disputeChecker{lastCheckedBlock: 500}
+	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: util.SetupLogger("debug")}
 	err := disputeChecker.Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +36,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	t.Cleanup(cleanup)
 	cfg.DisputeThreshold = 0.000000001
-	disputeChecker := &disputeChecker{lastCheckedBlock: 500}
+	disputeChecker := NewDisputeChecker(util.SetupLogger("debug"), 500)
 	if _, err := BuildIndexTrackers(); err != nil {
 		t.Fatal(err)
 	}
@@ -43,8 +44,8 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-
 	err := disputeChecker.Exec(ctx)
+
 	if err != nil {
 		t.Fatal(err)
 	}

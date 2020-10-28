@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"os/signal"
@@ -17,7 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	cli "github.com/jawher/mow.cli"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -30,7 +32,7 @@ import (
 
 var ctx context.Context
 
-func ErrorHandler(err error, operation string) {
+func ExitOnError(err error, operation string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s failed: %s\n", operation, err.Error())
 		cli.Exit(-1)
@@ -44,17 +46,19 @@ func buildContext() error {
 		// Create an rpc client
 		client, err := rpc.NewClient(cfg.NodeURL)
 		if err != nil {
-			log.Fatal(err)
+			return errors.Wrap(err, "create client instance")
 		}
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
 		if err != nil {
-			log.Fatal(err)
+			return errors.Wrap(err, "create tellor master instance")
 		}
+
 		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
+
 		if err != nil {
-			log.Fatal(err)
+			return errors.Wrap(err, "create tellor transactor instance")
 		}
 
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
@@ -64,14 +68,14 @@ func buildContext() error {
 
 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {
-			return fmt.Errorf("problem getting private key: %s", err.Error())
+			return errors.Wrap(err, "getting private key")
 		}
 		ctx = context.WithValue(ctx, tellorCommon.PrivateKey, privateKey)
 
 		publicKey := privateKey.Public()
 		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 		if !ok {
-			return fmt.Errorf("error casting public key to ECDSA")
+			return errors.New("casting public key to ECDSA")
 		}
 
 		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
@@ -80,10 +84,10 @@ func buildContext() error {
 		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
 		if err != nil {
-			return fmt.Errorf("could not determine if Ethereum client is syncing: %v\n", err)
+			return errors.Wrap(err, "determining if Ethereum client is syncing")
 		}
 		if s {
-			return fmt.Errorf("ethereum node is still syncing with the network")
+			return errors.New("ethereum node is still syncing with the network")
 		}
 	}
 	return nil
@@ -95,20 +99,22 @@ func AddDBToCtx(remote bool) error {
 	os.RemoveAll(cfg.DBFile)
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "opening DB")
 	}
 
 	var dataProxy db.DataServerProxy
 	if remote {
 		proxy, err := db.OpenRemoteDB(DB)
 		if err != nil {
-			log.Fatal(err)
+			return errors.Wrapf(err, "open remote DB")
+
 		}
 		dataProxy = proxy
 	} else {
 		proxy, err := db.OpenLocalProxy(DB)
 		if err != nil {
-			log.Fatal(err)
+			return errors.Wrapf(err, "opening local DB:")
+
 		}
 		dataProxy = proxy
 	}
@@ -133,51 +139,53 @@ func App() *cli.Cli {
 
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
-	logPath := app.StringOpt("logConfig", "configs/loggingConfig.json", "Path to a JSON logging config file")
+	logLevel := app.StringOpt("logLevel", "error", "The level of log messages")
 
+	logger := util.SetupLogger(*logLevel)
 	// This will get run before any of the commands
 	app.Before = func() {
-		ErrorHandler(config.ParseConfig(*configPath), "parsing config file")
-		ErrorHandler(util.ParseLoggingConfig(*logPath), "parsing log file")
-		ErrorHandler(buildContext(), "building context")
+		ExitOnError(config.ParseConfig(*configPath), "parsing config file")
+		ExitOnError(buildContext(), "building context")
 	}
 
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
 	app.Version("version", versionMessage)
 
-	app.Command("stake", "staking operations", stakeCmd)
-	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer))
-	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve))
+	app.Command("stake", "staking operations", stakeCmd(logger))
+	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logger))
+	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logger))
 	app.Command("balance", "check balance of address", balanceCmd)
-	app.Command("dispute", "dispute operations", disputeCmd)
-	app.Command("mine", "mine for TRB", mineCmd)
-	app.Command("dataserver", "start an independent dataserver", dataserverCmd)
+	app.Command("dispute", "dispute operations", disputeCmd(logger))
+	app.Command("mine", "mine for TRB", mineCmd(logger))
+	app.Command("dataserver", "start an independent dataserver", dataserverCmd(logger))
 	return app
 }
 
-func stakeCmd(cmd *cli.Cmd) {
-	cmd.Command("deposit", "deposit TRB stake", simpleCmd(ops.Deposit))
-	cmd.Command("withdraw", "withdraw TRB stake", simpleCmd(ops.WithdrawStake))
-	cmd.Command("request", "request to withdraw TRB stake", simpleCmd(ops.RequestStakingWithdraw))
-	cmd.Command("status", "show current staking status", simpleCmd(ops.ShowStatus))
+func stakeCmd(logger log.Logger) func(*cli.Cmd) {
+	return func(cmd *cli.Cmd) {
+		cmd.Command("deposit", "deposit TRB stake", simpleCmd(ops.Deposit, logger))
+		cmd.Command("withdraw", "withdraw TRB stake", simpleCmd(ops.WithdrawStake, logger))
+		cmd.Command("request", "request to withdraw TRB stake", simpleCmd(ops.RequestStakingWithdraw, logger))
+		cmd.Command("status", "show current staking status", simpleCmd(ops.ShowStatus, logger))
+	}
 }
 
-func simpleCmd(f func(context.Context) error) func(*cli.Cmd) {
+func simpleCmd(f func(context.Context, log.Logger) error, logger log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			ErrorHandler(f(ctx), "")
+			ExitOnError(f(ctx, logger), "")
 		}
 	}
 }
 
-func moveCmd(f func(common.Address, *big.Int, context.Context) error) func(*cli.Cmd) {
+func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error, logger log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		amt := TRBAmount{}
 		addr := ETHAddress{}
 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 		cmd.Action = func() {
-			ErrorHandler(f(addr.addr, amt.Int, ctx), "move")
+			ExitOnError(f(ctx, logger, addr.addr, amt.Int), "move")
 		}
 	}
 }
@@ -191,14 +199,16 @@ func balanceCmd(cmd *cli.Cmd) {
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
 			addr.addr = ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		}
-		ErrorHandler(ops.Balance(ctx, addr.addr), "checking balance")
+		ExitOnError(ops.Balance(ctx, addr.addr), "checking balance")
 	}
 }
 
-func disputeCmd(cmd *cli.Cmd) {
-	cmd.Command("vote", "vote on an active dispute", voteCmd)
-	cmd.Command("new", "start a new dispute", newDisputeCmd)
-	cmd.Command("show", "show existing disputes", simpleCmd(ops.List))
+func disputeCmd(logger log.Logger) func(*cli.Cmd) {
+	return func(cmd *cli.Cmd) {
+		cmd.Command("vote", "vote on an active dispute", voteCmd)
+		cmd.Command("new", "start a new dispute", newDisputeCmd)
+		cmd.Command("show", "show existing disputes", simpleCmd(ops.List, logger))
+	}
 }
 
 func voteCmd(cmd *cli.Cmd) {
@@ -206,7 +216,7 @@ func voteCmd(cmd *cli.Cmd) {
 	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
 	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
 	cmd.Action = func() {
-		ErrorHandler(ops.Vote(disputeID.Int, *supports, ctx), "vote")
+		ExitOnError(ops.Vote(disputeID.Int, *supports, ctx), "vote")
 	}
 }
 
@@ -218,139 +228,143 @@ func newDisputeCmd(cmd *cli.Cmd) {
 	cmd.VarArg("TIMESTAMP", &timestamp, "timestamp")
 	cmd.VarArg("MINER_INDEX", &minerIndex, "miner to dispute (0-4)")
 	cmd.Action = func() {
-		ErrorHandler(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
+		ExitOnError(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
 	}
 }
 
-func mineCmd(cmd *cli.Cmd) {
-	remoteDS := cmd.BoolOpt("remote r", false, "connect to remote dataserver")
-	cmd.Action = func() {
-		// Create os kill sig listener.
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		exitChannels := make([]*chan os.Signal, 0)
+func mineCmd(logger log.Logger) func(*cli.Cmd) {
+	return func(cmd *cli.Cmd) {
+		remoteDS := cmd.BoolOpt("remote r", false, "connect to remote dataserver")
+		cmd.Action = func() {
+			// Create os kill sig listener.
+			c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt)
+			exitChannels := make([]*chan os.Signal, 0)
 
-		cfg := config.GetConfig()
-		var ds *ops.DataServerOps
-		if !cfg.EnablePoolWorker {
-			ErrorHandler(AddDBToCtx(*remoteDS), "initializing database")
-			if !*remoteDS {
-				ch := make(chan os.Signal)
-				exitChannels = append(exitChannels, &ch)
+			cfg := config.GetConfig()
+			var ds *ops.DataServerOps
+			if !cfg.EnablePoolWorker {
+				ExitOnError(AddDBToCtx(*remoteDS), "initializing database")
+				if !*remoteDS {
+					ch := make(chan os.Signal)
+					exitChannels = append(exitChannels, &ch)
 
-				var err error
-				ds, err = ops.CreateDataServerOps(ctx, ch)
-				if err != nil {
-					log.Fatal(err)
+					var err error
+					ds, err = ops.CreateDataServerOps(ctx, logger, ch)
+					if err != nil {
+						ExitOnError(err, "creating data server")
+					}
+					// Start and wait for it to be ready.
+					if err := ds.Start(ctx); err != nil {
+						ExitOnError(err, "starting data server")
+					}
+					<-ds.Ready()
 				}
-				// Start and wait for it to be ready.
-				if err := ds.Start(ctx); err != nil {
-					log.Fatal(err)
+			}
+			// Start miner
+			DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
+			v, err := DB.Get(db.DisputeStatusKey)
+			if err != nil {
+				level.Warn(logger).Log("msg", "getting dispute status. Check if staked")
+			}
+			status, _ := hexutil.DecodeBig(string(v))
+			if status.Cmp(big.NewInt(1)) != 0 {
+				ExitOnError(errors.New("miner is not able to mine with current status"), "checking miner")
+			}
+			ch := make(chan os.Signal)
+			exitChannels = append(exitChannels, &ch)
+			miner, err := ops.CreateMiningManager(ch, cfg, DB)
+			if err != nil {
+				ExitOnError(err, "creating miner")
+			}
+			miner.Start(ctx)
+
+			// Wait for kill sig.
+			<-c
+			// Then notify exit channels.
+			for _, ch := range exitChannels {
+				*ch <- os.Interrupt
+			}
+			cnt := 0
+			start := time.Now()
+			for {
+				cnt++
+				dsStopped := false
+				minerStopped := false
+
+				if ds != nil {
+					dsStopped = !ds.Running
+				} else {
+					dsStopped = true
 				}
-				<-ds.Ready()
-			}
-		}
-		// Start miner
-		DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
-		v, err := DB.Get(db.DisputeStatusKey)
-		if err != nil {
-			fmt.Println("ignoring --- could not get dispute status.  Check if staked")
-		}
-		status, _ := hexutil.DecodeBig(string(v))
-		if status.Cmp(big.NewInt(1)) != 0 {
-			log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
-		}
-		ch := make(chan os.Signal)
-		exitChannels = append(exitChannels, &ch)
-		miner, err := ops.CreateMiningManager(ch, cfg, DB)
-		if err != nil {
-			log.Fatal(err)
-		}
-		miner.Start(ctx)
 
-		// Wait for kill sig.
-		<-c
-		// Then notify exit channels.
-		for _, ch := range exitChannels {
-			*ch <- os.Interrupt
+				if miner != nil {
+					minerStopped = !miner.Running
+				} else {
+					minerStopped = true
+				}
+
+				if !dsStopped && !minerStopped && cnt > 60 {
+					level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
+				} else if dsStopped && minerStopped {
+					break
+				}
+				time.Sleep(500 * time.Millisecond)
+			}
+			level.Info(logger).Log("msg", "main shutdown complete")
 		}
-		cnt := 0
-		start := time.Now()
-		for {
-			cnt++
-			dsStopped := false
-			minerStopped := false
-
-			if ds != nil {
-				dsStopped = !ds.Running
-			} else {
-				dsStopped = true
-			}
-
-			if miner != nil {
-				minerStopped = !miner.Running
-			} else {
-				minerStopped = true
-			}
-
-			if !dsStopped && !minerStopped && cnt > 60 {
-				fmt.Printf("Taking longer than expected to stop operations. Waited %v so far\n", time.Since(start))
-			} else if dsStopped && minerStopped {
-				break
-			}
-			time.Sleep(500 * time.Millisecond)
-		}
-		fmt.Printf("Main shutdown complete\n")
 	}
 }
 
-func dataserverCmd(cmd *cli.Cmd) {
-	cmd.Action = func() {
-		// Create os kill sig listener.
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
+func dataserverCmd(logger log.Logger) func(*cli.Cmd) {
+	return func(cmd *cli.Cmd) {
+		cmd.Action = func() {
+			// Create os kill sig listener.
+			c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt)
 
-		var ds *ops.DataServerOps
-		ErrorHandler(AddDBToCtx(true), "initializing database")
-		ch := make(chan os.Signal)
-		var err error
-		ds, err = ops.CreateDataServerOps(ctx, ch)
-		if err != nil {
-			log.Fatal(err)
-		}
-		// Start and wait for it to be ready
-		if err := ds.Start(ctx); err != nil {
-			log.Fatal(err)
-		}
-		<-ds.Ready()
-
-		// Wait for kill sig.
-		<-c
-		// Notify exit channels.
-		ch <- os.Interrupt
-
-		cnt := 0
-		start := time.Now()
-		for {
-			cnt++
-			dsStopped := false
-
-			if ds != nil {
-				dsStopped = !ds.Running
-			} else {
-				dsStopped = true
+			var ds *ops.DataServerOps
+			ExitOnError(AddDBToCtx(true), "initializing database")
+			ch := make(chan os.Signal)
+			var err error
+			ds, err = ops.CreateDataServerOps(ctx, logger, ch)
+			if err != nil {
+				ExitOnError(err, "creating data server")
 			}
-
-			if !dsStopped && cnt > 60 {
-				fmt.Printf("Taking longer than expected to stop operations. Waited %v so far\n", time.Since(start))
-			} else if dsStopped {
-				break
+			// Start and wait for it to be ready
+			if err := ds.Start(ctx); err != nil {
+				ExitOnError(err, "starting data server")
 			}
-			time.Sleep(500 * time.Millisecond)
+			<-ds.Ready()
+
+			// Wait for kill sig.
+			<-c
+			// Notify exit channels.
+			ch <- os.Interrupt
+
+			cnt := 0
+			start := time.Now()
+			for {
+				cnt++
+				dsStopped := false
+
+				if ds != nil {
+					dsStopped = !ds.Running
+				} else {
+					dsStopped = true
+				}
+
+				if !dsStopped && cnt > 60 {
+					level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
+				} else if dsStopped {
+					break
+				}
+				time.Sleep(500 * time.Millisecond)
+			}
+			level.Info(logger).Log("msg", "main shutdown complete")
 		}
-		fmt.Printf("Main shutdown complete\n")
+
 	}
-
 }
 
 func main() {

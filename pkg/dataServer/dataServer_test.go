@@ -5,24 +5,25 @@ package dataServer
 
 import (
 	"fmt"
-	"log"
+
 	"net/http"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestDataServer(t *testing.T) {
 	exitCh := make(chan int)
-
+	logger := util.SetupLogger("debug")
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 
-	ds, err := CreateServer(ctx)
+	ds, err := CreateServer(ctx, logger)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatalf("error creating server in test: %s", err)
 	}
 	if err := ds.Start(ctx, exitCh); err != nil {
 		t.Fatal(err)

@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-kit/kit/log"
 	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
@@ -171,7 +172,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 	return timedValues, nil
 }
 
-func List(ctx context.Context) error {
+func List(ctx context.Context, logger log.Logger) error {
 	cfg := config.GetConfig()
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorDisputeABI))
 	if err != nil {

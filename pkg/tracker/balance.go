@@ -5,11 +5,12 @@ package tracker
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/db"
@@ -19,10 +20,17 @@ import (
 const BalanceTrackerName = "BalanceTracker"
 
 type BalanceTracker struct {
+	logger log.Logger
 }
 
 func (b *BalanceTracker) String() string {
 	return BalanceTrackerName
+}
+
+func NewBalanceTracker(logger log.Logger) *BalanceTracker {
+	return &BalanceTracker{
+		logger: log.With(logger, "component", "balance tracker"),
+	}
 }
 
 func (b *BalanceTracker) Exec(ctx context.Context) error {
@@ -43,10 +51,10 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)
 
 	if err != nil {
-		fmt.Println("balance Error, balance.go")
-		return err
+		return errors.Wrap(err, "getting balance")
 	}
 	enc := hexutil.EncodeBig(balance)
-	log.Printf("Balance: %v", enc)
+
+	level.Info(b.logger).Log("msg", "got balance", "balance", enc)
 	return DB.Put(db.BalanceKey, []byte(enc))
 }

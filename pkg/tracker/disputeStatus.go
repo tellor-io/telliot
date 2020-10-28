@@ -6,12 +6,14 @@ package tracker
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
@@ -22,10 +24,17 @@ import (
 const DisputeTrackerName = "DisputeTracker2"
 
 type DisputeTracker struct {
+	logger log.Logger
 }
 
 func (b *DisputeTracker) String() string {
 	return DisputeTrackerName
+}
+
+func NewDisputeTracker(logger log.Logger) *DisputeTracker {
+	return &DisputeTracker{
+		logger: log.With(logger, "component", "dispute tracker"),
+	}
 }
 
 func (b *DisputeTracker) Exec(ctx context.Context) error {
@@ -49,22 +58,19 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 
 	instance, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		fmt.Println("instance Error, disputeStatus")
-		return err
+		return errors.Wrap(err, "getting master instance")
 	}
 
 	status, _, err := instance.GetStakerInfo(nil, fromAddress)
 
 	if err != nil {
-		fmt.Println("instance Error, disputeStatus")
-		return err
+		return errors.Wrap(err, "getting staker info")
 	}
 	enc := hexutil.EncodeBig(status)
-	log.Printf("Staker Status: %v", enc)
+	level.Info(b.logger).Log("msg", "staker status", "status", enc)
 	err = DB.Put(db.DisputeStatusKey, []byte(enc))
 	if err != nil {
-		fmt.Printf("Problem storing dispute info: %v\n", err)
-		return err
+		return errors.Wrap(err, "storing dispute")
 	}
 	// Issue #50, bail out of not able to mine
 	// if status.Cmp(big.NewInt(1)) != 0 {
@@ -75,18 +81,16 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	//asking for dispute status
 	for _, addr := range cfg.ServerWhitelist {
 		address := common.HexToAddress(addr)
-		//fmt.Println("Getting staker info for address", addr)
 		status, _, err := instance.GetStakerInfo(nil, address)
 		if err != nil {
-			fmt.Printf("Could not get staker dispute status for miner address %s: %v\n", addr, err)
+			level.Error(b.logger).Log("msg", "getting staker dispute status for miner", "address", addr, "err", err)
 		}
-		fmt.Printf("Whitelisted Miner %s Dispute Status: %v\n", addr, status)
+		level.Info(b.logger).Log("msg", "whitelisted miner", "address", addr, "status", status)
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.DisputeStatusKey)
 		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
-			fmt.Printf("Problem storing staker dispute status: %v\n", err)
+			level.Error(b.logger).Log("msg", "storing staker dispute status", "err", err)
 		}
 	}
-	//fmt.Println("Finished updated dispute status")
 	return nil
 }

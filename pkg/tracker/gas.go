@@ -7,11 +7,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
@@ -21,6 +22,7 @@ import (
 // GasTracker is the struct that maintains the latest gasprices.
 // note the prices are actually stored in the DB.
 type GasTracker struct {
+	logger log.Logger
 }
 
 // GasPriceModel is what ETHGasStation returns from queries. Not all fields are filled in.
@@ -32,6 +34,13 @@ type GasPriceModel struct {
 
 func (b *GasTracker) String() string {
 	return "GasTracker"
+}
+
+func NewGasTracker(logger log.Logger) *GasTracker {
+	return &GasTracker{
+		logger: log.With(logger, "component", "gas tracker"),
+	}
+
 }
 
 func (b *GasTracker) Exec(ctx context.Context) error {
@@ -53,27 +62,27 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 		if err != nil {
 			gasPrice, err = client.SuggestGasPrice(context.Background())
 			if err != nil {
-				log.Println("couldn't get suggested gas price", err)
+				level.Warn(b.logger).Log("msg", "couldn't get suggested gas price", "err", err)
 			}
 		} else {
 			gpModel := GasPriceModel{}
 			err = json.Unmarshal(payload, &gpModel)
 			if err != nil {
-				log.Printf("Problem with ETH gas station json: %v\n", err)
+				level.Warn(b.logger).Log("msg", "eth gas station json", "err", err)
 				gasPrice, err = client.SuggestGasPrice(context.Background())
 				if err != nil {
-					log.Println("couldn't get suggested gas price", err)
+					level.Warn(b.logger).Log("msg", "getting suggested gas price", "err", err)
 				}
 			} else {
 				gasPrice = big.NewInt(int64(gpModel.Fast / 10))
 				gasPrice = gasPrice.Mul(gasPrice, big.NewInt(common.GWEI))
-				log.Println("Using ETHGasStation fast price: ", gasPrice)
+				level.Info(b.logger).Log("msg", "using ETHGasStation fast price", "price", gasPrice)
 			}
 		}
 	} else {
 		gasPrice, err = client.SuggestGasPrice(context.Background())
 		if err != nil {
-			log.Println("couldn't get suggested gas price", err)
+			level.Warn(b.logger).Log("msg", "getting suggested gas price", "err", err)
 		}
 	}
 
