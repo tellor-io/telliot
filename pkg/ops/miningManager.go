@@ -165,6 +165,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 	}
 }
 
+// newWork is non blocking worker that sends new work to the pow workers.
 func (mgr *MiningMgr) newWork() {
 	go func() {
 		if mgr.cfg.EnablePoolWorker {
