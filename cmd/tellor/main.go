@@ -252,13 +252,11 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 					var err error
 					ds, err = ops.CreateDataServerOps(ctx, logger, ch)
 					if err != nil {
-						level.Error(logger).Log("msg", "creating data server", "err", err)
-						os.Exit(1)
+						ExitOnError(err, "creating data server")
 					}
 					// Start and wait for it to be ready.
 					if err := ds.Start(ctx); err != nil {
-						level.Error(logger).Log("msg", "starting data server", "err", err)
-						os.Exit(1)
+						ExitOnError(err, "starting data server")
 					}
 					<-ds.Ready()
 				}
@@ -271,15 +269,13 @@ func mineCmd(logger log.Logger) func(*cli.Cmd) {
 			}
 			status, _ := hexutil.DecodeBig(string(v))
 			if status.Cmp(big.NewInt(1)) != 0 {
-				level.Error(logger).Log("msg", "miner is not able to mine with status", "status", status, "info", "Stopping all mining immediately")
-				os.Exit(1)
+				ExitOnError(errors.New("miner is not able to mine with current status"), "checking miner")
 			}
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
 			miner, err := ops.CreateMiningManager(ctx, ch, ops.NewSubmitter())
 			if err != nil {
-				level.Error(logger).Log("msg", "creating miner", "err", err)
-				os.Exit(1)
+				ExitOnError(err, "creating miner")
 			}
 			miner.Start(ctx)
 
@@ -333,14 +329,11 @@ func dataserverCmd(logger log.Logger) func(*cli.Cmd) {
 			var err error
 			ds, err = ops.CreateDataServerOps(ctx, logger, ch)
 			if err != nil {
-				level.Error(logger).Log("msg", "creating data server", "err", err)
-				os.Exit(1)
+				ExitOnError(err, "creating data server")
 			}
 			// Start and wait for it to be ready
 			if err := ds.Start(ctx); err != nil {
-				//Should we do this here or pass it down to ExitOnError func for consistency?
-				level.Error(logger).Log("msg", "starting data server", "err", err)
-				os.Exit(1)
+				ExitOnError(err, "starting data server")
 			}
 			<-ds.Ready()
 

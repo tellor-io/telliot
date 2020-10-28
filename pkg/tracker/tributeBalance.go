@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -77,7 +76,6 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	}
 
 	//numTributes, _ := balanceInTributes.Float64()
-	fmt.Printf("Tribute Balance: %v (%v tributes)\n", balance, balanceInTributes)
 	level.Info(b.logger).Log("msg", "tribute", "balance", balance, "balance in tributes", balanceInTributes)
 	if err != nil {
 		return errors.Wrap(err, "retrieving balance")
