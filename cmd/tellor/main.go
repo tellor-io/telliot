@@ -92,7 +92,6 @@ func buildContext() error {
 func AddDBToCtx(remote bool) error {
 	cfg := config.GetConfig()
 	// Create a db instance
-	os.RemoveAll(cfg.DBFile)
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
 		return err
