@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -57,6 +58,7 @@ type MiningMgr struct {
 	database        db.DataServerProxy
 	contractGetter  *getter.TellorGetters
 	cfg             *config.Config
+	mtx             sync.Mutex
 
 	toMineInput    chan *pow.Work
 	solutionOutput chan *pow.Result
@@ -130,9 +132,6 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 	// Start the mining group.
 	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)
 
-	// Request the first work task.
-	mgr.newWork()
-
 	for {
 		select {
 		// Boss wants us to quit for the day.
@@ -145,6 +144,12 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				mgr.Running = false
 				return
 			}
+			// Set this solution as pending so that it is retried if
+			// any of the checks below fail and there is no new challenge.
+			mgr.mtx.Lock()
+			mgr.solutionPending = solution
+			mgr.mtx.Unlock()
+
 			if mgr.cfg.ProfitThreshold > 0 {
 				isProftable, err := mgr.isProfitable()
 				if err != nil {
@@ -160,10 +165,6 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				mgr.log.Error("checking last submit time err:%v", err)
 			} else if lastSubmit < minSubmitPeriod {
 				mgr.log.Debug("min transaction submit threshold of %v hasn't passed, last submit:%v", minSubmitPeriod, lastSubmit)
-
-				// Set this solution as pending so that it is retried if
-				// there is no new challenge.
-				mgr.solutionPending = solution
 				continue
 			}
 			tx, err := mgr.solHandler.Submit(ctx, solution)
@@ -176,38 +177,15 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 
 			// A solution has been submitted so the
 			// pending solution doesn't matter here any more so reset it.
+			mgr.mtx.Lock()
 			mgr.solutionPending = nil
+			mgr.mtx.Unlock()
 
 		// Time to check for a new challenge.
 		case <-ticker.C:
 			mgr.newWork()
 		}
 	}
-}
-
-func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
-	fromAddress := common.HexToAddress(mgr.cfg.PublicAddress)
-	pubKey := strings.ToLower(fromAddress.Hex())
-
-	address := common.HexToAddress(pubKey)
-	dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.TimeOutKey)
-	last, err := mgr.database.Get(dbKey)
-	if err != nil {
-		return time.Duration(0), errors.Wrapf(err, "timeout retrieval error")
-	}
-	lastDecoded, err := hexutil.DecodeBig(string(last))
-	if err != nil {
-		return time.Duration(0), errors.Wrapf(err, "timeout key decode last:%v", last)
-	}
-	lastInt := lastDecoded.Int64()
-	now := time.Now()
-	var lastSubmit time.Duration
-	if lastInt > 0 {
-		tm := time.Unix(lastInt, 0)
-		lastSubmit = now.Sub(tm)
-	}
-
-	return lastSubmit, nil
 }
 
 // newWork is non blocking worker that sends new work to the pow workers.
@@ -233,8 +211,9 @@ func (mgr *MiningMgr) newWork() {
 					return
 
 				}
-				// When there is no new challenge
-				// resend any pending solution.
+
+				// When there is no new challenge resend any pending solution.
+				mgr.mtx.Lock()
 				if mgr.solutionPending != nil {
 					var ids []int64
 					for _, id := range mgr.solutionPending.Work.Challenge.RequestIDs {
@@ -243,9 +222,35 @@ func (mgr *MiningMgr) newWork() {
 					mgr.log.Debug("re-submitting a pending solution - req IDs:%v", ids)
 					mgr.solutionOutput <- mgr.solutionPending
 				}
+				mgr.mtx.Unlock()
 			}
 		}
 	}()
+}
+
+func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
+	fromAddress := common.HexToAddress(mgr.cfg.PublicAddress)
+	pubKey := strings.ToLower(fromAddress.Hex())
+
+	address := common.HexToAddress(pubKey)
+	dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.TimeOutKey)
+	last, err := mgr.database.Get(dbKey)
+	if err != nil {
+		return time.Duration(0), errors.Wrapf(err, "timeout retrieval error")
+	}
+	lastDecoded, err := hexutil.DecodeBig(string(last))
+	if err != nil {
+		return time.Duration(0), errors.Wrapf(err, "timeout key decode last:%v", last)
+	}
+	lastInt := lastDecoded.Int64()
+	now := time.Now()
+	var lastSubmit time.Duration
+	if lastInt > 0 {
+		tm := time.Unix(lastInt, 0)
+		lastSubmit = now.Sub(tm)
+	}
+
+	return lastSubmit, nil
 }
 
 // currentReward returns the current TRB rewards converted to ETH.
