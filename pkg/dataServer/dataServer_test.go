@@ -17,7 +17,8 @@ import (
 
 func TestDataServer(t *testing.T) {
 	exitCh := make(chan int)
-	logger := util.SetupLogger("debug")
+	logSetup := util.SetupLogger()
+	logger := logSetup("debug")
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	defer t.Cleanup(cleanup)
 

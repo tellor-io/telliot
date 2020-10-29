@@ -18,7 +18,9 @@ import (
 )
 
 func TestDisputeString(t *testing.T) {
-	tracker := NewDisputeTracker(util.SetupLogger("debug"))
+	logSetup := util.SetupLogger()
+	logger := logSetup("debug")
+	tracker := NewDisputeTracker(logger)
 	res := tracker.String()
 	if res != DisputeTrackerName {
 		t.Fatal("didn't return expected string", DisputeTrackerName)
@@ -35,7 +37,9 @@ func TestDisputeStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := NewDisputeTracker(util.SetupLogger("debug"))
+	logSetup := util.SetupLogger()
+	logger := logSetup("debug")
+	tracker := NewDisputeTracker(logger)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)

@@ -11,7 +11,8 @@ import (
 
 func TestCreateTracker(t *testing.T) {
 
-	logger := util.SetupLogger("debug")
+	logSetup := util.SetupLogger()
+	logger := logSetup("debug")
 	balanceTracker, _ := createTracker("balance", logger)
 	if balanceTracker[0].String() != BalanceTrackerName {
 		t.Fatalf("Expected BalanceTracker but got %s", balanceTracker[0].String())
