@@ -15,6 +15,8 @@ import (
 )
 
 func TestDisputeCheckerInRange(t *testing.T) {
+	logSetup := util.SetupLogger()
+	logger := logSetup("debug")
 	ctx, _, cleanup := testutil.CreateContext(t)
 	t.Cleanup(cleanup)
 
@@ -25,7 +27,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: util.SetupLogger("debug")}
+	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: logger}
 	err := disputeChecker.Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -36,7 +38,9 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	ctx, cfg, cleanup := testutil.CreateContext(t)
 	t.Cleanup(cleanup)
 	cfg.DisputeThreshold = 0.000000001
-	disputeChecker := NewDisputeChecker(util.SetupLogger("debug"), 500)
+	logSetup := util.SetupLogger()
+	logger := logSetup("debug")
+	disputeChecker := NewDisputeChecker(logger, 500)
 	if _, err := BuildIndexTrackers(); err != nil {
 		t.Fatal(err)
 	}

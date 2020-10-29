@@ -27,7 +27,9 @@ func TestTributeBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tracker := NewTributeTracker(util.SetupLogger("debug"))
+	logSetup := util.SetupLogger()
+	logger := logSetup("debug")
+	tracker := NewTributeTracker(logger)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
