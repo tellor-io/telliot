@@ -151,23 +151,24 @@ func xlateLevel(level LogLevel) logrus.Level {
 
 }
 
-func SetupLogger(logLevel string) log.Logger {
-	var lvl level.Option
-	switch logLevel {
-	case "error":
-		lvl = level.AllowError()
-	case "warn":
-		lvl = level.AllowWarn()
-	case "info":
-		lvl = level.AllowInfo()
-	case "debug":
-		lvl = level.AllowDebug()
-	default:
-		panic("unexpected log level")
+func SetupLogger() func(string) log.Logger {
+	return func(logLevel string) log.Logger {
+		var lvl level.Option
+		switch logLevel {
+		case "error":
+			lvl = level.AllowError()
+		case "warn":
+			lvl = level.AllowWarn()
+		case "info":
+			lvl = level.AllowInfo()
+		case "debug":
+			lvl = level.AllowDebug()
+		default:
+			panic("unexpected log level")
+		}
+
+		logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+		logger = level.NewFilter(logger, lvl)
+		return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	}
-
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = level.NewFilter(logger, lvl)
-
-	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 }
