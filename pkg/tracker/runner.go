@@ -98,8 +98,6 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 				}
 			case <-ticker.C:
 				{
-					//runnerLog.Info("Running trackers...")
-					level.Debug(r.logger).Log("msg", "running trackers")
 					go func(count int) {
 						idx := count % len(trackers)
 						err := trackers[idx].Exec(ctx)
