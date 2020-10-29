@@ -11,7 +11,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -58,7 +57,6 @@ type MiningMgr struct {
 	database        db.DataServerProxy
 	contractGetter  *getter.TellorGetters
 	cfg             *config.Config
-	mtx             sync.Mutex
 
 	toMineInput    chan *pow.Work
 	solutionOutput chan *pow.Result
@@ -140,15 +138,23 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			return
 		// Found a solution.
 		case solution := <-mgr.solutionOutput:
+			// There is no new challenge so resend any pending solution.
 			if solution == nil {
-				mgr.Running = false
-				return
+				if mgr.solutionPending == nil {
+					continue
+				}
+				solution = mgr.solutionPending
+				var ids []int64
+				for _, id := range mgr.solutionPending.Work.Challenge.RequestIDs {
+					ids = append(ids, id.Int64())
+				}
+				mgr.log.Debug("re-submitting a pending solution - req IDs:%v", ids)
 			}
-			// Set this solution as pending so that it is retried if
-			// any of the checks below fail and there is no new challenge.
-			mgr.mtx.Lock()
+
+			// Set this solution as pending so that if
+			// any of the checks below fail and will be retried
+			// when there is no new challenge.
 			mgr.solutionPending = solution
-			mgr.mtx.Unlock()
 
 			if mgr.cfg.ProfitThreshold > 0 {
 				isProftable, err := mgr.isProfitable()
@@ -177,9 +183,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 
 			// A solution has been submitted so the
 			// pending solution doesn't matter here any more so reset it.
-			mgr.mtx.Lock()
 			mgr.solutionPending = nil
-			mgr.mtx.Unlock()
 
 		// Time to check for a new challenge.
 		case <-ticker.C:
@@ -188,7 +192,8 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 	}
 }
 
-// newWork is non blocking worker that sends new work to the pow workers.
+// newWork is non blocking worker that sends new work to the pow workers
+// or re-sends a current pending solution to the submitter when the challenge hasn't changes.
 func (mgr *MiningMgr) newWork() {
 	go func() {
 		if mgr.cfg.EnablePoolWorker {
@@ -201,28 +206,18 @@ func (mgr *MiningMgr) newWork() {
 			if instantSubmit {
 				mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
 			} else {
-				if work != nil {
-					var ids []int64
-					for _, id := range work.Challenge.RequestIDs {
-						ids = append(ids, id.Int64())
-					}
-					mgr.log.Debug("sending new chalenge for mining - req IDs:%v", ids)
-					mgr.toMineInput <- work
+				// It sends even nil work to indicate that no new challenge is avaialble.
+				if work == nil {
+					mgr.solutionOutput <- nil
 					return
-
 				}
 
-				// When there is no new challenge resend any pending solution.
-				mgr.mtx.Lock()
-				if mgr.solutionPending != nil {
-					var ids []int64
-					for _, id := range mgr.solutionPending.Work.Challenge.RequestIDs {
-						ids = append(ids, id.Int64())
-					}
-					mgr.log.Debug("re-submitting a pending solution - req IDs:%v", ids)
-					mgr.solutionOutput <- mgr.solutionPending
+				var ids []int64
+				for _, id := range work.Challenge.RequestIDs {
+					ids = append(ids, id.Int64())
 				}
-				mgr.mtx.Unlock()
+				mgr.log.Debug("sending new chalenge for mining - req IDs:%v", ids)
+				mgr.toMineInput <- work
 			}
 		}
 	}()
