@@ -206,7 +206,7 @@ func (mgr *MiningMgr) newWork() {
 			if instantSubmit {
 				mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
 			} else {
-				// It sends even nil work to indicate that no new challenge is avaialble.
+				// It sends even nil work to indicate that no new challenge is available.
 				if work == nil {
 					mgr.solutionOutput <- nil
 					return
