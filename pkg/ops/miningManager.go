@@ -127,7 +127,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		}
 	}
 
-	//start the mining group
+	// Start the mining group.
 	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)
 
 	// Request the first work task.
@@ -162,7 +162,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				mgr.log.Debug("min transaction submit threshold of %v hasn't passed, last submit:%v", minSubmitPeriod, lastSubmit)
 
 				// Set this solution as pending so that it is retried if
-				// there is no new chalange.
+				// there is no new challenge.
 				mgr.solutionPending = solution
 				continue
 			}
@@ -174,7 +174,8 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			mgr.log.Debug("submited a solution tx:%v", tx.Hash().String())
 			mgr.saveTXCost(ctx, tx)
 
-			// Pending solution doesn't matter here any more so reset it.
+			// A solution has been submitted so the
+			// pending solution doesn't matter here any more so reset it.
 			mgr.solutionPending = nil
 
 		// Time to check for a new challenge.
@@ -345,12 +346,13 @@ func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
 			mgr.log.Error("getting slotProgress for calculating transaction cost err:%v", err)
 		}
 
-		mgr.log.Debug("saving transaction cost txHash:%v cost GWEI:%v slot:%v", receipt.TxHash.String(), txCost.Int64()/tellorCommon.GWEI, slotNum.Int64())
 		txCostID := tellorCommon.PriceTXs + slotNum.String()
 		_, err = mgr.database.Put(txCostID, txCost.Bytes())
 		if err != nil {
-			mgr.log.Error("saving transaction cost in the db err:%v", err)
+			mgr.log.Error("saving transaction cost err:%v", err)
 		}
+		mgr.log.Debug("saved transaction cost txHash:%v cost GWEI:%v slot:%v", receipt.TxHash.String(), txCost.Int64()/tellorCommon.GWEI, slotNum.Int64())
+
 	}(tx)
 }
 
