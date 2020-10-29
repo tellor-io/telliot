@@ -50,7 +50,6 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		level.Warn(b.logger).Log("msg", "new current variables request ID not correct - contract about to be upgraded")
 		return nil
 	}
-	fmt.Println(returnNewVariables)
 
 	// If it has been mined, don't save it.
 	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)

@@ -7,10 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
-	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
@@ -28,7 +25,6 @@ import (
 
 type SolutionHandler struct {
 	log              *util.Logger
-	pubKey           string
 	proxy            db.DataServerProxy
 	currentChallenge *MiningChallenge
 	currentNonce     string
@@ -37,15 +33,8 @@ type SolutionHandler struct {
 }
 
 func CreateSolutionHandler(cfg *config.Config, submitter tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) *SolutionHandler {
-	// Get address from config
-	_fromAddress := cfg.PublicAddress
-
-	// Convert to address
-	fromAddress := common.HexToAddress(_fromAddress)
-	pubKey := strings.ToLower(fromAddress.Hex())
 
 	return &SolutionHandler{
-		pubKey:    pubKey,
 		proxy:     proxy,
 		submitter: submitter,
 		log:       util.NewLogger("pow", "SolutionHandler"),
@@ -58,27 +47,6 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 	s.currentChallenge = challenge
 	s.currentNonce = nonce
 
-	s.log.Info("Getting pending txn and value from data server...")
-
-	address := common.HexToAddress(s.pubKey)
-	dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.TimeOutKey)
-	lastS, err := s.proxy.Get(dbKey)
-	if err != nil {
-		return nil, errors.Wrapf(err, "timeout retrieval error")
-	}
-	lastB, err := hexutil.DecodeBig(string(lastS))
-	if err != nil {
-		return nil, errors.Wrapf(err, "timeout key decode last:%v", lastS)
-	}
-	last := lastB.Int64()
-	today := time.Now()
-	if last > 0 {
-		tm := time.Unix(last, 0)
-		fmt.Println("Time since last submit: ", today.Sub(tm))
-		if today.Sub(tm) < time.Duration(15)*time.Minute {
-			return nil, errors.New("cannot submit value, within fifteen minutes")
-		}
-	}
 	for i := 0; i < 5; i++ {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[i].Uint64())
 		m, err := s.proxy.BatchGet([]string{valKey})

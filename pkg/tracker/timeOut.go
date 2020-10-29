@@ -89,7 +89,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 			level.Error(b.logger).Log("msg", "getting staker timeOut status for miner", "address", addr, "err", err)
 		}
 		if status.Int64() > 0 {
-			fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, time.Unix(status.Int64(), 0))
+			level.Info(b.logger).Log("msg", "whitelisted miner", "addr", addr, "lastTimeMined", time.Unix(status.Int64(), 0))
 		}
 		from := common.HexToAddress(addr)
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)

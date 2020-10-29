@@ -38,6 +38,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	var trackers []Tracker
 	for name, activated := range trackerNames {
 		if activated {
+			level.Info(r.logger).Log("msg", "starting tracker", "name", name)
 			t, err := createTracker(name, r.logger)
 			if err != nil {
 				return fmt.Errorf("problem creating tracker. Name: %s, err: %s", name, err)
@@ -53,7 +54,6 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		}()
 		return nil
 	}
-	level.Info(r.logger).Log("msg", fmt.Sprintf("created %d trackers", len(trackers)))
 
 	var err error
 	masterInstance := ctx.Value(tellorCommon.ContractsTellorContextKey)

@@ -29,7 +29,6 @@ var indexes map[string][]*IndexTracker
 
 // BuildIndexTrackers creates and initializes a new tracker instance.
 func BuildIndexTrackers() ([]Tracker, error) {
-	fmt.Println("StartingIndex Trackers")
 	err := apiOracle.EnsureValueOracle()
 	if err != nil {
 		return nil, err
