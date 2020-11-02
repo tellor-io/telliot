@@ -78,7 +78,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 
 	mt.log.Debug("Received data: %v", m)
 
-	if stat := mt.checkDispute(m[dispKey]); stat == statusWaitNext {
+	if mt.checkDispute(m[dispKey]) == statusWaitNext {
 		return nil, false
 	}
 	diff, stat := mt.getInt(m[db.DifficultyKey])
@@ -92,30 +92,35 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 
 	today := time.Now()
 	tm := time.Unix(l.Int64(), 0)
-	fmt.Println("This long since last value:  ", today.Sub(tm))
+	mt.log.Debug("this long since last value:%v ", today.Sub(tm))
 	if today.Sub(tm) >= time.Duration(15)*time.Minute {
 		instantSubmit = true
 	}
+
 	r, stat := mt.getInt(m[db.RequestIdKey0])
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil, false
 	}
 	reqIDs[0] = r
+
 	r, stat = mt.getInt(m[db.RequestIdKey1])
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil, false
 	}
 	reqIDs[1] = r
+
 	r, stat = mt.getInt(m[db.RequestIdKey2])
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil, false
 	}
 	reqIDs[2] = r
+
 	r, stat = mt.getInt(m[db.RequestIdKey3])
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil, false
 	}
 	reqIDs[3] = r
+
 	r, stat = mt.getInt(m[db.RequestIdKey4])
 	if stat == statusWaitNext || stat == statusFailure {
 		return nil, false
@@ -142,7 +147,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		RequestIDs: reqIDs,
 	}
 
-	// If we already sent this challenge out, don't do it again.
+	// If this chalange is already sent out, don't do it again.
 	if mt.currChallenge != nil && !instantSubmit && bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
 		return nil, false
 	}
@@ -154,17 +159,17 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 	disputed, stat := mt.getInt(disp)
 	if stat == statusWaitNext || stat == statusFailure {
 		if stat == statusWaitNext {
-			mt.log.Info("No dispute results from data server, waiting for next cycle")
+			mt.log.Info("no dispute results from data server, waiting for next cycle")
 		}
 		return stat
 	}
 
 	if disputed.Cmp(big.NewInt(1)) != 0 {
-		mt.log.Error("Miner is in dispute, cannot continue")
-		log.Fatal("Miner in dispute")
+		mt.log.Error("miner is in dispute, cannot continue")
+		log.Fatal("miner in dispute")
 		return statusFailure // Never gets here but just for completeness.
 	}
-	mt.log.Info("Miner is not in dispute, continuing")
+	mt.log.Debug("miner is not in dispute, continuing")
 	return statusSuccess
 }
 
@@ -175,7 +180,7 @@ func (mt *MiningTasker) getInt(data []byte) (*big.Int, int) {
 
 	val, err := hexutil.DecodeBig(string(data))
 	if err != nil {
-		mt.log.Error("Problem decoding int: %v", err)
+		mt.log.Error("decoding int: %v", err)
 		return nil, statusFailure
 	}
 	return val, statusSuccess

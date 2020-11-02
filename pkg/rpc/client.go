@@ -31,6 +31,9 @@ type ETHClient interface {
 	// between contract internal errors and the local chain being out of sync.
 	CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
 
+	// TransactionReceipt implements the geth backend DeployBackend interface.
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+
 	// ContractCall executes an Ethereum contract call with the specified data as the
 	// input.
 	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
@@ -183,6 +186,10 @@ func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, bl
 		return e
 	})
 	return res, _err
+}
+
+func (c *clientInstance) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+	return c.ethClient.TransactionReceipt(ctx, txHash)
 }
 
 func (c *clientInstance) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {

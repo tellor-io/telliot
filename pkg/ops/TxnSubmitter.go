@@ -6,6 +6,7 @@ package ops
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
@@ -20,7 +21,7 @@ func NewSubmitter() TxnSubmitter {
 	return TxnSubmitter{}
 }
 
-// PrepareTransaction relies on rpc package to prepare and submit transactions.
-func (s TxnSubmitter) PrepareTransaction(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) error {
-	return rpc.PrepareContractTxn(ctx, proxy, ctxName, callback)
+// Submit relies on rpc package to prepare and submit transactions.
+func (s TxnSubmitter) Submit(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
+	return rpc.SubmitContractTxn(ctx, proxy, ctxName, callback)
 }

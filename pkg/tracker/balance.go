@@ -5,6 +5,7 @@ package tracker
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -53,8 +54,8 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "getting balance")
 	}
-	enc := hexutil.EncodeBig(balance)
+	level.Info(b.logger).Log("msg", "got balance", "balance", fmt.Sprintf("%.2e", float64(balance.Int64())))
 
-	level.Info(b.logger).Log("msg", "got balance", "balance", enc)
+	enc := hexutil.EncodeBig(balance)
 	return DB.Put(db.BalanceKey, []byte(enc))
 }

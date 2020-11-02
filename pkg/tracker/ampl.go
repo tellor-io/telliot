@@ -30,6 +30,10 @@ func (a Ampl) ValueAt(vals map[string]apiOracle.PriceInfo, at time.Time) float64
 	return VolumeWeightedAvg(valSlice).Price * a.granularity
 }
 
+func (s *Ampl) Granularity() int64 {
+	return int64(s.granularity)
+}
+
 // compute the average ampl price over a 24 hour period using a chained price feed.
 func AmpleChained(chainedPair string) IndexProcessor {
 	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {

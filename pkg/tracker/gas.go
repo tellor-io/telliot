@@ -13,13 +13,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/tellor-io/TellorMiner/pkg/common"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 )
-
-// GWEI constant is the multiplier from Wei.
-const GWEI = 1000000000
 
 // GasTracker is the struct that maintains the latest gasprices.
 // note the prices are actually stored in the DB.
@@ -77,7 +75,7 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 				}
 			} else {
 				gasPrice = big.NewInt(int64(gpModel.Fast / 10))
-				gasPrice = gasPrice.Mul(gasPrice, big.NewInt(GWEI))
+				gasPrice = gasPrice.Mul(gasPrice, big.NewInt(common.GWEI))
 				level.Info(b.logger).Log("msg", "using ETHGasStation fast price", "price", gasPrice)
 			}
 		}

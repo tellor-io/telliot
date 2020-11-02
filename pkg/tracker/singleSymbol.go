@@ -24,3 +24,7 @@ func (s SingleSymbol) Require(at time.Time) map[string]IndexProcessor {
 func (s SingleSymbol) ValueAt(vals map[string]apiOracle.PriceInfo, at time.Time) float64 {
 	return vals[s.symbol].Price * s.granularity
 }
+
+func (s SingleSymbol) Granularity() int64 {
+	return int64(s.granularity)
+}

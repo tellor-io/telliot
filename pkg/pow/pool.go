@@ -9,9 +9,12 @@ import (
 	"math"
 	"math/big"
 	"math/rand"
+	"strconv"
 
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -159,7 +162,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 	return nil, false
 }
 
-func (p *StratumPool) Submit(ctx context.Context, result *Result) bool {
+func (p *StratumPool) Submit(ctx context.Context, result *Result) (*types.Transaction, error) {
 	nonce := result.Nonce
 	p.stratumClient.Request(
 		"mining.submit",
@@ -170,6 +173,10 @@ func (p *StratumPool) Submit(ctx context.Context, result *Result) bool {
 		result.Work.Start = uint64(rand.Int63())
 		p.input <- result.Work
 	}
-	// Check this piece
-	return true
+
+	noncePrs, err := strconv.ParseUint(result.Nonce, 0, 64)
+	if err != nil {
+		return nil, err
+	}
+	return types.NewTransaction(noncePrs, common.HexToAddress(p.minerAddress), big.NewInt(0), 0, big.NewInt(0), []byte{}), nil
 }

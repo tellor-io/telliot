@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
@@ -62,11 +61,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "decoding address")
 	}
-	hash := solsha3.SoliditySHA3(decoded)
-	var data [32]byte
-	copy(data[:], hash)
-	fmt.Println(instance)
-	status, err := instance.GetUintVar(nil, data)
+	status, err := instance.GetUintVar(nil, rpc.Keccak256(decoded))
 
 	if err != nil {
 		return errors.Wrapf(err, "getting dispute status")
@@ -89,15 +84,12 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrapf(err, "decoding address")
 		}
-		hash := solsha3.SoliditySHA3(decoded)
-		var data [32]byte
-		copy(data[:], hash)
-		status, err := instance.GetUintVar(nil, data)
+		status, err := instance.GetUintVar(nil, rpc.Keccak256(decoded))
 		if err != nil {
 			level.Error(b.logger).Log("msg", "getting staker timeOut status for miner", "address", addr, "err", err)
 		}
 		if status.Int64() > 0 {
-			fmt.Printf("Whitelisted Miner %s Last Time Mined: %v\n", addr, time.Unix(status.Int64(), 0))
+			level.Info(b.logger).Log("msg", "whitelisted miner", "addr", addr, "lastTimeMined", time.Unix(status.Int64(), 0))
 		}
 		from := common.HexToAddress(addr)
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)

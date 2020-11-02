@@ -32,3 +32,7 @@ func (t *TimedSwitch) ValueAt(vals map[string]apiOracle.PriceInfo, at time.Time)
 		return t.before.ValueAt(vals, at)
 	}
 }
+
+func (s *TimedSwitch) Granularity() int64 {
+	return int64(s.after.Granularity())
+}

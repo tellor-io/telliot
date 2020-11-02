@@ -85,7 +85,12 @@ type Config struct {
 	ConfigFolder                 string                `json:"configFolder"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
-
+	// Minimum percent of profit when submitting a solution.
+	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
+	// a ProfitThreshold of 200% or more will submit the transaction and
+	// a ProfitThreshold of 199% or less will wait until the reward is increased or
+	// the gas cost is lowered.
+	ProfitThreshold uint64 `json:"profitThreshold"`
 	// Config parameters excluded from the json config file.
 	PrivateKey string `json:"privateKey"`
 }

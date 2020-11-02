@@ -11,13 +11,13 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/db"
+	"github.com/tellor-io/TellorMiner/pkg/rpc"
 )
 
 type CurrentVariablesTracker struct {
@@ -30,20 +30,14 @@ func (b *CurrentVariablesTracker) String() string {
 
 func NewCurrentVariablesTracker(logger log.Logger) *CurrentVariablesTracker {
 	return &CurrentVariablesTracker{
-		logger: log.With(logger, "component", "new current variables"),
+		logger: log.With(logger, "component", "CurrentVariablesTracker"),
 	}
 }
 
 func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
-	//cast client using type assertion since context holds generic interface{}
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-	//get the single config instance
 	cfg := config.GetConfig()
-
-	//get address from config
 	_fromAddress := cfg.PublicAddress
-
-	//convert to address
 	fromAddress := common.HexToAddress(_fromAddress)
 
 	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
@@ -56,10 +50,8 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		level.Warn(b.logger).Log("msg", "new current variables request ID not correct - contract about to be upgraded")
 		return nil
 	}
-	fmt.Println(returnNewVariables)
 
-	//if we've mined it, don't save it
-
+	// If it has been mined, don't save it.
 	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	myStatus, err := instanceGetter.DidMine(nil, returnNewVariables.Challenge, fromAddress)
 	if err != nil {
@@ -70,17 +62,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		bitSetVar = []byte{1}
 	}
 
-	hash := solsha3.SoliditySHA3(
-		// types
-		[]string{"string"},
-		// values
-		[]interface{}{
-			"timeOfLastNewValue",
-		},
-	)
-	var ret [32]byte
-	copy(ret[:], hash)
-	timeOfLastNewValue, err := instanceGetter.GetUintVar(nil, ret)
+	timeOfLastNewValue, err := instanceGetter.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
 	if err != nil {
 		return errors.Wrap(err, "time of last new value retrieval")
 	}

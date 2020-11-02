@@ -9,7 +9,7 @@ import (
 	"math/big"
 	"strconv"
 
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
+	"github.com/ethereum/go-ethereum/crypto"
 	// nolint:staticcheck
 	"golang.org/x/crypto/ripemd160"
 )
@@ -34,7 +34,6 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 	hashInput := make([]byte, len(hash.prefix))
 	copy(hashInput, hash.prefix)
 
-	numHash := new(big.Int)
 	x := new(big.Int)
 	compareZero := big.NewInt(0)
 
@@ -42,7 +41,8 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		nn := strconv.FormatUint(i, 10)
 		hashInput = hashInput[:baseLen]
 		hashInput = append(hashInput, []byte(nn)...)
-		if err := hashFn(hashInput, numHash); err != nil {
+		numHash, err := hashFn(hashInput)
+		if err != nil {
 			return "", 0, err
 		}
 		x.Mod(numHash, hash.difficulty)
@@ -53,18 +53,16 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 	return "", n, nil
 }
 
-func hashFn(data []byte, result *big.Int) error {
-
-	hash := solsha3.SoliditySHA3(data)
-
-	// Consider moving hasher constructor outside loop and replacing with hasher.Reset()
+func hashFn(input []byte) (*big.Int, error) {
+	hash := crypto.Keccak256(input)
 	hasher := ripemd160.New()
-
 	if _, err := hasher.Write(hash); err != nil {
-		return err
+		return nil, err
 	}
 	hash1 := hasher.Sum(nil)
 	n := sha256.Sum256(hash1)
+	result := new(big.Int)
 	result.SetBytes(n[:])
-	return nil
+
+	return result, nil
 }

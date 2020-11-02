@@ -115,9 +115,14 @@ func (c *mockClient) Close() {
 func (c *mockClient) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
 	return []byte("1234567890"), nil
 }
+
+func (c *mockClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+	return &types.Receipt{Status: 1}, nil
+}
 func (c *mockClient) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
 	return nil, nil
 }
+
 func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	fn := hexutil.Encode(call.Data[0:4])
 	meth := c.abiCodec.methods[fn]

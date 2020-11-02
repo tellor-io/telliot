@@ -7,12 +7,10 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
-	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/db"
@@ -27,7 +25,6 @@ import (
 
 type SolutionHandler struct {
 	log              *util.Logger
-	pubKey           string
 	proxy            db.DataServerProxy
 	currentChallenge *MiningChallenge
 	currentNonce     string
@@ -36,85 +33,49 @@ type SolutionHandler struct {
 }
 
 func CreateSolutionHandler(cfg *config.Config, submitter tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) *SolutionHandler {
-	// Get address from config
-	_fromAddress := cfg.PublicAddress
-
-	// Convert to address
-	fromAddress := common.HexToAddress(_fromAddress)
-	pubKey := strings.ToLower(fromAddress.Hex())
 
 	return &SolutionHandler{
-		pubKey:    pubKey,
 		proxy:     proxy,
 		submitter: submitter,
 		log:       util.NewLogger("pow", "SolutionHandler"),
 	}
 }
 
-func (s *SolutionHandler) Submit(ctx context.Context, result *Result) bool {
+func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Transaction, error) {
 	challenge := result.Work.Challenge
 	nonce := result.Nonce
 	s.currentChallenge = challenge
 	s.currentNonce = nonce
 
-	s.log.Info("Getting pending txn and value from data server...")
-
-	address := common.HexToAddress(s.pubKey)
-	dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.TimeOutKey)
-	lastS, err := s.proxy.Get(dbKey)
-	if err != nil {
-		fmt.Println("timeout Retrieval error", err)
-		return false
-	}
-	lastB, err := hexutil.DecodeBig(string(lastS))
-	if err != nil {
-		fmt.Println("Timeout key decode error", lastS)
-		return false
-	}
-	last := lastB.Int64()
-	today := time.Now()
-	if last > 0 {
-		tm := time.Unix(last, 0)
-		fmt.Println("Time since last submit: ", today.Sub(tm))
-		if today.Sub(tm) < time.Duration(15)*time.Minute {
-			fmt.Println("Cannot submit value, within fifteen minutes")
-			return false
-		}
-	}
 	for i := 0; i < 5; i++ {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[i].Uint64())
 		m, err := s.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			fmt.Printf("Could not retrieve pricing data for current request id: %v \n", err)
-			return false
+			return nil, errors.Wrapf(err, "could not retrieve pricing data for current request id")
 		}
 		val := m[valKey]
 		if len(val) == 0 {
-			s.log.Warn("Have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestIDs[i].Uint64())
+			s.log.Warn("have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestIDs[i].Uint64())
 		}
 		value, err := hexutil.DecodeBig(string(val))
 		if err != nil {
 			if challenge.RequestIDs[i].Uint64() > 53 {
-				s.log.Error("Problem decoding price value prior to submitting solution: %v\n", err)
+				s.log.Error("problem decoding price value prior to submitting solution: %v\n", err)
 				if len(val) == 0 {
 					s.log.Error("0 value being submitted")
 					s.currentValues[i] = big.NewInt(0)
 				}
 				continue
 			}
-			s.log.Error("No Value in database, not submitting here2.", challenge.RequestIDs[i].Uint64())
-			return false
+			return nil, errors.Errorf("no value in database,  reg id: %v", challenge.RequestIDs[i].Uint64())
 		}
 		s.currentValues[i] = value
 	}
-	err = s.submitter.PrepareTransaction(ctx, s.proxy, "submitSolution", s.submit)
+	tx, err := s.submitter.Submit(ctx, s.proxy, "submitSolution", s.submit)
 	if err != nil {
-		s.log.Error("Problem submitting txn", err)
-	} else {
-		s.log.Info("Successfully submitted solution")
+		return nil, errors.Wrap(err, "submitting solution txn")
 	}
-
-	return true
+	return tx, nil
 }
 
 func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
