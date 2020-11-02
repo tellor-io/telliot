@@ -5,9 +5,13 @@ package pow
 
 import (
 	"context"
+	"path/filepath"
 	"fmt"
 	"math/big"
-
+	"os"
+	"io/ioutil"
+	"encoding/json"
+	"strconv"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
@@ -54,20 +58,37 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 			return nil, errors.Wrapf(err, "could not retrieve pricing data for current request id")
 		}
 		val := m[valKey]
-		if len(val) == 0 {
-			s.log.Warn("have not retrieved price data for requestId %d. WARNING: Submitting 0 because of faulty API request", challenge.RequestIDs[i].Uint64())
-		}
-		value, err := hexutil.DecodeBig(string(val))
-		if err != nil {
-			if challenge.RequestIDs[i].Uint64() > 53 {
-				s.log.Error("problem decoding price value prior to submitting solution: %v\n", err)
-				if len(val) == 0 {
-					s.log.Error("0 value being submitted")
-					s.currentValues[i] = big.NewInt(0)
-				}
-				continue
+		value := big.NewInt(0)
+		if val == nil || len(val) == 0 {
+			cfg := config.GetConfig()
+			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
+			jsonFile, err := os.Open(indexPath)
+			if err != nil {
+				return nil,errors.Wrapf(err, "manualData read Error")
 			}
-			return nil, errors.Errorf("no value in database,  reg id: %v", challenge.RequestIDs[i].Uint64())
+			defer jsonFile.Close()
+			byteValue, _ := ioutil.ReadAll(jsonFile)
+			var result map[string]map[string]uint
+			json.Unmarshal([]byte(byteValue), &result)
+			_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
+			val := result[_id]["VALUE"]
+			if val == 0{
+				return nil,errors.Wrapf(err, "could not retrieve pricing data for current request id")
+			}
+			value = big.NewInt(int64(val))
+		}else{
+			value, err = hexutil.DecodeBig(string(val))
+			if err != nil {
+				if challenge.RequestIDs[i].Uint64() > 53 {
+					s.log.Error("problem decoding price value prior to submitting solution: %v\n", err)
+					if len(val) == 0 {
+						s.log.Error("0 value being submitted")
+						s.currentValues[i] = big.NewInt(0)
+					}
+					continue
+				}
+				return nil, errors.Errorf("no value in database,  reg id: %v", challenge.RequestIDs[i].Uint64())
+			}
 		}
 		s.currentValues[i] = value
 	}
