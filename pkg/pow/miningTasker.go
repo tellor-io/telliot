@@ -140,7 +140,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 			//return nil, false
 		}
 		val := m2[valKey]
-		if val == nil || len(val) == 0 {
+		if len(val) == 0 {
 			cfg := config.GetConfig()
 			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
 			jsonFile, err := os.Open(indexPath)

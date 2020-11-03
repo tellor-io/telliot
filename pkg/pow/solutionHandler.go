@@ -59,8 +59,8 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 			return nil, errors.Wrapf(err, "could not retrieve pricing data for current request id")
 		}
 		val := m[valKey]
-		value := big.NewInt(0)
-		if val == nil || len(val) == 0 {
+		var value *big.Int
+		if len(val) == 0 {
 			cfg := config.GetConfig()
 			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
 			jsonFile, err := os.Open(indexPath)
