@@ -189,5 +189,8 @@
 	],
 	"ZRX/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1).0.4"
+	],
+	"VIXEOD": [
+		"json(https://www.quandl.com/api/v3/datasets/CHRIS/CBOE_VX1.json?api_key=4enfkxxxxxxxxxxxxxxx).dataset.data.0.4" 
 	]
 }

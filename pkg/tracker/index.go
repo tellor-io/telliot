@@ -63,6 +63,11 @@ func BuildIndexTrackers() ([]Tracker, error) {
 				var name string
 				var source DataSource
 				if strings.HasPrefix(pathStr, "http") {
+					if cfg.PaidApis[symbol] != "" {
+						pathStr += cfg.PaidApis[symbol]
+					}
+					fmt.Println(symbol)
+					fmt.Println(pathStr)
 					source = &JSONapi{&FetchRequest{queryURL: pathStr, timeout: cfg.FetchTimeout.Duration}}
 					u, err := url.Parse(pathStr)
 					if err != nil {

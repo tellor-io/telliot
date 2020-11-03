@@ -63,6 +63,7 @@ type Config struct {
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
 	Trackers                     map[string]bool       `json:"trackers"`
+	PaidApis                     map[string]string     `json:paidApis`
 	DBFile                       string                `json:"dbFile"`
 	ServerHost                   string                `json:"serverHost"`
 	ServerPort                   uint                  `json:"serverPort"`
