@@ -5,13 +5,14 @@ package pow
 
 import (
 	"context"
-	"path/filepath"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"os"
-	"io/ioutil"
-	"encoding/json"
+	"path/filepath"
 	"strconv"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
@@ -64,19 +65,22 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
 			jsonFile, err := os.Open(indexPath)
 			if err != nil {
-				return nil,errors.Wrapf(err, "manualData read Error")
+				return nil, errors.Wrapf(err, "manualData read Error")
 			}
 			defer jsonFile.Close()
 			byteValue, _ := ioutil.ReadAll(jsonFile)
 			var result map[string]map[string]uint
-			json.Unmarshal([]byte(byteValue), &result)
+			err = json.Unmarshal([]byte(byteValue), &result)
+			if err != nil {
+				return nil, errors.Wrapf(err, "manualData read Error")
+			}
 			_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
-			if val == 0{
-				return nil,errors.Wrapf(err, "could not retrieve pricing data for current request id")
+			if val == 0 {
+				return nil, errors.Wrapf(err, "could not retrieve pricing data for current request id")
 			}
 			value = big.NewInt(int64(val))
-		}else{
+		} else {
 			value, err = hexutil.DecodeBig(string(val))
 			if err != nil {
 				if challenge.RequestIDs[i].Uint64() > 53 {

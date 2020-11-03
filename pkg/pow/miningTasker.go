@@ -5,17 +5,18 @@ package pow
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	"math/big"
 	"math/rand"
-	"time"
 	"os"
-	"io/ioutil"
-	"encoding/json"
 	"path/filepath"
 	"strconv"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/db"
@@ -144,21 +145,25 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
 			jsonFile, err := os.Open(indexPath)
 			if err != nil {
-				fmt.Println("manualData read error",err)
-				return nil,false
+				fmt.Println("manualData read error", err)
+				return nil, false
 			}
 			defer jsonFile.Close()
 			byteValue, _ := ioutil.ReadAll(jsonFile)
 			var result map[string]map[string]uint
-			json.Unmarshal([]byte(byteValue), &result)
+			err = json.Unmarshal([]byte(byteValue), &result)
+			if err != nil {
+				fmt.Println("manualData unsmarshal ", err)
+				return nil, false
+			}
 			_id := strconv.FormatUint(reqIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
-		if val == 0{
-			mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
-			return nil,false
+			if val == 0 {
+				mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
+				return nil, false
+			}
+			mt.log.Info("USING MANUALLY ENTERED VALUE!!!! USE CAUTION")
 		}
-		mt.log.Info("USING MANUALLY ENTERED VALUE!!!! USE CAUTION")
-	}
 	}
 
 	newChallenge := &MiningChallenge{
