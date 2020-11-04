@@ -70,10 +70,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 			defer jsonFile.Close()
 			byteValue, _ := ioutil.ReadAll(jsonFile)
 			var result map[string]map[string]uint
-			err = json.Unmarshal([]byte(byteValue), &result)
-			if err != nil {
-				return nil, errors.Wrapf(err, "manualData read Error")
-			}
+			_ = json.Unmarshal([]byte(byteValue), &result)
 			_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
