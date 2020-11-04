@@ -145,17 +145,12 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
 			jsonFile, err := os.Open(indexPath)
 			if err != nil {
-				fmt.Println("manualData read error", err)
 				return nil, false
 			}
 			defer jsonFile.Close()
 			byteValue, _ := ioutil.ReadAll(jsonFile)
 			var result map[string]map[string]uint
-			err = json.Unmarshal([]byte(byteValue), &result)
-			if err != nil {
-				fmt.Println("manualData unsmarshal ", err)
-				return nil, false
-			}
+			_ = json.Unmarshal([]byte(byteValue), &result)
 			_id := strconv.FormatUint(reqIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
