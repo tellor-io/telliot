@@ -7,4 +7,5 @@ pkg/pow/kernelSource.go
 pkg/contracts
 
 /tellor
+myconfig.json
 

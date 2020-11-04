@@ -10,6 +10,6 @@
     "dbFile": "/tellorDB",
     "confgFolder": "configs",
     "paidApis": {
-        "vixeod": "?api_key=4enfkxxxxxxxxxxxxxxx"
+        "vixeod": ["json(https://www.quandl.com/api/v3/datasets/CHRIS/CBOE_VX1.json?api_key=28exxxxxxxxxxxxx).dataset.data.0.4"]
     }
 }

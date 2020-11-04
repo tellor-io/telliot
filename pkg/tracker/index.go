@@ -47,6 +47,12 @@ func BuildIndexTrackers() ([]Tracker, error) {
 		return nil, fmt.Errorf("failed to parse index file: %v", err)
 	}
 
+	for sym, apis := range cfg.PaidApis {
+		for _, url := range apis {
+			baseIndexes[sym] = append(baseIndexes[sym], url)
+		}
+	}
+
 	indexes = make(map[string][]*IndexTracker)
 
 	//build a tracker for each unique API
@@ -63,9 +69,6 @@ func BuildIndexTrackers() ([]Tracker, error) {
 				var name string
 				var source DataSource
 				if strings.HasPrefix(pathStr, "http") {
-					if cfg.PaidApis[symbol] != "" {
-						pathStr += cfg.PaidApis[symbol]
-					}
 					source = &JSONapi{&FetchRequest{queryURL: pathStr, timeout: cfg.FetchTimeout.Duration}}
 					u, err := url.Parse(pathStr)
 					if err != nil {
