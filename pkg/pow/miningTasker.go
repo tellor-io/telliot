@@ -5,11 +5,16 @@ package pow
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	"math/big"
 	"math/rand"
+	"os"
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -132,12 +137,27 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		m2, err := mt.proxy.BatchGet([]string{valKey})
 		if err != nil {
 			mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
-			return nil, false
+			//return nil, false
 		}
 		val := m2[valKey]
 		if len(val) == 0 {
-			mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
-			return nil, false
+			cfg := config.GetConfig()
+			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
+			jsonFile, err := os.Open(indexPath)
+			if err != nil {
+				return nil, false
+			}
+			defer jsonFile.Close()
+			byteValue, _ := ioutil.ReadAll(jsonFile)
+			var result map[string]map[string]uint
+			_ = json.Unmarshal([]byte(byteValue), &result)
+			_id := strconv.FormatUint(reqIDs[i].Uint64(), 10)
+			val := result[_id]["VALUE"]
+			if val == 0 {
+				mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
+				return nil, false
+			}
+			mt.log.Info("USING MANUALLY ENTERED VALUE!!!! USE CAUTION")
 		}
 	}
 

@@ -9,3 +9,4 @@ pkg/contracts
 /tellor
 myconfig.json
 
+/configs/myconfig*

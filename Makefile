@@ -13,8 +13,6 @@ GOPROXY     ?= https://proxy.golang.org
 # systems gsed won't be installed, so will use sed as expected.
 SED     ?= $(shell which gsed 2>/dev/null || which sed)
 GIT     ?= $(shell which git)
-GIT_TAG  = $(shell git describe --tags)
-GIT_HASH = $(shell git rev-parse --short HEAD)
 
 BIN_DIR ?= /tmp/bin
 OS      ?= $(shell uname -s | tr '[A-Z]' '[a-z]')
@@ -67,13 +65,12 @@ pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go: contracts/* $(SOL
 .PHONY: build
 build: ## Build the project.
 build: check-git generate
-ifeq ($(GIT_TAG),)
-	@echo "GIT_TAG is empty" && exit 1
-endif
-ifeq ($(GIT_HASH),)
-	@echo "GIT_HASH is empty" && exit 1
-endif
-	go build -ldflags "-X main.GitTag=${GIT_TAG} -X main.GitHash=${GIT_HASH} -s -w" ./cmd/tellor
+build: export GIT_TAG=$(shell git describe --tags)
+build: export GIT_HASH=$(shell git rev-parse --short HEAD)
+build:
+	@[ "${GIT_TAG}" ] || ( echo ">> GIT_TAG is not set"; exit 1 )
+	@[ "${GIT_HASH}" ] || ( echo ">> GIT_HASH is not set"; exit 1 )
+	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/tellor
 
 .PHONY: check-git
 check-git:
