@@ -49,9 +49,6 @@ func BuildIndexTrackers() ([]Tracker, error) {
 
 	for sym, apis := range cfg.PaidApis {
 		baseIndexes[sym] = append(baseIndexes[sym], apis...)
-		// for _, url := range apis {
-		// 	baseIndexes[sym] = append(baseIndexes[sym], url)
-		// }
 	}
 
 	indexes = make(map[string][]*IndexTracker)
