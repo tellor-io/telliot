@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	
 	"github.com/benbjohnson/clock"
 	"github.com/joho/godotenv"
 	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
