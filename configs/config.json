@@ -9,7 +9,7 @@
     "gasMax": 10,
     "dbFile": "/tellorDB",
     "paidApis": {
-        "vixeod": ["json(https://www.quandl.com/api/v3/datasets/CHRIS/CBOE_VX1.json?api_key=28exxxxxxxxxxxxx).dataset.data.0.4"]
-    }
+        "VIXEOD": ["json(https://www.quandl.com/api/v3/datasets/CHRIS/CBOE_VX1.json?api_key=${VIXEOD_KEY}).dataset.data.0.4"]
+    },
     "configFolder": "/configs"
 }
