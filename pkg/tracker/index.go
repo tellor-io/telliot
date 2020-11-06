@@ -7,17 +7,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/benbjohnson/clock"
+	"github.com/joho/godotenv"
+	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
+	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"github.com/joho/godotenv"
-	"github.com/benbjohnson/clock"
-	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 var clck clock.Clock
@@ -50,14 +50,14 @@ func BuildIndexTrackers() ([]Tracker, error) {
 
 	for sym, apis := range cfg.PaidApis {
 		// Load the env
-		if(strings.Contains(apis[0],"${"+ sym+"_KEY}")){
+		if strings.Contains(apis[0], "${"+sym+"_KEY}") {
 			err = godotenv.Load()
 			if err != nil {
 				return nil, fmt.Errorf("error reading .env file: %v", err.Error())
 			}
-			apiKey := os.Getenv(sym+"_KEY")
+			apiKey := os.Getenv(sym + "_KEY")
 			if apiKey != "" {
-				apis[0] = strings.Replace(apis[0],"${"+ sym +"_KEY}", apiKey, 1)
+				apis[0] = strings.Replace(apis[0], "${"+sym+"_KEY}", apiKey, 1)
 			}
 		}
 		baseIndexes[sym] = append(baseIndexes[sym], apis...)
