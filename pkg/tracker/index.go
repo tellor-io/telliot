@@ -7,18 +7,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	
-	"github.com/benbjohnson/clock"
-	"github.com/joho/godotenv"
-	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/benbjohnson/clock"
+	"github.com/joho/godotenv"
+	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
+	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 var clck clock.Clock
