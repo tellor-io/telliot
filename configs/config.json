@@ -8,5 +8,6 @@
     "serverPort": 5000,
     "gasMax": 10,
     "dbFile": "/tellorDB",
-    "configFolder": "/configs"
+    "configFolder": "/configs",
+    "envFile": "/configs/.env.example"
 }
