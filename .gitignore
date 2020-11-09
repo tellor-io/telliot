@@ -1,11 +1,9 @@
 */saved.json
-.env
-*/.env
 coverage.out
 
 pkg/pow/kernelSource.go
 pkg/contracts
 
-/tellor
+configs/.env
 
-/configs/myconfig*
+/tellor

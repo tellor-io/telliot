@@ -9,6 +9,11 @@ NOTE: As semantic versioning states all 0.y.z releases can contain breaking chan
 
 We use *breaking :warning:* to mark changes that are not backward compatible (relates only to v0.y.z releases.)
 
+## Unreleased
+- [#254](https://github.com/tellor-io/TellorMiner/pull/254)
+    - Added support for expanding variables in the indexer api url.
+    - Added config to specify the `.env` file location. The default is now `configs/.env` so users should either specify a custom location in the `config.json` or move it inside the default config folder.
+
 ## [v5.0.0](https://github.com/tellor-io/TellorMiner/releases) - 2020.11.02
 
 ### Added

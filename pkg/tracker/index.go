@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/benbjohnson/clock"
+	"github.com/joho/godotenv"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/util"
@@ -56,10 +59,21 @@ func BuildIndexTrackers() ([]Tracker, error) {
 
 	for symbol, apis := range baseIndexes {
 		for _, api := range apis {
-			//did we already have a tracker for this API string?
+			// Tracker for this API already added?
 			_, ok := indexers[api]
 			if !ok {
 				pathStr, args := util.ParseQueryString(api)
+
+				// Expand any env variables with their values from the .env file.
+				vars, err := godotenv.Read(cfg.EnvFile)
+				// Ignore file doesn't exist errors.
+				if _, ok := err.(*os.PathError); err != nil && !ok {
+					return nil, errors.Wrap(err, "reading .env file")
+				}
+				pathStr = os.Expand(pathStr, func(key string) string {
+					return vars[key]
+				})
+
 				var name string
 				var source DataSource
 				if strings.HasPrefix(pathStr, "http") {

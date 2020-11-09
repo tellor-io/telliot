@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/pkg/errors"
 )
 
 // Unfortunate hack to enable json parsing of human readable time strings
@@ -93,7 +95,11 @@ type Config struct {
 	ProfitThreshold uint64 `json:"profitThreshold"`
 	// Config parameters excluded from the json config file.
 	PrivateKey string `json:"privateKey"`
+	// EnvFile location that include all private details like private key etc.
+	EnvFile string `json:"envFile"`
 }
+
+const ConfigFolder = "configs"
 
 var config = Config{
 	GasMax:                       10,
@@ -118,6 +124,8 @@ var config = Config{
 		"indexers":         true,
 		"disputeChecker":   false,
 	},
+	ConfigFolder: ConfigFolder,
+	EnvFile:      path.Join(ConfigFolder, ".env"),
 }
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
@@ -139,10 +147,9 @@ func ParseConfigBytes(data []byte) error {
 	}
 	// Check if the env is already set, only try loading .env if its not there.
 	if config.PrivateKey == "" {
-		// Load the env
-		err = godotenv.Load()
+		err = godotenv.Load(config.EnvFile)
 		if err != nil {
-			return fmt.Errorf("error reading .env file: %v", err.Error())
+			return errors.Wrap(err, "loading .env file")
 		}
 
 		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
