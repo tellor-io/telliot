@@ -116,6 +116,11 @@
 	"MAKER/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd).maker.usd"
 	],
+	"OGN/USD": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=origin-protocol&vs_currencies=usd).origin-protocol.usd",
+		"json(https://min-api.cryptocompare.com/data/price?fsym=OGN&tsyms=USD).USD",
+		"json(https://api.binance.com/api/v1/klines?symbol=OGNUSDT&interval=1d&limit=1).0.4"
+	],
 	"RCN/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=RCNBTC&interval=1d&limit=1).0.4"
 	],
@@ -151,6 +156,11 @@
 	],
 	"WAVES/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=WAVESBTC&interval=1d&limit=1).0.4"
+	],
+	"WAVES/USD": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=waves&vs_currencies=usd).waves.usd",
+		"json(https://min-api.cryptocompare.com/data/price?fsym=WAVES&tsyms=USD).USD",
+		"json(https://api.binance.com/api/v1/klines?symbol=WAVESUSDT&interval=1d&limit=1).0.4"
 	],
 	"XAU/USD": [
 		"json(https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD).0.spreadProfilePrices.0.ask"

@@ -151,6 +151,10 @@ var PSRs = map[int]ValueGenerator{
 	51: &SingleSymbol{symbol: "XMR/USD", granularity: 1000000, transform: MedianAt},
 	52: &SingleSymbol{symbol: "XFT/USD", granularity: 1000000, transform: MedianAt},
 	53: &SingleSymbol{symbol: "BTCDOMINANCE", granularity: 1000000, transform: MedianAt},
+	54: &SingleSymbol{symbol: "WAVES/USD", granularity: 1000000, transform: MedianAt},
+	55: &SingleSymbol{symbol: "OGN/USD", granularity: 1000000, transform: MedianAt},
+	56: &SingleSymbol{symbol: "VIXEOD", granularity: 1000000, transform: MedianAt},
+
 }
 
 // ExpDecay maps values of x between 0 (brand new) and 1 (old) to weights between 0 and 1

@@ -96,7 +96,9 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 		bigVal.SetFloat64(amt)
 		bigInt := new(big.Int)
 		bigVal.Int(bigInt)
-
+		// if requestID >= 54 {
+		// 	fmt.Println(requestID, amt)
+		// }
 		// Encode it and store to DB.
 		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 		enc := hexutil.EncodeBig(bigInt)
