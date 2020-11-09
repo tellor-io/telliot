@@ -7,5 +7,6 @@
     "serverPort": 5001,
     "dbFile": "/tmp/tellor/tellor_db1",
     "configFolder": "configs", 
-    "minConfidence":0.00000001
+    "minConfidence":0.00000001,
+    "envFile": "configs/.env"
 }
