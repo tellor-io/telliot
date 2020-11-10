@@ -271,6 +271,16 @@ func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float
 	return Median(vals), confidence
 }
 
+func MaxPSRID() uint64 {
+	var maxID int
+	for id := range PSRs {
+		if id > maxID {
+			maxID = id
+		}
+	}
+	return uint64(maxID)
+}
+
 func MedianAtEOD(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
 	now := clck.Now().UTC()
 	d := 24 * time.Hour
@@ -329,12 +339,3 @@ func VolumeWeightedAvg(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	return apiOracle.PriceInfo{Price: priceSum / float64(len(vals)), Volume: 0}
 }
 
-func MaxPSRID() uint64 {
-	var maxID int
-	for id := range PSRs {
-		if id > maxID {
-			maxID = id
-		}
-	}
-	return uint64(maxID)
-}
