@@ -13,7 +13,6 @@ package tracker
 // 	"github.com/tellor-io/TellorMiner/pkg/db"
 // 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 // )
-
 // func TestPSR(t *testing.T) {
 // 	ctx, _, cleanup := testutil.CreateContext(t)
 // 	t.Cleanup(cleanup)
