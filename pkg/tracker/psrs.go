@@ -328,3 +328,13 @@ func VolumeWeightedAvg(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	}
 	return apiOracle.PriceInfo{Price: priceSum / float64(len(vals)), Volume: 0}
 }
+
+func MaxPSRID() uint64 {
+	var maxID int
+	for id := range PSRs {
+		if id > maxID {
+			maxID = id
+		}
+	}
+	return uint64(maxID)
+}
