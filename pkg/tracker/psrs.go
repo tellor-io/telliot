@@ -338,4 +338,3 @@ func VolumeWeightedAvg(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	}
 	return apiOracle.PriceInfo{Price: priceSum / float64(len(vals)), Volume: 0}
 }
-
