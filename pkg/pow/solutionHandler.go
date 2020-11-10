@@ -19,6 +19,7 @@ import (
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/db"
+	"github.com/tellor-io/TellorMiner/pkg/tracker"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -80,7 +81,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 		} else {
 			value, err = hexutil.DecodeBig(string(val))
 			if err != nil {
-				if challenge.RequestIDs[i].Uint64() > 53 {
+				if challenge.RequestIDs[i].Uint64() > tracker.MaxPSRID() {
 					s.log.Error("problem decoding price value prior to submitting solution: %v\n", err)
 					if len(val) == 0 {
 						s.log.Error("0 value being submitted")

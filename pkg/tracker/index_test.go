@@ -3,8 +3,16 @@
 
 package tracker
 
-// Refactor the tests to not use the network as this will always be flaky.
+// import (
+// 	"fmt"
+// 	"testing"
 
+// 	"github.com/ethereum/go-ethereum/common/hexutil"
+
+// 	"github.com/tellor-io/TellorMiner/pkg/common"
+// 	"github.com/tellor-io/TellorMiner/pkg/db"
+// 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+// )
 // func TestPSR(t *testing.T) {
 // 	ctx, _, cleanup := testutil.CreateContext(t)
 // 	t.Cleanup(cleanup)
