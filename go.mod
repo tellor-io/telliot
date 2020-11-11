@@ -8,12 +8,8 @@ require (
 	github.com/benbjohnson/clock v1.0.3
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/cespare/cp v1.1.1 // indirect
-<<<<<<< HEAD
-	github.com/charliehorse55/go-opencl v0.0.0-20200116145223-eb5421c9755d
-	github.com/davecgh/go-spew v1.1.1
-=======
 	github.com/charliehorse55/go-opencl v0.0.0-20200204192503-ff58893da7e7
->>>>>>> origin/master
+	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/ethereum/go-ethereum v1.9.23
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
