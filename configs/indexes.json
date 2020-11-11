@@ -4,13 +4,11 @@
 	],
 	"AMPL/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd).ampleforth.usd",
-		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-USDT).data.last,.data.vol",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.7,.0.8",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.7,.0.8",
 		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD"
 	],
 	"AMPL/BTC": [
-		"json(https://api.kucoin.com/api/v1/market/stats?symbol=AMPL-BTC).data.last,.data.vol",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC).0.7,.0.8"
 	],
 	"ATOM/USD": [
@@ -116,6 +114,11 @@
 	"MAKER/USD": [
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd).maker.usd"
 	],
+	"OGN/USD": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=origin-protocol&vs_currencies=usd).origin-protocol.usd",
+		"json(https://min-api.cryptocompare.com/data/price?fsym=OGN&tsyms=USD).USD",
+		"json(https://api.binance.com/api/v1/klines?symbol=OGNUSDT&interval=1d&limit=1).0.4"
+	],
 	"RCN/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=RCNBTC&interval=1d&limit=1).0.4"
 	],
@@ -151,6 +154,11 @@
 	],
 	"WAVES/BTC": [
 		"json(https://api.binance.com/api/v1/klines?symbol=WAVESBTC&interval=1d&limit=1).0.4"
+	],
+	"WAVES/USD": [
+		"json(https://api.coingecko.com/api/v3/simple/price?ids=waves&vs_currencies=usd).waves.usd",
+		"json(https://min-api.cryptocompare.com/data/price?fsym=WAVES&tsyms=USD).USD",
+		"json(https://api.binance.com/api/v1/klines?symbol=WAVESUSDT&interval=1d&limit=1).0.4"
 	],
 	"XAU/USD": [
 		"json(https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD).0.spreadProfilePrices.0.ask"
