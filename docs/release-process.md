@@ -31,7 +31,7 @@ A few days before a major or minor release, consider updating the dependencies:
 
 ```
 make update-go-deps
-git add go.mod go.sum vendor
+git add go.mod go.sum
 git commit -m "Update dependencies"
 ```
 
