@@ -14,12 +14,12 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestRunner(t *testing.T) {
-	ctx, _, cleanup := testutil.CreateContext(t)
+	ctx, _, cleanup := tcontext.CreateTestContext(t)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
 	defer t.Cleanup(cleanup)

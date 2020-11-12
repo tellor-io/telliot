@@ -16,7 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 )
 
 var (
@@ -51,7 +51,7 @@ func (t testSubmit) Submit(ctx context.Context, proxy db.DataServerProxy, ctxNam
 }
 
 func TestRequestDataOps(t *testing.T) {
-	ctx, cfg, cleanup := testutil.CreateContext(t)
+	ctx, cfg, cleanup := tcontext.CreateTestContext(t)
 	defer t.Cleanup(cleanup)
 
 	exitCh := make(chan os.Signal)

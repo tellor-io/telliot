@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestAmpl(t *testing.T) {
 	util.CreateTestClient(&client, mockAPI)
-	ctx, _, cleanup := testutil.CreateContext(t)
+	ctx, _, cleanup := tcontext.CreateTestContext(t)
 	defer t.Cleanup(cleanup)
 
 	mock := clock.NewMock()

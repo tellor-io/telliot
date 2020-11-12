@@ -6,11 +6,11 @@ package tracker
 import (
 	"testing"
 
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 )
 
 func TestMeanAt(t *testing.T) {
-	ctx, _, cleanup := testutil.CreateContext(t)
+	ctx, _, cleanup := tcontext.CreateTestContext(t)
 	t.Cleanup(cleanup)
 	if _, err := BuildIndexTrackers(); err != nil {
 		t.Fatal(err)

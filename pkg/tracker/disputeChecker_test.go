@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
 func TestDisputeCheckerInRange(t *testing.T) {
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	ctx, _, cleanup := testutil.CreateContext(t)
+	ctx, _, cleanup := tcontext.CreateTestContext(t)
 	t.Cleanup(cleanup)
 
 	if _, err := BuildIndexTrackers(); err != nil {
@@ -35,7 +35,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 }
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
-	ctx, cfg, cleanup := testutil.CreateContext(t)
+	ctx, cfg, cleanup := tcontext.CreateTestContext(t)
 	t.Cleanup(cleanup)
 	cfg.DisputeThreshold = 0.000000001
 	logSetup := util.SetupLogger()

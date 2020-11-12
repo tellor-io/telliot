@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -17,7 +17,7 @@ func TestDataServerOps(t *testing.T) {
 	exitCh := make(chan os.Signal)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	ctx, _, cleanup := testutil.CreateContext(t)
+	ctx, _, cleanup := tcontext.CreateTestContext(t)
 	defer t.Cleanup(cleanup)
 
 	ops, err := CreateDataServerOps(ctx, logger, exitCh)
