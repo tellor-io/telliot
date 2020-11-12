@@ -10,6 +10,7 @@ NOTE: As semantic versioning states all 0.y.z releases can contain breaking chan
 We use *breaking :warning:* to mark changes that are not backward compatible (relates only to v0.y.z releases.)
 
 ## Unreleased
+- [#272](https://github.com/tellor-io/TellorMiner/pull/272) Automated Docker images on every push to master and with every tagged release.
 
 ## [v5.2.0] - 2020.11.12
 - [#254](https://github.com/tellor-io/TellorMiner/pull/254)
