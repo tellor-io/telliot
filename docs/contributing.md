@@ -1,15 +1,12 @@
 # Contributing
-
 This document explain the process of contributing to the project.
 
 
 ## Philosophy
-
 - The philosophy is borrowing much from UNIX philosophy and the golang programming language.Each sub command should do one thing and do it well
  - Every component behaviour should be covered with an e2e tests and if an  e2e tests is not appropriate should at least have unit tests for key components of a package.
 
 ## Feedback / Issues
-
 If you encounter any issue or you have an idea to improve, please:
 
 * Search through Google and [existing open and closed GitHub Issues](https://github.com/tellor-io/TellorMiner/issues) for the
@@ -21,25 +18,20 @@ We are recommending, using GitHub issues for issues and feedback, because GitHub
 
 If you encounter security vulnerability, please let us know privately via the Team email address: [info@tellor.io](mailto:info@tellor.io?subject=Security%20vulnerability%20report)
 
-
 ## Adding New Features / Components
-
 For any major changes or new features, please first
 discuss the change you wish to make via issue or Discord, or any other
 method before making a change.
 
 ## Development
-
 The following section explains various suggestions and procedures to note during development.
 
 ### First Steps
-
 * Familiarizing yourself with our [coding style guidelines.](coding-style-guide.md).
-* Familiarizing yourself with the [Makefile](Makefile) commands, for example `format`, `test`, `lint`.
-`make help` will print most of available commands with details.
+* Familiarizing yourself with the [Makefile](Makefile) commands, for example `build`,`format`, `test`, `lint`.
+`make help` will print all available commands with some description.
 
 ### Pull Request Process
-
 1. Fork tellor-io/TellorMiner.git and start development from your own fork. Here are sample steps to setup your development environment:
 
 ```console
@@ -50,7 +42,7 @@ $ git clone https://github.com/tellor-io/TellorMiner.git
 $ cd TellorMiner
 $ git remote add fork git remote add fork git@github.com/<your_github_id>/TellorMiner.git
 $ make build
-$ ./TellorMiner -h
+$ ./tellor -h
 ```
 
 
@@ -71,7 +63,6 @@ $ git push fork <your_PR_branch>
 1. If you feel like your PR is waiting too long for a review, feel free to ping in the [Discord](https://discord.gg/n7drGjh) channel for a review!
 
 ### Dependency management
-
 The project uses [Go modules](https://golang.org/cmd/go/#hdr-Modules__module_versions__and_more) to manage dependencies on external packages. This requires a working Go environment with version 1.11 or greater and git installed.
 
 To add or update a new dependency, use the `go get` command:
@@ -93,5 +84,4 @@ git commit
 ```
 
 ### Project development go tools
-
 The project uses [Bingo](../.bingo/README.md) for adding any go tools required by the project.

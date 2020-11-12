@@ -16,32 +16,26 @@
 This is the workhorse of the Miner system as it takes on solving the PoW challenge.
 It's built on Go and utilizes a split structure.  The database piece is a LevelDB that keeps track of all variables (challenges, difficulty, values to submit, etc.) and the miner simply solves the PoW challenge.  This enables parties to split the pieces for optimization.
 
-**The Tellor system is a way to push data on-chain.  What pieces of data are pushed are specificied in the psr.json file. Note that the data corresponds to a specific API. The tellor mining system is set up to pull api data to generate these values to submit on-chain once a correct nonce is mined. These specific apis are just suggestions.  The system is not guarunteed to work for everyone.  It is up to the consnesus of the Tellor token holders to determine what a correct value is. As an example, request ID 4 is BTC/USD.  If the api's all go down, it is the responsibility of the miner to still submit a valid BTC/USD price. If they do not, they risk being disputed and slashed. For these reasons, please contribute openly to the official Tellor miner (or an open source variant), as consensus here is key.  If you're miner gets a different value than the majority of the of the other miners, you risk being punished.**
+The Tellor system is a way to push data on-chain.  What pieces of data are pushed are specificied in the `configs/indexes.json`. Note that the data corresponds to a specific API. The tellor mining system is set up to pull api data to generate these values to submit on-chain once a correct nonce is mined. These specific apis are just suggestions.  The system is not guarunteed to work for everyone.  It is up to the consnesus of the Tellor token holders to determine what a correct value is. As an example, request ID 4 is BTC/USD.  If the api's all go down, it is the responsibility of the miner to still submit a valid BTC/USD price. If they do not, they risk being disputed and slashed. For these reasons, please contribute openly to the official Tellor miner (or an open source variant), as consensus here is key.  If you're miner gets a different value than the majority of the of the other miners, you risk being punished.
 
-A list of all PSR's(pre specified requests) and the expected data can be found [here](https://docs.google.com/spreadsheets/d/1rRRklc4_LvzJFCHqIgiiNEc7eo_MUw3NRvYmh1HyV14).
+A list of all PSR's(pre specified requests) and the expected data can be found [here](blob/master/pkg/tracker/psrs.go).
 
 <p align="center">
     <img src= './assets/minerspecs.png' width="450" alt='MinerSpecs' />
 </p>
 
 
-### Tellor Deployed Addresses
+## Instructions for deployment
+ - [Tellor Miner Instructions](https://app.gitbook.com/@tellor-2/s/tellor-docs/miner-documentation)
 
- - Mainnet - [0x0ba45a8b5d5575935b8158a88c631e9f9c95a2e5](https://etherscan.io/address/0x0ba45a8b5d5575935b8158a88c631e9f9c95a2e5)
- - Rinkeby - [0xFe41Cb708CD98C5B20423433309E55b53F79134a](https://rinkeby.etherscan.io/address/0xFe41Cb708CD98C5B20423433309E55b53F79134a)
+## Contributing and building from source
+Contributions are very welcome!<br/>
+See our [contributing.md](docs/contributing.md) for more information.
 
-
-### Instructions for deployment
- - [Tellor Miner Instructions](https://tellor.readthedocs.io/en/latest/MinerSetup/)
- - [Tellor Deployment Instructions -- From Source](https://tellor.readthedocs.io/en/latest/MinerSetupFromSource/)
-
-### Contributing
-
-Contributions are very welcome! See our [contributing.md](docs/contributing.md) for more information.
+## Maintainers <a name="maintainers"> </a>
+This repository is maintained by the [Tellor team](https://github.com/orgs/tellor-io/people)
 
 ### DISCLAIMER
-
-
     Mine at your own risk.
 
     Mining requires you deposit 1000 Tellor Tributes.  These are a security deposity.  If you are a malicious actor (aka submit a bad value), the community can vote to slash your 1000 tokens.
@@ -55,7 +49,5 @@ Contributions are very welcome! See our [contributing.md](docs/contributing.md) 
     There is no promise that Tellor Tributes currently hold or will ever hold any value.
 
 
-#### Copyright
+###  Copyright
 Tellor Inc. 2019
-
-This repository is maintained by the Tellor team - [www.tellor.io](https://www.tellor.io)

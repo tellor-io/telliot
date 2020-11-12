@@ -51,6 +51,7 @@ var PSRs = map[int]ValueGenerator{
 		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAtEOD},
 		at:     switchTime,
 	},
+	// For more details see https://docs.google.com/document/d/1RFCApk1PznMhSRVhiyFl_vBDPA4mP2n1dTmfqjvuTNw/edit
 	10: &TimedSwitch{
 		before: &SingleSymbol{symbol: "ETC/ETH", granularity: 1000000, transform: MedianAt},
 		after:  &Ampl{granularity: 1000000},
@@ -106,6 +107,7 @@ var PSRs = map[int]ValueGenerator{
 	38: &SingleSymbol{symbol: "GNO/USD", granularity: 1000000, transform: MedianAt},
 	39: &SingleSymbol{symbol: "DAI/USD", granularity: 1000000, transform: MedianAt},
 	40: &SingleSymbol{symbol: "STEEM/BTC", granularity: 1000000, transform: MedianAt},
+	// It is three month average for US PCE (monthly levels): https://www.bea.gov/data/personal-consumption-expenditures-price-index-excluding-food-and-energy
 	41: &TimedSwitch{
 		before: &SingleSymbol{symbol: "LINK/USD", granularity: 1000000, transform: MedianAt},
 		after:  &SingleSymbol{symbol: "USPCE", granularity: 1000, transform: ManualEntry},
