@@ -70,6 +70,6 @@ func TestETHGasStation(t *testing.T) {
 // 	}
 // 	t.Logf("Gas PriceStamp stored: %v\n", string(v))
 // 	if b.Cmp(big.NewInt(7000000000)) != 0 {
-// 		t.Fatalf("Balance from client did not match what should have been stored in DB. %s != %s", b, "Should be 1")
+// 		testutil.Ok(t, errors.New(fmt.Sprintf("Balance from client did not match what should have been stored in DB. %s != %s", b, "Should be 1")))
 // 	}
 // }

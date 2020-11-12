@@ -49,7 +49,7 @@ package tracker
 // 	}
 // 	t.Logf("RequestID stored: %v\n", string(v))
 // 	if b.Cmp(big.NewInt(1)) != 0 {
-// 		t.Fatalf("Current Request ID from client did not match what should have been stored in DB. %v != %v", b, fmt.Sprint(1))
+// 		testutil.Ok(t, errors.New(fmt.SprintF("Current Request ID from client did not match what should have been stored in DB. %v != %v", b, fmt.Sprint(1))))
 // 	}
 
 // 	v, err = DB.Get(db.QueryStringKey)
@@ -57,6 +57,6 @@ package tracker
 // 		testutil.Ok(t, err)
 // 	}
 // 	if string(v) != "json(https://coinbase.com)" {
-// 		t.Fatalf("Expected query string to match test input: %s != %s\n", string(v), "json(https://coinbase.com)")
+// 		testutil.Ok(t, errors.New(fmt.SprintF("Expected query string to match test input: %s != %s\n", string(v), "json(https://coinbase.com)")))
 // 	}
 // }

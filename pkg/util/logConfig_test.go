@@ -17,7 +17,6 @@ func TestLogConfig(t *testing.T) {
 	err := ParseLoggingConfig(path)
 	if err != nil {
 		testutil.Ok(t, err)
-		t.Fatal(err)
 	}
 	cfg := GetLoggingConfig()
 	if cfg.levels["config.Config"] == 0 {

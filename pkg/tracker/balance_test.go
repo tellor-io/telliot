@@ -26,7 +26,7 @@ func TestStringId(t *testing.T) {
 	tracker := NewBalanceTracker(logger)
 	res := tracker.String()
 	if res != BalanceTrackerName {
-		t.Fatal("didn't return expected string", BalanceTrackerName)
+		testutil.Ok(t, errors.New(fmt.Sprintf("didn't return expected string", BalanceTrackerName)))
 	}
 }
 func TestPositiveBalance(t *testing.T) {

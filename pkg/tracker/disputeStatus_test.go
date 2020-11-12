@@ -26,7 +26,7 @@ func TestDisputeString(t *testing.T) {
 	tracker := NewDisputeTracker(logger)
 	res := tracker.String()
 	if res != DisputeTrackerName {
-		t.Fatal("didn't return expected string", DisputeTrackerName)
+		testutil.Ok(t, errors.New(fmt.Sprintf("didn't return expected string", DisputeTrackerName)))
 	}
 }
 
