@@ -5,6 +5,10 @@ package db
 
 import (
 	"bytes"
+
+	"github.com/pkg/errors"
+
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -12,6 +16,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestRemoteRequestCodec(t *testing.T) {
@@ -22,40 +27,40 @@ func TestRemoteRequestCodec(t *testing.T) {
 	defer t.Cleanup(cleanup)
 	remote, err := OpenRemoteDB(DB)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	keys := []string{RequestIdKey, DifficultyKey}
 	req, err := createRequest(keys, nil, remote.(*remoteImpl))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	if req.timestamp == 0 {
-		t.Fatal("Expected a timestamp to get applied to request")
+		testutil.Ok(t, errors.New("Expected a timestamp to get applied to request"))
 	}
 	if req.sig == nil {
-		t.Fatal("Expected a signature to be attached to request")
+		testutil.Ok(t, errors.New("Expected a signature to be attached to request"))
 	}
 	if req.dbKeys == nil || len(req.dbKeys) == 0 {
-		t.Fatal("Expected request to have dbKeys")
+		testutil.Ok(t, errors.New("Expected request to have dbKeys"))
 	}
 
 	encoded, err := encodeRequest(req)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	decReq, err := decodeRequest(encoded, remote.(*remoteImpl))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	if !reflect.DeepEqual(decReq.sig, req.sig) {
-		t.Fatal("Signatures did not match after codec")
+		testutil.Ok(t, errors.New("Signatures did not match after codec"))
 	}
 	if !reflect.DeepEqual(decReq.dbKeys, req.dbKeys) {
-		t.Fatal("DBKeys did not match after codec")
+		testutil.Ok(t, errors.New("DBKeys did not match after codec"))
 	}
 	if decReq.timestamp != req.timestamp {
-		t.Fatal("Timestamps do not match after codec")
+		testutil.Ok(t, errors.New("Timestamps do not match after codec"))
 	}
 }
 
@@ -67,31 +72,31 @@ func TestRequestReplayAttack(t *testing.T) {
 	defer t.Cleanup(cleanup)
 	remote, err := OpenRemoteDB(DB)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	keys := []string{RequestIdKey, DifficultyKey}
 	req, err := createRequest(keys, nil, remote.(*remoteImpl))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	if req.timestamp == 0 {
-		t.Fatal("Expected a timestamp to get applied to request")
+		testutil.Ok(t, errors.New("Expected a timestamp to get applied to request"))
 	}
 	if req.sig == nil {
-		t.Fatal("Expected a signature to be attached to request")
+		testutil.Ok(t, errors.New("Expected a signature to be attached to request"))
 	}
 	if req.dbKeys == nil || len(req.dbKeys) == 0 {
-		t.Fatal("Expected request to have dbKeys")
+		testutil.Ok(t, errors.New("Expected request to have dbKeys"))
 	}
 
 	encoded, err := encodeRequest(req)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	_, err = decodeRequest(encoded, remote.(*remoteImpl))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	// That simulated a call that was decoded. Now we'll wait for timeout on request.
@@ -99,7 +104,7 @@ func TestRequestReplayAttack(t *testing.T) {
 
 	_, err = decodeRequest(encoded, remote.(*remoteImpl))
 	if err == nil {
-		t.Fatal("Expected failure when decoding request as a replay after expiration period")
+		testutil.Ok(t, errors.New("Expected failure when decoding request as a replay after expiration period"))
 	}
 }
 
@@ -111,50 +116,50 @@ func TestRequestForData(t *testing.T) {
 	defer t.Cleanup(cleanup)
 	remote, err := OpenRemoteDB(DB)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	if err := DB.Delete(RequestIdKey); err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	if err := DB.Delete(DifficultyKey); err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	if err := DB.Put(RequestIdKey, []byte("1")); err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	err = DB.Put(DifficultyKey, []byte("2"))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	keys := []string{RequestIdKey, DifficultyKey}
 	req, err := createRequest(keys, nil, remote.(*remoteImpl))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	encoded, err := encodeRequest(req)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	data, err := remote.IncomingRequest(encoded)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	resp, err := decodeResponse(data)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	if len(resp.errorMsg) != 0 {
-		t.Fatal(resp.errorMsg)
+		testutil.Ok(t, errors.New(resp.errorMsg))
 	}
 	reqID := string(resp.dbVals[RequestIdKey])
 	diff := string(resp.dbVals[DifficultyKey])
 	if reqID != "1" {
-		t.Fatalf("Expected result map to map request id to '1': %v", resp.dbVals)
+		testutil.Ok(t, errors.Wrapf(err, fmt.Sprintf("Expected result map to map request id to '1': %v", resp.dbVals)))
 	}
 	if diff != "2" {
-		t.Fatalf("Expected difficulty to be mapped to '2': %v", resp.dbVals)
+		testutil.Ok(t, errors.Wrapf(err, fmt.Sprintf("Expected difficulty to be mapped to '2': %v", resp.dbVals)))
 	}
 
 }
@@ -167,7 +172,7 @@ func TestRequestPut(t *testing.T) {
 	defer t.Cleanup(cleanup)
 	remote, err := OpenRemoteDB(DB)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	_fromAddress := cfg.PublicAddress
@@ -180,26 +185,26 @@ func TestRequestPut(t *testing.T) {
 	vals[0] = []byte("TEST_CHALLENGE")
 	req, err := createRequest([]string{dbKey}, vals, remote.(*remoteImpl))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	err = DB.Put(dbKey, vals[0])
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	bts, err := encodeRequest(req)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	_, err = remote.IncomingRequest(bts)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	data, err := DB.Get(dbKey)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	if !bytes.Equal(data, vals[0]) {
-		t.Fatalf("DB bytes did not match expected put request data")
+		testutil.Ok(t, errors.New("DB bytes did not match expected put request data"))
 	}
 
 }

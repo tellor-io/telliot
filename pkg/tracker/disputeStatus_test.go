@@ -14,6 +14,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -35,7 +36,7 @@ func TestDisputeStatus(t *testing.T) {
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_disputeStatus"))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
@@ -44,15 +45,15 @@ func TestDisputeStatus(t *testing.T) {
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	v, err := DB.Get(db.DisputeStatusKey)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	b, err := hexutil.DecodeBig(string(v))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	t.Logf("Dispute Status stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 0 {
@@ -69,18 +70,18 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_disputeStatus"))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	context.WithValue(ctx, common.DBContextKey, DB)
 
 	v, err := DB.Get(db.DisputeStatusKey)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	b, err := hexutil.DecodeBig(string(v))
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	t.Logf("Dispute Status stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 0 {

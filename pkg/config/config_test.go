@@ -4,19 +4,22 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"testing"
+
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func createEnvFile(t *testing.T) func() {
 	f, err := os.Create(".env")
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	_, err = f.WriteString("ETH_PRIVATE_KEY=\"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"")
 	if err != nil {
 		f.Close()
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	return func() {
@@ -34,15 +37,15 @@ func TestConfig(t *testing.T) {
 
 	//Asserting Default Values
 	if cfg.GasMax == 0 {
-		t.Fatal("GasMax should have value")
+		testutil.Ok(t, errors.New("GasMax should have value"))
 	}
 	if cfg.GasMultiplier == 0 {
-		t.Fatal("GasMultiplier should have value")
+		testutil.Ok(t, errors.New("GasMultiplier should have value"))
 	}
 	if cfg.MinConfidence == 0 {
-		t.Fatal("MinConfidence should have value")
+		testutil.Ok(t, errors.New("MinConfidence should have value"))
 	}
 	if cfg.DisputeThreshold == 0 {
-		t.Fatal("DisputeThreshold should have value")
+		testutil.Ok(t, errors.New("DisputeThreshold should have value"))
 	}
 }

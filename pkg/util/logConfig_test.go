@@ -6,12 +6,15 @@ package util
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestLogConfig(t *testing.T) {
 	path := filepath.Join("..", "..", "configs", "loggingConfig.json")
 	err := ParseLoggingConfig(path)
 	if err != nil {
+		testutil.Ok(t, err)
 		t.Fatal(err)
 	}
 	cfg := GetLoggingConfig()

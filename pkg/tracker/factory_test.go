@@ -4,8 +4,10 @@
 package tracker
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -40,7 +42,7 @@ func TestCreateTracker(t *testing.T) {
 
 	indexersTracker, err := createTracker("indexers", logger)
 	if err != nil {
-		t.Fatalf("Could not build IndexTracker")
+		testutil.Ok(t, errors.New("Could not build IndexTracker"))
 	}
 	if len(indexersTracker) == 0 {
 		t.Fatalf("Could not build all IndexTrackers: only tracking %d indexes", len(indexersTracker))

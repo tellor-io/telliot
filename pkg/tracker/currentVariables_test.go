@@ -35,17 +35,17 @@ package tracker
 // 	fmt.Println("Working to Line 41")
 // 	err := tracker.Exec(ctx)
 // 	if err != nil {
-// 		t.Fatal(err)
+// 		testutil.Ok(t, err)
 // 	}
 // 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 // 	v, err := DB.Get(db.RequestIdKey)
 // 	if err != nil {
-// 		t.Fatal(err)
+// 		testutil.Ok(t, err)
 // 	}
 // 	fmt.Println("Working to Line 51", v)
 // 	b, err := hexutil.DecodeBig(string(v))
 // 	if err != nil {
-// 		t.Fatal(err)
+// 		testutil.Ok(t, err)
 // 	}
 // 	t.Logf("RequestID stored: %v\n", string(v))
 // 	if b.Cmp(big.NewInt(1)) != 0 {
@@ -54,7 +54,7 @@ package tracker
 
 // 	v, err = DB.Get(db.QueryStringKey)
 // 	if err != nil {
-// 		t.Fatal(err)
+// 		testutil.Ok(t, err)
 // 	}
 // 	if string(v) != "json(https://coinbase.com)" {
 // 		t.Fatalf("Expected query string to match test input: %s != %s\n", string(v), "json(https://coinbase.com)")

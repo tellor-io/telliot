@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -37,7 +38,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 
 	a, err := hashFn(hashIn)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	a.Mod(a, challenge.Difficulty)
@@ -98,7 +99,7 @@ func TestGpuMiner(t *testing.T) {
 	gpus, err := GetOpenCLGPUs()
 	if err != nil {
 		fmt.Println(gpus)
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	if len(gpus) == 0 {
 		t.Skip("no mining gpus")
@@ -107,7 +108,7 @@ func TestGpuMiner(t *testing.T) {
 
 	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()], false)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	DoCompleteMiningLoop(t, impl, 1000)
 }
@@ -125,12 +126,12 @@ func TestMulti(t *testing.T) {
 	gpus, err := GetOpenCLGPUs()
 	if err != nil {
 		fmt.Println(gpus)
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	for _, gpu := range gpus {
 		impl, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()], false)
 		if err != nil {
-			t.Fatal(err)
+			testutil.Ok(t, err)
 		}
 		hashers = append(hashers, impl)
 	}
@@ -172,7 +173,7 @@ func TestHashFunction(t *testing.T) {
 		bytes := decodeHex(_string)
 		result, err := hashFn(bytes)
 		if err != nil {
-			t.Fatal(err)
+			testutil.Ok(t, err)
 		}
 		if result.Text(16) != v {
 			t.Fatalf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16))
@@ -189,7 +190,7 @@ func BenchmarkHashFunction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := hashFn(bytes)
 		if err != nil {
-			b.Fatal(err)
+			testutil.Ok(b, err)
 		}
 	}
 }

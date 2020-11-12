@@ -5,31 +5,32 @@ package db
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func OpenTestDB(t *testing.T) (DB, func()) {
 	tmpdir, err := ioutil.TempDir("", "test")
 	if err != nil {
-		log.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	db, err := Open(tmpdir)
 	if err != nil {
-		log.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	cleanup := func() {
 		if err := db.Close(); err != nil {
 			if err != leveldb.ErrClosed {
-				t.Fatal("closing the DB", err)
+				testutil.Ok(t, errors.Wrap(err, "closing the DB"))
 			}
 		}
 		if err := os.RemoveAll(tmpdir); err != nil {
-			t.Fatal("removing temp DB dir", err)
+			testutil.Ok(t, errors.Wrap(err, "removing temp DB dir"))
 
 		}
 	}

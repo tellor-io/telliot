@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
@@ -33,10 +32,10 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 	if err := util.ParseLoggingConfig(""); err != nil {
-		log.Fatal(err)
+		m.Fatal(err)
 	}
 	if err := apiOracle.EnsureValueOracle(); err != nil {
-		log.Fatal(err)
+		m.Fatal(err)
 	}
 
 	os.Exit(m.Run())

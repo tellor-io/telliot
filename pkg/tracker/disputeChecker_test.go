@@ -5,6 +5,7 @@ package tracker
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,7 +22,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	t.Cleanup(cleanup)
 
 	if _, err := BuildIndexTrackers(); err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	ethUSDPairs := indexes["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
@@ -30,7 +31,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: logger}
 	err := disputeChecker.Exec(ctx)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 }
 
@@ -42,7 +43,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	logger := logSetup("debug")
 	disputeChecker := NewDisputeChecker(logger, 500)
 	if _, err := BuildIndexTrackers(); err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	ethUSDPairs := indexes["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
@@ -51,7 +52,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	err := disputeChecker.Exec(ctx)
 
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	files, err := filepath.Glob("possible-dispute-*.txt")
@@ -59,11 +60,11 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 		panic(err)
 	}
 	if len(files) != 1 {
-		t.Fatal("expected a possible-dispute file")
+		testutil.Ok(t, errors.New("expected a possible-dispute file"))
 	}
 	for _, f := range files {
 		if err := os.Remove(f); err != nil {
-			t.Fatal(err)
+			testutil.Ok(t, err)
 
 		}
 	}

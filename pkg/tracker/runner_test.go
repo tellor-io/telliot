@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"fmt"
-	"log"
 	"math/big"
 	"testing"
 	"time"
@@ -54,7 +53,7 @@ func TestRunner(t *testing.T) {
 
 	runner.Ready()
 	if err := runner.Start(ctx, exitCh); err != nil {
-		log.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	fmt.Println("runner done")
 	time.Sleep(2 * time.Second)

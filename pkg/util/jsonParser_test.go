@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 const API = "json(https://api.gdax.com/products/ETH-USD/ticker).price"
@@ -14,7 +16,7 @@ const API = "json(https://api.gdax.com/products/ETH-USD/ticker).price"
 func TestJSONParser(t *testing.T) {
 	res, err := testFetch(API)
 	if err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 
 	for _, r := range res {
