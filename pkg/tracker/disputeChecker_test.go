@@ -5,13 +5,14 @@ package tracker
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/tcontext"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -74,7 +75,7 @@ func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
 	for _, psr := range psrs {
 		err := psr.Exec(ctx)
 		if err != nil {
-			testutil.Ok(t, errors.Wrap(err, "executing psr"))
+			testutil.Ok(t, errors.Wrapf(err, "executing psr"))
 		}
 	}
 }

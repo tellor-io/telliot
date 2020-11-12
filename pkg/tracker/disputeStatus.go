@@ -74,7 +74,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	}
 	// Issue #50, bail out of not able to mine
 	// if status.Cmp(big.NewInt(1)) != 0 {
-	// 	log.Fatalf("Miner is not able to mine with status %v. Stopping all mining immediately", status)
+	//testutil.Ok(t, errors.New(fmt.Spintf("Miner is not able to mine with status %v. Stopping all mining immediately", status)))
 	// }
 
 	//add all whitelisted miner addresses as well since they will be coming in

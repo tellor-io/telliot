@@ -6,7 +6,6 @@ package ops
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"strconv"
@@ -76,12 +75,12 @@ func CreateMiningManager(
 
 	client, err := rpc.NewClient(cfg.NodeURL)
 	if err != nil {
-		log.Fatal(err)
+		return nil, errors.Wrap(err, "creating client")
 	}
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
 	getter, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		return nil, errors.Wrap(err, "getting addresses")
 	}
 
 	submitter := NewSubmitter()

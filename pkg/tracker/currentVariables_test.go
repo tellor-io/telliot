@@ -23,7 +23,7 @@ package tracker
 // 	tracker := New_CurrentVariablesTracker(util.SetupLogger("debug"))
 // 	res := tracker.String()
 // 	if res != CurrentVariablesTrackerName {
-// 		t.Fatal("should return string", CurrentVariablesTrackerName)
+// 		testutil.Ok(t, errors.New(fmt.Spintf("should return string", CurrentVariablesTrackerName)))
 // 	}
 // }
 

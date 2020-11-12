@@ -78,7 +78,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
 		mt.log.Error("Could not get data from data proxy, cannot continue at all")
-		log.Fatal(err)
+		return nil, false
 	}
 
 	mt.log.Debug("Received data: %v", m)
