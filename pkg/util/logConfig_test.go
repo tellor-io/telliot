@@ -4,9 +4,11 @@
 package util
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
@@ -19,7 +21,7 @@ func TestLogConfig(t *testing.T) {
 	}
 	cfg := GetLoggingConfig()
 	if cfg.levels["config.Config"] == 0 {
-		t.Fatalf("Config did not parse correctly: %v", cfg.levels)
+		testutil.Ok(t, errors.New(fmt.Sprintf("Config did not parse correctly: %v", cfg.levels)))
 	} else {
 		t.Logf("Parsed log level: %d", cfg.levels["config.Config"])
 	}

@@ -4,6 +4,7 @@
 package pow
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"os"
@@ -43,7 +44,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 
 	a.Mod(a, challenge.Difficulty)
 	if !a.IsUint64() || a.Uint64() != 0 {
-		t.Fatalf("nonce: %s remainder: %s\n", string(hashIn[52:]), a.Text(10))
+		testutil.Ok(t, errors.New(fmt.Sprintf("nonce: %s remainder: %s\n", string(hashIn[52:]), a.Text(10))))
 	}
 }
 
@@ -68,11 +69,11 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 		select {
 		case result := <-output:
 			if result == nil {
-				t.Fatalf("nil result for challenge %d", v)
+				testutil.Ok(t, errors.New(fmt.Sprintf("nil result for challenge %d", v)))
 			}
 			CheckSolution(t, challenge, result.Nonce)
 		case <-time.After(timeout):
-			t.Fatalf("Expected result for challenge in less than %s", timeout.String())
+			testutil.Ok(t, errors.New(fmt.Sprintf("Expected result for challenge in less than %s", timeout.String())))
 		}
 	}
 	// Tell the mining group to close.
@@ -82,10 +83,10 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	select {
 	case result := <-output:
 		if result != nil {
-			t.Fatalf("expected nil result when closing mining group")
+			testutil.Ok(t, errors.New("expected nil result when closing mining group"))
 		}
 	case <-time.After(timeout):
-		t.Fatalf("Expected mining group to close in less than %s", timeout.String())
+		testutil.Ok(t, errors.New(fmt.Sprintf("Expected mining group to close in less than %s", timeout.String())))
 	}
 }
 
@@ -151,7 +152,7 @@ func TestMulti(t *testing.T) {
 	case <-output:
 		group.PrintHashRateSummary()
 	case <-time.After(timeout):
-		t.Fatalf("mining group didn't quit before %s", timeout.String())
+		testutil.Ok(t, errors.New(fmt.Sprintf("mining group didn't quit before %s", timeout.String())))
 	}
 }
 
@@ -176,7 +177,7 @@ func TestHashFunction(t *testing.T) {
 			testutil.Ok(t, err)
 		}
 		if result.Text(16) != v {
-			t.Fatalf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16))
+			testutil.Ok(t, errors.New(fmt.Sprintf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16))))
 		}
 	}
 }

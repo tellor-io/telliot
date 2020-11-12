@@ -5,6 +5,7 @@ package tracker
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -23,7 +24,7 @@ func TestTimeOutString(t *testing.T) {
 	tracker := NewTimeOutTracker(logger)
 	res := tracker.String()
 	if res != "TimeOutTracker" {
-		t.Fatalf("should return 'TimeOutTracker' string")
+		testutil.Ok(t, errors.New("should return 'TimeOutTracker' string"))
 	}
 }
 

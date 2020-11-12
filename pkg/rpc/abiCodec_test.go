@@ -25,7 +25,7 @@ func TestABICodec(t *testing.T) {
 		testutil.Ok(t, errors.New("Missing expected method matching test sig"))
 	}
 	if m.Name != "getRequestVars" {
-		t.Fatalf("Method name is unexpected. %s != getRequestVars", m.Name)
+		testutil.Ok(t, errors.New(fmt.Sprintf("Method name is unexpected. %s != getRequestVars", m.Name)))
 	}
 
 	// string, string, bytes32,  uint, uint, uint.

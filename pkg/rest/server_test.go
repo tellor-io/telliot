@@ -58,7 +58,7 @@ func TestServer(t *testing.T) {
 		testutil.Ok(t, err)
 	}
 	if asInt.Cmp(balInt) != 0 {
-		t.Fatalf("Expected %v but received %v as balance", balInt, asInt)
+		testutil.Ok(t, errors.New(fmt.Sprintf("Expected %v but received %v as balance", balInt, asInt)))
 	}
 
 	t.Logf("Retrieved balance from server: %+v\n", asInt)

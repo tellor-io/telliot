@@ -4,10 +4,12 @@
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
@@ -24,7 +26,7 @@ func TestJSONParser(t *testing.T) {
 			t.Logf("Parsed json properly: %v", res)
 
 		} else {
-			t.Fatalf("Json not parsed properly: %v", res)
+			testutil.Ok(t, errors.New(fmt.Sprintf("Json not parsed properly: %v", res)))
 		}
 	}
 

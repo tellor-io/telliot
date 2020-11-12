@@ -5,6 +5,8 @@ package tracker
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -57,7 +59,7 @@ func TestDisputeStatus(t *testing.T) {
 	}
 	t.Logf("Dispute Status stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 0 {
-		t.Fatalf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")
+		testutil.Ok(t, errors.New(fmt.Sprintf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")))
 	}
 	DB.Close()
 }
@@ -85,6 +87,6 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 	}
 	t.Logf("Dispute Status stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 0 {
-		t.Fatalf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")
+		testutil.Ok(t, errors.New(fmt.Sprintf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")))
 	}
 }
