@@ -10,6 +10,8 @@ NOTE: As semantic versioning states all 0.y.z releases can contain breaking chan
 We use *breaking :warning:* to mark changes that are not backward compatible (relates only to v0.y.z releases.)
 
 ## Unreleased
+
+## [v5.2.0] - 2020.11.12
 - [#254](https://github.com/tellor-io/TellorMiner/pull/254)
     - Added support for expanding variables in the indexer api url.
     - Added config to specify the `.env` file location. The default is now `configs/.env` so users should either specify a custom location in the `config.json` or move it inside the default config folder.
@@ -19,4 +21,3 @@ We use *breaking :warning:* to mark changes that are not backward compatible (re
 ### Added
  - Profitability calculations which is set through the `ProfitThreshold`(in percents) settings in the config,
  - Docs how to contribute.
-
