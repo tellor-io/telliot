@@ -32,6 +32,10 @@ A list of all PSR's(pre specified requests) and the expected data can be found [
 Contributions are very welcome!<br/>
 See our [contributing.md](docs/contributing.md) for more information.
 
+## Run with Docker
+Available tags: https://hub.docker.com/u/tellor
+docker run -v $(pwd)/.local:/configs  tellor/miner:master mine
+
 ## Maintainers <a name="maintainers"> </a>
 This repository is maintained by the [Tellor team](https://github.com/orgs/tellor-io/people)
 
