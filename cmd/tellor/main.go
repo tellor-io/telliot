@@ -156,7 +156,8 @@ func App() *cli.Cli {
 	app.Command("stake", "staking operations", stakeCmd(logSetup, logLevel))
 	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel))
 	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel))
-	app.Command("balance", "check balance of address", balanceCmd)
+	//Using values from context, until we have a function that setups the client and returns as values, not as part of the context
+	app.Command("balance", "check balance of address", balanceCmd(ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient), ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)))
 	app.Command("dispute", "dispute operations", disputeCmd(logSetup, logLevel))
 	app.Command("mine", "mine for TRB", mineCmd(logSetup, logLevel))
 	app.Command("dataserver", "start an independent dataserver", dataserverCmd(logSetup, logLevel))
@@ -192,16 +193,18 @@ func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error
 	}
 }
 
-func balanceCmd(cmd *cli.Cmd) {
-	addr := ETHAddress{}
-	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
-	cmd.Spec = "[ADDRESS]"
-	cmd.Action = func() {
-		var zero [20]byte
-		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
-			addr.addr = ctx.Value(tellorCommon.PublicAddress).(common.Address)
+func balanceCmd(client rpc.ETHClient, getterInstance *getter.TellorGetters) func(*cli.Cmd) {
+	return func(cmd *cli.Cmd) {
+		addr := ETHAddress{}
+		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
+		cmd.Spec = "[ADDRESS]"
+		cmd.Action = func() {
+			var zero [20]byte
+			if bytes.Equal(addr.addr.Bytes(), zero[:]) {
+				addr.addr = ctx.Value(tellorCommon.PublicAddress).(common.Address)
+			}
+			ExitOnError(ops.Balance(ctx, client, getterInstance, addr.addr), "checking balance")
 		}
-		ExitOnError(ops.Balance(ctx, addr.addr), "checking balance")
 	}
 }
 
