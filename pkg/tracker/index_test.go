@@ -14,7 +14,7 @@ package tracker
 // 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 // )
 // func TestPSR(t *testing.T) {
-// 	ctx, _, cleanup := testutil.CreateContext(t)
+// 	ctx, _, cleanup := tcontext.CreateTestContext(t)
 // 	t.Cleanup(cleanup)
 // 	psr, err := BuildIndexTrackers()
 // 	if err != nil {

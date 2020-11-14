@@ -9,15 +9,14 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/phayes/freeport"
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 )
 
 func TestServer(t *testing.T) {
-	ctx, cfg, cleanup := testutil.CreateContext(t)
+	ctx, cfg, cleanup := tcontext.CreateTestContext(t)
 	defer t.Cleanup(cleanup)
 	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
 
