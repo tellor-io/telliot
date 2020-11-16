@@ -230,6 +230,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		// Read in a result from one of the miners.
 		case result := <-resultChannel:
 			if result.err != nil {
+				//Don't really know what to do here
 				log.Fatalf("hasher failed: %s", result.err.Error())
 			}
 			idleWorkers <- result.backend

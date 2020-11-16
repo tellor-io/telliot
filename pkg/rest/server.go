@@ -49,6 +49,7 @@ func (s *Server) Start() {
 			// as main() doesn't wait for this goroutine to stop. don't use
 			// code with race conditions like these for production. see post
 			// comments below on more discussion on how to handle this.
+			//Also don't know what to do with this one
 			log.Fatalf("ListenAndServe(): %s", err)
 		}
 	}()

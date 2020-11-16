@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/tellor-io/TellorMiner/pkg/tcontext"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
 func TestMeanAt(t *testing.T) {

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math"
 	"math/big"
 	"math/rand"
@@ -186,8 +185,7 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 
 	if disputed.Cmp(big.NewInt(1)) != 0 {
 		mt.log.Error("miner is in dispute, cannot continue")
-		log.Fatal("miner in dispute")
-		return statusFailure // Never gets here but just for completeness.
+		return statusFailure
 	}
 	mt.log.Debug("miner is not in dispute, continuing")
 	return statusSuccess
