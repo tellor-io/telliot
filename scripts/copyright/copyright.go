@@ -1,9 +1,6 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-// Copyright (c) The Thanos Authors.
-// Licensed under the Apache License 2.0.
-
 package main
 
 import (
