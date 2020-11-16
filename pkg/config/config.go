@@ -60,7 +60,6 @@ type GPUConfig struct {
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
 	NodeURL                      string                `json:"nodeURL"`
-	DatabaseURL                  string                `json:"databaseURL"`
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
