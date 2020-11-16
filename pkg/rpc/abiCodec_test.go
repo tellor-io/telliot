@@ -23,8 +23,7 @@ func TestABICodec(t *testing.T) {
 	m := codec.methods["0xe1eee6d6"]
 	if m == nil {
 		testutil.Ok(t, errors.New("Missing expected method matching test sig"))
-	}
-	if m.Name != "getRequestVars" {
+	} else if m.Name != "getRequestVars" {
 		testutil.Ok(t, errors.New(fmt.Sprintf("Method name is unexpected. %s != getRequestVars", m.Name)))
 	}
 

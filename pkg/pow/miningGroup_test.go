@@ -70,8 +70,10 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 		case result := <-output:
 			if result == nil {
 				testutil.Ok(t, errors.New(fmt.Sprintf("nil result for challenge %d", v)))
+			} else {
+				//Fixing a possible nil pointer deference... not sure if that's the appropriate way to do it
+				CheckSolution(t, challenge, result.Nonce)
 			}
-			CheckSolution(t, challenge, result.Nonce)
 		case <-time.After(timeout):
 			testutil.Ok(t, errors.New(fmt.Sprintf("Expected result for challenge in less than %s", timeout.String())))
 		}
