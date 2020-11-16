@@ -140,7 +140,7 @@ func App() *cli.Cli {
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
 	logLevel := app.StringOpt("logLevel", "error", "The level of log messages")
-	logPath := app.StringOpt("logConfig", "configs/loggingConfig.json", "Path to a JSON logging config file")
+	logPath := app.StringOpt("logConfig","", "Path to a JSON logging config file")
 
 	logSetup := util.SetupLogger()
 	// This will get run before any of the commands
