@@ -76,7 +76,6 @@ func Approve(ctx context.Context, logger log.Logger, _spender common.Address, am
 }
 
 func Balance(ctx context.Context, client rpc.ETHClient, getterInstance *getter.TellorGetters, addr common.Address) error {
-	//client.BalanceAt doesn't need the context, will remove later since it's used elsewhere
 	ethBalance, err := client.BalanceAt(context.Background(), addr, nil)
 	if err != nil {
 		return fmt.Errorf("problem getting balance: %+v", err)
