@@ -153,10 +153,21 @@ func App() *cli.Cli {
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
 	app.Version("version", versionMessage)
 
+	contract := tellorCommon.Contract{
+		Getter:  ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters),
+		Caller:  ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor),
+		Address: ctx.Value(tellorCommon.ContractAddress).(common.Address),
+	}
+
+	account := tellorCommon.Account{
+		Address:    ctx.Value(tellorCommon.PublicAddress).(common.Address),
+		PrivateKey: ctx.Value(tellorCommon.PrivateKey).(*ecdsa.PrivateKey),
+	}
+
 	app.Command("stake", "staking operations", stakeCmd(logSetup, logLevel))
-	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel))
-	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel))
-	// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
+	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel, contract, account))
+	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel, contract, account))
+	//Using values from context, until we have a function that setups the client and returns as values, not as part of the context
 	app.Command("balance", "check balance of address", balanceCmd(ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient), ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters), ctx.Value(tellorCommon.PublicAddress).(common.Address)))
 	app.Command("dispute", "dispute operations", disputeCmd(logSetup, logLevel))
 	app.Command("mine", "mine for TRB", mineCmd(logSetup, logLevel))
@@ -181,14 +192,14 @@ func simpleCmd(f func(context.Context, log.Logger) error, logSetup func(string) 
 	}
 }
 
-func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func moveCmd(f func(context.Context, log.Logger, tellorCommon.Contract, tellorCommon.Account, common.Address, *big.Int) error, logSetup func(string) log.Logger, logLevel *string, contract tellorCommon.Contract, account tellorCommon.Account) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		amt := TRBAmount{}
 		addr := ETHAddress{}
 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel), addr.addr, amt.Int), "move")
+			ExitOnError(f(ctx, logSetup(*logLevel), contract, account, addr.addr, amt.Int), "move")
 		}
 	}
 }
