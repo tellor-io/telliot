@@ -156,8 +156,7 @@ func App() *cli.Cli {
 	app.Command("stake", "staking operations", stakeCmd(logSetup, logLevel))
 	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel))
 	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel))
-	// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
-	app.Command("balance", "check balance of address", balanceCmd(ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient), ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters), ctx.Value(tellorCommon.PublicAddress).(common.Address)))
+	app.Command("balance", "check balance of address", balanceCmd)
 	app.Command("dispute", "dispute operations", disputeCmd(logSetup, logLevel))
 	app.Command("mine", "mine for TRB", mineCmd(logSetup, logLevel))
 	app.Command("dataserver", "start an independent dataserver", dataserverCmd(logSetup, logLevel))
@@ -193,19 +192,23 @@ func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error
 	}
 }
 
-func balanceCmd(client rpc.ETHClient, getterInstance *getter.TellorGetters, commonAddress common.Address) func(*cli.Cmd) {
-	return func(cmd *cli.Cmd) {
-		addr := ETHAddress{}
-		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
-		cmd.Spec = "[ADDRESS]"
-		cmd.Action = func() {
-			var zero [20]byte
-			if bytes.Equal(addr.addr.Bytes(), zero[:]) {
-				addr.addr = commonAddress
-			}
-			ExitOnError(ops.Balance(ctx, client, getterInstance, addr.addr), "checking balance")
+func balanceCmd(cmd *cli.Cmd) {
+
+	addr := ETHAddress{}
+	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
+	cmd.Spec = "[ADDRESS]"
+	cmd.Action = func() {
+		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
+		getter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+		client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
+		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
+		var zero [20]byte
+		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
+			addr.addr = commonAddress
 		}
+		ExitOnError(ops.Balance(ctx, client, getter, addr.addr), "checking balance")
 	}
+
 }
 
 func disputeCmd(loggerSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
