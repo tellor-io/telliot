@@ -4,7 +4,6 @@
 package config
 
 import (
-	"errors"
 	"os"
 	"testing"
 
@@ -13,9 +12,8 @@ import (
 
 func createEnvFile(t *testing.T) func() {
 	f, err := os.Create(".env")
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
+
 	_, err = f.WriteString("ETH_PRIVATE_KEY=\"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"")
 	if err != nil {
 		f.Close()
@@ -36,16 +34,9 @@ func TestConfig(t *testing.T) {
 	cfg := OpenTestConfig(t)
 
 	//Asserting Default Values
-	if cfg.GasMax == 0 {
-		testutil.Ok(t, errors.New("GasMax should have value"))
-	}
-	if cfg.GasMultiplier == 0 {
-		testutil.Ok(t, errors.New("GasMultiplier should have value"))
-	}
-	if cfg.MinConfidence == 0 {
-		testutil.Ok(t, errors.New("MinConfidence should have value"))
-	}
-	if cfg.DisputeThreshold == 0 {
-		testutil.Ok(t, errors.New("DisputeThreshold should have value"))
-	}
+	testutil.Assert(t, cfg.GasMax > 0, "GasMax should have value")
+	testutil.Assert(t, cfg.GasMultiplier > 0, "GasMultiplier should have value")
+	testutil.Assert(t, cfg.MinConfidence > 0, "MinConfidence should have value")
+	testutil.Assert(t, cfg.DisputeThreshold > 0, "DisputeThreshold should have value")
+
 }

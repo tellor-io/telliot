@@ -28,9 +28,8 @@ func TestDataServer(t *testing.T) {
 	if err != nil {
 		testutil.Ok(t, errors.Wrapf(err, "creating server in test"))
 	}
-	if err := ds.Start(ctx, exitCh); err != nil {
-		testutil.Ok(t, err)
-	}
+
+	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
 
 	time.Sleep(2 * time.Second)
 
