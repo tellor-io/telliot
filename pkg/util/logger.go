@@ -4,13 +4,13 @@
 package util
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"sync"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -124,7 +124,7 @@ func StringToLevel(level string) (LogLevel, error) {
 		}
 
 	}
-	return 0, fmt.Errorf("Invalid level name: %s", level)
+	return 0, errors.Errorf("Invalid level name: %s", level)
 }
 
 func xlateLevel(level LogLevel) logrus.Level {

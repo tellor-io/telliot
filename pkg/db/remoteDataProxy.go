@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -214,7 +215,7 @@ func (i *remoteImpl) BatchGet(keys []string) (map[string][]byte, error) {
 		return nil, err
 	}
 	if len(remResp.errorMsg) > 0 {
-		return nil, fmt.Errorf(remResp.errorMsg)
+		return nil, errors.Errorf(remResp.errorMsg)
 	}
 	return remResp.dbVals, nil
 }
@@ -253,7 +254,7 @@ func (i *remoteImpl) BatchPut(keys []string, values [][]byte) (map[string][]byte
 		return nil, err
 	}
 	if len(remResp.errorMsg) > 0 {
-		return nil, fmt.Errorf(remResp.errorMsg)
+		return nil, errors.Errorf(remResp.errorMsg)
 	}
 	return remResp.dbVals, nil
 }
@@ -272,12 +273,12 @@ func (i *remoteImpl) Verify(hash []byte, timestamp int64, sig []byte) error {
 	rdbLog.Debug("Verifying signature from %v request against whitelist: %v", ashex, i.whitelist[ashex])
 	if !i.whitelist[ashex] {
 		rdbLog.Warn("Unauthorized miner detected with address: %v", ashex)
-		return fmt.Errorf("Unauthorized")
+		return errors.Errorf("Unauthorized")
 	}
 
 	cache := i.wlHistory[ashex]
 	if cache == nil {
-		return fmt.Errorf("No history found for address")
+		return errors.Errorf("No history found for address")
 	}
 	if cache.Contains(timestamp) {
 		rdbLog.Debug("Miner %v already made request at %v", ashex, timestamp)
@@ -285,7 +286,7 @@ func (i *remoteImpl) Verify(hash []byte, timestamp int64, sig []byte) error {
 		now := time.Now()
 		if now.After(expr) {
 			rdbLog.Warn("Request time %v expired (%v)", time.Unix(timestamp, 0), now)
-			return fmt.Errorf("Request expired")
+			return errors.Errorf("Request expired")
 		}
 		rdbLog.Debug("Time of last request: %v compared to %v", expr, now)
 

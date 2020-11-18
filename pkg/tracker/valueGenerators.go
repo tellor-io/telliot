@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
@@ -40,7 +41,7 @@ func InitPSRs() error {
 		for symbol := range reqs {
 			_, ok := indexes[symbol]
 			if !ok {
-				return fmt.Errorf("PSR %d requires non-existent symbol %s", requestID, symbol)
+				return errors.Errorf("PSR %d requires non-existent symbol %s", requestID, symbol)
 			}
 		}
 	}
