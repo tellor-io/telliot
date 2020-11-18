@@ -75,16 +75,12 @@ func Approve(ctx context.Context, logger log.Logger, _spender common.Address, am
 	return nil
 }
 
-func Balance(ctx context.Context, addr common.Address) error {
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-
+func Balance(ctx context.Context, client rpc.ETHClient, getterInstance *getter.TellorGetters, addr common.Address) error {
 	ethBalance, err := client.BalanceAt(context.Background(), addr, nil)
 	if err != nil {
 		return fmt.Errorf("problem getting balance: %+v", err)
 	}
-
-	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-	trbBalance, err := instance.BalanceOf(nil, addr)
+	trbBalance, err := getterInstance.BalanceOf(nil, addr)
 	if err != nil {
 		return errors.Wrapf(err, "getting balance")
 	}

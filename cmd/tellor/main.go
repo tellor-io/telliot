@@ -193,16 +193,22 @@ func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error
 }
 
 func balanceCmd(cmd *cli.Cmd) {
+
 	addr := ETHAddress{}
 	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 	cmd.Spec = "[ADDRESS]"
 	cmd.Action = func() {
+		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
+		getter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+		client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
+		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		var zero [20]byte
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
-			addr.addr = ctx.Value(tellorCommon.PublicAddress).(common.Address)
+			addr.addr = commonAddress
 		}
-		ExitOnError(ops.Balance(ctx, addr.addr), "checking balance")
+		ExitOnError(ops.Balance(ctx, client, getter, addr.addr), "checking balance")
 	}
+
 }
 
 func disputeCmd(loggerSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {

@@ -21,17 +21,17 @@ func PrepareEthTransaction(ctx context.Context) (*bind.TransactOpts, error) {
 
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 
-	nonce, err := client.PendingNonceAt(context.Background(), publicAddress)
+	nonce, err := client.PendingNonceAt(ctx, publicAddress)
 	if err != nil {
 		return nil, fmt.Errorf("problem getting pending nonce: %+v", err)
 	}
 
-	gasPrice, err := client.SuggestGasPrice(context.Background())
+	gasPrice, err := client.SuggestGasPrice(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("problem getting gas price: %+v", err)
 	}
 
-	ethBalance, err := client.BalanceAt(context.Background(), publicAddress, nil)
+	ethBalance, err := client.BalanceAt(ctx, publicAddress, nil)
 	if err != nil {
 		return nil, fmt.Errorf("problem getting balance: %+v", err)
 	}
