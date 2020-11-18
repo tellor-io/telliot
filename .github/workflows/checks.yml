@@ -43,6 +43,10 @@ jobs:
 
       - name: Testing
         run: make test
+
+      - name: Generating
+        run: make generate
+
       - name: Building
         run: make build
   Coverage:

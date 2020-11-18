@@ -50,12 +50,15 @@ deps: ## Ensures fresh go.mod and go.sum.
 
 .PHONY: generate
 generate: ## Generate all dynamic files.
+generate: check-git
 generate: pkg/pow/kernelSource.go pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go
+generate:
+	$(call require_clean_work_tree,'detected change in the generated files, run make genarate and commit changes')
 
 pkg/pow/kernelSource.go: scripts/opencl/sources/*
 	go run ./scripts/opencl
 
-pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go: contracts/* $(SOLCCHECK) $(ABIGEN)
+pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go: $(SOLCCHECK) $(ABIGEN)
 	@rm -Rf pkg/contracts
 	@mkdir -p pkg/contracts/tellor
 	@mkdir -p pkg/contracts/getter
@@ -64,7 +67,7 @@ pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go: contracts/* $(SOL
 
 .PHONY: build
 build: ## Build the project.
-build: check-git generate
+build: check-git
 build: export GIT_TAG=$(shell git describe --tags)
 build: export GIT_HASH=$(shell git rev-parse --short HEAD)
 build:
@@ -87,7 +90,7 @@ test: generate
 
 .PHONY: abi
 abi: ## Download the latest smart contracts and generate the go bindings.
-abi: contracts-download generate-sol
+abi: contracts-download pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go
 
 .PHONY: contracts-download
 contracts-download:
