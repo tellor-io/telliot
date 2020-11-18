@@ -41,11 +41,11 @@ jobs:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
-      - name: Testing
+      - name: Running tests
         run: make test
 
-      - name: Generating
-        run: make generate
+      - name: Check generated files # Ensure that they are up to date.
+        run: make generate-check
 
       - name: Building
         run: make build
