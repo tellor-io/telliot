@@ -5,6 +5,7 @@ package dataServer
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -71,7 +72,9 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 		return errors.Wrap(err, "starting runner")
 	}
 
-	ds.server.Start()
+	if err := ds.server.Start(); err != http.ErrServerClosed {
+		return errors.Wrap(err, "starting server")
+	}
 	go func() {
 		<-ds.runner.Ready()
 		level.Info(ds.logger).Log("msg", "runner signaled it is ready")

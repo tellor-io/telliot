@@ -139,7 +139,6 @@ func TestMulti(t *testing.T) {
 		hashers = append(hashers, impl)
 	}
 	fmt.Printf("Using %d hashers\n", len(hashers))
-
 	group := NewMiningGroup(hashers)
 	input := make(chan *Work)
 	output := make(chan *Result)

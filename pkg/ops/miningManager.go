@@ -68,7 +68,7 @@ func CreateMiningManager(
 	database db.DataServerProxy,
 ) (*MiningMgr, error) {
 
-	group, err := pow.SetupMiningGroup(cfg)
+	group, err := pow.SetupMiningGroup(cfg, exitCh)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup miners: %s", err.Error())
 	}

@@ -8,6 +8,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"os"
 	"time"
 
 	"github.com/tellor-io/TellorMiner/pkg/config"
@@ -65,11 +66,13 @@ const rateInitialGuess = 100e3
 type MiningGroup struct {
 	Backends    []*Backend
 	LastPrinted time.Time
+	exitCh      chan os.Signal
 }
 
-func NewMiningGroup(hashers []Hasher) *MiningGroup {
+func NewMiningGroup(hashers []Hasher, exitCh chan os.Signal) *MiningGroup {
 	group := &MiningGroup{
 		Backends: make([]*Backend, len(hashers)),
+		exitCh:   exitCh,
 	}
 	for i, hasher := range hashers {
 		//start with a small estimate for hash rate, much faster to increase the gusses rather than decrease
@@ -230,8 +233,8 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		// Read in a result from one of the miners.
 		case result := <-resultChannel:
 			if result.err != nil {
-				//Don't really know what to do here
-				log.Fatalf("hasher failed: %s", result.err.Error())
+				log.Printf("hasher failed: %s", result.err.Error())
+				g.exitCh <- os.Interrupt
 			}
 			idleWorkers <- result.backend
 

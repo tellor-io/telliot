@@ -5,11 +5,12 @@ package pow
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/tellor-io/TellorMiner/pkg/config"
 )
 
-func SetupMiningGroup(cfg *config.Config) (*MiningGroup, error) {
+func SetupMiningGroup(cfg *config.Config, exitCh chan os.Signal) (*MiningGroup, error) {
 	var hashers []Hasher
 	gpus, err := GetOpenCLGPUs()
 	fmt.Printf("Found %d GPUs:\n", len(gpus))
@@ -39,5 +40,5 @@ func SetupMiningGroup(cfg *config.Config) (*MiningGroup, error) {
 		}
 
 	}
-	return NewMiningGroup(hashers), nil
+	return NewMiningGroup(hashers, exitCh), nil
 }
