@@ -71,7 +71,7 @@ func CreateMiningManager(
 
 	group, err := pow.SetupMiningGroup(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup miners: %s", err.Error())
+		return nil, errors.Errorf("failed to setup miners: %s", err.Error())
 	}
 
 	client, err := rpc.NewClient(cfg.NodeURL)

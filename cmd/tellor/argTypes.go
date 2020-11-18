@@ -4,10 +4,10 @@
 package main
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -41,7 +41,7 @@ type ETHAddress struct {
 func (a *ETHAddress) Set(v string) error {
 	valid := common.IsHexAddress(v)
 	if !valid {
-		return fmt.Errorf("%s is not a valid etherum address format", v)
+		return errors.Errorf("%s is not a valid etherum address format", v)
 	}
 	a.addr = common.HexToAddress(v)
 	return nil
@@ -63,10 +63,10 @@ func (b *EthereumInt) Set(v string) error {
 	g := new(big.Int)
 	_, ok := g.SetString(v, 10)
 	if !ok {
-		return fmt.Errorf("%s is not a valid integer", v)
+		return errors.Errorf("%s is not a valid integer", v)
 	}
 	if len(g.Bytes()) > 32 {
-		return fmt.Errorf("%s is larger than 256 bits", v)
+		return errors.Errorf("%s is larger than 256 bits", v)
 	}
 	b.Int = g
 	return nil

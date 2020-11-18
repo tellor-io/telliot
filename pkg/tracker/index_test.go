@@ -32,7 +32,7 @@ package tracker
 // 		t.Fatal(err)
 // 	}
 // 	if val == nil {
-// 		t.Fatal(fmt.Errorf("Expected a value stored for request ID 1"))
+// 		t.Fatal(errors.Errorf("Expected a value stored for request ID 1"))
 // 	}
 // 	intVal, err := hexutil.DecodeBig(string(val))
 // 	if err != nil {
