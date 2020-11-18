@@ -29,7 +29,9 @@ func TestDataServer(t *testing.T) {
 		testutil.Ok(t, errors.Wrapf(err, "creating server in test"))
 	}
 
-	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
+	go func() {
+		testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
+	}()
 
 	time.Sleep(2 * time.Second)
 

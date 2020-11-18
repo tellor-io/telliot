@@ -40,10 +40,8 @@ func Create(ctx context.Context, host string, port uint) (*Server, error) {
 
 // Start the server listening for incoming requests.
 func (s *Server) Start() error {
-	go func() {
-		serverLog.Info("Starting server on %+v\n", s.server.Addr)
-		return s.server.ListenAndServe()
-	}()
+	serverLog.Info("Starting server on %+v\n", s.server.Addr)
+	return s.server.ListenAndServe()
 }
 
 // Stop stops the server listening.

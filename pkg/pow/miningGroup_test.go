@@ -50,8 +50,8 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	cfg := config.GetConfig()
-
-	group := NewMiningGroup([]Hasher{impl})
+	exitCh := make(chan os.Signal)
+	group := NewMiningGroup([]Hasher{impl}, exitCh)
 
 	timeout := time.Millisecond * 200
 
@@ -139,7 +139,8 @@ func TestMulti(t *testing.T) {
 		hashers = append(hashers, impl)
 	}
 	fmt.Printf("Using %d hashers\n", len(hashers))
-	group := NewMiningGroup(hashers)
+	exitCh := make(chan os.Signal)
+	group := NewMiningGroup(hashers, exitCh)
 	input := make(chan *Work)
 	output := make(chan *Result)
 	go group.Mine(input, output)

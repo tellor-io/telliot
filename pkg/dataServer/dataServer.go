@@ -5,7 +5,6 @@ package dataServer
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -72,7 +71,7 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 		return errors.Wrap(err, "starting runner")
 	}
 
-	if err := ds.server.Start(); err != http.ErrServerClosed {
+	if err := ds.server.Start(); err != nil {
 		return errors.Wrap(err, "starting server")
 	}
 	go func() {
