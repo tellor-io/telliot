@@ -52,9 +52,6 @@ func setup() error {
 			return errors.Wrap(err, "create client instance")
 		}
 
-		// Leaving the client in ctx for now because it's still used in some places
-		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
-
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
@@ -67,61 +64,7 @@ func setup() error {
 		if err != nil {
 			return errors.Wrap(err, "create tellor transactor instance")
 		}
-
-		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
-		if err != nil {
-			return errors.Wrap(err, "getting private key")
-		}
-
-		publicKey := privateKey.Public()
-		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			return errors.New("casting public key to ECDSA")
-		}
-
-		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
-		// Issue #55, halt if client is still syncing with Ethereum network
-		s, err := client.IsSyncing(ctx)
-		if err != nil {
-			return errors.Wrap(err, "determining if Ethereum client is syncing")
-		}
-		if s {
-			return errors.New("ethereum node is still syncing with the network")
-		}
-
-		clt = client
-		acc.Address = publicAddress
-		acc.PrivateKey = privateKey
-		cont.Getter = contractGetterInstance
-		cont.Caller = contractTellorInstance
-		cont.Address = contractAddress
-	}
-	return nil
-}
-
-func buildContext() error {
-	cfg := config.GetConfig()
-
-	if !cfg.EnablePoolWorker {
-		// Create an rpc client
-		client, err := rpc.NewClient(cfg.NodeURL)
-		if err != nil {
-			return errors.Wrap(err, "create client instance")
-		}
-		// Create an instance of the tellor master contract for on-chain interactions
-		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
-		if err != nil {
-			return errors.Wrap(err, "create tellor master instance")
-		}
-
-		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
-
-		if err != nil {
-			return errors.Wrap(err, "create tellor transactor instance")
-		}
-
+		// Leaving those in because are still used in some places(miner submission mostly)
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
@@ -131,7 +74,6 @@ func buildContext() error {
 		if err != nil {
 			return errors.Wrap(err, "getting private key")
 		}
-		ctx = context.WithValue(ctx, tellorCommon.PrivateKey, privateKey)
 
 		publicKey := privateKey.Public()
 		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -140,7 +82,6 @@ func buildContext() error {
 		}
 
 		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		ctx = context.WithValue(ctx, tellorCommon.PublicAddress, publicAddress)
 
 		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
@@ -215,7 +156,7 @@ func App() *cli.Cli {
 	app.Before = func() {
 		ExitOnError(util.ParseLoggingConfig(*logPath), "parsing log file")
 		ExitOnError(config.ParseConfig(*configPath), "parsing config file")
-		ExitOnError(buildContext(), "building context")
+		ExitOnError(setup(), "setting up")
 	}
 
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
@@ -224,7 +165,6 @@ func App() *cli.Cli {
 	app.Command("stake", "staking operations", stakeCmd(logSetup, logLevel))
 	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel))
 	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel))
-	//Using values from context, until we have a function that setups the client and returns as values, not as part of the context
 	app.Command("balance", "check balance of address", balanceCmd)
 	app.Command("dispute", "dispute operations", disputeCmd(logSetup, logLevel))
 	app.Command("mine", "mine for TRB", mineCmd(logSetup, logLevel))
