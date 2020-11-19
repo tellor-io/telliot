@@ -32,10 +32,10 @@ func ParseLoggingConfig(file string) error {
 	if len(file) > 0 {
 		info, err := os.Stat(file)
 		if os.IsNotExist(err) {
-			return errors.Errorf("loggingConfigPath references an invalid file at: %s", file)
+			return errors.Wrapf(err, "loggingConfigPath references an invalid file at: %s", file)
 		}
 		if info.IsDir() {
-			return errors.Errorf("logging config file %s is a directory", file)
+			return errors.Wrapf(err, "logging config file %s is a directory", file)
 		}
 
 		configFile, err := os.Open(file)

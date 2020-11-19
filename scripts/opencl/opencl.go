@@ -36,7 +36,7 @@ func compileSources() (string, error) {
 	dir := filepath.Join(filepath.Dir(filename), sourceDir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return "", errors.Errorf("couldn't read directory %s: %s", dir, err.Error())
+		return "", errors.Wrapf(err, "read directory: %s", dir)
 	}
 
 	contents := make(map[string][]byte)
@@ -44,20 +44,20 @@ func compileSources() (string, error) {
 		filepath := filepath.Join(dir, file.Name())
 		data, err := ioutil.ReadFile(filepath)
 		if err != nil {
-			return "", errors.Errorf("couldn't read file %s: %s", filepath, err.Error())
+			return "", errors.Wrapf(err, "read file: %s", filepath)
 		}
 		contents[file.Name()] = data
 	}
 	var out strings.Builder
 	if _, ok := contents[headerFile]; !ok {
-		return "", errors.Errorf("missing %s file", headerFile)
+		return "", errors.Wrapf(err, "missing %s file", headerFile)
 	}
 	out.Write(contents[headerFile])
 	delete(contents, headerFile)
 
 	mainSrc, ok := contents[kernelFile]
 	if !ok {
-		return "", errors.Errorf("missing %s file", kernelFile)
+		return "", errors.Wrapf(err, "missing %s file", kernelFile)
 	}
 	delete(contents, kernelFile)
 

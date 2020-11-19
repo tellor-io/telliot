@@ -110,14 +110,14 @@ func EnsureValueOracle() error {
 		if os.IsNotExist(err) {
 			exists = false
 		} else {
-			return errors.Errorf("file %s stat error: %v", historyPath, err)
+			return errors.Wrapf(err, "stats for file: %v", historyPath)
 		}
 	}
 
 	if exists {
 		byteValue, err := ioutil.ReadFile(historyPath)
 		if err != nil {
-			return errors.Errorf("failed to read psr file @ %s: %v", historyPath, err)
+			return errors.Wrapf(err, "failed to read psr file @: %v", historyPath)
 		}
 		err = json.Unmarshal(byteValue, &valueHistory)
 		if err != nil {

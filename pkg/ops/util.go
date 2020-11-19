@@ -23,23 +23,23 @@ func PrepareEthTransaction(ctx context.Context) (*bind.TransactOpts, error) {
 
 	nonce, err := client.PendingNonceAt(ctx, publicAddress)
 	if err != nil {
-		return nil, errors.Errorf("problem getting pending nonce: %+v", err)
+		return nil, errors.Wrap(err, "getting pending nonce")
 	}
 
 	gasPrice, err := client.SuggestGasPrice(ctx)
 	if err != nil {
-		return nil, errors.Errorf("problem getting gas price: %+v", err)
+		return nil, errors.Wrap(err, "getting gas price")
 	}
 
 	ethBalance, err := client.BalanceAt(ctx, publicAddress, nil)
 	if err != nil {
-		return nil, errors.Errorf("problem getting balance: %+v", err)
+		return nil, errors.Wrap(err, "getting balance")
 	}
 
 	cost := new(big.Int)
 	cost.Mul(gasPrice, big.NewInt(700000))
 	if ethBalance.Cmp(cost) < 0 {
-		return nil, errors.Errorf("insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
+		return nil, errors.Wrapf(err, "insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
 	}
 
 	privateKey := ctx.Value(tellorCommon.PrivateKey).(*ecdsa.PrivateKey)

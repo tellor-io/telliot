@@ -100,7 +100,7 @@ func SubmitContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName st
 		cost = cost.Mul(gasPrice, big.NewInt(200000))
 		if balance.Cmp(cost) < 0 {
 			// FIXME: notify someone that we're out of funds!
-			finalError = errors.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
+			finalError = errors.Wrapf(err, "Insufficient funds to send transaction: %v < %v", balance, cost)
 			continue
 		}
 

@@ -41,7 +41,7 @@ type ETHAddress struct {
 func (a *ETHAddress) Set(v string) error {
 	valid := common.IsHexAddress(v)
 	if !valid {
-		return errors.Errorf("%s is not a valid etherum address format", v)
+		return errors.Errorf("%s valid etherum address format", v)
 	}
 	a.addr = common.HexToAddress(v)
 	return nil

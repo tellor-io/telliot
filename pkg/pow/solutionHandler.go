@@ -89,7 +89,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 					}
 					continue
 				}
-				return nil, errors.Errorf("no value in database,  reg id: %v", challenge.RequestIDs[i].Uint64())
+				return nil, errors.Wrapf(err, "no value in database,  reg id: %v", challenge.RequestIDs[i].Uint64())
 			}
 		}
 		s.currentValues[i] = value

@@ -105,7 +105,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 
 	header, err := client.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return errors.Errorf("failed to get latest eth block header: %v", err)
+		return errors.Wrap(err, "to get latest eth block header")
 	}
 	if c.lastCheckedBlock == 0 {
 		c.lastCheckedBlock = header.Number.Uint64()
@@ -120,7 +120,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
 	if err != nil {
-		return errors.Errorf("failed to parse abi: %v", err)
+		return errors.Wrap(err, "to parse abi")
 	}
 	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
 
@@ -137,20 +137,20 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 	}
 	logs, err := client.FilterLogs(ctx, query)
 	if err != nil {
-		return errors.Errorf("failed to filter eth logs: %v", err)
+		return errors.Wrap(err, "to filter eth logs")
 	}
 	blockTimes := make(map[uint64]time.Time)
 	for _, l := range logs {
 		nonceSubmit := tellor.TellorLibraryNonceSubmitted{}
 		err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 		if err != nil {
-			return errors.Errorf("failed to unpack into object: %v", err)
+			return errors.Wrap(err, "to unpack into object")
 		}
 		blockTime, ok := blockTimes[l.BlockNumber]
 		if !ok {
 			header, err := client.HeaderByNumber(ctx, big.NewInt(int64(l.BlockNumber)))
 			if err != nil {
-				return errors.Errorf("failed to get nonce block header: %v", err)
+				return errors.Wrap(err, "to get nonce block header")
 			}
 			blockTime = time.Unix(int64(header.Time), 0)
 			blockTimes[l.BlockNumber] = blockTime

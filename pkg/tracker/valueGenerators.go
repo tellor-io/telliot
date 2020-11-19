@@ -41,7 +41,7 @@ func InitPSRs() error {
 		for symbol := range reqs {
 			_, ok := indexes[symbol]
 			if !ok {
-				return errors.Errorf("PSR %d requires non-existent symbol %s", requestID, symbol)
+				errors.Errorf("PSR %d requires non-existent symbol %s", requestID, symbol)
 			}
 		}
 	}

@@ -66,7 +66,7 @@ func _recReq(req *HTTPFetchRequest, expiration time.Time) ([]byte, error) {
 		// Log local non-timeout errors for now.
 		now := time.Now()
 		if now.After(expiration) {
-			return nil, errors.Errorf("Giving up fetch request after request timeout: %d", r.StatusCode)
+			return nil, errors.Wrapf(err, "Giving up fetch request after request timeout: %d", r.StatusCode)
 		}
 		// FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)

@@ -215,7 +215,7 @@ func (i *remoteImpl) BatchGet(keys []string) (map[string][]byte, error) {
 		return nil, err
 	}
 	if len(remResp.errorMsg) > 0 {
-		return nil, errors.Errorf(remResp.errorMsg)
+		return nil, errors.Wrapf(err, remResp.errorMsg)
 	}
 	return remResp.dbVals, nil
 }
@@ -254,7 +254,7 @@ func (i *remoteImpl) BatchPut(keys []string, values [][]byte) (map[string][]byte
 		return nil, err
 	}
 	if len(remResp.errorMsg) > 0 {
-		return nil, errors.Errorf(remResp.errorMsg)
+		return nil, errors.Wrapf(err, remResp.errorMsg)
 	}
 	return remResp.dbVals, nil
 }

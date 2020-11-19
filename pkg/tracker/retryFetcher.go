@@ -58,7 +58,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 	data, err := ioutil.ReadAll(r.Body)
 	r.Body.Close()
 	if err != nil {
-		return nil, errors.Errorf("failed to read response body: %v", err)
+		return nil, errors.Wrap(err, "to read response body")
 	}
 
 	if r.StatusCode < 200 || r.StatusCode > 299 {
@@ -67,7 +67,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		// this is a duplicated error that is unlikely to be triggered since expiration is updated above
 		now := clck.Now()
 		if now.After(expiration) {
-			return nil, errors.Errorf("giving up fetch request after request timeout: %d", r.StatusCode)
+			return nil, errors.Wrapf(err, "giving up fetch request after request timeout: %d", r.StatusCode)
 		}
 		//FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)

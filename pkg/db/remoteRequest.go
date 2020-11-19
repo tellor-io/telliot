@@ -72,7 +72,7 @@ func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*req
 	}
 	if sig == nil {
 		log.Error("Signature was not generated")
-		return nil, errors.Errorf("Could not generate a signature for  hash: %v", hash)
+		return nil, errors.Wrapf(err, "Could not generate a signature for  hash: %v", hash)
 	}
 	return &requestPayload{dbKeys: dbKeys, dbValues: values, timestamp: t, sig: sig}, nil
 }

@@ -42,13 +42,13 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 
 	balance, err := instance.BalanceOf(nil, addr)
 	if err != nil {
-		return errors.Errorf("failed to fetch balance: %s", err.Error())
+		return errors.Wrap(err, "to fetch balance")
 	}
 	var asBytes32 [32]byte
 	copy(asBytes32[:], "0x8b75eb45d88e80f0e4ec77d23936268694c0e7ac2e0c9085c5c6bdfcfbc49239") // keccak256(disputeFee).
 	disputeCost, err := instance.GetUintVar(nil, asBytes32)
 	if err != nil {
-		return errors.Errorf("failed to get dispute cost: %s", err)
+		return errors.Wrap(err, "to get dispute cost")
 	}
 
 	if balance.Cmp(disputeCost) < 0 {
@@ -59,13 +59,13 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return errors.Errorf("failed to prepare ethereum transaction: %s", err.Error())
+		return errors.Wrapf(err, "to prepare ethereum transaction")
 	}
 
 	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	tx, err := instance2.BeginDispute(auth, requestId, timestamp, minerIndex)
 	if err != nil {
-		return errors.Errorf("failed to send dispute txn: %s", err.Error())
+		return errors.Wrap(err, "to send dispute txn")
 	}
 	fmt.Printf("dispute started with txn: %s\n", tx.Hash().Hex())
 	return nil
@@ -77,7 +77,7 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 	addr := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 	voted, err := instanceGetter.DidVote(nil, _disputeId, addr)
 	if err != nil {
-		return errors.Errorf("failed to check if you've already voted: %v", err)
+		return errors.Wrapf(err, "to check if you've already voted")
 	}
 	if voted {
 		fmt.Printf("You have already voted on this dispute\n")
@@ -88,11 +88,11 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return errors.Errorf("failed to prepare ethereum transaction: %s", err.Error())
+		return errors.Wrapf(err, "to prepare ethereum transaction")
 	}
 	tx, err := instanceTellor.Vote(auth, _disputeId, _supportsDispute)
 	if err != nil {
-		return errors.Errorf("failed to submit vote transaction: %s", err.Error())
+		return errors.Wrapf(err, "to submit vote transaction")
 	}
 
 	fmt.Printf("Vote submitted with transaction %s\n", tx.Hash().Hex())
@@ -103,7 +103,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
 	if err != nil {
-		return nil, errors.Errorf("failed to parse abi: %v", err)
+		return nil, errors.Wrap(err, "to parse abi")
 	}
 	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
@@ -113,12 +113,12 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 
 	allVals, err := instance.GetSubmissionsByTimestamp(nil, dispute.RequestId, dispute.Timestamp)
 	if err != nil {
-		return nil, errors.Errorf("failed to get other submitted values for dispute: %v", err)
+		return nil, errors.Wrap(err, "to get other submitted values for dispute")
 	}
 
 	allAddrs, err := instance.GetMinersByRequestIdAndTimestamp(nil, dispute.RequestId, dispute.Timestamp)
 	if err != nil {
-		return nil, errors.Errorf("failed to get miner addresses for dispute: %v", err)
+		return nil, errors.Wrap(err, "to get miner addresses for dispute")
 	}
 
 	const blockStep = 100
@@ -137,18 +137,18 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 
 		logs, err := client.FilterLogs(ctx, query)
 		if err != nil {
-			return nil, errors.Errorf("failed to get nonce logs: %v", err)
+			return nil, errors.Wrap(err, "to get nonce logs")
 		}
 
 		for _, l := range logs {
 			nonceSubmit := tellor.TellorLibraryNonceSubmitted{}
 			err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 			if err != nil {
-				return nil, errors.Errorf("failed to unpack into object: %v", err)
+				return nil, errors.Wrap(err, "to unpack into object")
 			}
 			header, err := client.HeaderByNumber(ctx, big.NewInt(int64(l.BlockNumber)))
 			if err != nil {
-				return nil, errors.Errorf("failed to get nonce block header: %v", err)
+				return nil, errors.Wrap(err, "to get nonce block header")
 			}
 			for i := 0; i < 5; i++ {
 				if nonceSubmit.Miner == allAddrs[i] {
@@ -177,7 +177,7 @@ func List(ctx context.Context, logger log.Logger) error {
 	cfg := config.GetConfig()
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorDisputeABI))
 	if err != nil {
-		return errors.Errorf("failed to parse abi: %v", err)
+		return errors.Wrap(err, "to parse abi")
 	}
 	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
 	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
@@ -187,7 +187,7 @@ func List(ctx context.Context, logger log.Logger) error {
 
 	header, err := client.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return errors.Errorf("failed to get latest eth block header: %v", err)
+		return errors.Wrap(err, "to get latest eth block header")
 	}
 
 	startBlock := big.NewInt(10e3 * 14)
@@ -202,7 +202,7 @@ func List(ctx context.Context, logger log.Logger) error {
 
 	logs, err := client.FilterLogs(ctx, query)
 	if err != nil {
-		return errors.Errorf("failed to filter eth logs: %v", err)
+		return errors.Wrap(err, "to filter eth logs")
 	}
 
 	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
@@ -213,11 +213,11 @@ func List(ctx context.Context, logger log.Logger) error {
 		dispute := tellor.TellorDisputeNewDispute{}
 		err := bar.UnpackLog(&dispute, "NewDispute", rawDispute)
 		if err != nil {
-			return errors.Errorf("failed to unpack dispute event from logs: %v", err)
+			return errors.Wrap(err, "to unpack dispute event from logs")
 		}
 		_, executed, votePassed, _, reportedAddr, reportingMiner, _, uintVars, currTally, err := instance.GetAllDisputeVars(nil, dispute.DisputeId)
 		if err != nil {
-			return errors.Errorf("failed to get dispute details: %v", err)
+			return errors.Wrap(err, "to get dispute details")
 		}
 
 		votingEnds := time.Unix(uintVars[3].Int64(), 0)
@@ -245,7 +245,7 @@ func List(ctx context.Context, logger log.Logger) error {
 
 		allSubmitted, err := getNonceSubmissions(ctx, uintVars[5], &dispute)
 		if err != nil {
-			return errors.Errorf("failed to get the values submitted by other miners for the disputed block: %v", err)
+			return errors.Wrapf(err, "to get the values submitted by other miners for the disputed block")
 		}
 		disputedValTime := allSubmitted[uintVars[6].Uint64()].Created
 
