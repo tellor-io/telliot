@@ -6,6 +6,7 @@ package rest
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/tellor-io/TellorMiner/pkg/common"
@@ -39,9 +40,19 @@ func Create(ctx context.Context, host string, port uint) (*Server, error) {
 }
 
 // Start the server listening for incoming requests.
-func (s *Server) Start() error {
-	serverLog.Info("Starting server on %+v\n", s.server.Addr)
-	return s.server.ListenAndServe()
+func (s *Server) Start() {
+	go func() {
+		serverLog.Info("Starting server on %+v\n", s.server.Addr)
+		// returns ErrServerClosed on graceful close
+		if err := s.server.ListenAndServe(); err != http.ErrServerClosed {
+			// NOTE: there is a chance that next line won't have time to run,
+			// as main() doesn't wait for this goroutine to stop. don't use
+			// code with race conditions like these for production. see post
+			// comments below on more discussion on how to handle this.
+			//TODO remove this log and return error instead
+			log.Fatalf("ListenAndServe(): %s", err)
+		}
+	}()
 }
 
 // Stop stops the server listening.

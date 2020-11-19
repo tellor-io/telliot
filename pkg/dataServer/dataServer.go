@@ -71,9 +71,7 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 		return errors.Wrap(err, "starting runner")
 	}
 
-	if err := ds.server.Start(); err != nil {
-		return errors.Wrap(err, "starting server")
-	}
+	ds.server.Start()
 	go func() {
 		<-ds.runner.Ready()
 		level.Info(ds.logger).Log("msg", "runner signaled it is ready")
