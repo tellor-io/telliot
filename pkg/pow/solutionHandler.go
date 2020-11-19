@@ -89,7 +89,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 					}
 					continue
 				}
-				return nil, errors.Wrapf(err, "no value in database,  reg id: %v", challenge.RequestIDs[i].Uint64())
+				return nil, errors.Wrapf(err, "no value in database,  reg id:%v", challenge.RequestIDs[i].Uint64())
 			}
 		}
 		s.currentValues[i] = value
@@ -108,7 +108,7 @@ func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.Cont
 		s.currentChallenge.RequestIDs,
 		s.currentValues)
 	if err != nil {
-		s.log.Error("Problem submitting solution: %v", err)
+		s.log.Error("Problem submitting solution:%v", err)
 		return txn, err
 	}
 

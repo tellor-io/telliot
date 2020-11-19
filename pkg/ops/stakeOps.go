@@ -61,7 +61,7 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 
 	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
 	if err != nil {
-		return errors.Wrap(err, "to get stake status")
+		return errors.Wrap(err, "get stake status")
 	}
 
 	if status.Uint64() != 0 && status.Uint64() != 2 {
@@ -78,7 +78,7 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 	}
 
 	if balance.Cmp(stakeAmt) < 0 {
-		return errors.Wrapf(err, "insufficient balance (%s), mining stake requires %s TRB",
+		return errors.Errorf("insufficient mining stake TRB balance actual: %v, required:%v",
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(stakeAmt))
 	}
@@ -103,7 +103,7 @@ func ShowStatus(ctx context.Context, logger log.Logger) error {
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
 	if err != nil {
-		return errors.Wrap(err, "to get stake status")
+		return errors.Wrap(err, "get stake status")
 	}
 
 	printStakeStatus(status, startTime)
@@ -116,7 +116,7 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
 	if err != nil {
-		return errors.Wrap(err, "to get stake status")
+		return errors.Wrap(err, "get stake status")
 	}
 	if status.Uint64() != 1 {
 		printStakeStatus(status, startTime)
@@ -125,7 +125,7 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
 
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return errors.Wrap(err, "to prepare ethereum transaction")
+		return errors.Wrap(err, "prepare ethereum transaction")
 	}
 
 	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
@@ -144,7 +144,7 @@ func WithdrawStake(ctx context.Context, logger log.Logger) error {
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
 	if err != nil {
-		return errors.Wrap(err, "to get stake status")
+		return errors.Wrap(err, "get stake status")
 	}
 	if status.Uint64() != 2 {
 
@@ -155,7 +155,7 @@ func WithdrawStake(ctx context.Context, logger log.Logger) error {
 
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return errors.Wrap(err, "to prepare ethereum transaction")
+		return errors.Wrap(err, "prepare ethereum transaction")
 	}
 
 	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)

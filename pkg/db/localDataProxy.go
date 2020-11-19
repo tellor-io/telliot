@@ -43,7 +43,7 @@ func (l *localProxy) BatchGet(keys []string) (map[string][]byte, error) {
 			outMap[k] = bts
 		}
 	}
-	l.log.Debug("Requested keys: %v, resulting output: %v", keys, outMap)
+	l.log.Debug("Requested keys: %v, resulting output:%v", keys, outMap)
 	return outMap, nil
 }
 

@@ -73,7 +73,7 @@ func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
 	for _, psr := range psrs {
 		err := psr.Exec(ctx)
 		if err != nil {
-			t.Fatalf("failed to execute psr: %v", err)
+			t.Fatalf("failed to execute psr:%v", err)
 		}
 	}
 }

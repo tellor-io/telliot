@@ -132,7 +132,7 @@ const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 func ParseConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return errors.Wrapf(err, "to open config file: %v", path)
+		return errors.Wrapf(err, "open config file:%v", path)
 	}
 
 	return ParseConfigBytes(data)
@@ -141,7 +141,7 @@ func ParseConfig(path string) error {
 func ParseConfigBytes(data []byte) error {
 	err := json.Unmarshal(data, &config)
 	if err != nil {
-		return errors.Wrap(err, "to parse json")
+		return errors.Wrap(err, "parse json")
 	}
 	// Check if the env is already set, only try loading .env if its not there.
 	if config.PrivateKey == "" {
@@ -152,7 +152,7 @@ func ParseConfigBytes(data []byte) error {
 
 		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 		if config.PrivateKey == "" {
-			return errors.Wrapf(err, "missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
+			return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
 		}
 	}
 
@@ -169,7 +169,7 @@ func ParseConfigBytes(data []byte) error {
 
 	err = validateConfig(&config)
 	if err != nil {
-		return errors.Wrap(err, "validation")
+		return errors.Wrap(err, "config validation")
 	}
 	return nil
 }
@@ -192,7 +192,7 @@ func validateConfig(cfg *Config) error {
 			return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
 		}
 		if len(cfg.ContractAddress) != 42 {
-			return errors.Wrapf(err, "expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
+			return errors.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 		}
 		b, err = hex.DecodeString(cfg.ContractAddress[2:])
 		if err != nil || len(b) != 20 {
@@ -200,7 +200,7 @@ func validateConfig(cfg *Config) error {
 		}
 
 		if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
-			return errors.Wrapf(err, "gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
+			return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
 		}
 	}
 
@@ -209,13 +209,13 @@ func validateConfig(cfg *Config) error {
 			continue
 		}
 		if gpuConfig.Count == 0 {
-			return errors.Wrapf(err, "gpu '%s' requires 'count' > 0", name)
+			return errors.Errorf("requires 'count' > 0 on gpu '%s'", name)
 		}
 		if gpuConfig.GroupSize == 0 {
-			return errors.Wrapf(err, "gpu '%s' requires 'groupSize' > 0", name)
+			return errors.Errorf("requires 'groupSize' > 0 on gpu '%s'", name)
 		}
 		if gpuConfig.Groups == 0 {
-			return errors.Wrapf(err, "gpu '%s' requires 'groups' > 0", name)
+			return errors.Errorf("requires 'groups' > 0 on gpu '%s'", name)
 		}
 	}
 

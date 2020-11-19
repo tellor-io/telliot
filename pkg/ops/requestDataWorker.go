@@ -96,7 +96,7 @@ func (r *DataRequester) reqDataCallback(ctx context.Context, contract tellorComm
 		r.log.Error("Could not get data from data proxy, cannot continue at all")
 		return nil, nil
 	}
-	r.log.Debug("Received data: %v", m)
+	r.log.Debug("Received data:%v", m)
 
 	reqID, stat := r.getInt(m[db.RequestIdKey])
 	if stat == statusWaitNext || stat == statusFailure {
@@ -138,7 +138,7 @@ func (r *DataRequester) getInt(data []byte) (*big.Int, int) {
 
 	val, err := hexutil.DecodeBig(string(data))
 	if err != nil {
-		r.log.Error("Problem decoding int: %v", err)
+		r.log.Error("Problem decoding int:%v", err)
 		return nil, statusFailure
 	}
 	return val, statusSuccess

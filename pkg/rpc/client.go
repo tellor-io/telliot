@@ -99,7 +99,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if strings.Contains(err.Error(), "replacement transaction underpriced") {
 			return err
 		}
-		c.log.Debug("Problem in calling eth client: %v", err)
+		c.log.Debug("Problem in calling eth client:%v", err)
 		//pause for a bit and try again
 		sleepTime := backoff[tryCount%len(backoff)]
 		tryCount++
@@ -178,10 +178,10 @@ func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, bl
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.CodeAt(*_ctx, contract, blockNumber)
 		if e != nil {
-			c.log.Error("Problem getting code from eth client: %v", e)
+			c.log.Error("Problem getting code from eth client:%v", e)
 		}
-		log.Printf("_normalLog Found %d bytes of code at address: %v", len(r), contract)
-		c.log.Debug("Found %d bytes of code at address: %v", len(r), contract)
+		log.Printf("_normalLog Found %d bytes of code at address:%v", len(r), contract)
+		c.log.Debug("Found %d bytes of code at address:%v", len(r), contract)
 		res = r
 		return e
 	})
@@ -199,7 +199,7 @@ func (c *clientInstance) CallContract(ctx context.Context, call ethereum.CallMsg
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.CallContract(*_ctx, call, blockNumber)
 		if e != nil {
-			c.log.Error("Problem calling %s: %v", fn, e)
+			c.log.Error("Problem calling %s:%v", fn, e)
 		}
 		for i := 0; i < len(r); i += 32 {
 			c.log.Debug("Slice %d: %s\n", i, hexutil.Encode(r[i:i+32]))

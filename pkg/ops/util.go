@@ -39,7 +39,7 @@ func PrepareEthTransaction(ctx context.Context) (*bind.TransactOpts, error) {
 	cost := new(big.Int)
 	cost.Mul(gasPrice, big.NewInt(700000))
 	if ethBalance.Cmp(cost) < 0 {
-		return nil, errors.Wrapf(err, "insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
+		return nil, errors.Errorf("insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
 	}
 
 	privateKey := ctx.Value(tellorCommon.PrivateKey).(*ecdsa.PrivateKey)

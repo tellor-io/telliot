@@ -42,12 +42,12 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	indexPath := filepath.Join(cfg.ConfigFolder, "indexes.json")
 	byteValue, err := ioutil.ReadFile(indexPath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "to read index file @ %s", indexPath)
+		return nil, errors.Wrapf(err, "read index file @ %s", indexPath)
 	}
 	var baseIndexes map[string][]string
 	err = json.Unmarshal(byteValue, &baseIndexes)
 	if err != nil {
-		return nil, errors.Wrap(err, "to parse index file")
+		return nil, errors.Wrap(err, "parse index file")
 	}
 
 	indexes = make(map[string][]*IndexTracker)

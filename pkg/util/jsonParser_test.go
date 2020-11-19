@@ -19,10 +19,10 @@ func TestJSONParser(t *testing.T) {
 
 	for _, r := range res {
 		if r > 0 {
-			t.Logf("Parsed json properly: %v", res)
+			t.Logf("Parsed json properly:%v", res)
 
 		} else {
-			t.Fatalf("Json not parsed properly: %v", res)
+			t.Fatalf("Json not parsed properly:%v", res)
 		}
 	}
 

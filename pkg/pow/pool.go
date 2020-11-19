@@ -54,7 +54,7 @@ func (n *MiningNotify) UnmarshalJSON(buf []byte) error {
 		return err
 	}
 	if g, e := len(tmp), wantLen; g != e {
-		return errors.Errorf("wrong number of fields in MiningNotify: %d != %d", g, e)
+		return errors.Errorf("wrong number of fields in MiningNotify: %v != %v", g, e)
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (n *MiningSetDifficulty) UnmarshalJSON(buf []byte) error {
 		return err
 	}
 	if g, e := len(tmp), wantLen; g != e {
-		return errors.Errorf("wrong number of fields in MiningSetDifficulty: %d != %d", g, e)
+		return errors.Errorf("wrong number of fields in MiningSetDifficulty: %v != %v", g, e)
 	}
 	return nil
 }

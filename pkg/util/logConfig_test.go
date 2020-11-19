@@ -16,7 +16,7 @@ func TestLogConfig(t *testing.T) {
 	}
 	cfg := GetLoggingConfig()
 	if cfg.levels["config.Config"] == 0 {
-		t.Fatalf("Config did not parse correctly: %v", cfg.levels)
+		t.Fatalf("Config did not parse correctly:%v", cfg.levels)
 	} else {
 		t.Logf("Parsed log level: %d", cfg.levels["config.Config"])
 	}

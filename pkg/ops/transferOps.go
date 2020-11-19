@@ -30,17 +30,17 @@ func prepareTransfer(amt *big.Int, ctx context.Context) (*bind.TransactOpts, err
 
 	balance, err := instance.BalanceOf(nil, senderPubAddr)
 	if err != nil {
-		return nil, errors.Wrap(err, "to get balance")
+		return nil, errors.Wrap(err, "get balance")
 	}
 	fmt.Println("My balance", util.FormatERC20Balance(balance))
 	if balance.Cmp(amt) < 0 {
-		return nil, errors.Wrapf(err, "insufficient balance (%s TRB), requested %s TRB",
+		return nil, errors.Errorf("insufficient balance TRB actual: %v, requested: %v",
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(amt))
 	}
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "to prepare ethereum transaction")
+		return nil, errors.Wrap(err, "prepare ethereum transaction")
 	}
 	return auth, nil
 }

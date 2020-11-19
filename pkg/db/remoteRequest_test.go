@@ -151,10 +151,10 @@ func TestRequestForData(t *testing.T) {
 	reqID := string(resp.dbVals[RequestIdKey])
 	diff := string(resp.dbVals[DifficultyKey])
 	if reqID != "1" {
-		t.Fatalf("Expected result map to map request id to '1': %v", resp.dbVals)
+		t.Fatalf("Expected result map to map request id to '1':%v", resp.dbVals)
 	}
 	if diff != "2" {
-		t.Fatalf("Expected difficulty to be mapped to '2': %v", resp.dbVals)
+		t.Fatalf("Expected difficulty to be mapped to '2':%v", resp.dbVals)
 	}
 
 }

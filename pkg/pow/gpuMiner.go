@@ -69,7 +69,7 @@ func GetOpenCLGPUs() ([]*cl.Device, error) {
 				gpuLog.Info("Found 0 GPUs on platform %s\n", platform.Name())
 				continue
 			}
-			return nil, errors.Wrapf(err, "failed to get devices for platform %s", platform.Name())
+			return nil, errors.Wrapf(err, "get devices for platform %s", platform.Name())
 		}
 		gpus = append(gpus, devices...)
 	}
@@ -139,7 +139,7 @@ func (g *GpuMiner) Name() string {
 
 func (g *GpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
 	if n%g.StepSize() != 0 {
-		return "", 0, errors.Errorf("n (%d) must be a multiple of GPU step size (%d)", n, g.StepSize())
+		return "", 0, errors.Errorf("must be a multiple n (%v) of GPU step size (%v)", n, g.StepSize())
 	}
 	mulDivisorBytes := createDivisorByteArray(hash.difficulty)
 
@@ -174,7 +174,7 @@ func (g *GpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		results := make([]byte, 16)
 		_, err = g.queue.EnqueueReadBuffer(g.output, true, 0, len(results), unsafe.Pointer(&results[0]), nil)
 		if err != nil {
-			return "", done, errors.Wrap(err, "EnqueueReadBuffer ")
+			return "", done, errors.Wrap(err, "EnqueueReadBuffer")
 		}
 		end := time.Now()
 		totalTime := end.Sub(kernelStarted)

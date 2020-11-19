@@ -83,7 +83,7 @@ func (c *StratumClient) Listen() {
 			c.log.Error("failed to get response from pool: %s", err.Error())
 			continue
 		}
-		// c.log.Info("get response : %v", response)
+		// c.log.Info("get response :%v", response)
 		c.msgChan <- response
 	}
 }
