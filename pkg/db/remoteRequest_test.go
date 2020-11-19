@@ -73,7 +73,8 @@ func TestRequestReplayAttack(t *testing.T) {
 	time.Sleep((_validityThreshold * 1500) * time.Millisecond)
 
 	_, err = decodeRequest(encoded, remote.(*remoteImpl))
-	testutil.Ok(t, err)
+
+	testutil.Assert(t, err != nil, "Expected failure when decoding request as a replay after expiration period")
 }
 
 func TestRequestForData(t *testing.T) {
@@ -144,6 +145,7 @@ func TestRequestPut(t *testing.T) {
 	testutil.Ok(t, err)
 
 	bts, err := encodeRequest(req)
+	testutil.Ok(t, err)
 
 	_, err = remote.IncomingRequest(bts)
 	testutil.Ok(t, err)

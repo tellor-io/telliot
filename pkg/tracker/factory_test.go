@@ -52,7 +52,7 @@ func TestCreateTracker(t *testing.T) {
 		testutil.Ok(t, errors.New(fmt.Sprintf("Expected DisputeChecker but got %s", disputeChecker[0].String())))
 	}
 
-	badTracker, err := createTracker("badTracker", logger)
-	testutil.Ok(t, err, "expected error but instead received this tracker: %s", badTracker[0].String())
+	_, err = createTracker("badTracker", logger)
+	testutil.Assert(t, err != nil, "expected error but instead received tracker")
 
 }

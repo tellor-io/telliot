@@ -52,7 +52,7 @@ func TestNegativeBalance(t *testing.T) {
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	testutil.Ok(t, err)
+	testutil.Assert(t, err != nil, "should have error")
 }
 
 func dbBalanceTest(startBal *big.Int, t *testing.T) {
