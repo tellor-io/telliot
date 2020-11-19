@@ -25,9 +25,8 @@ func TestStringId(t *testing.T) {
 	logger := logSetup("debug")
 	tracker := NewBalanceTracker(logger)
 	res := tracker.String()
-	if res != BalanceTrackerName {
-		testutil.Ok(t, errors.New(fmt.Sprint("didn't return expected string", BalanceTrackerName)))
-	}
+
+	testutil.Assert(t, res == BalanceTrackerName, "didn't return expected string", BalanceTrackerName)
 }
 func TestPositiveBalance(t *testing.T) {
 	startBal := big.NewInt(356000)
@@ -46,18 +45,14 @@ func TestNegativeBalance(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
 	tracker := NewBalanceTracker(logger)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	if err == nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 }
 
 func dbBalanceTest(startBal *big.Int, t *testing.T) {
@@ -66,26 +61,19 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
+
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
 	tracker := NewBalanceTracker(logger)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	v, err := DB.Get(db.BalanceKey)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	b, err := hexutil.DecodeBig(string(v))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	t.Logf("Balance stored: %v\n", string(v))
 	if b.Cmp(startBal) != 0 {
 		testutil.Ok(t, errors.New(fmt.Sprintf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)))

@@ -26,19 +26,13 @@ func TestETHGasStation(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "ethGas_test"))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	v, err := DB.Get(db.GasKey)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	t.Logf("Gas Price stored: %v\n", string(v))
 

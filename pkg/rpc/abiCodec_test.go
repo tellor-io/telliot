@@ -31,9 +31,7 @@ func TestABICodec(t *testing.T) {
 	var hash [32]byte
 	copy([]byte("12345"), hash[:])
 	data, err := m.Outputs.Pack("someQueryString", "ETH/USD", hash, big.NewInt(1000), big.NewInt(0), big.NewInt(0))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	for i := 0; i < len(data); i += 32 {
 		hex := hexutil.Encode(data[i : i+32])

@@ -27,26 +27,18 @@ func TestTributeBalance(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_Tributebalance"))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
 	tracker := NewTributeTracker(logger)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	v, err := DB.Get(db.TributeBalanceKey)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	b, err := hexutil.DecodeBig(string(v))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	t.Logf("Tribute Balance stored: %v\n", b)
 	if b.Cmp(startBal) != 0 {
 		testutil.Ok(t, errors.New(fmt.Sprintf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)))

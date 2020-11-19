@@ -17,9 +17,7 @@ const API = "json(https://api.gdax.com/products/ETH-USD/ticker).price"
 
 func TestJSONParser(t *testing.T) {
 	res, err := testFetch(API)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	for _, r := range res {
 		if r > 0 {

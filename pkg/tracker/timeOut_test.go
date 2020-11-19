@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"context"
-	"errors"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -23,17 +22,15 @@ func TestTimeOutString(t *testing.T) {
 	logger := logSetup("debug")
 	tracker := NewTimeOutTracker(logger)
 	res := tracker.String()
-	if res != "TimeOutTracker" {
-		testutil.Ok(t, errors.New("should return 'TimeOutTracker' string"))
-	}
+
+	testutil.Assert(t, res == "TimeOutTracker", "should return 'TimeOutTracker' string")
+
 }
 
 func TestTimeOutTracker(t *testing.T) {
 
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_timeOut"))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	startBal := big.NewInt(456000)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),

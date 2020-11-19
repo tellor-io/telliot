@@ -38,9 +38,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	hashIn = append(hashIn, []byte(nonce)...)
 
 	a, err := hashFn(hashIn)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	a.Mod(a, challenge.Difficulty)
 	if !a.IsUint64() || a.Uint64() != 0 {
@@ -110,9 +108,7 @@ func TestGpuMiner(t *testing.T) {
 	cfg := config.GetConfig()
 
 	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()], false)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	DoCompleteMiningLoop(t, impl, 1000)
 }
 
@@ -133,9 +129,7 @@ func TestMulti(t *testing.T) {
 	}
 	for _, gpu := range gpus {
 		impl, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()], false)
-		if err != nil {
-			testutil.Ok(t, err)
-		}
+		testutil.Ok(t, err)
 		hashers = append(hashers, impl)
 	}
 	fmt.Printf("Using %d hashers\n", len(hashers))
@@ -175,9 +169,7 @@ func TestHashFunction(t *testing.T) {
 		_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
 		bytes := decodeHex(_string)
 		result, err := hashFn(bytes)
-		if err != nil {
-			testutil.Ok(t, err)
-		}
+		testutil.Ok(t, err)
 		if result.Text(16) != v {
 			testutil.Ok(t, errors.New(fmt.Sprintf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16))))
 		}
@@ -192,9 +184,7 @@ func BenchmarkHashFunction(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, err := hashFn(bytes)
-		if err != nil {
-			testutil.Ok(b, err)
-		}
+		testutil.Ok(b, err)
 	}
 }
 

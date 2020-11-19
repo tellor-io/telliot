@@ -15,9 +15,7 @@ import (
 func TestLogConfig(t *testing.T) {
 	path := filepath.Join("..", "..", "configs", "loggingConfig.json")
 	err := ParseLoggingConfig(path)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	cfg := GetLoggingConfig()
 	if cfg.levels["config.Config"] == 0 {
 		testutil.Ok(t, errors.New(fmt.Sprintf("Config did not parse correctly: %v", cfg.levels)))

@@ -31,9 +31,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: logger}
 	err := disputeChecker.Exec(ctx)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 }
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
@@ -52,9 +50,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	err := disputeChecker.Exec(ctx)
 
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	files, err := filepath.Glob("possible-dispute-*.txt")
 	if err != nil {
@@ -74,8 +70,6 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
 	for _, psr := range psrs {
 		err := psr.Exec(ctx)
-		if err != nil {
-			testutil.Ok(t, errors.Wrapf(err, "executing psr"))
-		}
+		testutil.Ok(t, err)
 	}
 }

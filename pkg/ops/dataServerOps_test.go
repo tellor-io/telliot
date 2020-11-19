@@ -22,9 +22,8 @@ func TestDataServerOps(t *testing.T) {
 	defer t.Cleanup(cleanup)
 
 	ops, err := CreateDataServerOps(ctx, logger, exitCh)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
+
 	testutil.Ok(t, ops.Start(ctx), "starting server")
 	time.Sleep(2 * time.Second)
 	exitCh <- os.Interrupt

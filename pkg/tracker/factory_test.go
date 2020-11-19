@@ -42,9 +42,7 @@ func TestCreateTracker(t *testing.T) {
 	}
 
 	indexersTracker, err := createTracker("indexers", logger)
-	if err != nil {
-		testutil.Ok(t, errors.New("Could not build IndexTracker"))
-	}
+	testutil.Ok(t, err, "Could not build IndexTracker")
 	if len(indexersTracker) == 0 {
 		testutil.Ok(t, errors.New(fmt.Sprintf("Could not build all IndexTrackers: only tracking %d indexes", len(indexersTracker))))
 	}
@@ -55,8 +53,6 @@ func TestCreateTracker(t *testing.T) {
 	}
 
 	badTracker, err := createTracker("badTracker", logger)
-	if err == nil {
-		testutil.Ok(t, errors.New(fmt.Sprintf("expected error but instead received this tracker: %s", badTracker[0].String())))
-	}
+	testutil.Ok(t, err, "expected error but instead received this tracker: %s", badTracker[0].String())
 
 }

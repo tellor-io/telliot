@@ -86,9 +86,8 @@ func TestRequestDataOps(t *testing.T) {
 		testutil.Ok(t, err)
 	}
 	i, success := new(big.Int).SetString("999999999999999999999999999999999999999999999", 10)
-	if !success {
-		testutil.Ok(t, errors.New("creating a big int"))
-	}
+	testutil.Assert(t, success, "creating a big int")
+
 	if err := DB.Put(db.TributeBalanceKey, []byte(hexutil.EncodeBig(i))); err != nil {
 		testutil.Ok(t, err)
 	}
@@ -97,21 +96,18 @@ func TestRequestDataOps(t *testing.T) {
 		testutil.Ok(t, err)
 	}
 	time.Sleep(3 * time.Second)
-	if requestID == nil {
-		testutil.Ok(t, errors.New("Should have requested data"))
-	}
+	testutil.Assert(t, requestID != nil, "Should have requested data")
+
 	requestID = nil
 	if err := DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(1)))); err != nil {
 		testutil.Ok(t, err)
 	}
 	time.Sleep(3 * time.Second)
-	if requestID != nil {
-		testutil.Ok(t, errors.New("Should not have requested data when a challenge request is in progress"))
-	}
+	testutil.Assert(t, requestID == nil, "Should not have requested data when a challenge request is in progress")
 
 	exitCh <- os.Interrupt
 	time.Sleep(300 * time.Millisecond)
 	if reqData.submittingRequests {
-		testutil.Ok(t, errors.New("Should not be submitting requests after exit sig"))
+		testutil.Assert(t, !reqData.submittingRequests, "Should not be submitting requests after exit sig")
 	}
 }

@@ -26,18 +26,13 @@ func TestServer(t *testing.T) {
 
 	balInt := big.NewInt(350000)
 	err := DB.Put(db.BalanceKey, []byte(hexutil.EncodeBig(balInt)))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	port, err := freeport.GetFreePort()
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
+
 	srv, err := Create(ctx, cfg.ServerHost, uint(port))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	srv.Start()
 	defer func() {

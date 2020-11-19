@@ -25,9 +25,7 @@ func TestDisputeString(t *testing.T) {
 	logger := logSetup("debug")
 	tracker := NewDisputeTracker(logger)
 	res := tracker.String()
-	if res != DisputeTrackerName {
-		testutil.Ok(t, errors.New(fmt.Sprint("didn't return expected string", DisputeTrackerName)))
-	}
+	testutil.Assert(t, res == DisputeTrackerName, "didn't return expected string", DisputeTrackerName)
 }
 
 func TestDisputeStatus(t *testing.T) {
@@ -37,26 +35,18 @@ func TestDisputeStatus(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_disputeStatus"))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
 	tracker := NewDisputeTracker(logger)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	v, err := DB.Get(db.DisputeStatusKey)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	b, err := hexutil.DecodeBig(string(v))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	t.Logf("Dispute Status stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 0 {
 		testutil.Ok(t, errors.New(fmt.Sprintf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")))
@@ -71,20 +61,14 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_disputeStatus"))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	context.WithValue(ctx, common.DBContextKey, DB)
 
 	v, err := DB.Get(db.DisputeStatusKey)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	b, err := hexutil.DecodeBig(string(v))
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	t.Logf("Dispute Status stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 0 {
 		testutil.Ok(t, errors.New(fmt.Sprintf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")))

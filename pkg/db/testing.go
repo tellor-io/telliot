@@ -15,13 +15,10 @@ import (
 
 func OpenTestDB(t *testing.T) (DB, func()) {
 	tmpdir, err := ioutil.TempDir("", "test")
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
+
 	db, err := Open(tmpdir)
-	if err != nil {
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 
 	cleanup := func() {
 		if err := db.Close(); err != nil {
