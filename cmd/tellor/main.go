@@ -42,6 +42,64 @@ func ExitOnError(err error, operation string) {
 	}
 }
 
+func setup() error {
+	cfg := config.GetConfig()
+
+	if !cfg.EnablePoolWorker {
+		// Create an rpc client
+		client, err := rpc.NewClient(cfg.NodeURL)
+		if err != nil {
+			return errors.Wrap(err, "create client instance")
+		}
+
+		// Leaving the client in ctx for now because it's still used in some places
+		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
+
+		// Create an instance of the tellor master contract for on-chain interactions
+		contractAddress := common.HexToAddress(cfg.ContractAddress)
+		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
+		if err != nil {
+			return errors.Wrap(err, "create tellor master instance")
+		}
+
+		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
+
+		if err != nil {
+			return errors.Wrap(err, "create tellor transactor instance")
+		}
+
+		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
+		if err != nil {
+			return errors.Wrap(err, "getting private key")
+		}
+
+		publicKey := privateKey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			return errors.New("casting public key to ECDSA")
+		}
+
+		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+		// Issue #55, halt if client is still syncing with Ethereum network
+		s, err := client.IsSyncing(ctx)
+		if err != nil {
+			return errors.Wrap(err, "determining if Ethereum client is syncing")
+		}
+		if s {
+			return errors.New("ethereum node is still syncing with the network")
+		}
+
+		clt = client
+		acc.Address = publicAddress
+		acc.PrivateKey = privateKey
+		cont.Getter = contractGetterInstance
+		cont.Caller = contractTellorInstance
+		cont.Address = contractAddress
+	}
+	return nil
+}
+
 func buildContext() error {
 	cfg := config.GetConfig()
 

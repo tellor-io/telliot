@@ -19,7 +19,6 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/tracker"
@@ -90,24 +89,21 @@ func Vote(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contr
 	return nil
 }
 
-func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tellor.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
-	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+func getNonceSubmissions(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, valueBlock *big.Int, dispute *tellor.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse abi: %v", err)
 	}
-	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
 	// Just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
-	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
+	bar := bind.NewBoundContract(contract.Address, tokenAbi, nil, nil, nil)
 
-	allVals, err := instance.GetSubmissionsByTimestamp(nil, dispute.RequestId, dispute.Timestamp)
+	allVals, err := contract.Getter.GetSubmissionsByTimestamp(nil, dispute.RequestId, dispute.Timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get other submitted values for dispute: %v", err)
 	}
 
-	allAddrs, err := instance.GetMinersByRequestIdAndTimestamp(nil, dispute.RequestId, dispute.Timestamp)
+	allAddrs, err := contract.Getter.GetMinersByRequestIdAndTimestamp(nil, dispute.RequestId, dispute.Timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get miner addresses for dispute: %v", err)
 	}
@@ -122,7 +118,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 		query := ethereum.FilterQuery{
 			FromBlock: big.NewInt(low),
 			ToBlock:   big.NewInt(high),
-			Addresses: []common.Address{contractAddress},
+			Addresses: []common.Address{contract.Address},
 			Topics:    [][]common.Hash{{nonceSubmitID}},
 		}
 
@@ -170,8 +166,6 @@ func List(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract
 	if err != nil {
 		return fmt.Errorf("failed to parse abi: %v", err)
 	}
-	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
 	// Just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi.
 	bar := bind.NewBoundContract(contract.Address, tokenAbi, nil, nil, nil)
@@ -187,7 +181,7 @@ func List(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract
 	query := ethereum.FilterQuery{
 		FromBlock: startBlock,
 		ToBlock:   nil,
-		Addresses: []common.Address{contractAddress},
+		Addresses: []common.Address{contract.Address},
 		Topics:    [][]common.Hash{{newDisputeID}},
 	}
 
@@ -232,7 +226,7 @@ func List(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract
 		fmt.Printf("    \n")
 		fmt.Printf("    Value disputed for requestID %d:\n", dispute.RequestId.Uint64())
 
-		allSubmitted, err := getNonceSubmissions(ctx, uintVars[5], &dispute)
+		allSubmitted, err := getNonceSubmissions(ctx, client, contract, uintVars[5], &dispute)
 		if err != nil {
 			return fmt.Errorf("failed to get the values submitted by other miners for the disputed block: %v", err)
 		}
