@@ -71,7 +71,7 @@ generate-sol: $(SOLCCHECK) $(ABIGEN)
 .PHONY: build
 build: ## Build the project.
 build: check-git
-biuld: pkg/pow/kernelSource.go
+build: pkg/pow/kernelSource.go
 build: export GIT_TAG=$(shell git describe --tags)
 build: export GIT_HASH=$(shell git rev-parse --short HEAD)
 build:
