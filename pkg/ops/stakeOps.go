@@ -9,13 +9,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
+	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -48,17 +46,14 @@ func printStakeStatus(bigStatus *big.Int, started *big.Int) {
 	}
 }
 
-func Deposit(ctx context.Context, logger log.Logger) error {
+func Deposit(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
 
-	tmaster := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-
-	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-	balance, err := tmaster.BalanceOf(nil, publicAddress)
+	balance, err := contract.Getter.BalanceOf(nil, account.Address)
 	if err != nil {
 		return fmt.Errorf("couldn't get TRB balance: %s", err.Error())
 	}
 
-	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
+	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return fmt.Errorf("failed to get stake status: %s", err.Error())
 	}
@@ -71,7 +66,7 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 	dat := crypto.Keccak256([]byte("stakeAmount"))
 	var dat32 [32]byte
 	copy(dat32[:], dat)
-	stakeAmt, err := tmaster.GetUintVar(nil, dat32)
+	stakeAmt, err := contract.Getter.GetUintVar(nil, dat32)
 	if err != nil {
 		return fmt.Errorf("fetching stake amount failed: %s", err.Error())
 	}
@@ -82,13 +77,12 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 			util.FormatERC20Balance(stakeAmt))
 	}
 
-	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
-	auth, err := PrepareEthTransaction(ctx)
+	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return fmt.Errorf("couldn't prepare ethereum transaction: %s", err.Error())
 	}
 
-	tx, err := instance2.DepositStake(auth)
+	tx, err := contract.Caller.DepositStake(auth)
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
@@ -96,11 +90,8 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 	return nil
 }
 
-func ShowStatus(ctx context.Context, logger log.Logger) error {
-	tmaster := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-
-	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
+func ShowStatus(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return fmt.Errorf("failed to get stake status: %s", err.Error())
 	}
@@ -109,11 +100,9 @@ func ShowStatus(ctx context.Context, logger log.Logger) error {
 	return nil
 }
 
-func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
+func RequestStakingWithdraw(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
 
-	tmaster := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
+	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return fmt.Errorf("failed to get stake status: %s", err.Error())
 	}
@@ -122,13 +111,12 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
 		return nil
 	}
 
-	auth, err := PrepareEthTransaction(ctx)
+	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
 
-	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
-	tx, err := instance2.RequestStakingWithdraw(auth)
+	tx, err := contract.Caller.RequestStakingWithdraw(auth)
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}
@@ -137,11 +125,8 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
 	return nil
 }
 
-func WithdrawStake(ctx context.Context, logger log.Logger) error {
-
-	tmaster := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
+func WithdrawStake(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return fmt.Errorf("failed to get stake status: %s", err.Error())
 	}
@@ -152,13 +137,12 @@ func WithdrawStake(ctx context.Context, logger log.Logger) error {
 		return nil
 	}
 
-	auth, err := PrepareEthTransaction(ctx)
+	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
 
-	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
-	tx, err := instance2.WithdrawStake(auth)
+	tx, err := contract.Caller.WithdrawStake(auth)
 	if err != nil {
 		return fmt.Errorf("contract failed: %s", err.Error())
 	}

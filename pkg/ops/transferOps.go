@@ -23,7 +23,7 @@ import (
  * This is the operational transfer component. Its purpose is to transfer tellor tokens
  */
 
-func prepareTransfer(ctx context.Context, instance *getter.TellorGetters, account tellorCommon.Account, amt *big.Int) (*bind.TransactOpts, error) {
+func prepareTransfer(ctx context.Context, client rpc.ETHClient, instance *getter.TellorGetters, account tellorCommon.Account, amt *big.Int) (*bind.TransactOpts, error) {
 	balance, err := instance.BalanceOf(nil, account.Address)
 	if err != nil {
 		return nil, errors.Wrap(err, "get balance")
@@ -34,15 +34,15 @@ func prepareTransfer(ctx context.Context, instance *getter.TellorGetters, accoun
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(amt))
 	}
-	auth, err := PrepareEthTransaction(ctx)
+	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return nil, errors.Wrap(err, "preparing ethereum transaction")
 	}
 	return auth, nil
 }
 
-func Transfer(ctx context.Context, logger log.Logger, contract tellorCommon.Contract, account tellorCommon.Account, toAddress common.Address, amt *big.Int) error {
-	auth, err := prepareTransfer(ctx, contract.Getter, account, amt)
+func Transfer(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, toAddress common.Address, amt *big.Int) error {
+	auth, err := prepareTransfer(ctx, client, contract.Getter, account, amt)
 	if err != nil {
 		return errors.Wrap(err, "preparing trasnfer")
 	}
@@ -55,8 +55,8 @@ func Transfer(ctx context.Context, logger log.Logger, contract tellorCommon.Cont
 	return nil
 }
 
-func Approve(ctx context.Context, logger log.Logger, contract tellorCommon.Contract, account tellorCommon.Account, _spender common.Address, amt *big.Int) error {
-	auth, err := prepareTransfer(ctx, contract.Getter, account, amt)
+func Approve(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, _spender common.Address, amt *big.Int) error {
+	auth, err := prepareTransfer(ctx, client, contract.Getter, account, amt)
 	if err != nil {
 		return errors.Wrap(err, "preparing trasnfer")
 	}

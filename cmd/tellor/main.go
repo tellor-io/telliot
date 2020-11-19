@@ -31,6 +31,9 @@ import (
 )
 
 var ctx context.Context
+var cont tellorCommon.Contract
+var acc tellorCommon.Account
+var clt rpc.ETHClient
 
 func ExitOnError(err error, operation string) {
 	if err != nil {
@@ -89,6 +92,13 @@ func buildContext() error {
 		if s {
 			return errors.New("ethereum node is still syncing with the network")
 		}
+
+		clt = client
+		acc.Address = publicAddress
+		acc.PrivateKey = privateKey
+		cont.Getter = contractGetterInstance
+		cont.Caller = contractTellorInstance
+		cont.Address = contractAddress
 	}
 	return nil
 }
@@ -153,22 +163,11 @@ func App() *cli.Cli {
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
 	app.Version("version", versionMessage)
 
-	contract := tellorCommon.Contract{
-		Getter:  ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters),
-		Caller:  ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor),
-		Address: ctx.Value(tellorCommon.ContractAddress).(common.Address),
-	}
-
-	account := tellorCommon.Account{
-		Address:    ctx.Value(tellorCommon.PublicAddress).(common.Address),
-		PrivateKey: ctx.Value(tellorCommon.PrivateKey).(*ecdsa.PrivateKey),
-	}
-
 	app.Command("stake", "staking operations", stakeCmd(logSetup, logLevel))
-	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel, contract, account))
-	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel, contract, account))
+	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel))
+	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel))
 	//Using values from context, until we have a function that setups the client and returns as values, not as part of the context
-	app.Command("balance", "check balance of address", balanceCmd(ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient), ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters), ctx.Value(tellorCommon.PublicAddress).(common.Address)))
+	app.Command("balance", "check balance of address", balanceCmd)
 	app.Command("dispute", "dispute operations", disputeCmd(logSetup, logLevel))
 	app.Command("mine", "mine for TRB", mineCmd(logSetup, logLevel))
 	app.Command("dataserver", "start an independent dataserver", dataserverCmd(logSetup, logLevel))
@@ -184,41 +183,38 @@ func stakeCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd)
 	}
 }
 
-func simpleCmd(f func(context.Context, log.Logger) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func simpleCmd(f func(context.Context, log.Logger, rpc.ETHClient, tellorCommon.Contract, tellorCommon.Account) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel)), "")
+			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc), "")
 		}
 	}
 }
 
-func moveCmd(f func(context.Context, log.Logger, tellorCommon.Contract, tellorCommon.Account, common.Address, *big.Int) error, logSetup func(string) log.Logger, logLevel *string, contract tellorCommon.Contract, account tellorCommon.Account) func(*cli.Cmd) {
+func moveCmd(f func(context.Context, log.Logger, rpc.ETHClient, tellorCommon.Contract, tellorCommon.Account, common.Address, *big.Int) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		amt := TRBAmount{}
 		addr := ETHAddress{}
 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel), contract, account, addr.addr, amt.Int), "move")
+			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc, addr.addr, amt.Int), "move")
 		}
 	}
 }
 
 func balanceCmd(cmd *cli.Cmd) {
-
 	addr := ETHAddress{}
 	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 	cmd.Spec = "[ADDRESS]"
 	cmd.Action = func() {
 		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
-		getter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-		client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		var zero [20]byte
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
 			addr.addr = commonAddress
 		}
-		ExitOnError(ops.Balance(ctx, client, getter, addr.addr), "checking balance")
+		ExitOnError(ops.Balance(ctx, clt, cont.Getter, addr.addr), "checking balance")
 	}
 
 }
@@ -236,7 +232,7 @@ func voteCmd(cmd *cli.Cmd) {
 	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
 	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
 	cmd.Action = func() {
-		ExitOnError(ops.Vote(disputeID.Int, *supports, ctx), "vote")
+		ExitOnError(ops.Vote(ctx, clt, cont, acc, disputeID.Int, *supports), "vote")
 	}
 }
 
@@ -248,7 +244,7 @@ func newDisputeCmd(cmd *cli.Cmd) {
 	cmd.VarArg("TIMESTAMP", &timestamp, "timestamp")
 	cmd.VarArg("MINER_INDEX", &minerIndex, "miner to dispute (0-4)")
 	cmd.Action = func() {
-		ExitOnError(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
+		ExitOnError(ops.Dispute(ctx, clt, cont, acc, requestID.Int, timestamp.Int, minerIndex.Int), "new dipsute")
 	}
 }
 
