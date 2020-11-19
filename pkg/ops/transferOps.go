@@ -44,7 +44,7 @@ func prepareTransfer(ctx context.Context, client rpc.ETHClient, instance *getter
 func Transfer(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, toAddress common.Address, amt *big.Int) error {
 	auth, err := prepareTransfer(ctx, client, contract.Getter, account, amt)
 	if err != nil {
-		return errors.Wrap(err, "preparing trasnfer")
+		return errors.Wrap(err, "preparing transfer")
 	}
 
 	tx, err := contract.Caller.Transfer(auth, toAddress, amt)
@@ -58,7 +58,7 @@ func Transfer(ctx context.Context, logger log.Logger, client rpc.ETHClient, cont
 func Approve(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, _spender common.Address, amt *big.Int) error {
 	auth, err := prepareTransfer(ctx, client, contract.Getter, account, amt)
 	if err != nil {
-		return errors.Wrap(err, "preparing trasnfer")
+		return errors.Wrap(err, "preparing transfer")
 	}
 
 	tx, err := contract.Caller.Approve(auth, _spender, amt)
