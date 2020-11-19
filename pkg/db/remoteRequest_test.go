@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -117,7 +116,7 @@ func TestRequestForData(t *testing.T) {
 	reqID := string(resp.dbVals[RequestIdKey])
 	diff := string(resp.dbVals[DifficultyKey])
 	testutil.Assert(t, reqID == "1", "Expected result map to map request id to '1': %v", resp.dbVals)
-	testutil.Assert(t, reqID == "2", "Expected difficulty to be mapped to '2': %v", resp.dbVals))
+	testutil.Assert(t, diff == "2", "Expected difficulty to be mapped to '2': %v", resp.dbVals)
 
 }
 
@@ -129,7 +128,6 @@ func TestRequestPut(t *testing.T) {
 	defer t.Cleanup(cleanup)
 	remote, err := OpenRemoteDB(DB)
 	testutil.Ok(t, err)
-	
 
 	_fromAddress := cfg.PublicAddress
 
@@ -141,19 +139,18 @@ func TestRequestPut(t *testing.T) {
 	vals[0] = []byte("TEST_CHALLENGE")
 	req, err := createRequest([]string{dbKey}, vals, remote.(*remoteImpl))
 	testutil.Ok(t, err)
-	
+
 	err = DB.Put(dbKey, vals[0])
 	testutil.Ok(t, err)
-	
+
 	bts, err := encodeRequest(req)
-	
+
 	_, err = remote.IncomingRequest(bts)
 	testutil.Ok(t, err)
-	
+
 	data, err := DB.Get(dbKey)
 	testutil.Ok(t, err)
-	
+
 	testutil.Assert(t, bytes.Equal(data, vals[0]), "DB bytes did not match expected put request data")
-	
 
 }
