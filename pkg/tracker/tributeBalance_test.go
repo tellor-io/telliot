@@ -41,6 +41,6 @@ func TestTributeBalance(t *testing.T) {
 	testutil.Ok(t, err)
 	t.Logf("Tribute Balance stored: %v\n", b)
 	if b.Cmp(startBal) != 0 {
-		testutil.Ok(t, errors.Errof("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
+		testutil.Ok(t, errors.Errorf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
 	}
 }
