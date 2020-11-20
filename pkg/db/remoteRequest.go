@@ -67,7 +67,7 @@ func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*req
 	sig, err := signer.Sign(hash)
 
 	if err != nil {
-		log.Error("Signature failed", err.Error())
+		errors.Wrapf(err, "signature failed")
 		return nil, err
 	}
 	if sig == nil {

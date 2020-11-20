@@ -141,7 +141,7 @@ func ParseConfig(path string) error {
 func ParseConfigBytes(data []byte) error {
 	err := json.Unmarshal(data, &config)
 	if err != nil {
-		return errors.Wrap(err, "parse json")
+		return errors.Wrap(err, "parse config json")
 	}
 	// Check if the env is already set, only try loading .env if its not there.
 	if config.PrivateKey == "" {
@@ -209,13 +209,13 @@ func validateConfig(cfg *Config) error {
 			continue
 		}
 		if gpuConfig.Count == 0 {
-			return errors.Errorf("requires 'count' > 0 on gpu '%s'", name)
+			return errors.Errorf("requires config  'count' > 0 on gpu '%s'", name)
 		}
 		if gpuConfig.GroupSize == 0 {
-			return errors.Errorf("requires 'groupSize' > 0 on gpu '%s'", name)
+			return errors.Errorf("requires config 'groupSize' > 0 on gpu '%s'", name)
 		}
 		if gpuConfig.Groups == 0 {
-			return errors.Errorf("requires 'groups' > 0 on gpu '%s'", name)
+			return errors.Errorf("requires config 'groups' > 0 on gpu '%s'", name)
 		}
 	}
 

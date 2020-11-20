@@ -107,7 +107,7 @@ func (i *remoteImpl) hasAddressPrefix(key string) bool {
 func (i *remoteImpl) IncomingRequest(data []byte) ([]byte, error) {
 	req, err := decodeRequest(data, i)
 	if err != nil {
-		rdbLog.Error("Problem decoding incoming request:%v", err)
+		rdbLog.Error("Problem decoding incoming request: %v", err)
 		return errorResponse(err.Error())
 	}
 
@@ -154,14 +154,14 @@ func (i *remoteImpl) IncomingRequest(data []byte) ([]byte, error) {
 		defer i.rwLock.RUnlock()
 	}
 
-	i.log.Info("Getting remote request for keys:%v", req.dbKeys)
+	i.log.Info("Getting remote request for keys: %v", req.dbKeys)
 
 	outMap := map[string][]byte{}
 	for _, k := range req.dbKeys {
 		if req.dbValues == nil && !isKnownKey(k) {
 			return errorResponse("Invalid lookup key: " + k)
 		}
-		rdbLog.Debug("Looking up local DB key:%v", k)
+		rdbLog.Debug("Looking up local DB key: %v", k)
 		bts, err := i.localDB.Get(k)
 
 		if err != nil {
@@ -208,7 +208,7 @@ func (i *remoteImpl) BatchGet(keys []string) (map[string][]byte, error) {
 	respData, err := util.HTTPWithRetries(httpReq)
 	if err != nil {
 		//return nil, err
-		log.Fatalf("Could not retrieve data after retries. Cannot do anything without access to data server:%v", err)
+		log.Fatalf("Could not retrieve data after retries. Cannot do anything without access to data server: %v", err)
 	}
 	remResp, err := decodeResponse(respData)
 	if err != nil {
@@ -247,7 +247,7 @@ func (i *remoteImpl) BatchPut(keys []string, values [][]byte) (map[string][]byte
 	respData, err := util.HTTPWithRetries(httpReq)
 	if err != nil {
 		//return nil, err
-		log.Fatalf("Could not put data after retries. Cannot do anything without access to data server:%v", err)
+		log.Fatalf("Could not put data after retries. Cannot do anything without access to data server: %v", err)
 	}
 	remResp, err := decodeResponse(respData)
 	if err != nil {
@@ -270,9 +270,9 @@ func (i *remoteImpl) Verify(hash []byte, timestamp int64, sig []byte) error {
 	}
 	addr := crypto.PubkeyToAddress(*pubKey)
 	ashex := strings.ToLower(addr.Hex())
-	rdbLog.Debug("Verifying signature from %v request against whitelist:%v", ashex, i.whitelist[ashex])
+	rdbLog.Debug("Verifying signature from %v request against whitelist: %v", ashex, i.whitelist[ashex])
 	if !i.whitelist[ashex] {
-		rdbLog.Warn("Unauthorized miner detected with address:%v", ashex)
+		rdbLog.Warn("Unauthorized miner detected with address: %v", ashex)
 		return errors.Errorf("Unauthorized")
 	}
 

@@ -92,7 +92,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 	msgChan := make(chan *StratumResponse)
 	stratumClient, err := StratumConnect(p.url, msgChan)
 	if err != nil {
-		p.log.Error("stratum connect error: %s", err.Error())
+		errors.Wrap(err, "stratum connect")
 		return nil, false
 	}
 
@@ -109,7 +109,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 			if !subscribed {
 				r, err := json.Marshal(msg.Result)
 				if err != nil {
-					p.log.Error("parse subscribe result error: %s", err.Error())
+					errors.Wrap(err, "parse subscribe")
 					return
 				}
 				result := string(r)
@@ -124,13 +124,13 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 			if msg.Method == "mining.notify" {
 				params, err := json.Marshal(msg.Params)
 				if err != nil {
-					p.log.Error("mining.notify msg parse error: %s", err.Error())
+					errors.Wrap(err, "mining.notify msg parse error")
 					return
 				}
 
 				var miningNotify MiningNotify
 				if err := json.Unmarshal([]byte(string(params)), &miningNotify); err != nil {
-					p.log.Error("mining.notify params msg parse error: %s", err.Error())
+					errors.Wrap(err, "mining.notify params msg parse error")
 				}
 
 				p.log.Info("mining.notify: %#v", miningNotify)

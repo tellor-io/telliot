@@ -67,7 +67,7 @@ func writeOutHistory() {
 	// this function is single threaded, but we need mutex to access multithreaded history.
 	valueHistoryMutex.Unlock()
 	if err != nil {
-		logger.Error("failed to marshal PSR values: %s", err.Error())
+		errors.Wrap(err, "marshal PSR values")
 		return
 	}
 
@@ -76,13 +76,13 @@ func writeOutHistory() {
 	psrSavedDataTmp := psrSavedData + ".tmp"
 	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
 	if err != nil {
-		logger.Error("failed to write out PSR values to %s: %s", psrSavedDataTmp, err.Error())
+		errors.Wrapf(err, "write out PSR values to: %s", psrSavedDataTmp)
 		return
 	}
 	// Rename tmp file to old file (should be atomic on most modern OS)
 	err = os.Rename(psrSavedDataTmp, psrSavedData)
 	if err != nil {
-		logger.Error("failed move new PSR save onto old: %s", err.Error())
+		errors.Wrap(err, "move new PSR save onto old")
 		return
 	}
 }
