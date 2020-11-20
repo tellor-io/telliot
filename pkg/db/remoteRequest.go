@@ -55,7 +55,7 @@ func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*req
 	//rrlog = util.NewLogger("db", "RemoteRequest")
 	t := time.Now().Unix()
 	buf := new(bytes.Buffer)
-	rrlog.Debug("Encoding initial keys and timestamp")
+	rrlog.Debug("encoding initial keys and timestamp")
 	err := encodeKeysValuesAndTime(buf, dbKeys, values, t)
 	if err != nil {
 		return nil, err
@@ -67,10 +67,12 @@ func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*req
 	sig, err := signer.Sign(hash)
 
 	if err != nil {
-		errors.Wrapf(err, "signature failed")
+		log.Error("signature failed", err.Error())
+		return nil, err
 	}
 	if sig == nil {
-		return nil, errors.Errorf("generate a signature for  hash:%v", hash)
+		log.Error("signature was not generated")
+		return nil, errors.Errorf("Could not generate a signature for  hash: %v", hash)
 	}
 	return &requestPayload{dbKeys: dbKeys, dbValues: values, timestamp: t, sig: sig}, nil
 }
@@ -84,35 +86,38 @@ func encodeKeysValuesAndTime(buf *bytes.Buffer, dbKeys []string, values [][]byte
 		return err
 	}
 	if dbKeys == nil {
-		return errors.Errorf("no keys to encode")
+		rrlog.Error("no keys to encode")
+		return errors.Errorf("No keys to encode")
 	}
 
 	rrlog.Debug("Encoding dbKeys")
 	if err := encode(buf, uint32(len(dbKeys))); err != nil {
-		return errors.Wrapf(err, "encoding dbKeys")
+		rrlog.Error("problem encoding dbKeys", err.Error())
+		return err
 	}
 	for _, k := range dbKeys {
 		rrlog.Debug("Encoding key", k)
 		if err := encodeString(buf, k); err != nil {
-			return errors.Wrapf(err, "encoding dbKeys")
+			rrlog.Error("problem encoding key", err.Error())
+			return err
 		}
 	}
 
 	if values != nil {
 		if err := encode(buf, uint32(len(values))); err != nil {
-			rrlog.Error("Problem encoding values length", err.Error())
+			rrlog.Error("problem encoding values length", err.Error())
 			return err
 		}
 		for _, v := range values {
 			if err := encodeBytes(buf, v); err != nil {
-				rrlog.Error("Problem encoding value bytes", err.Error())
+				rrlog.Error("problem encoding value bytes", err.Error())
 				return err
 			}
 		}
 
 	} else {
 		if err := encode(buf, uint32(0)); err != nil {
-			rrlog.Error("Could not encode zero value", err.Error())
+			rrlog.Error("could not encode zero value", err.Error())
 			return err
 		}
 	}
@@ -158,10 +163,10 @@ func encodeRequest(r *requestPayload) ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	if r.dbKeys == nil || len(r.dbKeys) == 0 {
-		return nil, errors.Errorf("no keys in request")
+		return nil, errors.Errorf("No keys in request. No point in making a request if there are no keys")
 	}
 	if r.sig == nil {
-		return nil, errors.Errorf("encode a request without a signature attached")
+		return nil, errors.Errorf("Cannot encode a request without a signature attached")
 	}
 
 	//capture keys and timestamp
@@ -190,7 +195,7 @@ func decodeRequest(data []byte, validator RequestValidator) (*requestPayload, er
 		return nil, err
 	}
 	if len(keys) == 0 {
-		return nil, errors.Errorf("no dbKeys in incoming request")
+		return nil, errors.Errorf("No dbKeys in incoming request")
 	}
 	sig, err := decodeBytes(buf)
 	if err != nil {

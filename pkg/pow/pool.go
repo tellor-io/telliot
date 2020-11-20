@@ -54,7 +54,7 @@ func (n *MiningNotify) UnmarshalJSON(buf []byte) error {
 		return err
 	}
 	if g, e := len(tmp), wantLen; g != e {
-		return errors.Errorf("wrong number of fields in MiningNotify: %v != %v", g, e)
+		return errors.Errorf("wrong number of fields in MiningNotify: %d != %d", g, e)
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (n *MiningSetDifficulty) UnmarshalJSON(buf []byte) error {
 		return err
 	}
 	if g, e := len(tmp), wantLen; g != e {
-		return errors.Errorf("wrong number of fields in MiningSetDifficulty: %v != %v", g, e)
+		return errors.Errorf("wrong number of fields in MiningSetDifficulty: %d != %d", g, e)
 	}
 	return nil
 }
@@ -92,7 +92,8 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 	msgChan := make(chan *StratumResponse)
 	stratumClient, err := StratumConnect(p.url, msgChan)
 	if err != nil {
-		errors.Wrap(err, "stratum connect")
+		p.log.Error("stratum connect error: %s", err.Error())
+		return nil, false
 	}
 
 	p.stratumClient = stratumClient
@@ -108,7 +109,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 			if !subscribed {
 				r, err := json.Marshal(msg.Result)
 				if err != nil {
-					errors.Wrap(err, "parse subscribe")
+					p.log.Error("parse subscribe result error: %s", err.Error())
 					return
 				}
 				result := string(r)
@@ -123,13 +124,13 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 			if msg.Method == "mining.notify" {
 				params, err := json.Marshal(msg.Params)
 				if err != nil {
-					errors.Wrap(err, "mining.notify msg parse error")
+					p.log.Error("mining.notify msg parse error: %s", err.Error())
 					return
 				}
 
 				var miningNotify MiningNotify
 				if err := json.Unmarshal([]byte(string(params)), &miningNotify); err != nil {
-					errors.Wrap(err, "mining.notify params msg parse error")
+					p.log.Error("mining.notify params msg parse error: %s", err.Error())
 				}
 
 				p.log.Info("mining.notify: %#v", miningNotify)

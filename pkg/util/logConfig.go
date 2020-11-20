@@ -5,6 +5,7 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
@@ -41,7 +42,7 @@ func ParseLoggingConfig(file string) error {
 		defer func() {
 			err := configFile.Close()
 			if err != nil {
-				errors.Wrap(err, "closing the file")
+				fmt.Print("error closing the file", err)
 			}
 		}()
 		if err != nil {

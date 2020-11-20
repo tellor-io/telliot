@@ -13,7 +13,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/util"
 )
+
+var logger = util.NewLogger("apiOracle", "valueOracle")
 
 // maps symbol to a time window of values.
 var valueHistory map[string]*Window
@@ -64,7 +67,8 @@ func writeOutHistory() {
 	// this function is single threaded, but we need mutex to access multithreaded history.
 	valueHistoryMutex.Unlock()
 	if err != nil {
-		errors.Wrap(err, "marshal PSR values")
+		logger.Error("failed to marshal PSR values: %s", err.Error())
+		return
 	}
 
 	cfg := config.GetConfig()
@@ -72,12 +76,14 @@ func writeOutHistory() {
 	psrSavedDataTmp := psrSavedData + ".tmp"
 	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
 	if err != nil {
-		errors.Wrapf(err, "write out PSR values to: %s", psrSavedDataTmp)
+		logger.Error("failed to write out PSR values to %s: %s", psrSavedDataTmp, err.Error())
+		return
 	}
 	// Rename tmp file to old file (should be atomic on most modern OS)
 	err = os.Rename(psrSavedDataTmp, psrSavedData)
 	if err != nil {
-		errors.Wrap(err, "move new PSR save onto old")
+		logger.Error("failed move new PSR save onto old: %s", err.Error())
+		return
 	}
 }
 
@@ -104,18 +110,18 @@ func EnsureValueOracle() error {
 		if os.IsNotExist(err) {
 			exists = false
 		} else {
-			return errors.Wrapf(err, "stats for file:%v", historyPath)
+			return errors.Wrapf(err, "stat error file: %v", historyPath)
 		}
 	}
 
 	if exists {
 		byteValue, err := ioutil.ReadFile(historyPath)
 		if err != nil {
-			return errors.Wrapf(err, "read psr file @:%v", historyPath)
+			return errors.Wrapf(err, "read psr file:%v", historyPath)
 		}
 		err = json.Unmarshal(byteValue, &valueHistory)
 		if err != nil {
-			return errors.Wrap(err, "failed to unmarshal saved")
+			return errors.Errorf("failed to unmarshal saved")
 		}
 	} else {
 		valueHistory = make(map[string]*Window)
