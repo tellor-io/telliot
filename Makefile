@@ -50,12 +50,18 @@ deps: ## Ensures fresh go.mod and go.sum.
 
 .PHONY: generate
 generate: ## Generate all dynamic files.
-generate: pkg/pow/kernelSource.go pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go
+generate: pkg/pow/kernelSource.go generate-sol
+
+.PHONY: generate-check
+generate-check: ## Check that all generated files are up to date. Mainly used in the CI.
+generate-check: check-git generate
+	$(call require_clean_work_tree,'detected change in the generated files, run make generate and update')
 
 pkg/pow/kernelSource.go: scripts/opencl/sources/*
 	go run ./scripts/opencl
 
-pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go: contracts/* $(SOLCCHECK) $(ABIGEN)
+.PHONY: generate-sol
+generate-sol: $(SOLCCHECK) $(ABIGEN)
 	@rm -Rf pkg/contracts
 	@mkdir -p pkg/contracts/tellor
 	@mkdir -p pkg/contracts/getter
@@ -64,7 +70,8 @@ pkg/contracts/tellor/tellor.go pkg/contracts/getter/getter.go: contracts/* $(SOL
 
 .PHONY: build
 build: ## Build the project.
-build: check-git generate
+build: check-git
+build: pkg/pow/kernelSource.go
 build: export GIT_TAG=$(shell git describe --tags)
 build: export GIT_HASH=$(shell git rev-parse --short HEAD)
 build:
@@ -82,7 +89,7 @@ endif
 
 .PHONY: test
 test: ## Run all project tests.
-test: generate
+test: pkg/pow/kernelSource.go
 	go test $(GOTEST_OPTS) ./...
 
 .PHONY: abi
@@ -121,7 +128,8 @@ lint: go-lint shell-lint
 #      --mem-profile-path string   Path to memory profile output file
 # to debug big allocations during linting.
 .PHONY: go-lint
-go-lint: generate check-git deps $(GOLANGCI_LINT) $(FAILLINT)
+go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT)
+go-lint: pkg/pow/kernelSource.go
 	$(call require_clean_work_tree,'detected not clean master before running lint, previous job changed something?')
 	@echo ">> verifying modules being imported"
 	@echo ">> linting all of the Go files GOGC=${GOGC}"

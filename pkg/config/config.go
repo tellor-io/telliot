@@ -6,7 +6,6 @@ package config
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -41,7 +40,7 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 		d.Duration = dur
 		return nil
 	default:
-		return fmt.Errorf("invalid duration")
+		return errors.Errorf("invalid duration")
 	}
 }
 
@@ -60,7 +59,6 @@ type GPUConfig struct {
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
 	NodeURL                      string                `json:"nodeURL"`
-	DatabaseURL                  string                `json:"databaseURL"`
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
@@ -134,7 +132,7 @@ const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 func ParseConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("failed to open config file %s: %v", path, err)
+		return errors.Errorf("failed to open config file %s: %v", path, err)
 	}
 
 	return ParseConfigBytes(data)
@@ -143,7 +141,7 @@ func ParseConfig(path string) error {
 func ParseConfigBytes(data []byte) error {
 	err := json.Unmarshal(data, &config)
 	if err != nil {
-		return fmt.Errorf("failed to parse json: %s", err.Error())
+		return errors.Errorf("failed to parse json: %s", err.Error())
 	}
 	// Check if the env is already set, only try loading .env if its not there.
 	if config.PrivateKey == "" {
@@ -154,7 +152,7 @@ func ParseConfigBytes(data []byte) error {
 
 		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 		if config.PrivateKey == "" {
-			return fmt.Errorf("missing ethereum wallet private key environment variable '%s'", PrivateKeyEnvName)
+			return errors.Errorf("missing ethereum wallet private key environment variable '%s'", PrivateKeyEnvName)
 		}
 	}
 
@@ -171,7 +169,7 @@ func ParseConfigBytes(data []byte) error {
 
 	err = validateConfig(&config)
 	if err != nil {
-		return fmt.Errorf("validation failed: %s", err)
+		return errors.Errorf("validation failed: %s", err)
 	}
 	return nil
 }
@@ -179,30 +177,30 @@ func ParseConfigBytes(data []byte) error {
 func validateConfig(cfg *Config) error {
 	b, err := hex.DecodeString(cfg.PublicAddress)
 	if err != nil || len(b) != 20 {
-		return fmt.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
+		return errors.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
 	if cfg.EnablePoolWorker {
 		if len(cfg.Worker) == 0 {
-			return fmt.Errorf("worker name required for pool")
+			return errors.Errorf("worker name required for pool")
 		}
 		if len(cfg.Password) == 0 {
-			return fmt.Errorf("password name required for pool")
+			return errors.Errorf("password name required for pool")
 		}
 	} else {
 		b, err = hex.DecodeString(cfg.PrivateKey)
 		if err != nil || len(b) != 32 {
-			return fmt.Errorf("expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
+			return errors.Errorf("expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
 		}
 		if len(cfg.ContractAddress) != 42 {
-			return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
+			return errors.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 		}
 		b, err = hex.DecodeString(cfg.ContractAddress[2:])
 		if err != nil || len(b) != 20 {
-			return fmt.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
+			return errors.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 		}
 
 		if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
-			return fmt.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
+			return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
 		}
 	}
 
@@ -211,13 +209,13 @@ func validateConfig(cfg *Config) error {
 			continue
 		}
 		if gpuConfig.Count == 0 {
-			return fmt.Errorf("gpu '%s' requires 'count' > 0", name)
+			return errors.Errorf("gpu '%s' requires 'count' > 0", name)
 		}
 		if gpuConfig.GroupSize == 0 {
-			return fmt.Errorf("gpu '%s' requires 'groupSize' > 0", name)
+			return errors.Errorf("gpu '%s' requires 'groupSize' > 0", name)
 		}
 		if gpuConfig.Groups == 0 {
-			return fmt.Errorf("gpu '%s' requires 'groups' > 0", name)
+			return errors.Errorf("gpu '%s' requires 'groups' > 0", name)
 		}
 	}
 

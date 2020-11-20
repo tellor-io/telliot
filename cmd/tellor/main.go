@@ -140,7 +140,7 @@ func App() *cli.Cli {
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
 	logLevel := app.StringOpt("logLevel", "error", "The level of log messages")
-	logPath := app.StringOpt("logConfig", "configs/loggingConfig.json", "Path to a JSON logging config file")
+	logPath := app.StringOpt("logConfig", "", "Path to a JSON logging config file")
 
 	logSetup := util.SetupLogger()
 	// This will get run before any of the commands
@@ -193,16 +193,22 @@ func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error
 }
 
 func balanceCmd(cmd *cli.Cmd) {
+
 	addr := ETHAddress{}
 	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 	cmd.Spec = "[ADDRESS]"
 	cmd.Action = func() {
+		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
+		getter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+		client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
+		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		var zero [20]byte
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
-			addr.addr = ctx.Value(tellorCommon.PublicAddress).(common.Address)
+			addr.addr = commonAddress
 		}
-		ExitOnError(ops.Balance(ctx, addr.addr), "checking balance")
+		ExitOnError(ops.Balance(ctx, client, getter, addr.addr), "checking balance")
 	}
+
 }
 
 func disputeCmd(loggerSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {

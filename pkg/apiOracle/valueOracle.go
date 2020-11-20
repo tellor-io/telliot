@@ -5,13 +5,13 @@ package apiOracle
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -110,18 +110,18 @@ func EnsureValueOracle() error {
 		if os.IsNotExist(err) {
 			exists = false
 		} else {
-			return fmt.Errorf("file %s stat error: %v", historyPath, err)
+			return errors.Errorf("file %s stat error: %v", historyPath, err)
 		}
 	}
 
 	if exists {
 		byteValue, err := ioutil.ReadFile(historyPath)
 		if err != nil {
-			return fmt.Errorf("failed to read psr file @ %s: %v", historyPath, err)
+			return errors.Errorf("failed to read psr file @ %s: %v", historyPath, err)
 		}
 		err = json.Unmarshal(byteValue, &valueHistory)
 		if err != nil {
-			return fmt.Errorf("failed to unmarshal saved")
+			return errors.Errorf("failed to unmarshal saved")
 		}
 	} else {
 		valueHistory = make(map[string]*Window)

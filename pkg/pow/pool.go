@@ -15,6 +15,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -53,7 +54,7 @@ func (n *MiningNotify) UnmarshalJSON(buf []byte) error {
 		return err
 	}
 	if g, e := len(tmp), wantLen; g != e {
-		return fmt.Errorf("wrong number of fields in MiningNotify: %d != %d", g, e)
+		return errors.Errorf("wrong number of fields in MiningNotify: %d != %d", g, e)
 	}
 	return nil
 }
@@ -65,7 +66,7 @@ func (n *MiningSetDifficulty) UnmarshalJSON(buf []byte) error {
 		return err
 	}
 	if g, e := len(tmp), wantLen; g != e {
-		return fmt.Errorf("wrong number of fields in MiningSetDifficulty: %d != %d", g, e)
+		return errors.Errorf("wrong number of fields in MiningSetDifficulty: %d != %d", g, e)
 	}
 	return nil
 }

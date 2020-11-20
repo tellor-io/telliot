@@ -5,12 +5,12 @@ package db
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -72,7 +72,7 @@ func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*req
 	}
 	if sig == nil {
 		log.Error("Signature was not generated")
-		return nil, fmt.Errorf("Could not generate a signature for  hash: %v", hash)
+		return nil, errors.Errorf("Could not generate a signature for  hash: %v", hash)
 	}
 	return &requestPayload{dbKeys: dbKeys, dbValues: values, timestamp: t, sig: sig}, nil
 }
@@ -87,7 +87,7 @@ func encodeKeysValuesAndTime(buf *bytes.Buffer, dbKeys []string, values [][]byte
 	}
 	if dbKeys == nil {
 		rrlog.Error("No keys to encode")
-		return fmt.Errorf("No keys to encode")
+		return errors.Errorf("No keys to encode")
 	}
 
 	rrlog.Debug("Encoding dbKeys")
@@ -163,10 +163,10 @@ func encodeRequest(r *requestPayload) ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	if r.dbKeys == nil || len(r.dbKeys) == 0 {
-		return nil, fmt.Errorf("No keys in request. No point in making a request if there are no keys")
+		return nil, errors.Errorf("No keys in request. No point in making a request if there are no keys")
 	}
 	if r.sig == nil {
-		return nil, fmt.Errorf("Cannot encode a request without a signature attached")
+		return nil, errors.Errorf("Cannot encode a request without a signature attached")
 	}
 
 	//capture keys and timestamp
@@ -195,7 +195,7 @@ func decodeRequest(data []byte, validator RequestValidator) (*requestPayload, er
 		return nil, err
 	}
 	if len(keys) == 0 {
-		return nil, fmt.Errorf("No dbKeys in incoming request")
+		return nil, errors.Errorf("No dbKeys in incoming request")
 	}
 	sig, err := decodeBytes(buf)
 	if err != nil {

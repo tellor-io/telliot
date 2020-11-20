@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 )
 
@@ -28,7 +29,7 @@ func SetupMiningGroup(cfg *config.Config, exitCh chan os.Signal) (*MiningGroup, 
 		}
 		thisMiner, err := NewGpuMiner(gpu, gpuConfig, cfg.EnablePoolWorker)
 		if err != nil {
-			return nil, fmt.Errorf("error initializing GPU %s: %s", gpu.Name(), err.Error())
+			return nil, errors.Errorf("error initializing GPU %s: %s", gpu.Name(), err.Error())
 		}
 		hashers = append(hashers, thisMiner)
 		fmt.Printf("%-20s groupSize:%d groups:%d count:%d\n", thisMiner.Name(), thisMiner.GroupSize, thisMiner.Groups, thisMiner.Count)

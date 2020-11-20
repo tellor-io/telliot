@@ -741,7 +741,28 @@ as `errors.Wrap` is explicit. It's easy to by accident replace `%w` with `%v` or
 Use [`pkg/errors.Wrap`](https://github.com/pkg/errors) to wrap errors for future context when errors occur. It's recommended
 to add more interesting variables to add context using `errors.Wrapf`, e.g. file names, IDs or things that fail, etc.
 
-NOTE: never prefix wrap messages with wording like `failed ... ` or `error occurred while...`. Just describe what we
+When using `Errorf,Warpf` put arguments at the end to make it easyer to read and use `%v` to reduce human error if the argument type changed.
+<table>
+<tbody>
+<tr><th>Difficult to read 🔥</th></tr>
+<tr><td>
+
+```go
+errors.Errorf("insufficient balance %s, mining stake requires %s", a, b)
+```
+
+</td></tr>
+<tr><th>Better 🤓</th></tr>
+<tr><td>
+
+```go
+errors.Errorf("insufficient mining stake TRB balance - actual:%v, required:%v", a, b)
+```
+
+</td></tr>
+</tbody></table>
+
+NOTE: never prefix wrap messages with wording like `failed...`, `couldn't...` or `error occurred while...`. Just describe what we
 wanted to do when the failure occurred. Those prefixes are just noise. We are wrapping error, so it's obvious that some error
 occurred, right? (: Improve readability and consider avoiding those.
 
@@ -751,9 +772,7 @@ occurred, right? (: Improve readability and consider avoiding those.
 <tr><td>
 
 ```go
-if err != nil {
-    return fmt.Errorf("error while reading from file %s: %w", f.Name, err)
-}
+fmt.Errorf("error while reading from file %s: %w", f.Name, err)
 ```
 
 </td></tr>
@@ -761,9 +780,7 @@ if err != nil {
 <tr><td>
 
 ```go
-if err != nil {
-    return errors.Wrapf(err, "read file %s", f.Name)
-}
+errors.Wrapf(err, "read file %s", f.Name)
 ```
 
 </td></tr>
