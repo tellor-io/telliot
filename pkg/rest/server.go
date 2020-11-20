@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/util"
@@ -32,7 +33,7 @@ func Create(ctx context.Context, host string, port uint) (*Server, error) {
 		return nil, err
 	}
 	if remoteHandler == nil {
-		return nil, fmt.Errorf("Could not create a remote proxy")
+		return nil, errors.Errorf("Could not create a remote proxy")
 	}
 
 	http.Handle("/", remoteHandler)
@@ -49,6 +50,7 @@ func (s *Server) Start() {
 			// as main() doesn't wait for this goroutine to stop. don't use
 			// code with race conditions like these for production. see post
 			// comments below on more discussion on how to handle this.
+			// TODO remove this log and return error instead.
 			log.Fatalf("ListenAndServe(): %s", err)
 		}
 	}()

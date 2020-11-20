@@ -4,8 +4,7 @@
 package db
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -56,7 +55,7 @@ func (l *localProxy) Put(key string, value []byte) (map[string][]byte, error) {
 func (l *localProxy) BatchPut(keys []string, values [][]byte) (map[string][]byte, error) {
 
 	if len(values) > 0 && len(keys) != len(values) {
-		return nil, fmt.Errorf("Keys and values must have same array dimensions")
+		return nil, errors.Errorf("Keys and values must have same array dimensions")
 	}
 	for idx, k := range keys {
 		err := l.localDB.Put(k, values[idx])
@@ -69,5 +68,5 @@ func (l *localProxy) BatchPut(keys []string, values [][]byte) (map[string][]byte
 }
 
 func (l *localProxy) IncomingRequest(data []byte) ([]byte, error) {
-	return nil, fmt.Errorf("Local proxy should never be called with incoming requests")
+	return nil, errors.Errorf("Local proxy should never be called with incoming requests")
 }

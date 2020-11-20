@@ -30,17 +30,17 @@ func prepareTransfer(amt *big.Int, ctx context.Context) (*bind.TransactOpts, err
 
 	balance, err := instance.BalanceOf(nil, senderPubAddr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get balance: %v", err)
+		return nil, errors.Errorf("failed to get balance: %v", err)
 	}
 	fmt.Println("My balance", util.FormatERC20Balance(balance))
 	if balance.Cmp(amt) < 0 {
-		return nil, fmt.Errorf("insufficient balance (%s TRB), requested %s TRB",
+		return nil, errors.Errorf("insufficient balance (%s TRB), requested %s TRB",
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(amt))
 	}
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
+		return nil, errors.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
 	return auth, nil
 }
@@ -54,7 +54,7 @@ func Transfer(ctx context.Context, logger log.Logger, toAddress common.Address, 
 	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	tx, err := instance2.Transfer(auth, toAddress, amt)
 	if err != nil {
-		return fmt.Errorf("contract failed: %s", err.Error())
+		return errors.Errorf("contract failed: %s", err.Error())
 	}
 	level.Info(logger).Log("msg", "transferred", "amount", util.FormatERC20Balance(amt), "to", toAddress.String()[:12], "tx Hash", tx.Hash().Hex())
 	return nil
@@ -75,16 +75,12 @@ func Approve(ctx context.Context, logger log.Logger, _spender common.Address, am
 	return nil
 }
 
-func Balance(ctx context.Context, addr common.Address) error {
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-
+func Balance(ctx context.Context, client rpc.ETHClient, getterInstance *getter.TellorGetters, addr common.Address) error {
 	ethBalance, err := client.BalanceAt(context.Background(), addr, nil)
 	if err != nil {
-		return fmt.Errorf("problem getting balance: %+v", err)
+		return errors.Errorf("problem getting balance: %+v", err)
 	}
-
-	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-	trbBalance, err := instance.BalanceOf(nil, addr)
+	trbBalance, err := getterInstance.BalanceOf(nil, addr)
 	if err != nil {
 		return errors.Wrapf(err, "getting balance")
 	}

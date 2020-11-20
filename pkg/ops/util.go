@@ -6,11 +6,11 @@ package ops
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 )
@@ -21,25 +21,25 @@ func PrepareEthTransaction(ctx context.Context) (*bind.TransactOpts, error) {
 
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 
-	nonce, err := client.PendingNonceAt(context.Background(), publicAddress)
+	nonce, err := client.PendingNonceAt(ctx, publicAddress)
 	if err != nil {
-		return nil, fmt.Errorf("problem getting pending nonce: %+v", err)
+		return nil, errors.Errorf("problem getting pending nonce: %+v", err)
 	}
 
-	gasPrice, err := client.SuggestGasPrice(context.Background())
+	gasPrice, err := client.SuggestGasPrice(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("problem getting gas price: %+v", err)
+		return nil, errors.Errorf("problem getting gas price: %+v", err)
 	}
 
-	ethBalance, err := client.BalanceAt(context.Background(), publicAddress, nil)
+	ethBalance, err := client.BalanceAt(ctx, publicAddress, nil)
 	if err != nil {
-		return nil, fmt.Errorf("problem getting balance: %+v", err)
+		return nil, errors.Errorf("problem getting balance: %+v", err)
 	}
 
 	cost := new(big.Int)
 	cost.Mul(gasPrice, big.NewInt(700000))
 	if ethBalance.Cmp(cost) < 0 {
-		return nil, fmt.Errorf("insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
+		return nil, errors.Errorf("insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
 	}
 
 	privateKey := ctx.Value(tellorCommon.PrivateKey).(*ecdsa.PrivateKey)

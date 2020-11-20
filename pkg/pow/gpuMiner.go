@@ -15,6 +15,7 @@ import (
 	"unsafe"
 
 	"github.com/charliehorse55/go-opencl/cl"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/config"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
@@ -68,7 +69,7 @@ func GetOpenCLGPUs() ([]*cl.Device, error) {
 				gpuLog.Info("Found 0 GPUs on platform %s\n", platform.Name())
 				continue
 			}
-			return nil, fmt.Errorf("failed to get devices for platform %s: %s", platform.Name(), err.Error())
+			return nil, errors.Errorf("failed to get devices for platform %s: %s", platform.Name(), err.Error())
 		}
 		gpus = append(gpus, devices...)
 	}
@@ -96,22 +97,22 @@ func NewGpuMiner(device *cl.Device, config *config.GPUConfig, poolEnabled bool) 
 	g.name = device.Name()
 	g.context, err = cl.CreateContext([]*cl.Device{device})
 	if err != nil {
-		return nil, fmt.Errorf("CreateContext failed: %+v", err)
+		return nil, errors.Errorf("CreateContext failed: %+v", err)
 	}
 	g.queue, err = g.context.CreateCommandQueue(device, 0)
 	if err != nil {
-		return nil, fmt.Errorf("CreateCommandQueue failed: %+v", err)
+		return nil, errors.Errorf("CreateCommandQueue failed: %+v", err)
 	}
 	program, err := g.context.CreateProgramWithSource([]string{GenKernelSource()})
 	if err != nil {
-		return nil, fmt.Errorf("CreateProgramWithSource failed: %+v", err)
+		return nil, errors.Errorf("CreateProgramWithSource failed: %+v", err)
 	}
 	if err := program.BuildProgram(nil, "-Werror"); err != nil {
-		return nil, fmt.Errorf("BuildProgram failed: %+v", err)
+		return nil, errors.Errorf("BuildProgram failed: %+v", err)
 	}
 	g.kernel, err = program.CreateKernel("tellor")
 	if err != nil {
-		return nil, fmt.Errorf("CreateKernel failed: %+v", err)
+		return nil, errors.Errorf("CreateKernel failed: %+v", err)
 	}
 	if poolEnabled {
 		g.prefix, err = g.context.CreateEmptyBuffer(cl.MemReadOnly, 64)
@@ -119,15 +120,15 @@ func NewGpuMiner(device *cl.Device, config *config.GPUConfig, poolEnabled bool) 
 		g.prefix, err = g.context.CreateEmptyBuffer(cl.MemReadOnly, 56)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("CreateBuffer failed for prefix: %+v", err)
+		return nil, errors.Errorf("CreateBuffer failed for prefix: %+v", err)
 	}
 	g.mulDivisor, err = g.context.CreateEmptyBuffer(cl.MemReadOnly, 128)
 	if err != nil {
-		return nil, fmt.Errorf("CreateBuffer failed for mulDivisor: %+v", err)
+		return nil, errors.Errorf("CreateBuffer failed for mulDivisor: %+v", err)
 	}
 	g.output, err = g.context.CreateEmptyBuffer(cl.MemWriteOnly, 16)
 	if err != nil {
-		return nil, fmt.Errorf("CreateBuffer failed for output: %+v", err)
+		return nil, errors.Errorf("CreateBuffer failed for output: %+v", err)
 	}
 	return &g, nil
 }
@@ -138,29 +139,29 @@ func (g *GpuMiner) Name() string {
 
 func (g *GpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
 	if n%g.StepSize() != 0 {
-		return "", 0, fmt.Errorf("n (%d) must be a multiple of GPU step size (%d)", n, g.StepSize())
+		return "", 0, errors.Errorf("n (%d) must be a multiple of GPU step size (%d)", n, g.StepSize())
 	}
 	mulDivisorBytes := createDivisorByteArray(hash.difficulty)
 
 	_, err := g.queue.EnqueueWriteBuffer(g.prefix, true, 0, len(hash.prefix), unsafe.Pointer(&hash.prefix[0]), nil)
 	if err != nil {
-		return "", 0, fmt.Errorf("EnqueueWriteBuffer hashPrefix failed: %+v", err)
+		return "", 0, errors.Errorf("EnqueueWriteBuffer hashPrefix failed: %+v", err)
 	}
 	_, err = g.queue.EnqueueWriteBuffer(g.mulDivisor, true, 0, len(mulDivisorBytes), unsafe.Pointer(&mulDivisorBytes[0]), nil)
 	if err != nil {
-		return "", 0, fmt.Errorf("EnqueueWriteBuffer mulDivisor failed: %+v", err)
+		return "", 0, errors.Errorf("EnqueueWriteBuffer mulDivisor failed: %+v", err)
 	}
 
 	done := uint64(0)
 	for done < n {
 		if err := g.kernel.SetArgs(g.prefix, g.mulDivisor, g.output, start, g.Count); err != nil {
-			return "", done, fmt.Errorf("SetKernelArgs failed: %+v", err)
+			return "", done, errors.Errorf("SetKernelArgs failed: %+v", err)
 		}
 
 		kernelStarted := time.Now()
 		_, err := g.queue.EnqueueNDRangeKernel(g.kernel, nil, []int{g.Groups * g.GroupSize}, []int{g.GroupSize}, nil)
 		if err != nil {
-			return "", done, fmt.Errorf("EnqueueNDRangeKernel failed: %+v", err)
+			return "", done, errors.Errorf("EnqueueNDRangeKernel failed: %+v", err)
 		}
 		// flush the q then sleep while we wait for the kernel to finish
 		g.queue.Flush()
@@ -173,7 +174,7 @@ func (g *GpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 		results := make([]byte, 16)
 		_, err = g.queue.EnqueueReadBuffer(g.output, true, 0, len(results), unsafe.Pointer(&results[0]), nil)
 		if err != nil {
-			return "", done, fmt.Errorf("EnqueueReadBuffer failed: %+v", err)
+			return "", done, errors.Errorf("EnqueueReadBuffer failed: %+v", err)
 		}
 		end := time.Now()
 		totalTime := end.Sub(kernelStarted)

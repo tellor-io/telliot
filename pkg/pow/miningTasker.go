@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math"
 	"math/big"
 	"math/rand"
@@ -78,7 +77,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
 		mt.log.Error("Could not get data from data proxy, cannot continue at all")
-		log.Fatal(err)
+		return nil, false
 	}
 
 	mt.log.Debug("Received data: %v", m)
@@ -186,8 +185,7 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 
 	if disputed.Cmp(big.NewInt(1)) != 0 {
 		mt.log.Error("miner is in dispute, cannot continue")
-		log.Fatal("miner in dispute")
-		return statusFailure // Never gets here but just for completeness.
+		return statusFailure
 	}
 	mt.log.Debug("miner is not in dispute, continuing")
 	return statusSuccess

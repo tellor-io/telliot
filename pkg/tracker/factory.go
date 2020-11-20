@@ -4,9 +4,8 @@
 package tracker
 
 import (
-	"fmt"
-
 	"github.com/go-kit/kit/log"
+	"github.com/pkg/errors"
 )
 
 // CreateTracker a tracker instance by its well-known name.
@@ -43,6 +42,6 @@ func createTracker(name string, logger log.Logger) ([]Tracker, error) {
 	case "disputeChecker":
 		return []Tracker{NewDisputeChecker(logger, 0)}, nil
 	default:
-		return nil, fmt.Errorf("no tracker with the name %s", name)
+		return nil, errors.Errorf("no tracker with the name %s", name)
 	}
 }

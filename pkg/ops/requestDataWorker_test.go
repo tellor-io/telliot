@@ -6,7 +6,6 @@ package ops
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"testing"
@@ -16,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
+	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 )
 
@@ -51,7 +51,7 @@ func (t testSubmit) Submit(ctx context.Context, proxy db.DataServerProxy, ctxNam
 }
 
 func TestRequestDataOps(t *testing.T) {
-	ctx, cfg, cleanup := testutil.CreateContext(t)
+	ctx, cfg, cleanup := tcontext.CreateTestContext(t)
 	defer t.Cleanup(cleanup)
 
 	exitCh := make(chan os.Signal)
@@ -61,56 +61,39 @@ func TestRequestDataOps(t *testing.T) {
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	// Delete any request keys.
-	if err := DB.Delete(db.RequestIdKey); err != nil {
-		log.Fatal(err)
-	}
-	if err := DB.Delete(db.TributeBalanceKey); err != nil {
-		log.Fatal(err)
-	}
+	testutil.Ok(t, DB.Delete(db.RequestIdKey))
+	testutil.Ok(t, DB.Delete(db.TributeBalanceKey))
 
 	reqData := CreateDataRequester(exitCh, submitter, 2*time.Second, ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy))
 
 	// It should not request data if not configured to do it.
 	cfg.RequestData = 0
-	if err := reqData.Start(ctx); err != nil {
-		log.Fatal(err)
-	}
+	testutil.Ok(t, reqData.Start(ctx))
 	time.Sleep(100 * time.Millisecond)
-	if reqData.submittingRequests {
-		t.Fatal("Should not be submitting requests without configured request id")
-	}
+	testutil.Assert(t, !reqData.submittingRequests, "should not be submitting requests without configured request id")
 
 	cfg.RequestData = 1
-	if err := DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(0)))); err != nil {
-		log.Fatal(err)
-	}
-	i, success := new(big.Int).SetString("999999999999999999999999999999999999999999999", 10)
-	if !success {
-		t.Fatal("creating a big int")
-	}
-	if err := DB.Put(db.TributeBalanceKey, []byte(hexutil.EncodeBig(i))); err != nil {
-		log.Fatal(err)
-	}
+	testutil.Ok(t, DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(0)))))
 
-	if err := reqData.Start(ctx); err != nil {
-		log.Fatal(err)
-	}
+	i, success := new(big.Int).SetString("999999999999999999999999999999999999999999999", 10)
+	testutil.Assert(t, success, "creating a big int")
+
+	testutil.Ok(t, DB.Put(db.TributeBalanceKey, []byte(hexutil.EncodeBig(i))))
+
+	testutil.Ok(t, reqData.Start(ctx))
+
 	time.Sleep(3 * time.Second)
-	if requestID == nil {
-		t.Fatal("Should have requested data")
-	}
+	testutil.Assert(t, requestID != nil, "Should have requested data")
+
 	requestID = nil
-	if err := DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(1)))); err != nil {
-		log.Fatal(err)
-	}
+	testutil.Ok(t, DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(1)))))
+
 	time.Sleep(3 * time.Second)
-	if requestID != nil {
-		t.Fatal("Should not have requested data when a challenge request is in progress")
-	}
+	testutil.Assert(t, requestID == nil, "Should not have requested data when a challenge request is in progress")
 
 	exitCh <- os.Interrupt
 	time.Sleep(300 * time.Millisecond)
 	if reqData.submittingRequests {
-		t.Fatal("Should not be submitting requests after exit sig")
+		testutil.Assert(t, !reqData.submittingRequests, "Should not be submitting requests after exit sig")
 	}
 }

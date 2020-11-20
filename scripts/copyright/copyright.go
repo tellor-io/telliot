@@ -31,7 +31,10 @@ func applyLicenseToProtoAndGo() error {
 			switch path {
 			case "vendor":
 				return filepath.SkipDir
+			case filepath.Join("pkg", "contracts"):
+				return filepath.SkipDir
 			}
+
 			return nil
 		}
 		if strings.HasSuffix(path, ".pb.go") {

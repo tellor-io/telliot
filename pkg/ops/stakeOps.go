@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
 	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
@@ -55,12 +56,12 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 	balance, err := tmaster.BalanceOf(nil, publicAddress)
 	if err != nil {
-		return fmt.Errorf("couldn't get TRB balance: %s", err.Error())
+		return errors.Errorf("couldn't get TRB balance: %s", err.Error())
 	}
 
 	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
 	if err != nil {
-		return fmt.Errorf("failed to get stake status: %s", err.Error())
+		return errors.Errorf("failed to get stake status: %s", err.Error())
 	}
 
 	if status.Uint64() != 0 && status.Uint64() != 2 {
@@ -73,11 +74,11 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 	copy(dat32[:], dat)
 	stakeAmt, err := tmaster.GetUintVar(nil, dat32)
 	if err != nil {
-		return fmt.Errorf("fetching stake amount failed: %s", err.Error())
+		return errors.Errorf("fetching stake amount failed: %s", err.Error())
 	}
 
 	if balance.Cmp(stakeAmt) < 0 {
-		return fmt.Errorf("insufficient balance (%s), mining stake requires %s TRB",
+		return errors.Errorf("insufficient balance (%s), mining stake requires %s TRB",
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(stakeAmt))
 	}
@@ -85,12 +86,12 @@ func Deposit(ctx context.Context, logger log.Logger) error {
 	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return fmt.Errorf("couldn't prepare ethereum transaction: %s", err.Error())
+		return errors.Errorf("couldn't prepare ethereum transaction: %s", err.Error())
 	}
 
 	tx, err := instance2.DepositStake(auth)
 	if err != nil {
-		return fmt.Errorf("contract failed: %s", err.Error())
+		return errors.Errorf("contract failed: %s", err.Error())
 	}
 	level.Info(logger).Log("msg", "stake depositied", "txHash", tx.Hash().Hex())
 	return nil
@@ -102,7 +103,7 @@ func ShowStatus(ctx context.Context, logger log.Logger) error {
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
 	if err != nil {
-		return fmt.Errorf("failed to get stake status: %s", err.Error())
+		return errors.Errorf("failed to get stake status: %s", err.Error())
 	}
 
 	printStakeStatus(status, startTime)
@@ -115,7 +116,7 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
 	if err != nil {
-		return fmt.Errorf("failed to get stake status: %s", err.Error())
+		return errors.Errorf("failed to get stake status: %s", err.Error())
 	}
 	if status.Uint64() != 1 {
 		printStakeStatus(status, startTime)
@@ -124,13 +125,13 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger) error {
 
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
+		return errors.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
 
 	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	tx, err := instance2.RequestStakingWithdraw(auth)
 	if err != nil {
-		return fmt.Errorf("contract failed: %s", err.Error())
+		return errors.Errorf("contract failed: %s", err.Error())
 	}
 
 	level.Info(logger).Log("msg", "withdrawal request sent", "txHash", tx.Hash().Hex())
@@ -143,7 +144,7 @@ func WithdrawStake(ctx context.Context, logger log.Logger) error {
 	publicAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 	status, startTime, err := tmaster.GetStakerInfo(nil, publicAddress)
 	if err != nil {
-		return fmt.Errorf("failed to get stake status: %s", err.Error())
+		return errors.Errorf("failed to get stake status: %s", err.Error())
 	}
 	if status.Uint64() != 2 {
 
@@ -154,13 +155,13 @@ func WithdrawStake(ctx context.Context, logger log.Logger) error {
 
 	auth, err := PrepareEthTransaction(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
+		return errors.Errorf("failed to prepare ethereum transaction: %s", err.Error())
 	}
 
 	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 	tx, err := instance2.WithdrawStake(auth)
 	if err != nil {
-		return fmt.Errorf("contract failed: %s", err.Error())
+		return errors.Errorf("contract failed: %s", err.Error())
 	}
 	level.Info(logger).Log("msg", "withdrew stake", "txHash", tx.Hash().Hex())
 	return nil

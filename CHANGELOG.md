@@ -12,12 +12,12 @@ We use *breaking :warning:* to mark changes that are not backward compatible (re
 ## Unreleased
 - [#272](https://github.com/tellor-io/TellorMiner/pull/272) Automated Docker images on every push to master and with every tagged release.
 
-## [v5.2.0] - 2020.11.12
+## [v5.2.0](https://github.com/tellor-io/TellorMiner/releases/tag/v5.2.0) - 2020.11.12
 - [#254](https://github.com/tellor-io/TellorMiner/pull/254)
     - Added support for expanding variables in the indexer api url.
     - Added config to specify the `.env` file location. The default is now `configs/.env` so users should either specify a custom location in the `config.json` or move it inside the default config folder.
 
-## [v5.0.0](https://github.com/tellor-io/TellorMiner/releases) - 2020.11.02
+## [v5.0.0](https://github.com/tellor-io/TellorMiner/releases/tag/v5.0.0) - 2020.11.02
 
 ### Added
  - Profitability calculations which is set through the `ProfitThreshold`(in percents) settings in the config,
