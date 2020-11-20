@@ -10,10 +10,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/pkg/errors"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -24,28 +27,20 @@ func TestTributeBalance(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_Tributebalance"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
 	tracker := NewTributeTracker(logger)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 	v, err := DB.Get(db.TributeBalanceKey)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 	b, err := hexutil.DecodeBig(string(v))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 	t.Logf("Tribute Balance stored: %v\n", b)
 	if b.Cmp(startBal) != 0 {
-		t.Fatalf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)
+		testutil.Ok(t, errors.Errorf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
 	}
 }

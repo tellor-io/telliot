@@ -6,7 +6,6 @@ package db
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -207,15 +206,14 @@ func (i *remoteImpl) BatchGet(keys []string) (map[string][]byte, error) {
 
 	respData, err := util.HTTPWithRetries(httpReq)
 	if err != nil {
-		//return nil, err
-		log.Fatalf("Could not retrieve data after retries. Cannot do anything without access to data server: %v", err)
+		return nil, errors.Wrapf(err, "retrieving data after retries")
 	}
 	remResp, err := decodeResponse(respData)
 	if err != nil {
 		return nil, err
 	}
 	if len(remResp.errorMsg) > 0 {
-		return nil, errors.Errorf(remResp.errorMsg)
+		return nil, errors.New(remResp.errorMsg)
 	}
 	return remResp.dbVals, nil
 }
@@ -247,14 +245,14 @@ func (i *remoteImpl) BatchPut(keys []string, values [][]byte) (map[string][]byte
 	respData, err := util.HTTPWithRetries(httpReq)
 	if err != nil {
 		//return nil, err
-		log.Fatalf("Could not put data after retries. Cannot do anything without access to data server: %v", err)
+		return nil, errors.Wrap(err, "put data after retries")
 	}
 	remResp, err := decodeResponse(respData)
 	if err != nil {
 		return nil, err
 	}
 	if len(remResp.errorMsg) > 0 {
-		return nil, errors.Errorf(remResp.errorMsg)
+		return nil, errors.New(remResp.errorMsg)
 	}
 	return remResp.dbVals, nil
 }
