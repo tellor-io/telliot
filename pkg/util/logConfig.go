@@ -5,7 +5,6 @@ package util
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
@@ -35,14 +34,14 @@ func ParseLoggingConfig(file string) error {
 			return errors.Wrapf(err, "loggingConfigPath references an invalid file at: %s", file)
 		}
 		if info.IsDir() {
-			return errors.Wrapf(err, "logging config file %s is a directory", file)
+			return errors.Errorf("logging config is a directory on file:%s", file)
 		}
 
 		configFile, err := os.Open(file)
 		defer func() {
 			err := configFile.Close()
 			if err != nil {
-				fmt.Print("error closing the file", err)
+				errors.Wrap(err, "closing the file")
 			}
 		}()
 		if err != nil {

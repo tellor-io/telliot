@@ -75,7 +75,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 			_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
-				return nil, errors.Wrapf(err, "could not retrieve pricing data for current request id")
+				return nil, errors.Errorf("could not retrieve pricing data for current request id")
 			}
 			value = big.NewInt(int64(val))
 		} else {

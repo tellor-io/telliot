@@ -57,7 +57,7 @@ func compileSources() (string, error) {
 
 	mainSrc, ok := contents[kernelFile]
 	if !ok {
-		return "", errors.Errorf("missing kernel: %s file", kernelFile)
+		return "", errors.Errorf("missing kernel file:%s", kernelFile)
 	}
 	delete(contents, kernelFile)
 

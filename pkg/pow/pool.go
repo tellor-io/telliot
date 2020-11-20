@@ -93,7 +93,6 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 	stratumClient, err := StratumConnect(p.url, msgChan)
 	if err != nil {
 		errors.Wrap(err, "stratum connect")
-		return nil, false
 	}
 
 	p.stratumClient = stratumClient

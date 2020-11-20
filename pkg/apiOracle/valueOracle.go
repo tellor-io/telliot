@@ -13,10 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
 )
-
-var logger = util.NewLogger("apiOracle", "valueOracle")
 
 // maps symbol to a time window of values.
 var valueHistory map[string]*Window
@@ -68,7 +65,6 @@ func writeOutHistory() {
 	valueHistoryMutex.Unlock()
 	if err != nil {
 		errors.Wrap(err, "marshal PSR values")
-		return
 	}
 
 	cfg := config.GetConfig()
@@ -77,13 +73,11 @@ func writeOutHistory() {
 	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
 	if err != nil {
 		errors.Wrapf(err, "write out PSR values to: %s", psrSavedDataTmp)
-		return
 	}
 	// Rename tmp file to old file (should be atomic on most modern OS)
 	err = os.Rename(psrSavedDataTmp, psrSavedData)
 	if err != nil {
 		errors.Wrap(err, "move new PSR save onto old")
-		return
 	}
 }
 
@@ -121,7 +115,7 @@ func EnsureValueOracle() error {
 		}
 		err = json.Unmarshal(byteValue, &valueHistory)
 		if err != nil {
-			return errors.Errorf("failed to unmarshal saved")
+			return errors.Wrap(err, "failed to unmarshal saved")
 		}
 	} else {
 		valueHistory = make(map[string]*Window)

@@ -68,10 +68,9 @@ func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*req
 
 	if err != nil {
 		errors.Wrapf(err, "signature failed")
-		return nil, err
 	}
 	if sig == nil {
-		return nil, errors.Wrapf(err, "generate a signature for  hash:%v", hash)
+		return nil, errors.Errorf("generate a signature for  hash:%v", hash)
 	}
 	return &requestPayload{dbKeys: dbKeys, dbValues: values, timestamp: t, sig: sig}, nil
 }
