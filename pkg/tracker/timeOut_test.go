@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"context"
-	"log"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -22,18 +22,15 @@ func TestTimeOutString(t *testing.T) {
 	logger := logSetup("debug")
 	tracker := NewTimeOutTracker(logger)
 	res := tracker.String()
-	if res != "TimeOutTracker" {
-		t.Fatalf("should return 'TimeOutTracker' string")
-	}
+
+	testutil.Assert(t, res == "TimeOutTracker", "should return 'TimeOutTracker' string")
+
 }
 
 func TestTimeOutTracker(t *testing.T) {
 
 	db, err := db.Open(filepath.Join(os.TempDir(), "test_timeOut"))
-	if err != nil {
-		log.Fatal(err)
-		panic(err.Error())
-	}
+	testutil.Ok(t, err)
 
 	startBal := big.NewInt(456000)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
@@ -47,6 +44,6 @@ func TestTimeOutTracker(t *testing.T) {
 	logger := logSetup("debug")
 	tracker := NewTimeOutTracker(logger)
 	if err := tracker.Exec(ctx); err != nil {
-		log.Fatal(err)
+		testutil.Ok(t, err)
 	}
 }

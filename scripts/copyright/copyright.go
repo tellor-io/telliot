@@ -1,9 +1,6 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-// Copyright (c) The Thanos Authors.
-// Licensed under the Apache License 2.0.
-
 package main
 
 import (
@@ -34,7 +31,10 @@ func applyLicenseToProtoAndGo() error {
 			switch path {
 			case "vendor":
 				return filepath.SkipDir
+			case filepath.Join("pkg", "contracts"):
+				return filepath.SkipDir
 			}
+
 			return nil
 		}
 		if strings.HasSuffix(path, ".pb.go") {

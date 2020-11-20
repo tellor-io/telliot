@@ -6,7 +6,6 @@ package ops
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"strconv"
@@ -69,19 +68,19 @@ func CreateMiningManager(
 	database db.DataServerProxy,
 ) (*MiningMgr, error) {
 
-	group, err := pow.SetupMiningGroup(cfg)
+	group, err := pow.SetupMiningGroup(cfg, exitCh)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup miners")
 	}
 
 	client, err := rpc.NewClient(cfg.NodeURL)
 	if err != nil {
-		log.Fatal(err)
+		return nil, errors.Wrap(err, "creating client")
 	}
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
 	getter, err := getter.NewTellorGetters(contractAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		return nil, errors.Wrap(err, "getting addresses")
 	}
 
 	submitter := NewSubmitter()

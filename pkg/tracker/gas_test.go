@@ -13,6 +13,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -25,19 +26,13 @@ func TestETHGasStation(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, err := db.Open(filepath.Join(os.TempDir(), "ethGas_test"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 	v, err := DB.Get(db.GasKey)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 
 	t.Logf("Gas Price stored: %v\n", string(v))
 
@@ -50,25 +45,25 @@ func TestETHGasStation(t *testing.T) {
 
 // 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_gas"))
 // 	if err != nil {
-// 		t.Fatal(err)
+// 		testutil.Ok(t, err)
 // 	}
 // 	tracker := &GasTracker{}
 // 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 // 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 // 	err = tracker.Exec(ctx)
 // 	if err != nil {
-// 		t.Fatal(err)
+// 		testutil.Ok(t, err)
 // 	}
 // 	v, err := DB.Get(db.GasKey)
 // 	if err != nil {
-// 		t.Fatal(err)
+// 		testutil.Ok(t, err)
 // 	}
 // 	b, err := hexutil.DecodeBig(string(v))
 // 	if err != nil {
-// 		t.Fatal(err)
+// 		testutil.Ok(t, err)
 // 	}
 // 	t.Logf("Gas PriceStamp stored: %v\n", string(v))
 // 	if b.Cmp(big.NewInt(7000000000)) != 0 {
-// 		t.Fatalf("Balance from client did not match what should have been stored in DB. %s != %s", b, "Should be 1")
+// 		testutil.Ok(t, errors.New(fmt.Sprintf("Balance from client did not match what should have been stored in DB. %s != %s", b, "Should be 1")))
 // 	}
 // }
