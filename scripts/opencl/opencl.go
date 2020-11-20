@@ -50,14 +50,14 @@ func compileSources() (string, error) {
 	}
 	var out strings.Builder
 	if _, ok := contents[headerFile]; !ok {
-		return "", errors.Wrapf(err, "missing %s file", headerFile)
+		return "", errors.Wrapf(err, "missing header: %s file", headerFile)
 	}
 	out.Write(contents[headerFile])
 	delete(contents, headerFile)
 
 	mainSrc, ok := contents[kernelFile]
 	if !ok {
-		return "", errors.Wrapf(err, "missing %s file", kernelFile)
+		return "", errors.Wrapf(err, "missing kearnal: %s file", kernelFile)
 	}
 	delete(contents, kernelFile)
 
@@ -72,12 +72,12 @@ func compileSources() (string, error) {
 func main() {
 	kernelStr, err := compileSources()
 	if err != nil {
-		log.Fatal("failed to compile opencl sources", err.Error())
+		errors.Wrap(err, "compile opencl sources")
 	}
 
 	outFile, err := os.Create(resultFile)
 	if err != nil {
-		log.Fatalf("failed to create output file: %s: %s\n", resultFile, err.Error())
+		errors.Wrapf(err,  "create output file: %s", resultFile)
 	}
 	defer outFile.Close()
 
@@ -91,7 +91,7 @@ func main() {
 		Source:    kernelStr,
 	})
 	if err != nil {
-		log.Fatal("failed to execute template", err.Error())
+		errors.Wrap(err,  "execute template")
 	}
 }
 
