@@ -15,10 +15,7 @@ func createEnvFile(t *testing.T) func() {
 	testutil.Ok(t, err)
 
 	_, err = f.WriteString("ETH_PRIVATE_KEY=\"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"")
-	if err != nil {
-		f.Close()
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, f.Close())
 
 	return func() {
 		os.Remove(".env")

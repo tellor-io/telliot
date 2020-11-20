@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/tellor-io/TellorMiner/pkg/tcontext"
 	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
@@ -30,8 +29,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: logger}
-	err := disputeChecker.Exec(ctx)
-	testutil.Ok(t, err)
+	testutil.Ok(t, disputeChecker.Exec(ctx))
 }
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
@@ -48,22 +46,16 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-	err := disputeChecker.Exec(ctx)
-
-	testutil.Ok(t, err)
+	testutil.Ok(t, disputeChecker.Exec(ctx))
 
 	files, err := filepath.Glob("possible-dispute-*.txt")
 	if err != nil {
 		panic(err)
 	}
-	if len(files) != 1 {
-		testutil.Ok(t, errors.New("expected a possible-dispute file"))
-	}
-	for _, f := range files {
-		if err := os.Remove(f); err != nil {
-			testutil.Ok(t, err)
+	testutil.Equals(t, len(files), 1, "expected a possible-dispute file")
 
-		}
+	for _, f := range files {
+		testutil.Ok(t, os.Remove(f))
 	}
 }
 

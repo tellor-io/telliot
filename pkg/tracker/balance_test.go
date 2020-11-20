@@ -5,12 +5,12 @@ package tracker
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/pkg/common"
@@ -26,7 +26,7 @@ func TestStringId(t *testing.T) {
 	tracker := NewBalanceTracker(logger)
 	res := tracker.String()
 
-	testutil.Assert(t, res == BalanceTrackerName, "didn't return expected string", BalanceTrackerName)
+	testutil.Equals(t, res, BalanceTrackerName, "didn't return expected string", BalanceTrackerName)
 }
 func TestPositiveBalance(t *testing.T) {
 	startBal := big.NewInt(356000)
@@ -52,7 +52,7 @@ func TestNegativeBalance(t *testing.T) {
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
 	err = tracker.Exec(ctx)
-	testutil.Assert(t, err != nil, "should have error")
+	testutil.NotOk(t, err, "should have error")
 }
 
 func dbBalanceTest(startBal *big.Int, t *testing.T) {
@@ -76,7 +76,7 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 	testutil.Ok(t, err)
 	t.Logf("Balance stored: %v\n", string(v))
 	if b.Cmp(startBal) != 0 {
-		testutil.Ok(t, errors.New(fmt.Sprintf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)))
+		testutil.Ok(t, errors.Errorf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
 	}
 	DB.Close()
 }

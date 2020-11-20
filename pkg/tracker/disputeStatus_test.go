@@ -41,16 +41,13 @@ func TestDisputeStatus(t *testing.T) {
 	tracker := NewDisputeTracker(logger)
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
-	testutil.Ok(t, err)
+	testutil.Ok(t, tracker.Exec(ctx))
 	v, err := DB.Get(db.DisputeStatusKey)
 	testutil.Ok(t, err)
 	b, err := hexutil.DecodeBig(string(v))
 	testutil.Ok(t, err)
 	t.Logf("Dispute Status stored: %v\n", string(v))
-	if b.Cmp(big.NewInt(1)) != 0 {
-		testutil.Ok(t, errors.New(fmt.Sprintf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")))
-	}
+	testutil.Equals(t, b.Cmp(big.NewInt(1)), 0, "dispute status from client did not match what should have been stored in DB. %s != %s", b, "one")
 	DB.Close()
 }
 

@@ -4,7 +4,8 @@
 package pow
 
 import (
-	"errors"
+	"github.com/pkg/errors"
+
 	"fmt"
 	"math/big"
 	"os"
@@ -67,13 +68,13 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 		select {
 		case result := <-output:
 			if result == nil {
-				testutil.Ok(t, errors.New(fmt.Sprintf("nil result for challenge %d", v)))
+				testutil.Ok(t, errors.Errorf("nil result for challenge %v", v))
 			} else {
 				//Fixing a possible nil pointer deference... not sure if that's the appropriate way to do it
 				CheckSolution(t, challenge, result.Nonce)
 			}
 		case <-time.After(timeout):
-			testutil.Ok(t, errors.New(fmt.Sprintf("Expected result for challenge in less than %s", timeout.String())))
+			testutil.Ok(t, errors.Errorf("Expected result for challenge in less than %s", timeout.String()))
 		}
 	}
 	// Tell the mining group to close.
@@ -86,7 +87,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 			testutil.Ok(t, errors.New("expected nil result when closing mining group"))
 		}
 	case <-time.After(timeout):
-		testutil.Ok(t, errors.New(fmt.Sprintf("Expected mining group to close in less than %s", timeout.String())))
+		testutil.Ok(t, errors.Errorf("Expected mining group to close in less than %s", timeout.String()))
 	}
 }
 
@@ -98,10 +99,7 @@ func TestCpuMiner(t *testing.T) {
 func TestGpuMiner(t *testing.T) {
 	config.OpenTestConfig(t)
 	gpus, err := GetOpenCLGPUs()
-	if err != nil {
-		fmt.Println(gpus)
-		testutil.Ok(t, err)
-	}
+	testutil.Ok(t, err)
 	if len(gpus) == 0 {
 		t.Skip("no mining gpus")
 	}

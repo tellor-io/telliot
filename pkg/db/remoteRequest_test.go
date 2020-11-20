@@ -6,8 +6,6 @@ package db
 import (
 	"bytes"
 
-	"github.com/pkg/errors"
-
 	"reflect"
 	"strings"
 	"testing"
@@ -74,7 +72,7 @@ func TestRequestReplayAttack(t *testing.T) {
 
 	_, err = decodeRequest(encoded, remote.(*remoteImpl))
 
-	testutil.Assert(t, err != nil, "Expected failure when decoding request as a replay after expiration period")
+	testutil.NotOk(t, err, "expected failure when decoding request as a replay after expiration period")
 }
 
 func TestRequestForData(t *testing.T) {
@@ -86,17 +84,10 @@ func TestRequestForData(t *testing.T) {
 	remote, err := OpenRemoteDB(DB)
 	testutil.Ok(t, err)
 
-	if err := DB.Delete(RequestIdKey); err != nil {
-		testutil.Ok(t, err)
-	}
-	if err := DB.Delete(DifficultyKey); err != nil {
-		testutil.Ok(t, err)
-	}
-	if err := DB.Put(RequestIdKey, []byte("1")); err != nil {
-		testutil.Ok(t, err)
-	}
-	err = DB.Put(DifficultyKey, []byte("2"))
-	testutil.Ok(t, err)
+	testutil.Ok(t, DB.Delete(RequestIdKey))
+	testutil.Ok(t, DB.Delete(DifficultyKey))
+	testutil.Ok(t, DB.Put(RequestIdKey, []byte("1")))
+	testutil.Ok(t, DB.Put(DifficultyKey, []byte("2")))
 
 	keys := []string{RequestIdKey, DifficultyKey}
 	req, err := createRequest(keys, nil, remote.(*remoteImpl))
@@ -111,13 +102,12 @@ func TestRequestForData(t *testing.T) {
 	resp, err := decodeResponse(data)
 	testutil.Ok(t, err)
 
-	if len(resp.errorMsg) != 0 {
-		testutil.Ok(t, errors.New(resp.errorMsg))
-	}
+	testutil.Equals(t, len(resp.errorMsg), 0, "should't have an error")
+
 	reqID := string(resp.dbVals[RequestIdKey])
 	diff := string(resp.dbVals[DifficultyKey])
-	testutil.Assert(t, reqID == "1", "Expected result map to map request id to '1': %v", resp.dbVals)
-	testutil.Assert(t, diff == "2", "Expected difficulty to be mapped to '2': %v", resp.dbVals)
+	testutil.Equals(t, reqID, "1", "Expected result map to map request id to '1': %v", resp.dbVals)
+	testutil.Equals(t, diff, "2", "Expected difficulty to be mapped to '2': %v", resp.dbVals)
 
 }
 
@@ -141,8 +131,7 @@ func TestRequestPut(t *testing.T) {
 	req, err := createRequest([]string{dbKey}, vals, remote.(*remoteImpl))
 	testutil.Ok(t, err)
 
-	err = DB.Put(dbKey, vals[0])
-	testutil.Ok(t, err)
+	testutil.Ok(t, DB.Put(dbKey, vals[0]))
 
 	bts, err := encodeRequest(req)
 	testutil.Ok(t, err)
