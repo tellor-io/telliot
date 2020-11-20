@@ -4,7 +4,6 @@
 package util
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -24,7 +23,7 @@ func TestJSONParser(t *testing.T) {
 			t.Logf("Parsed json properly: %v", res)
 
 		} else {
-			testutil.Ok(t, errors.New(fmt.Sprintf("Json not parsed properly: %v", res)))
+			testutil.Ok(t, errors.Errorf("Json not parsed properly: %v", res))
 		}
 	}
 

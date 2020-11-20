@@ -4,7 +4,6 @@
 package util
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -18,7 +17,7 @@ func TestLogConfig(t *testing.T) {
 	testutil.Ok(t, err)
 	cfg := GetLoggingConfig()
 	if cfg.levels["config.Config"] == 0 {
-		testutil.Ok(t, errors.New(fmt.Sprintf("Config did not parse correctly: %v", cfg.levels)))
+		testutil.Ok(t, errors.Errorf("Config did not parse correctly: %v", cfg.levels))
 	} else {
 		t.Logf("Parsed log level: %d", cfg.levels["config.Config"])
 	}

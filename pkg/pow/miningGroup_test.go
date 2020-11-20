@@ -43,7 +43,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 
 	a.Mod(a, challenge.Difficulty)
 	if !a.IsUint64() || a.Uint64() != 0 {
-		testutil.Ok(t, errors.New(fmt.Sprintf("nonce: %s remainder: %s\n", string(hashIn[52:]), a.Text(10))))
+		testutil.Ok(t, errors.Errorf("nonce: %s remainder: %s\n", string(hashIn[52:]), a.Text(10)))
 	}
 }
 
@@ -146,7 +146,7 @@ func TestMulti(t *testing.T) {
 	case <-output:
 		group.PrintHashRateSummary()
 	case <-time.After(timeout):
-		testutil.Ok(t, errors.New(fmt.Sprintf("mining group didn't quit before %s", timeout.String())))
+		testutil.Ok(t, errors.Errorf("mining group didn't quit before %s", timeout.String()))
 	}
 }
 
@@ -169,7 +169,7 @@ func TestHashFunction(t *testing.T) {
 		result, err := hashFn(bytes)
 		testutil.Ok(t, err)
 		if result.Text(16) != v {
-			testutil.Ok(t, errors.New(fmt.Sprintf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16))))
+			testutil.Ok(t, errors.Errorf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16)))
 		}
 	}
 }

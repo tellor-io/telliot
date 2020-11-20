@@ -5,12 +5,12 @@ package tracker
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/pkg/common"
@@ -41,6 +41,6 @@ func TestTributeBalance(t *testing.T) {
 	testutil.Ok(t, err)
 	t.Logf("Tribute Balance stored: %v\n", b)
 	if b.Cmp(startBal) != 0 {
-		testutil.Ok(t, errors.New(fmt.Sprintf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal)))
+		testutil.Ok(t, errors.Errof("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
 	}
 }
