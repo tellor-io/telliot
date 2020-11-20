@@ -25,9 +25,9 @@ func TestDataServer(t *testing.T) {
 
 	ds, err := CreateServer(ctx, logger)
 	testutil.Ok(t, err, "creating server in test")
+	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
 
 	time.Sleep(2 * time.Second)
-
 	resp, err := http.Get("http://" + cfg.ServerHost + ":" + strconv.Itoa(int(cfg.ServerPort)) + "/balance")
 	testutil.Ok(t, err)
 	defer resp.Body.Close()

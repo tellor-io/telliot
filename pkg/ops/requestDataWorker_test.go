@@ -70,7 +70,7 @@ func TestRequestDataOps(t *testing.T) {
 	cfg.RequestData = 0
 	testutil.Ok(t, reqData.Start(ctx))
 	time.Sleep(100 * time.Millisecond)
-	testutil.Assert(t, reqData.submittingRequests, "should not be submitting requests without configured request id")
+	testutil.Assert(t, !reqData.submittingRequests, "should not be submitting requests without configured request id")
 
 	cfg.RequestData = 1
 	testutil.Ok(t, DB.Put(db.RequestIdKey, []byte(hexutil.EncodeBig(big.NewInt(0)))))
