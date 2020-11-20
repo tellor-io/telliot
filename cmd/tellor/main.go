@@ -64,7 +64,7 @@ func setup() error {
 		if err != nil {
 			return errors.Wrap(err, "create tellor transactor instance")
 		}
-		// Leaving those in because are still used in some places(miner submission mostly)
+		// Leaving those in because are still used in some places(miner submission mostly).
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
@@ -181,7 +181,14 @@ func stakeCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd)
 	}
 }
 
-func simpleCmd(f func(context.Context, log.Logger, rpc.ETHClient, tellorCommon.Contract, tellorCommon.Account) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func simpleCmd(
+	f func(context.Context,
+		log.Logger,
+		rpc.ETHClient,
+		tellorCommon.Contract,
+		tellorCommon.Account) error,
+	logSetup func(string) log.Logger,
+	logLevel *string) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
 			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc), "")
@@ -189,7 +196,16 @@ func simpleCmd(f func(context.Context, log.Logger, rpc.ETHClient, tellorCommon.C
 	}
 }
 
-func moveCmd(f func(context.Context, log.Logger, rpc.ETHClient, tellorCommon.Contract, tellorCommon.Account, common.Address, *big.Int) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func moveCmd(
+	f func(context.Context,
+		log.Logger,
+		rpc.ETHClient,
+		tellorCommon.Contract,
+		tellorCommon.Account,
+		common.Address,
+		*big.Int) error,
+	logSetup func(string) log.Logger,
+	logLevel *string) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		amt := TRBAmount{}
 		addr := ETHAddress{}
