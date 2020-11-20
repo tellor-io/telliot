@@ -4,10 +4,11 @@
 package rest
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/phayes/freeport"
@@ -54,7 +55,7 @@ func TestServer(t *testing.T) {
 		testutil.Ok(t, err)
 	}
 	if asInt.Cmp(balInt) != 0 {
-		testutil.Ok(t, errors.New(fmt.Sprintf("Expected %v but received %v as balance", balInt, asInt)))
+		testutil.Ok(t, errors.Errorf("Expected %v but received %v as balance", balInt, asInt))
 	}
 
 	t.Logf("Retrieved balance from server: %+v\n", asInt)

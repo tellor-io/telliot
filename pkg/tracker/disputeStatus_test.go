@@ -5,12 +5,12 @@ package tracker
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/TellorMiner/pkg/common"
@@ -68,6 +68,6 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 	testutil.Ok(t, err)
 	t.Logf("Dispute Status stored: %v\n", string(v))
 	if b.Cmp(big.NewInt(1)) != 0 {
-		testutil.Ok(t, errors.New(fmt.Sprintf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one")))
+		testutil.Ok(t, errors.Errorf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one"))
 	}
 }
