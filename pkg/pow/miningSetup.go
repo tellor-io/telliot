@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/telliot/pkg/config"
 )
 
 func SetupMiningGroup(cfg *config.Config, exitCh chan os.Signal) (*MiningGroup, error) {

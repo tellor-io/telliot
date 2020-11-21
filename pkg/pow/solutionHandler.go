@@ -16,11 +16,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/tracker"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 /**

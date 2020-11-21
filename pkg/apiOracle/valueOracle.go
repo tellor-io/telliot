@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var logger = util.NewLogger("apiOracle", "valueOracle")

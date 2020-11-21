@@ -17,11 +17,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
-	"github.com/tellor-io/TellorMiner/pkg/db"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/db"
 )
 
 // contractWrapper is internal wrapper of contract instance for calling common contract functions.

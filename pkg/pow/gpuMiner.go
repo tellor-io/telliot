@@ -16,8 +16,8 @@ import (
 
 	"github.com/charliehorse55/go-opencl/cl"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // the constant needs have a width of hash + divisor

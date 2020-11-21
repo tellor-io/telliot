@@ -6,7 +6,7 @@ package db
 import (
 	"testing"
 
-	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/telliot/pkg/config"
 )
 
 func TestDB(t *testing.T) {

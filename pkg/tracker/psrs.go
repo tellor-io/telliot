@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
-	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/telliot/pkg/apiOracle"
+	"github.com/tellor-io/telliot/pkg/config"
 )
 
 var switchTime, _ = time.Parse(time.RFC3339, "2020-06-26T00:00:00+00:00")

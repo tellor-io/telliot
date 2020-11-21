@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 func TestLogConfig(t *testing.T) {

@@ -9,10 +9,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/util"
 
-	"github.com/tellor-io/TellorMiner/pkg/common"
+	"github.com/tellor-io/telliot/pkg/common"
 )
 
 // RemoteProxyRouter handles incoming http requests.

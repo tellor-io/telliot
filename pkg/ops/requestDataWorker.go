@@ -11,10 +11,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // DataRequester responsible for submitting tips to request data periodically if configured to do so.

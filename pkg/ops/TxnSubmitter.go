@@ -7,9 +7,9 @@ import (
 	"context"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 // TxnSubmitter just concrete type for txn submitter.

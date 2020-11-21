@@ -9,9 +9,9 @@ package tracker
 
 // 	"github.com/ethereum/go-ethereum/common/hexutil"
 
-// 	"github.com/tellor-io/TellorMiner/pkg/common"
-// 	"github.com/tellor-io/TellorMiner/pkg/db"
-// 	"github.com/tellor-io/TellorMiner/pkg/testutil"
+// 	"github.com/tellor-io/telliot/pkg/common"
+// 	"github.com/tellor-io/telliot/pkg/db"
+// 	"github.com/tellor-io/telliot/pkg/testutil"
 // )
 // func TestPSR(t *testing.T) {
 // 	ctx, _, cleanup := tcontext.CreateTestContext(t)

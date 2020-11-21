@@ -11,12 +11,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/rest"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rest"
+	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
 // DataServer holds refs to primary stack of utilities for data retrieval and serving.

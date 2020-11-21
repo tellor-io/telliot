@@ -10,9 +10,9 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var serverLog = util.NewLogger("rest", "Server")

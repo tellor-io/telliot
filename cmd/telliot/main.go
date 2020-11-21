@@ -20,14 +20,14 @@ import (
 	"github.com/go-kit/kit/log/level"
 	cli "github.com/jawher/mow.cli"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/ops"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/ops"
+	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var ctx context.Context
@@ -127,15 +127,15 @@ var GitTag string
 var GitHash string
 
 const versionMessage = `
-    The official Tellor Miner %s (%s)
+    The official Tellor cli tool %s (%s)
     -----------------------------------------
 	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/TellorMiner
+	Github:  https://github.com/tellor-io/telliot
 `
 
 func App() *cli.Cli {
 
-	app := cli.App("TellorMiner", "The tellor.io official miner")
+	app := cli.App("telliot", "The tellor.io official cli tool")
 
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
