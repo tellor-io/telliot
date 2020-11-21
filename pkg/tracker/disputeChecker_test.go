@@ -62,6 +62,8 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
 	for _, psr := range psrs {
 		err := psr.Exec(ctx)
+
 		testutil.Ok(t, err)
+
 	}
 }

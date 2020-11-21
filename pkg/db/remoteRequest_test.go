@@ -106,6 +106,7 @@ func TestRequestForData(t *testing.T) {
 
 	reqID := string(resp.dbVals[RequestIdKey])
 	diff := string(resp.dbVals[DifficultyKey])
+
 	testutil.Equals(t, reqID, "1", "Expected result map to map request id to '1': %v", resp.dbVals)
 	testutil.Equals(t, diff, "2", "Expected difficulty to be mapped to '2': %v", resp.dbVals)
 

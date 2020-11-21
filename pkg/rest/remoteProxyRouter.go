@@ -38,7 +38,7 @@ func (r *RemoteProxyRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	}
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		r.log.Error("Problem reading request data: %v", err)
+		r.log.Error("Problem reading request data:%v", err)
 		fmt.Fprint(w, "Could not read request data")
 		return
 	}
@@ -46,7 +46,7 @@ func (r *RemoteProxyRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	outData, err := r.dataProxy.IncomingRequest(data)
 
 	if err != nil {
-		r.log.Error("Problem handling incoming request data: %v", err)
+		r.log.Error("Problem handling incoming request data:%v", err)
 		fmt.Fprint(w, "Could not handle request")
 		return
 	}
@@ -54,7 +54,7 @@ func (r *RemoteProxyRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	w.WriteHeader(200)
 	_, err = w.Write(outData)
 	if err != nil {
-		r.log.Error("couldn't write the response: %v", err)
+		r.log.Error("couldn't write the response:%v", err)
 		fmt.Fprint(w, "couldn't write the response")
 		return
 	}

@@ -90,7 +90,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 
 	err = DB.Put(db.TotalTipKey, []byte(hexutil.EncodeBig(returnNewVariables.Tip)))
 	if err != nil {
-		return errors.Wrap(err, "totaltip put")
+		return errors.Wrap(err, "total tip put")
 	}
 
 	return DB.Put(db.MiningStatusKey, bitSetVar)

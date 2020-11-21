@@ -75,7 +75,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 			_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
-				return nil, errors.Wrapf(err, "could not retrieve pricing data for current request id")
+				return nil, errors.Errorf("could not retrieve pricing data for current request id")
 			}
 			value = big.NewInt(int64(val))
 		} else {
@@ -89,7 +89,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 					}
 					continue
 				}
-				return nil, errors.Errorf("no value in database,  reg id: %v", challenge.RequestIDs[i].Uint64())
+				return nil, errors.Errorf("no value in database,  reg id:%v", challenge.RequestIDs[i].Uint64())
 			}
 		}
 		s.currentValues[i] = value
@@ -108,7 +108,7 @@ func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.Cont
 		s.currentChallenge.RequestIDs,
 		s.currentValues)
 	if err != nil {
-		s.log.Error("Problem submitting solution: %v", err)
+		s.log.Error("Problem submitting solution:%v", err)
 		return txn, err
 	}
 

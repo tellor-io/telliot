@@ -80,7 +80,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		return nil, false
 	}
 
-	mt.log.Debug("Received data: %v", m)
+	mt.log.Debug("Received data:%v", m)
 
 	if mt.checkDispute(m[dispKey]) == statusWaitNext {
 		return nil, false
@@ -135,7 +135,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
 		m2, err := mt.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
+			mt.log.Info("Could not retrieve pricing data for current request id:%v", err)
 			//return nil, false
 		}
 		val := m2[valKey]
@@ -198,7 +198,7 @@ func (mt *MiningTasker) getInt(data []byte) (*big.Int, int) {
 
 	val, err := hexutil.DecodeBig(string(data))
 	if err != nil {
-		mt.log.Error("decoding int: %v", err)
+		mt.log.Error("decoding int:%v", err)
 		return nil, statusFailure
 	}
 	return val, statusSuccess
