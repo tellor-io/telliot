@@ -31,6 +31,9 @@ import (
 )
 
 var ctx context.Context
+var cont tellorCommon.Contract
+var acc tellorCommon.Account
+var clt rpc.ETHClient
 
 func ExitOnError(err error, operation string) {
 	if err != nil {
@@ -39,7 +42,7 @@ func ExitOnError(err error, operation string) {
 	}
 }
 
-func buildContext() error {
+func setup() error {
 	cfg := config.GetConfig()
 
 	if !cfg.EnablePoolWorker {
@@ -48,6 +51,7 @@ func buildContext() error {
 		if err != nil {
 			return errors.Wrap(err, "create rpc client instance")
 		}
+
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
@@ -60,7 +64,7 @@ func buildContext() error {
 		if err != nil {
 			return errors.Wrap(err, "create tellor transactor instance")
 		}
-
+		// Leaving those in because are still used in some places(miner submission mostly).
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
@@ -70,7 +74,6 @@ func buildContext() error {
 		if err != nil {
 			return errors.Wrap(err, "getting private key to ECDSA")
 		}
-		ctx = context.WithValue(ctx, tellorCommon.PrivateKey, privateKey)
 
 		publicKey := privateKey.Public()
 		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -79,7 +82,6 @@ func buildContext() error {
 		}
 
 		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		ctx = context.WithValue(ctx, tellorCommon.PublicAddress, publicAddress)
 
 		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
@@ -89,6 +91,13 @@ func buildContext() error {
 		if s {
 			return errors.New("ethereum node is still syncing with the network")
 		}
+
+		clt = client
+		acc.Address = publicAddress
+		acc.PrivateKey = privateKey
+		cont.Getter = contractGetterInstance
+		cont.Caller = contractTellorInstance
+		cont.Address = contractAddress
 	}
 	return nil
 }
@@ -147,7 +156,7 @@ func App() *cli.Cli {
 	app.Before = func() {
 		ExitOnError(util.ParseLoggingConfig(*logPath), "parsing log file")
 		ExitOnError(config.ParseConfig(*configPath), "parsing config file")
-		ExitOnError(buildContext(), "building context")
+		ExitOnError(setup(), "setting up")
 	}
 
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
@@ -172,41 +181,54 @@ func stakeCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd)
 	}
 }
 
-func simpleCmd(f func(context.Context, log.Logger) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func simpleCmd(
+	f func(context.Context,
+		log.Logger,
+		rpc.ETHClient,
+		tellorCommon.Contract,
+		tellorCommon.Account) error,
+	logSetup func(string) log.Logger,
+	logLevel *string) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel)), "")
+			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc), "")
 		}
 	}
 }
 
-func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func moveCmd(
+	f func(context.Context,
+		log.Logger,
+		rpc.ETHClient,
+		tellorCommon.Contract,
+		tellorCommon.Account,
+		common.Address,
+		*big.Int) error,
+	logSetup func(string) log.Logger,
+	logLevel *string) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		amt := TRBAmount{}
 		addr := ETHAddress{}
 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel), addr.addr, amt.Int), "move")
+			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc, addr.addr, amt.Int), "move")
 		}
 	}
 }
 
 func balanceCmd(cmd *cli.Cmd) {
-
 	addr := ETHAddress{}
 	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 	cmd.Spec = "[ADDRESS]"
 	cmd.Action = func() {
 		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
-		getter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-		client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		var zero [20]byte
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
 			addr.addr = commonAddress
 		}
-		ExitOnError(ops.Balance(ctx, client, getter, addr.addr), "checking balance")
+		ExitOnError(ops.Balance(ctx, clt, cont.Getter, addr.addr), "checking balance")
 	}
 
 }
@@ -224,7 +246,7 @@ func voteCmd(cmd *cli.Cmd) {
 	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
 	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
 	cmd.Action = func() {
-		ExitOnError(ops.Vote(disputeID.Int, *supports, ctx), "vote")
+		ExitOnError(ops.Vote(ctx, clt, cont, acc, disputeID.Int, *supports), "vote")
 	}
 }
 
@@ -236,7 +258,7 @@ func newDisputeCmd(cmd *cli.Cmd) {
 	cmd.VarArg("TIMESTAMP", &timestamp, "timestamp")
 	cmd.VarArg("MINER_INDEX", &minerIndex, "miner to dispute (0-4)")
 	cmd.Action = func() {
-		ExitOnError(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
+		ExitOnError(ops.Dispute(ctx, clt, cont, acc, requestID.Int, timestamp.Int, minerIndex.Int), "new dipsute")
 	}
 }
 
