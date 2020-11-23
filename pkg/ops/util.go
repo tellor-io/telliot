@@ -5,17 +5,9 @@ package ops
 
 import (
 	"context"
-
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
-	"crypto/ecdsa"
-	"math/big"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
