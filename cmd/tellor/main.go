@@ -49,7 +49,7 @@ func setup() error {
 		// Create an rpc client
 		client, err := rpc.NewClient(cfg.NodeURL)
 		if err != nil {
-			return errors.Wrap(err, "create client instance")
+			return errors.Wrap(err, "create rpc client instance")
 		}
 
 		// Create an instance of the tellor master contract for on-chain interactions
@@ -72,7 +72,7 @@ func setup() error {
 
 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {
-			return errors.Wrap(err, "getting private key")
+			return errors.Wrap(err, "getting private key to ECDSA")
 		}
 
 		publicKey := privateKey.Public()
@@ -108,21 +108,21 @@ func AddDBToCtx(remote bool) error {
 	os.RemoveAll(cfg.DBFile)
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
-		return errors.Wrapf(err, "opening DB")
+		return errors.Wrapf(err, "opening DB instance")
 	}
 
 	var dataProxy db.DataServerProxy
 	if remote {
 		proxy, err := db.OpenRemoteDB(DB)
 		if err != nil {
-			return errors.Wrapf(err, "open remote DB")
+			return errors.Wrapf(err, "open remote DB instance")
 
 		}
 		dataProxy = proxy
 	} else {
 		proxy, err := db.OpenLocalProxy(DB)
 		if err != nil {
-			return errors.Wrapf(err, "opening local DB:")
+			return errors.Wrapf(err, "opening local DB instance:")
 
 		}
 		dataProxy = proxy

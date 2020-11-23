@@ -13,6 +13,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/tellor-io/TellorMiner/pkg/tcontext"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -25,7 +26,7 @@ func TestAmpl(t *testing.T) {
 	clck = mock
 	mock.Set(time.Now())
 	if _, err := BuildIndexTrackers(); err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	amplTrackers := indexes["AMPL/USD"]
 	btcTrackers := indexes["BTC/USD"]
@@ -38,7 +39,7 @@ func TestAmpl(t *testing.T) {
 	for i := 0; i < 288; i++ {
 		for _, indexer := range indexers {
 			if err := indexer.Exec(ctx); err != nil {
-				t.Fatal(err)
+				testutil.Ok(t, err)
 			}
 		}
 		mock.Add(10 * time.Minute)

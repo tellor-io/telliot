@@ -4,6 +4,8 @@
 package pow
 
 import (
+	"github.com/pkg/errors"
+
 	"fmt"
 	"math/big"
 	"os"
@@ -11,6 +13,7 @@ import (
 	"time"
 
 	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -36,20 +39,18 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	hashIn = append(hashIn, []byte(nonce)...)
 
 	a, err := hashFn(hashIn)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 
 	a.Mod(a, challenge.Difficulty)
 	if !a.IsUint64() || a.Uint64() != 0 {
-		t.Fatalf("nonce: %s remainder: %s\n", string(hashIn[52:]), a.Text(10))
+		testutil.Ok(t, errors.Errorf("nonce: %s remainder: %s\n", string(hashIn[52:]), a.Text(10)))
 	}
 }
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	cfg := config.GetConfig()
-
-	group := NewMiningGroup([]Hasher{impl})
+	exitCh := make(chan os.Signal)
+	group := NewMiningGroup([]Hasher{impl}, exitCh)
 
 	timeout := time.Millisecond * 200
 
@@ -67,11 +68,13 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 		select {
 		case result := <-output:
 			if result == nil {
-				t.Fatalf("nil result for challenge %d", v)
+				testutil.Ok(t, errors.Errorf("nil result for challenge %v", v))
+			} else {
+				//Fixing a possible nil pointer deference... not sure if that's the appropriate way to do it
+				CheckSolution(t, challenge, result.Nonce)
 			}
-			CheckSolution(t, challenge, result.Nonce)
 		case <-time.After(timeout):
-			t.Fatalf("Expected result for challenge in less than %s", timeout.String())
+			testutil.Ok(t, errors.Errorf("Expected result for challenge in less than %s", timeout.String()))
 		}
 	}
 	// Tell the mining group to close.
@@ -81,10 +84,10 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	select {
 	case result := <-output:
 		if result != nil {
-			t.Fatalf("expected nil result when closing mining group")
+			testutil.Ok(t, errors.New("expected nil result when closing mining group"))
 		}
 	case <-time.After(timeout):
-		t.Fatalf("Expected mining group to close in less than %s", timeout.String())
+		testutil.Ok(t, errors.Errorf("Expected mining group to close in less than %s", timeout.String()))
 	}
 }
 
@@ -96,19 +99,14 @@ func TestCpuMiner(t *testing.T) {
 func TestGpuMiner(t *testing.T) {
 	config.OpenTestConfig(t)
 	gpus, err := GetOpenCLGPUs()
-	if err != nil {
-		fmt.Println(gpus)
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 	if len(gpus) == 0 {
 		t.Skip("no mining gpus")
 	}
 	cfg := config.GetConfig()
 
 	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()], false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, err)
 	DoCompleteMiningLoop(t, impl, 1000)
 }
 
@@ -125,18 +123,16 @@ func TestMulti(t *testing.T) {
 	gpus, err := GetOpenCLGPUs()
 	if err != nil {
 		fmt.Println(gpus)
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	for _, gpu := range gpus {
 		impl, err := NewGpuMiner(gpu, cfg.GPUConfig[gpu.Name()], false)
-		if err != nil {
-			t.Fatal(err)
-		}
+		testutil.Ok(t, err)
 		hashers = append(hashers, impl)
 	}
 	fmt.Printf("Using %d hashers\n", len(hashers))
-
-	group := NewMiningGroup(hashers)
+	exitCh := make(chan os.Signal)
+	group := NewMiningGroup(hashers, exitCh)
 	input := make(chan *Work)
 	output := make(chan *Result)
 	go group.Mine(input, output)
@@ -150,7 +146,7 @@ func TestMulti(t *testing.T) {
 	case <-output:
 		group.PrintHashRateSummary()
 	case <-time.After(timeout):
-		t.Fatalf("mining group didn't quit before %s", timeout.String())
+		testutil.Ok(t, errors.Errorf("mining group didn't quit before %s", timeout.String()))
 	}
 }
 
@@ -171,11 +167,9 @@ func TestHashFunction(t *testing.T) {
 		_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
 		bytes := decodeHex(_string)
 		result, err := hashFn(bytes)
-		if err != nil {
-			t.Fatal(err)
-		}
+		testutil.Ok(t, err)
 		if result.Text(16) != v {
-			t.Fatalf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16))
+			testutil.Ok(t, errors.Errorf("wrong hash:\nexpected:\n%s\ngot:\n%s\n", v, result.Text(16)))
 		}
 	}
 }
@@ -188,9 +182,7 @@ func BenchmarkHashFunction(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, err := hashFn(bytes)
-		if err != nil {
-			b.Fatal(err)
-		}
+		testutil.Ok(b, err)
 	}
 }
 

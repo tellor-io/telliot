@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/tellor-io/TellorMiner/pkg/tcontext"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -21,17 +22,14 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	t.Cleanup(cleanup)
 
 	if _, err := BuildIndexTrackers(); err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	ethUSDPairs := indexes["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: logger}
-	err := disputeChecker.Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, disputeChecker.Exec(ctx))
 }
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
@@ -42,38 +40,30 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	logger := logSetup("debug")
 	disputeChecker := NewDisputeChecker(logger, 500)
 	if _, err := BuildIndexTrackers(); err != nil {
-		t.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	ethUSDPairs := indexes["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-	err := disputeChecker.Exec(ctx)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Ok(t, disputeChecker.Exec(ctx))
 
 	files, err := filepath.Glob("possible-dispute-*.txt")
 	if err != nil {
 		panic(err)
 	}
-	if len(files) != 1 {
-		t.Fatal("expected a possible-dispute file")
-	}
-	for _, f := range files {
-		if err := os.Remove(f); err != nil {
-			t.Fatal(err)
+	testutil.Equals(t, len(files), 1, "expected a possible-dispute file")
 
-		}
+	for _, f := range files {
+		testutil.Ok(t, os.Remove(f))
 	}
 }
 
 func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
 	for _, psr := range psrs {
 		err := psr.Exec(ctx)
-		if err != nil {
-			t.Fatalf("failed to execute psr: %v", err)
-		}
+
+		testutil.Ok(t, err)
+
 	}
 }

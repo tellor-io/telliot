@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -29,13 +30,13 @@ var resultFile = filepath.Join("pkg", "pow", "kernelSource.go")
 func compileSources() (string, error) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
-		return "", fmt.Errorf("couldn't find opencl source directory")
+		return "", errors.Errorf("couldn't find opencl source directory")
 	}
 
 	dir := filepath.Join(filepath.Dir(filename), sourceDir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return "", fmt.Errorf("couldn't read directory %s: %s", dir, err.Error())
+		return "", errors.Wrapf(err, "read directory: %s", dir)
 	}
 
 	contents := make(map[string][]byte)
@@ -43,20 +44,20 @@ func compileSources() (string, error) {
 		filepath := filepath.Join(dir, file.Name())
 		data, err := ioutil.ReadFile(filepath)
 		if err != nil {
-			return "", fmt.Errorf("couldn't read file %s: %s", filepath, err.Error())
+			return "", errors.Wrapf(err, "read file: %s", filepath)
 		}
 		contents[file.Name()] = data
 	}
 	var out strings.Builder
 	if _, ok := contents[headerFile]; !ok {
-		return "", fmt.Errorf("missing %s file", headerFile)
+		return "", errors.Errorf("missing header: %s file", headerFile)
 	}
 	out.Write(contents[headerFile])
 	delete(contents, headerFile)
 
 	mainSrc, ok := contents[kernelFile]
 	if !ok {
-		return "", fmt.Errorf("missing %s file", kernelFile)
+		return "", errors.Errorf("missing kernel file:%s", kernelFile)
 	}
 	delete(contents, kernelFile)
 

@@ -30,7 +30,7 @@ func prepareTransfer(ctx context.Context, client rpc.ETHClient, instance *getter
 	}
 	fmt.Println("My balance", util.FormatERC20Balance(balance))
 	if balance.Cmp(amt) < 0 {
-		return nil, fmt.Errorf("insufficient balance (%s TRB), requested %s TRB",
+		return nil, errors.Errorf("insufficient balance TRB actual: %v, requested: %v",
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(amt))
 	}

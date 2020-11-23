@@ -42,12 +42,12 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	indexPath := filepath.Join(cfg.ConfigFolder, "indexes.json")
 	byteValue, err := ioutil.ReadFile(indexPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read index file @ %s: %v", indexPath, err)
+		return nil, errors.Wrapf(err, "read index file @ %s", indexPath)
 	}
 	var baseIndexes map[string][]string
 	err = json.Unmarshal(byteValue, &baseIndexes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse index file: %v", err)
+		return nil, errors.Wrap(err, "parse index file")
 	}
 
 	indexes = make(map[string][]*IndexTracker)
@@ -80,7 +80,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 					source = &JSONapi{&FetchRequest{queryURL: pathStr, timeout: cfg.FetchTimeout.Duration}}
 					u, err := url.Parse(pathStr)
 					if err != nil {
-						return nil, fmt.Errorf("invalid API URL: %s: %v", pathStr, err)
+						return nil, errors.Wrapf(err, "invalid API URL: %s", pathStr)
 					}
 					name = u.Host
 				} else {
@@ -126,7 +126,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	//start the PSR system that will feed from these indexes
 	err = InitPSRs()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize PSRs: %v", err)
+		return nil, errors.Wrap(err, "failed to initialize PSRs")
 	}
 
 	return trackers, nil

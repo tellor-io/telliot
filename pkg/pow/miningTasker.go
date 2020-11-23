@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math"
 	"math/big"
 	"math/rand"
@@ -78,10 +77,10 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
 		mt.log.Error("Could not get data from data proxy, cannot continue at all")
-		log.Fatal(err)
+		return nil, false
 	}
 
-	mt.log.Debug("Received data: %v", m)
+	mt.log.Debug("Received data:%v", m)
 
 	if mt.checkDispute(m[dispKey]) == statusWaitNext {
 		return nil, false
@@ -136,7 +135,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
 		m2, err := mt.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			mt.log.Info("Could not retrieve pricing data for current request id: %v", err)
+			mt.log.Info("Could not retrieve pricing data for current request id:%v", err)
 			//return nil, false
 		}
 		val := m2[valKey]
@@ -186,8 +185,7 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 
 	if disputed.Cmp(big.NewInt(1)) != 0 {
 		mt.log.Error("miner is in dispute, cannot continue")
-		log.Fatal("miner in dispute")
-		return statusFailure // Never gets here but just for completeness.
+		return statusFailure
 	}
 	mt.log.Debug("miner is not in dispute, continuing")
 	return statusSuccess
@@ -200,7 +198,7 @@ func (mt *MiningTasker) getInt(data []byte) (*big.Int, int) {
 
 	val, err := hexutil.DecodeBig(string(data))
 	if err != nil {
-		mt.log.Error("decoding int: %v", err)
+		mt.log.Error("decoding int:%v", err)
 		return nil, statusFailure
 	}
 	return val, statusSuccess

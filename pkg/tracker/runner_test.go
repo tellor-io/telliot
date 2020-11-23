@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"fmt"
-	"log"
 	"math/big"
 	"testing"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/tellor-io/TellorMiner/pkg/db"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/tcontext"
+	"github.com/tellor-io/TellorMiner/pkg/testutil"
 	"github.com/tellor-io/TellorMiner/pkg/util"
 )
 
@@ -54,7 +54,7 @@ func TestRunner(t *testing.T) {
 
 	runner.Ready()
 	if err := runner.Start(ctx, exitCh); err != nil {
-		log.Fatal(err)
+		testutil.Ok(t, err)
 	}
 	fmt.Println("runner done")
 	time.Sleep(2 * time.Second)

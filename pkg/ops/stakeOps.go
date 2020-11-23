@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
 	"github.com/tellor-io/TellorMiner/pkg/rpc"
 	"github.com/tellor-io/TellorMiner/pkg/util"
@@ -50,12 +51,12 @@ func Deposit(ctx context.Context, logger log.Logger, client rpc.ETHClient, contr
 
 	balance, err := contract.Getter.BalanceOf(nil, account.Address)
 	if err != nil {
-		return fmt.Errorf("couldn't get TRB balance: %s", err.Error())
+		return errors.Wrap(err, "get TRB balance")
 	}
 
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
-		return fmt.Errorf("failed to get stake status: %s", err.Error())
+		return errors.Wrap(err, "get stake status")
 	}
 
 	if status.Uint64() != 0 && status.Uint64() != 2 {
@@ -68,23 +69,23 @@ func Deposit(ctx context.Context, logger log.Logger, client rpc.ETHClient, contr
 	copy(dat32[:], dat)
 	stakeAmt, err := contract.Getter.GetUintVar(nil, dat32)
 	if err != nil {
-		return fmt.Errorf("fetching stake amount failed: %s", err.Error())
+		return errors.Wrap(err, "fetching stake amount")
 	}
 
 	if balance.Cmp(stakeAmt) < 0 {
-		return fmt.Errorf("insufficient balance (%s), mining stake requires %s TRB",
+		return errors.Errorf("insufficient mining stake TRB balance actual: %v, required:%v",
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(stakeAmt))
 	}
 
 	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
-		return fmt.Errorf("couldn't prepare ethereum transaction: %s", err.Error())
+		return errors.Wrap(err, "prepare ethereum transaction")
 	}
 
 	tx, err := contract.Caller.DepositStake(auth)
 	if err != nil {
-		return fmt.Errorf("contract failed: %s", err.Error())
+		return errors.Wrap(err, "contract failed")
 	}
 	level.Info(logger).Log("msg", "stake depositied", "txHash", tx.Hash().Hex())
 	return nil
@@ -93,7 +94,7 @@ func Deposit(ctx context.Context, logger log.Logger, client rpc.ETHClient, contr
 func ShowStatus(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
-		return fmt.Errorf("failed to get stake status: %s", err.Error())
+		return errors.Wrap(err, "get stake status")
 	}
 
 	printStakeStatus(status, startTime)
@@ -104,7 +105,7 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger, client rpc.E
 
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
-		return fmt.Errorf("failed to get stake status: %s", err.Error())
+		return errors.Wrap(err, "get stake status")
 	}
 	if status.Uint64() != 1 {
 		printStakeStatus(status, startTime)
@@ -113,12 +114,12 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger, client rpc.E
 
 	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
-		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
+		return errors.Wrap(err, "prepare ethereum transaction")
 	}
 
 	tx, err := contract.Caller.RequestStakingWithdraw(auth)
 	if err != nil {
-		return fmt.Errorf("contract failed: %s", err.Error())
+		return errors.Wrap(err, "contract")
 	}
 
 	level.Info(logger).Log("msg", "withdrawal request sent", "txHash", tx.Hash().Hex())
@@ -128,7 +129,7 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger, client rpc.E
 func WithdrawStake(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
-		return fmt.Errorf("failed to get stake status: %s", err.Error())
+		return errors.Wrap(err, "get stake status")
 	}
 	if status.Uint64() != 2 {
 
@@ -139,12 +140,12 @@ func WithdrawStake(ctx context.Context, logger log.Logger, client rpc.ETHClient,
 
 	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
-		return fmt.Errorf("failed to prepare ethereum transaction: %s", err.Error())
+		return errors.Wrap(err, "prepare ethereum transaction")
 	}
 
 	tx, err := contract.Caller.WithdrawStake(auth)
 	if err != nil {
-		return fmt.Errorf("contract failed: %s", err.Error())
+		return errors.Wrap(err, "contract")
 	}
 	level.Info(logger).Log("msg", "withdrew stake", "txHash", tx.Hash().Hex())
 	return nil
