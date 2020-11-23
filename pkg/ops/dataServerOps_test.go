@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tellor-io/TellorMiner/pkg/tcontext"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/tcontext"
+	"github.com/tellor-io/telliot/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestDataServerOps(t *testing.T) {

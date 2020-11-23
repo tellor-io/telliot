@@ -9,9 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/pkg/errors"
-
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 func PrepareEthTransaction(ctx context.Context, client rpc.ETHClient, account tellorCommon.Account) (*bind.TransactOpts, error) {

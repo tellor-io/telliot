@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 func OpenTestDB(t *testing.T) (DB, func()) {

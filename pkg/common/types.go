@@ -7,8 +7,8 @@ import (
 	"crypto/ecdsa"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 )
 
 type Contract struct {

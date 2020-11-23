@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 const API = "json(https://api.gdax.com/products/ETH-USD/ticker).price"

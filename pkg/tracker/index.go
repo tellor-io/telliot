@@ -17,9 +17,9 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/apiOracle"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var clck clock.Clock

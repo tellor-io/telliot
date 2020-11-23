@@ -5,7 +5,7 @@ package db
 
 import (
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 type localProxy struct {

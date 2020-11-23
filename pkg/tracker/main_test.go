@@ -9,9 +9,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/apiOracle"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // TODO: Set threshold low and test the  "out of range" failure.

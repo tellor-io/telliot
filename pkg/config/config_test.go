@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 func createEnvFile(t *testing.T) func() {

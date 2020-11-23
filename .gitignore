@@ -5,5 +5,5 @@ pkg/pow/kernelSource.go
 
 configs/.env
 
-/tellor
+/telliot
 myconfig.json

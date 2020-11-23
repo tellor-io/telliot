@@ -9,9 +9,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var abiCodecLog = util.NewLogger("rpc", "ABICodec")

@@ -11,9 +11,9 @@
   </a>
 </p>
 
-# Tellor Miner
+# Telloit
 
-This is the workhorse of the Miner system as it takes on solving the PoW challenge.
+This is the main cli of the project. One if its commands is to run in mining mode(solve a POW challenge) and submit values to the tellor oracle contract.
 It's built on Go and utilizes a split structure.  The database piece is a LevelDB that keeps track of all variables (challenges, difficulty, values to submit, etc.) and the miner simply solves the PoW challenge.  This enables parties to split the pieces for optimization.
 
 The Tellor system is a way to push data on-chain.  What pieces of data are pushed are specificied in the `configs/indexes.json`. Note that the data corresponds to a specific API. The tellor mining system is set up to pull api data to generate these values to submit on-chain once a correct nonce is mined. These specific apis are just suggestions.  The system is not guarunteed to work for everyone.  It is up to the consnesus of the Tellor token holders to determine what a correct value is. As an example, request ID 4 is BTC/USD.  If the api's all go down, it is the responsibility of the miner to still submit a valid BTC/USD price. If they do not, they risk being disputed and slashed. For these reasons, please contribute openly to the official Tellor miner (or an open source variant), as consensus here is key.  If you're miner gets a different value than the majority of the of the other miners, you risk being punished.
@@ -26,7 +26,7 @@ A list of all PSR's(pre specified requests) and the expected data can be found [
 
 
 ## Instructions for deployment
- - [Tellor Miner Instructions](https://app.gitbook.com/@tellor-2/s/tellor-docs/miner-documentation)
+ - [Telliot Instructions](https://app.gitbook.com/@tellor-2/s/tellor-docs/miner-documentation)
 
 ## Contributing and building from source
 Contributions are very welcome!<br/>
