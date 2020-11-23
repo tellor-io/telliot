@@ -20,7 +20,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
@@ -31,22 +30,19 @@ import (
  * This file handles all operations related to disputes
  */
 
-func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx context.Context) error {
+func Dispute(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, requestId *big.Int, timestamp *big.Int, minerIndex *big.Int) error {
 
 	if !minerIndex.IsUint64() || minerIndex.Uint64() > 4 {
 		return errors.Errorf("miner index should be between 0 and 4 (got %s)", minerIndex.Text(10))
 	}
 
-	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-	addr := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-
-	balance, err := instance.BalanceOf(nil, addr)
+	balance, err := contract.Getter.BalanceOf(nil, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "fetch balance")
 	}
 	var asBytes32 [32]byte
 	copy(asBytes32[:], "0x8b75eb45d88e80f0e4ec77d23936268694c0e7ac2e0c9085c5c6bdfcfbc49239") // keccak256(disputeFee).
-	disputeCost, err := instance.GetUintVar(nil, asBytes32)
+	disputeCost, err := contract.Getter.GetUintVar(nil, asBytes32)
 	if err != nil {
 		return errors.Wrap(err, "get dispute cost")
 	}
@@ -57,13 +53,12 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 			util.FormatERC20Balance(disputeCost))
 	}
 
-	auth, err := PrepareEthTransaction(ctx)
+	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
 
-	instance2 := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
-	tx, err := instance2.BeginDispute(auth, requestId, timestamp, minerIndex)
+	tx, err := contract.Caller.BeginDispute(auth, requestId, timestamp, minerIndex)
 	if err != nil {
 		return errors.Wrap(err, "send dispute txn")
 	}
@@ -71,11 +66,9 @@ func Dispute(requestId *big.Int, timestamp *big.Int, minerIndex *big.Int, ctx co
 	return nil
 }
 
-func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error {
+func Vote(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, _disputeId *big.Int, _supportsDispute bool) error {
 
-	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-	addr := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-	voted, err := instanceGetter.DidVote(nil, _disputeId, addr)
+	voted, err := contract.Getter.DidVote(nil, _disputeId, contract.Address)
 	if err != nil {
 		return errors.Wrapf(err, "check if you've already voted")
 	}
@@ -84,13 +77,11 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 		return nil
 	}
 
-	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
-
-	auth, err := PrepareEthTransaction(ctx)
+	auth, err := PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
-	tx, err := instanceTellor.Vote(auth, _disputeId, _supportsDispute)
+	tx, err := contract.Caller.Vote(auth, _disputeId, _supportsDispute)
 	if err != nil {
 		return errors.Wrapf(err, "submit vote transaction")
 	}
@@ -99,24 +90,21 @@ func Vote(_disputeId *big.Int, _supportsDispute bool, ctx context.Context) error
 	return nil
 }
 
-func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tellor.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
-	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+func getNonceSubmissions(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, valueBlock *big.Int, dispute *tellor.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
 	if err != nil {
 		return nil, errors.Wrap(err, "parse abi")
 	}
-	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
 	// Just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
-	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
+	bar := bind.NewBoundContract(contract.Address, tokenAbi, nil, nil, nil)
 
-	allVals, err := instance.GetSubmissionsByTimestamp(nil, dispute.RequestId, dispute.Timestamp)
+	allVals, err := contract.Getter.GetSubmissionsByTimestamp(nil, dispute.RequestId, dispute.Timestamp)
 	if err != nil {
 		return nil, errors.Wrap(err, "get other submitted values for dispute")
 	}
 
-	allAddrs, err := instance.GetMinersByRequestIdAndTimestamp(nil, dispute.RequestId, dispute.Timestamp)
+	allAddrs, err := contract.Getter.GetMinersByRequestIdAndTimestamp(nil, dispute.RequestId, dispute.Timestamp)
 	if err != nil {
 		return nil, errors.Wrap(err, "get miner addresses for dispute")
 	}
@@ -131,7 +119,7 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 		query := ethereum.FilterQuery{
 			FromBlock: big.NewInt(low),
 			ToBlock:   big.NewInt(high),
-			Addresses: []common.Address{contractAddress},
+			Addresses: []common.Address{contract.Address},
 			Topics:    [][]common.Hash{{nonceSubmitID}},
 		}
 
@@ -173,17 +161,15 @@ func getNonceSubmissions(ctx context.Context, valueBlock *big.Int, dispute *tell
 	return timedValues, nil
 }
 
-func List(ctx context.Context, logger log.Logger) error {
+func List(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
 	cfg := config.GetConfig()
 	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorDisputeABI))
 	if err != nil {
 		return errors.Wrap(err, "parse abi")
 	}
-	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
 	// Just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi.
-	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
+	bar := bind.NewBoundContract(contract.Address, tokenAbi, nil, nil, nil)
 
 	header, err := client.HeaderByNumber(ctx, nil)
 	if err != nil {
@@ -196,7 +182,7 @@ func List(ctx context.Context, logger log.Logger) error {
 	query := ethereum.FilterQuery{
 		FromBlock: startBlock,
 		ToBlock:   nil,
-		Addresses: []common.Address{contractAddress},
+		Addresses: []common.Address{contract.Address},
 		Topics:    [][]common.Hash{{newDisputeID}},
 	}
 
@@ -204,8 +190,6 @@ func List(ctx context.Context, logger log.Logger) error {
 	if err != nil {
 		return errors.Wrap(err, "filter eth logs")
 	}
-
-	instance := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 
 	fmt.Printf("There are currently %d open disputes\n", len(logs))
 	fmt.Printf("-------------------------------------\n")
@@ -215,7 +199,7 @@ func List(ctx context.Context, logger log.Logger) error {
 		if err != nil {
 			return errors.Wrap(err, "unpack dispute event from logs")
 		}
-		_, executed, votePassed, _, reportedAddr, reportingMiner, _, uintVars, currTally, err := instance.GetAllDisputeVars(nil, dispute.DisputeId)
+		_, executed, votePassed, _, reportedAddr, reportingMiner, _, uintVars, currTally, err := contract.Getter.GetAllDisputeVars(nil, dispute.DisputeId)
 		if err != nil {
 			return errors.Wrap(err, "get dispute details")
 		}
@@ -243,7 +227,7 @@ func List(ctx context.Context, logger log.Logger) error {
 		fmt.Printf("    \n")
 		fmt.Printf("    Value disputed for requestID %d:\n", dispute.RequestId.Uint64())
 
-		allSubmitted, err := getNonceSubmissions(ctx, uintVars[5], &dispute)
+		allSubmitted, err := getNonceSubmissions(ctx, client, contract, uintVars[5], &dispute)
 		if err != nil {
 			return errors.Wrapf(err, "get the values submitted by other miners for the disputed block")
 		}
