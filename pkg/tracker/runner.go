@@ -66,7 +66,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, masterInstance)
 	}
 
-	level.Info(r.logger).Log("msg", "trackers will run", "sleepCycle", cfg.TrackerSleepCycle)
+	level.Info(r.logger).Log("msg", "starting trackers", "sleepCycle", cfg.TrackerSleepCycle)
 	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration / time.Duration(len(trackers)))
 	if ctx.Value(tellorCommon.ClientContextKey) == nil {
 		ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)

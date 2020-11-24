@@ -108,8 +108,7 @@ func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.Cont
 		s.currentChallenge.RequestIDs,
 		s.currentValues)
 	if err != nil {
-		s.log.Error("Problem submitting solution:%v", err)
-		return txn, err
+		return nil, err
 	}
 
 	return txn, err

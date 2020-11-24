@@ -5,7 +5,6 @@ package rpc
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/big"
 	"strings"
@@ -104,7 +103,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		sleepTime := backoff[tryCount%len(backoff)]
 		tryCount++
 		if time.Now().After(nextTick) {
-			c.log.Error("Problem calling ethClient: %v\n", err)
+			c.log.Error("calling ethClient: %v\n", err)
 			nextTick = time.Now().Add(errorPrintTick)
 		}
 
@@ -125,10 +124,8 @@ func (c *clientInstance) Close() {
 
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
-		//c.log.Info("Sending txn on-chain: %v\n", tx)
-		fmt.Println("TX SENT CLIENT", fmt.Sprintf("%v", tx))
-		e := c.ethClient.SendTransaction(*_ctx, tx)
-		return e
+		c.log.Info("sending txn on-chain - details:%+v", tx)
+		return c.ethClient.SendTransaction(*_ctx, tx)
 	})
 	return _err
 }

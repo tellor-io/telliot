@@ -75,8 +75,7 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 		balanceInTributes = balanceInTributes.Quo(balanceInTributes, decimals)
 	}
 
-	//numTributes, _ := balanceInTributes.Float64()
-	level.Info(b.logger).Log("msg", "tribute", "balance", balance, "balance in tributes", balanceInTributes)
+	level.Debug(b.logger).Log("msg", "tribute balance", "raw", balance, "trb", balanceInTributes)
 	if err != nil {
 		return errors.Wrap(err, "retrieving balance")
 	}
