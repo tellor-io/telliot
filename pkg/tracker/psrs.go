@@ -13,63 +13,25 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 )
 
-var switchTime, _ = time.Parse(time.RFC3339, "2020-06-26T00:00:00+00:00")
-
 const RequestID_TRB_ETH int = 43
 
 var PSRs = map[int]ValueGenerator{
-	1: &TimedSwitch{
-		before: &SingleSymbol{symbol: "ETH/USD", granularity: 1000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
-	2: &TimedSwitch{
-		before: &SingleSymbol{symbol: "BTC/USD", granularity: 1000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
-	3: &TimedSwitch{
-		before: &SingleSymbol{symbol: "BNB/USD", granularity: 1000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "BNB/USD", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
-	4: &TimedSwitch{
-		before: &SingleSymbol{symbol: "BTC/USD", granularity: 100000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
-		at:     switchTime,
-	},
+	1: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
+	2: &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAt},
+	3: &SingleSymbol{symbol: "BNB/USD", granularity: 1000000, transform: MedianAt},
+	4: &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
 	5: &SingleSymbol{symbol: "ETH/BTC", granularity: 1000000, transform: MedianAt},
 	6: &SingleSymbol{symbol: "BNB/BTC", granularity: 1000000, transform: MedianAt},
 	7: &SingleSymbol{symbol: "BNB/ETH", granularity: 1000000, transform: MedianAt},
-	8: &TimedSwitch{
-		before: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
-		at:     switchTime,
-	},
-	9: &TimedSwitch{
-		before: &SingleSymbol{symbol: "LINK/BTC", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAtEOD},
-		at:     switchTime,
-	},
+	8: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, ExpDecay)},
+	9: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAtEOD},
 	// For more details see https://docs.google.com/document/d/1RFCApk1PznMhSRVhiyFl_vBDPA4mP2n1dTmfqjvuTNw/edit
-	10: &TimedSwitch{
-		before: &SingleSymbol{symbol: "ETC/ETH", granularity: 1000000, transform: MedianAt},
-		after:  &Ampl{granularity: 1000000},
-		at:     switchTime,
-	},
+	10: &Ampl{granularity: 1000000},
 	11: &SingleSymbol{symbol: "ZEC/ETH", granularity: 1000000, transform: MedianAt},
 	12: &SingleSymbol{symbol: "TRX/ETH", granularity: 1000000, transform: MedianAt},
-	13: &TimedSwitch{
-		before: &SingleSymbol{symbol: "XRP/BTC", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "XRP/USD", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
+	13: &SingleSymbol{symbol: "XRP/USD", granularity: 1000000, transform: MedianAt},
 	14: &SingleSymbol{symbol: "XMR/ETH", granularity: 1000000, transform: MedianAt},
-	15: &TimedSwitch{
-		before: &SingleSymbol{symbol: "XLM/BTC", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "ATOM/USD", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
+	15: &SingleSymbol{symbol: "ATOM/USD", granularity: 1000000, transform: MedianAt},
 	16: &SingleSymbol{symbol: "LTC/USD", granularity: 1000000, transform: MedianAt},
 	17: &SingleSymbol{symbol: "WAVES/BTC", granularity: 1000000, transform: MedianAt},
 	18: &SingleSymbol{symbol: "REP/BTC", granularity: 1000000, transform: MedianAt},
@@ -78,25 +40,13 @@ var PSRs = map[int]ValueGenerator{
 	21: &SingleSymbol{symbol: "IOTA/USD", granularity: 1000000, transform: MedianAt},
 	22: &SingleSymbol{symbol: "ETC/USD", granularity: 1000000, transform: MedianAt},
 	23: &SingleSymbol{symbol: "ETH/PAX", granularity: 1000000, transform: MedianAt},
-	24: &TimedSwitch{
-		before: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "ETH/BTC", granularity: 1000000, transform: TimeWeightedAvg(1*time.Hour, NoDecay)},
-		at:     switchTime,
-	},
+	24: &SingleSymbol{symbol: "ETH/BTC", granularity: 1000000, transform: TimeWeightedAvg(1*time.Hour, NoDecay)},
 	25: &SingleSymbol{symbol: "USDC/USDT", granularity: 1000000, transform: MedianAt},
-	26: &TimedSwitch{
-		before: &SingleSymbol{symbol: "RCN/BTC", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "XTZ/USD", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
+	26: &SingleSymbol{symbol: "XTZ/USD", granularity: 1000000, transform: MedianAt},
 	27: &SingleSymbol{symbol: "LINK/USD", granularity: 1000000, transform: MedianAt},
 	28: &SingleSymbol{symbol: "ZRX/BNB", granularity: 1000000, transform: MedianAt},
 	29: &SingleSymbol{symbol: "ZEC/USD", granularity: 1000000, transform: MedianAt},
-	30: &TimedSwitch{
-		before: &SingleSymbol{symbol: "DASH/BNB", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "XAU/USD", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
+	30: &SingleSymbol{symbol: "XAU/USD", granularity: 1000000, transform: MedianAt},
 	31: &SingleSymbol{symbol: "MATIC/USD", granularity: 1000000, transform: MedianAt},
 	32: &SingleSymbol{symbol: "BAT/USD", granularity: 1000000, transform: MedianAt},
 	33: &SingleSymbol{symbol: "ALGO/USD", granularity: 1000000, transform: MedianAt},
@@ -108,47 +58,15 @@ var PSRs = map[int]ValueGenerator{
 	39: &SingleSymbol{symbol: "DAI/USD", granularity: 1000000, transform: MedianAt},
 	40: &SingleSymbol{symbol: "STEEM/BTC", granularity: 1000000, transform: MedianAt},
 	// It is three month average for US PCE (monthly levels): https://www.bea.gov/data/personal-consumption-expenditures-price-index-excluding-food-and-energy
-	41: &TimedSwitch{
-		before: &SingleSymbol{symbol: "LINK/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "USPCE", granularity: 1000, transform: ManualEntry},
-		at:     switchTime,
-	},
-	42: &TimedSwitch{
-		before: &SingleSymbol{symbol: "WAN/BTC", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAtEOD},
-		at:     switchTime,
-	},
-	RequestID_TRB_ETH: &TimedSwitch{
-		before: &SingleSymbol{symbol: "GNT/ETH", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "TRB/ETH", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
-	44: &TimedSwitch{
-		before: &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: TimeWeightedAvg(1*time.Hour, NoDecay)},
-		at:     switchTime,
-	},
-	45: &TimedSwitch{
-		before: &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "TRB/USD", granularity: 1000000, transform: MedianAtEOD},
-		at:     switchTime,
-	},
-	46: &TimedSwitch{
-		before: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: TimeWeightedAvg(1*time.Hour, NoDecay)},
-		at:     switchTime,
-	},
-	47: &TimedSwitch{
-		before: &SingleSymbol{symbol: "LTC/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "BSV/USD", granularity: 1000000, transform: MedianAt},
-		at:     switchTime,
-	},
+	41: &SingleSymbol{symbol: "USPCE", granularity: 1000, transform: ManualEntry},
+	42: &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: MedianAtEOD},
+	RequestID_TRB_ETH: &SingleSymbol{symbol: "TRB/ETH", granularity: 1000000, transform: MedianAt},
+	44: &SingleSymbol{symbol: "BTC/USD", granularity: 1000000, transform: TimeWeightedAvg(1*time.Hour, NoDecay)},
+	45: &SingleSymbol{symbol: "TRB/USD", granularity: 1000000, transform: MedianAtEOD},
+	46: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: TimeWeightedAvg(1*time.Hour, NoDecay)},
+	47: &SingleSymbol{symbol: "BSV/USD", granularity: 1000000, transform: MedianAt},
 	48: &SingleSymbol{symbol: "MAKER/USD", granularity: 1000000, transform: MedianAt},
-	49: &TimedSwitch{
-		before: &SingleSymbol{symbol: "EOS/USD", granularity: 1000000, transform: MedianAt},
-		after:  &SingleSymbol{symbol: "BCH/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, NoDecay)},
-		at:     switchTime,
-	},
+	49: &SingleSymbol{symbol: "BCH/USD", granularity: 1000000, transform: TimeWeightedAvg(24*time.Hour, NoDecay)},
 	50: &SingleSymbol{symbol: "TRB/USD", granularity: 1000000, transform: MedianAt},
 	51: &SingleSymbol{symbol: "XMR/USD", granularity: 1000000, transform: MedianAt},
 	52: &SingleSymbol{symbol: "XFT/USD", granularity: 1000000, transform: MedianAt},
