@@ -67,10 +67,7 @@ type Config struct {
 	ServerHost                   string                `json:"serverHost"`
 	ServerPort                   uint                  `json:"serverPort"`
 	FetchTimeout                 Duration              `json:"fetchTimeout"`
-	RequestData                  uint                  `json:"requestData"`
 	MinConfidence                float64               `json:"minConfidence"`
-	RequestDataInterval          Duration              `json:"requestDataInterval"`
-	RequestTips                  int64                 `json:"requestTips"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
 	GasMultiplier                float32               `json:"gasMultiplier"`
 	GasMax                       uint                  `json:"gasMax"`
@@ -106,7 +103,6 @@ var config = Config{
 	DisputeThreshold:             0.01,
 	Heartbeat:                    Duration{15 * time.Second},
 	MiningInterruptCheckInterval: Duration{15 * time.Second},
-	RequestDataInterval:          Duration{30 * time.Second},
 	FetchTimeout:                 Duration{30 * time.Second},
 	TrackerSleepCycle:            Duration{30 * time.Second},
 	DisputeTimeDelta:             Duration{5 * time.Minute},

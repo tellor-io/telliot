@@ -53,7 +53,6 @@ type MiningMgr struct {
 	tasker          WorkSource
 	solHandler      SolutionSink
 	solutionPending *pow.Result
-	dataRequester   *DataRequester
 	database        db.DataServerProxy
 	contractGetter  *getter.TellorGetters
 	cfg             *config.Config
@@ -109,10 +108,6 @@ func CreateMiningManager(
 	} else {
 		mng.tasker = pow.CreateTasker(cfg, database)
 		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, database)
-		if cfg.RequestData > 0 {
-			mng.log.Info("dataRequester created")
-			mng.dataRequester = CreateDataRequester(exitCh, submitter, cfg.RequestDataInterval.Duration, database)
-		}
 	}
 	return mng, nil
 }
@@ -121,12 +116,6 @@ func CreateMiningManager(
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.Running = true
 	ticker := time.NewTicker(mgr.cfg.MiningInterruptCheckInterval.Duration)
-
-	if mgr.cfg.RequestData > 0 {
-		if err := mgr.dataRequester.Start(ctx); err != nil {
-			mgr.log.Error("error starting the data requester error:%v", err)
-		}
-	}
 
 	// Start the mining group.
 	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)
