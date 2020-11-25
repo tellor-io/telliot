@@ -44,8 +44,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		retryFetchLog.Warn("Problem fetching data from: %s. %v", req.queryURL, err)
 		now := clck.Now()
 		if now.After(expiration) {
-			retryFetchLog.Error("Timeout expired, not retrying query and passing error up")
-			return nil, err
+			return nil, errors.Wrap(err, "retry timeout expired, last error is wrapped")
 		}
 		//FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)

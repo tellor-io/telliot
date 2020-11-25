@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
@@ -63,6 +64,7 @@ type MiningMgr struct {
 
 // CreateMiningManager is the MiningMgr contructor.
 func CreateMiningManager(
+	logger log.Logger,
 	exitCh chan os.Signal,
 	cfg *config.Config,
 	database db.DataServerProxy,
@@ -83,10 +85,10 @@ func CreateMiningManager(
 		return nil, errors.Wrap(err, "getting addresses")
 	}
 
-	submitter := NewSubmitter()
+	submitter := NewSubmitter(logger)
 	mng := &MiningMgr{
 		exitCh:          exitCh,
-		log:             util.NewLogger("ops", "MiningMgr"),
+		log:             util.NewLogger("ops", "miningMgr"),
 		Running:         false,
 		group:           group,
 		tasker:          nil,

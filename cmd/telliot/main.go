@@ -304,7 +304,7 @@ func mineCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) 
 			}
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
-			miner, err := ops.CreateMiningManager(ch, cfg, DB)
+			miner, err := ops.CreateMiningManager(logger, ch, cfg, DB)
 			if err != nil {
 				ExitOnError(err, "creating miner")
 			}

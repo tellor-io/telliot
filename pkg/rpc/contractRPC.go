@@ -6,7 +6,6 @@ package rpc
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -16,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
@@ -45,7 +46,7 @@ func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
 	return c.TellorGetters.DidMine(nil, challenge, c.fromAddress)
 }
 
-func SubmitContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
+func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
 
 	cfg := config.GetConfig()
 	client := ctx.Value(tellorCommon.ClientContextKey).(ETHClient)
@@ -76,7 +77,7 @@ func SubmitContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName st
 	}
 	gasPrice := getInt(m[db.GasKey])
 	if gasPrice.Cmp(big.NewInt(0)) == 0 {
-		fmt.Println("Missing gas price from DB, falling back to client suggested gas price")
+		level.Warn(logger).Log("msg", "Missing gas price from DB, falling back to client suggested gas price")
 		gasPrice, err = client.SuggestGasPrice(context.Background())
 		if err != nil {
 			return nil, errors.Wrap(err, "determine gas price to submit txn")
@@ -84,7 +85,7 @@ func SubmitContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName st
 	}
 	mul := cfg.GasMultiplier
 	if mul > 0 {
-		fmt.Println("using gas multiplier : ", mul)
+		level.Info(logger).Log("msg", "settings gas price multiplier", "value", mul)
 		gasPrice = gasPrice.Mul(gasPrice, big.NewInt(int64(mul)))
 	}
 
@@ -100,7 +101,7 @@ func SubmitContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName st
 		cost = cost.Mul(gasPrice, big.NewInt(200000))
 		if balance.Cmp(cost) < 0 {
 			// FIXME: notify someone that we're out of funds!
-			finalError = errors.Errorf("Insufficient funds to send transaction: %v < %v", balance, cost)
+			finalError = errors.Errorf("insufficient funds to send transaction: %v < %v", balance, cost)
 			continue
 		}
 
@@ -129,11 +130,11 @@ func SubmitContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName st
 		}
 
 		if auth.GasPrice.Cmp(maxGasPrice) > 0 {
-			fmt.Printf("%s Gas Prices Too high! Attempted gas price: %v is higher than max: %v.  Will default to max\n", ctxName, auth.GasPrice, maxGasPrice)
+			level.Info(logger).Log("msg", "gas price too high, will default to the max price", "current", auth.GasPrice, "defaultMax", maxGasPrice)
 			auth.GasPrice = maxGasPrice
 		}
 
-		fmt.Println("Using gas price", gasPrice)
+		level.Info(logger).Log("msg", "gas price", "value", gasPrice)
 		// Create a wrapper to callback the actual txn generator fn.
 		instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
 		instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
@@ -148,8 +149,7 @@ func SubmitContractTxn(ctx context.Context, proxy db.DataServerProxy, ctxName st
 				finalError = err
 				continue
 			} else {
-				fmt.Println("Unspecified Request Data  Error ", err)
-				finalError = err
+				finalError = errors.Wrap(err, "callback")
 				continue
 			}
 		}

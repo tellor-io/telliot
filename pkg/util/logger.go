@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -169,6 +170,6 @@ func SetupLogger() func(string) log.Logger {
 
 		logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 		logger = level.NewFilter(logger, lvl)
-		return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+		return log.With(logger, "ts", log.TimestampFormat(func() time.Time { return time.Now().UTC() }, "Jan 02 15:04:05.99 -0700"), "caller", log.DefaultCaller)
 	}
 }
