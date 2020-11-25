@@ -53,7 +53,6 @@ type MiningMgr struct {
 	tasker          WorkSource
 	solHandler      SolutionSink
 	solutionPending *pow.Result
-	dataRequester   *DataRequester
 	database        db.DataServerProxy
 	contractGetter  *getter.TellorGetters
 	cfg             *config.Config
