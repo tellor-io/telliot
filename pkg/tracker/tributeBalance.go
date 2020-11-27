@@ -12,11 +12,11 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 type TributeTracker struct {
@@ -75,8 +75,7 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 		balanceInTributes = balanceInTributes.Quo(balanceInTributes, decimals)
 	}
 
-	//numTributes, _ := balanceInTributes.Float64()
-	level.Info(b.logger).Log("msg", "tribute", "balance", balance, "balance in tributes", balanceInTributes)
+	level.Debug(b.logger).Log("msg", "tribute balance", "raw", balance, "trb", balanceInTributes)
 	if err != nil {
 		return errors.Wrap(err, "retrieving balance")
 	}

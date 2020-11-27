@@ -67,10 +67,7 @@ type Config struct {
 	ServerHost                   string                `json:"serverHost"`
 	ServerPort                   uint                  `json:"serverPort"`
 	FetchTimeout                 Duration              `json:"fetchTimeout"`
-	RequestData                  uint                  `json:"requestData"`
 	MinConfidence                float64               `json:"minConfidence"`
-	RequestDataInterval          Duration              `json:"requestDataInterval"`
-	RequestTips                  int64                 `json:"requestTips"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
 	GasMultiplier                float32               `json:"gasMultiplier"`
 	GasMax                       uint                  `json:"gasMax"`
@@ -106,7 +103,6 @@ var config = Config{
 	DisputeThreshold:             0.01,
 	Heartbeat:                    Duration{15 * time.Second},
 	MiningInterruptCheckInterval: Duration{15 * time.Second},
-	RequestDataInterval:          Duration{30 * time.Second},
 	FetchTimeout:                 Duration{30 * time.Second},
 	TrackerSleepCycle:            Duration{30 * time.Second},
 	DisputeTimeDelta:             Duration{5 * time.Minute},
@@ -132,7 +128,7 @@ const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 func ParseConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return errors.Errorf("failed to open config file %s: %v", path, err)
+		return errors.Wrapf(err, "open config file:%v", path)
 	}
 
 	return ParseConfigBytes(data)
@@ -141,7 +137,7 @@ func ParseConfig(path string) error {
 func ParseConfigBytes(data []byte) error {
 	err := json.Unmarshal(data, &config)
 	if err != nil {
-		return errors.Errorf("failed to parse json: %s", err.Error())
+		return errors.Wrap(err, "parse config json")
 	}
 	// Check if the env is already set, only try loading .env if its not there.
 	if config.PrivateKey == "" {
@@ -152,7 +148,7 @@ func ParseConfigBytes(data []byte) error {
 
 		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 		if config.PrivateKey == "" {
-			return errors.Errorf("missing ethereum wallet private key environment variable '%s'", PrivateKeyEnvName)
+			return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
 		}
 	}
 
@@ -169,7 +165,7 @@ func ParseConfigBytes(data []byte) error {
 
 	err = validateConfig(&config)
 	if err != nil {
-		return errors.Errorf("validation failed: %s", err)
+		return errors.Wrap(err, "config validation")
 	}
 	return nil
 }
@@ -177,7 +173,7 @@ func ParseConfigBytes(data []byte) error {
 func validateConfig(cfg *Config) error {
 	b, err := hex.DecodeString(cfg.PublicAddress)
 	if err != nil || len(b) != 20 {
-		return errors.Errorf("expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
+		return errors.Wrapf(err, "expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
 	if cfg.EnablePoolWorker {
 		if len(cfg.Worker) == 0 {
@@ -189,14 +185,14 @@ func validateConfig(cfg *Config) error {
 	} else {
 		b, err = hex.DecodeString(cfg.PrivateKey)
 		if err != nil || len(b) != 32 {
-			return errors.Errorf("expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
+			return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
 		}
 		if len(cfg.ContractAddress) != 42 {
 			return errors.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 		}
 		b, err = hex.DecodeString(cfg.ContractAddress[2:])
 		if err != nil || len(b) != 20 {
-			return errors.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
+			return errors.Wrapf(err, "expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
 		}
 
 		if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
@@ -209,13 +205,13 @@ func validateConfig(cfg *Config) error {
 			continue
 		}
 		if gpuConfig.Count == 0 {
-			return errors.Errorf("gpu '%s' requires 'count' > 0", name)
+			return errors.Errorf("requires config  'count' > 0 on gpu '%s'", name)
 		}
 		if gpuConfig.GroupSize == 0 {
-			return errors.Errorf("gpu '%s' requires 'groupSize' > 0", name)
+			return errors.Errorf("requires config 'groupSize' > 0 on gpu '%s'", name)
 		}
 		if gpuConfig.Groups == 0 {
-			return errors.Errorf("gpu '%s' requires 'groups' > 0", name)
+			return errors.Errorf("requires config 'groups' > 0 on gpu '%s'", name)
 		}
 	}
 

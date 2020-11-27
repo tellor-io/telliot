@@ -12,10 +12,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/db"
+	"github.com/tellor-io/telliot/pkg/apiOracle"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
 )
 
 // IndexProcessor consolidates the recorded API values to a single value.
@@ -41,7 +41,7 @@ func InitPSRs() error {
 		for symbol := range reqs {
 			_, ok := indexes[symbol]
 			if !ok {
-				return errors.Errorf("PSR %d requires non-existent symbol %s", requestID, symbol)
+				return errors.Errorf("requires non-existent symbol: %s on PSR: %d", symbol, requestID)
 			}
 		}
 	}

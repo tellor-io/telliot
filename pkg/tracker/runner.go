@@ -11,11 +11,11 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 // Runner will execute all configured trackers.
@@ -41,7 +41,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 			level.Info(r.logger).Log("msg", "starting tracker", "name", name)
 			t, err := createTracker(name, r.logger)
 			if err != nil {
-				return errors.Errorf("problem creating tracker. Name: %s, err: %s", name, err)
+				return errors.Wrapf(err, "creating tracker. Name: %s", name)
 			}
 			trackers = append(trackers, t...)
 		}
@@ -61,12 +61,12 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		masterInstance, err = tellor.NewTellor(contractAddress, r.client)
 		if err != nil {
-			return errors.Errorf("Problem creating tellor master instance: %s", err)
+			return errors.Wrap(err, "creating tellor master instance")
 		}
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, masterInstance)
 	}
 
-	level.Info(r.logger).Log("msg", "trackers will run", "sleepCycle", cfg.TrackerSleepCycle)
+	level.Info(r.logger).Log("msg", "starting trackers", "sleepCycle", cfg.TrackerSleepCycle)
 	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration / time.Duration(len(trackers)))
 	if ctx.Value(tellorCommon.ClientContextKey) == nil {
 		ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)

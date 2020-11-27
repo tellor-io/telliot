@@ -9,9 +9,9 @@ This document explain the process of contributing to the project.
 ## Feedback / Issues
 If you encounter any issue or you have an idea to improve, please:
 
-* Search through Google and [existing open and closed GitHub Issues](https://github.com/tellor-io/TellorMiner/issues) for the
+* Search through Google and [existing open and closed GitHub Issues](https://github.com/tellor-io/telliot/issues) for the
 answer first. If you find relevant topic, please comment on the issue.
-* If not found, please add an issue to [GitHub issues](https://github.com/tellor-io/TellorMiner/issues). Please provide
+* If not found, please add an issue to [GitHub issues](https://github.com/tellor-io/telliot/issues). Please provide
 all relevant information as template suggest.
 * If you have a quick question you might want to also ask on our [Discord](https://discord.gg/n7drGjh).
 We are recommending, using GitHub issues for issues and feedback, because GitHub issues are track-able.
@@ -32,15 +32,15 @@ The following section explains various suggestions and procedures to note during
 `make help` will print all available commands with some description.
 
 ### Pull Request Process
-1. Fork tellor-io/TellorMiner.git and start development from your own fork. Here are sample steps to setup your development environment:
+1. Fork tellor-io/telliot.git and start development from your own fork. Here are sample steps to setup your development environment:
 
 ```console
 $ GOPATH=$(go env GOPATH)
 $ mkdir -p $GOPATH/src/github.com/tellor-io
 $ cd $GOPATH/src/github.com/tellor-io
-$ git clone https://github.com/tellor-io/TellorMiner.git
-$ cd TellorMiner
-$ git remote add fork git remote add fork git@github.com/<your_github_id>/TellorMiner.git
+$ git clone https://github.com/tellor-io/telliot.git
+$ cd telliot
+$ git remote add fork git remote add fork git@github.com/<your_github_id>/telliot.git
 $ make build
 $ ./tellor -h
 ```

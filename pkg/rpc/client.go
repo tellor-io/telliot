@@ -5,7 +5,6 @@ package rpc
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/big"
 	"strings"
@@ -17,8 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // ETHClient is the main abstraction interface for client operations.
@@ -99,12 +98,12 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if strings.Contains(err.Error(), "replacement transaction underpriced") {
 			return err
 		}
-		c.log.Debug("Problem in calling eth client: %v", err)
+		c.log.Debug("Problem in calling eth client:%v", err)
 		//pause for a bit and try again
 		sleepTime := backoff[tryCount%len(backoff)]
 		tryCount++
 		if time.Now().After(nextTick) {
-			c.log.Error("Problem calling ethClient: %v\n", err)
+			c.log.Error("calling ethClient: %v\n", err)
 			nextTick = time.Now().Add(errorPrintTick)
 		}
 
@@ -125,10 +124,8 @@ func (c *clientInstance) Close() {
 
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
-		//c.log.Info("Sending txn on-chain: %v\n", tx)
-		fmt.Println("TX SENT CLIENT", fmt.Sprintf("%v", tx))
-		e := c.ethClient.SendTransaction(*_ctx, tx)
-		return e
+		c.log.Info("sending txn on-chain - details:%+v", tx)
+		return c.ethClient.SendTransaction(*_ctx, tx)
 	})
 	return _err
 }
@@ -178,10 +175,10 @@ func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, bl
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.CodeAt(*_ctx, contract, blockNumber)
 		if e != nil {
-			c.log.Error("Problem getting code from eth client: %v", e)
+			c.log.Error("Problem getting code from eth client:%v", e)
 		}
-		log.Printf("_normalLog Found %d bytes of code at address: %v", len(r), contract)
-		c.log.Debug("Found %d bytes of code at address: %v", len(r), contract)
+		log.Printf("_normalLog Found %d bytes of code at address:%v", len(r), contract)
+		c.log.Debug("Found %d bytes of code at address:%v", len(r), contract)
 		res = r
 		return e
 	})
@@ -199,7 +196,7 @@ func (c *clientInstance) CallContract(ctx context.Context, call ethereum.CallMsg
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.CallContract(*_ctx, call, blockNumber)
 		if e != nil {
-			c.log.Error("Problem calling %s: %v", fn, e)
+			c.log.Error("Problem calling %s:%v", fn, e)
 		}
 		for i := 0; i < len(r); i += 32 {
 			c.log.Debug("Slice %d: %s\n", i, hexutil.Encode(r[i:i+32]))

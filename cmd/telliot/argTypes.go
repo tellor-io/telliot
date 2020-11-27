@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 type TRBAmount struct {
@@ -41,7 +41,7 @@ type ETHAddress struct {
 func (a *ETHAddress) Set(v string) error {
 	valid := common.IsHexAddress(v)
 	if !valid {
-		return errors.Errorf("%s is not a valid etherum address format", v)
+		return errors.Errorf("invalid etherum address:%v", v)
 	}
 	a.addr = common.HexToAddress(v)
 	return nil
@@ -63,10 +63,10 @@ func (b *EthereumInt) Set(v string) error {
 	g := new(big.Int)
 	_, ok := g.SetString(v, 10)
 	if !ok {
-		return errors.Errorf("%s is not a valid integer", v)
+		return errors.Errorf("invalid integer:%v", v)
 	}
 	if len(g.Bytes()) > 32 {
-		return errors.Errorf("%s is larger than 256 bits", v)
+		return errors.Errorf("invalid size larger than 256 bits:%v", v)
 	}
 	b.Int = g
 	return nil

@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 const API = "json(https://api.gdax.com/products/ETH-USD/ticker).price"
@@ -20,7 +20,7 @@ func TestJSONParser(t *testing.T) {
 
 	for _, r := range res {
 		if r > 0 {
-			t.Logf("Parsed json properly: %v", res)
+			t.Logf("Parsed json properly:%v", res)
 
 		} else {
 			testutil.Ok(t, errors.Errorf("Json not parsed properly: %v", res))

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/testutil"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )

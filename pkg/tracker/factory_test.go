@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestCreateTracker(t *testing.T) {

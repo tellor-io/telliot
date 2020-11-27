@@ -20,17 +20,20 @@ import (
 	"github.com/go-kit/kit/log/level"
 	cli "github.com/jawher/mow.cli"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/tellor"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/ops"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/ops"
+	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var ctx context.Context
+var cont tellorCommon.Contract
+var acc tellorCommon.Account
+var clt rpc.ETHClient
 
 func ExitOnError(err error, operation string) {
 	if err != nil {
@@ -39,15 +42,16 @@ func ExitOnError(err error, operation string) {
 	}
 }
 
-func buildContext() error {
+func setup() error {
 	cfg := config.GetConfig()
 
 	if !cfg.EnablePoolWorker {
 		// Create an rpc client
 		client, err := rpc.NewClient(cfg.NodeURL)
 		if err != nil {
-			return errors.Wrap(err, "create client instance")
+			return errors.Wrap(err, "create rpc client instance")
 		}
+
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
 		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
@@ -60,7 +64,7 @@ func buildContext() error {
 		if err != nil {
 			return errors.Wrap(err, "create tellor transactor instance")
 		}
-
+		// Leaving those in because are still used in some places(miner submission mostly).
 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
@@ -68,9 +72,8 @@ func buildContext() error {
 
 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {
-			return errors.Wrap(err, "getting private key")
+			return errors.Wrap(err, "getting private key to ECDSA")
 		}
-		ctx = context.WithValue(ctx, tellorCommon.PrivateKey, privateKey)
 
 		publicKey := privateKey.Public()
 		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -79,7 +82,6 @@ func buildContext() error {
 		}
 
 		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		ctx = context.WithValue(ctx, tellorCommon.PublicAddress, publicAddress)
 
 		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
@@ -89,6 +91,13 @@ func buildContext() error {
 		if s {
 			return errors.New("ethereum node is still syncing with the network")
 		}
+
+		clt = client
+		acc.Address = publicAddress
+		acc.PrivateKey = privateKey
+		cont.Getter = contractGetterInstance
+		cont.Caller = contractTellorInstance
+		cont.Address = contractAddress
 	}
 	return nil
 }
@@ -99,21 +108,21 @@ func AddDBToCtx(remote bool) error {
 	os.RemoveAll(cfg.DBFile)
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
-		return errors.Wrapf(err, "opening DB")
+		return errors.Wrapf(err, "opening DB instance")
 	}
 
 	var dataProxy db.DataServerProxy
 	if remote {
 		proxy, err := db.OpenRemoteDB(DB)
 		if err != nil {
-			return errors.Wrapf(err, "open remote DB")
+			return errors.Wrapf(err, "open remote DB instance")
 
 		}
 		dataProxy = proxy
 	} else {
 		proxy, err := db.OpenLocalProxy(DB)
 		if err != nil {
-			return errors.Wrapf(err, "opening local DB:")
+			return errors.Wrapf(err, "opening local DB instance:")
 
 		}
 		dataProxy = proxy
@@ -127,15 +136,15 @@ var GitTag string
 var GitHash string
 
 const versionMessage = `
-    The official Tellor Miner %s (%s)
+    The official Tellor cli tool %s (%s)
     -----------------------------------------
 	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/TellorMiner
+	Github:  https://github.com/tellor-io/telliot
 `
 
 func App() *cli.Cli {
 
-	app := cli.App("TellorMiner", "The tellor.io official miner")
+	app := cli.App("telliot", "The tellor.io official cli tool")
 
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
@@ -147,7 +156,7 @@ func App() *cli.Cli {
 	app.Before = func() {
 		ExitOnError(util.ParseLoggingConfig(*logPath), "parsing log file")
 		ExitOnError(config.ParseConfig(*configPath), "parsing config file")
-		ExitOnError(buildContext(), "building context")
+		ExitOnError(setup(), "setting up")
 	}
 
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
@@ -172,41 +181,54 @@ func stakeCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd)
 	}
 }
 
-func simpleCmd(f func(context.Context, log.Logger) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func simpleCmd(
+	f func(context.Context,
+		log.Logger,
+		rpc.ETHClient,
+		tellorCommon.Contract,
+		tellorCommon.Account) error,
+	logSetup func(string) log.Logger,
+	logLevel *string) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel)), "")
+			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc), "")
 		}
 	}
 }
 
-func moveCmd(f func(context.Context, log.Logger, common.Address, *big.Int) error, logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func moveCmd(
+	f func(context.Context,
+		log.Logger,
+		rpc.ETHClient,
+		tellorCommon.Contract,
+		tellorCommon.Account,
+		common.Address,
+		*big.Int) error,
+	logSetup func(string) log.Logger,
+	logLevel *string) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		amt := TRBAmount{}
 		addr := ETHAddress{}
 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel), addr.addr, amt.Int), "move")
+			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc, addr.addr, amt.Int), "move")
 		}
 	}
 }
 
 func balanceCmd(cmd *cli.Cmd) {
-
 	addr := ETHAddress{}
 	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 	cmd.Spec = "[ADDRESS]"
 	cmd.Action = func() {
 		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
-		getter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
-		client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		var zero [20]byte
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
 			addr.addr = commonAddress
 		}
-		ExitOnError(ops.Balance(ctx, client, getter, addr.addr), "checking balance")
+		ExitOnError(ops.Balance(ctx, clt, cont.Getter, addr.addr), "checking balance")
 	}
 
 }
@@ -224,7 +246,7 @@ func voteCmd(cmd *cli.Cmd) {
 	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
 	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
 	cmd.Action = func() {
-		ExitOnError(ops.Vote(disputeID.Int, *supports, ctx), "vote")
+		ExitOnError(ops.Vote(ctx, clt, cont, acc, disputeID.Int, *supports), "vote")
 	}
 }
 
@@ -236,7 +258,7 @@ func newDisputeCmd(cmd *cli.Cmd) {
 	cmd.VarArg("TIMESTAMP", &timestamp, "timestamp")
 	cmd.VarArg("MINER_INDEX", &minerIndex, "miner to dispute (0-4)")
 	cmd.Action = func() {
-		ExitOnError(ops.Dispute(requestID.Int, timestamp.Int, minerIndex.Int, ctx), "new dipsute")
+		ExitOnError(ops.Dispute(ctx, clt, cont, acc, requestID.Int, timestamp.Int, minerIndex.Int), "new dipsute")
 	}
 }
 
@@ -282,7 +304,7 @@ func mineCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) 
 			}
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
-			miner, err := ops.CreateMiningManager(ch, cfg, DB)
+			miner, err := ops.CreateMiningManager(logger, ch, cfg, DB)
 			if err != nil {
 				ExitOnError(err, "creating miner")
 			}

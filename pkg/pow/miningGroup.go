@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/tellor-io/TellorMiner/pkg/config"
+	"github.com/tellor-io/telliot/pkg/config"
 )
 
 type HashSettings struct {

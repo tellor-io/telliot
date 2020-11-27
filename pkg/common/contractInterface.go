@@ -8,7 +8,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/tellor-io/TellorMiner/pkg/db"
+	"github.com/tellor-io/telliot/pkg/db"
 )
 
 // TransactionGeneratorFN is a callback function that a TransactionSubmitter uses to actually invoke

@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var logger = util.NewLogger("apiOracle", "valueOracle")
@@ -110,14 +110,14 @@ func EnsureValueOracle() error {
 		if os.IsNotExist(err) {
 			exists = false
 		} else {
-			return errors.Errorf("file %s stat error: %v", historyPath, err)
+			return errors.Wrapf(err, "stat error file: %v", historyPath)
 		}
 	}
 
 	if exists {
 		byteValue, err := ioutil.ReadFile(historyPath)
 		if err != nil {
-			return errors.Errorf("failed to read psr file @ %s: %v", historyPath, err)
+			return errors.Wrapf(err, "read psr file:%v", historyPath)
 		}
 		err = json.Unmarshal(byteValue, &valueHistory)
 		if err != nil {

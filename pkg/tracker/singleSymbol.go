@@ -6,7 +6,7 @@ package tracker
 import (
 	"time"
 
-	"github.com/tellor-io/TellorMiner/pkg/apiOracle"
+	"github.com/tellor-io/telliot/pkg/apiOracle"
 )
 
 type SingleSymbol struct {

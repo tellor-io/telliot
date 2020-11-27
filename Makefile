@@ -77,7 +77,7 @@ build: export GIT_HASH=$(shell git rev-parse --short HEAD)
 build:
 	@[ "${GIT_TAG}" ] || ( echo ">> GIT_TAG is not set"; exit 1 )
 	@[ "${GIT_HASH}" ] || ( echo ">> GIT_HASH is not set"; exit 1 )
-	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/tellor
+	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/telliot
 
 .PHONY: check-git
 check-git:

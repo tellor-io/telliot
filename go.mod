@@ -1,4 +1,4 @@
-module github.com/tellor-io/TellorMiner
+module github.com/tellor-io/telliot
 
 go 1.12
 

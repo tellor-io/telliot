@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // Client utilized for all HTTP requests.
@@ -44,8 +44,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		retryFetchLog.Warn("Problem fetching data from: %s. %v", req.queryURL, err)
 		now := clck.Now()
 		if now.After(expiration) {
-			retryFetchLog.Error("Timeout expired, not retrying query and passing error up")
-			return nil, err
+			return nil, errors.Wrap(err, "retry timeout expired, last error is wrapped")
 		}
 		//FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)
@@ -58,7 +57,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 	data, err := ioutil.ReadAll(r.Body)
 	r.Body.Close()
 	if err != nil {
-		return nil, errors.Errorf("failed to read response body: %v", err)
+		return nil, errors.Wrap(err, "read response body")
 	}
 
 	if r.StatusCode < 200 || r.StatusCode > 299 {
@@ -67,7 +66,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		// this is a duplicated error that is unlikely to be triggered since expiration is updated above
 		now := clck.Now()
 		if now.After(expiration) {
-			return nil, errors.Errorf("giving up fetch request after request timeout: %d", r.StatusCode)
+			return nil, errors.Errorf("giving up fetch request after request timeout:%v", r.StatusCode)
 		}
 		//FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)

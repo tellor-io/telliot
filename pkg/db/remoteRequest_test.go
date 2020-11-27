@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 func TestRemoteRequestCodec(t *testing.T) {
@@ -106,6 +106,7 @@ func TestRequestForData(t *testing.T) {
 
 	reqID := string(resp.dbVals[RequestIdKey])
 	diff := string(resp.dbVals[DifficultyKey])
+
 	testutil.Equals(t, reqID, "1", "Expected result map to map request id to '1': %v", resp.dbVals)
 	testutil.Equals(t, diff, "2", "Expected difficulty to be mapped to '2': %v", resp.dbVals)
 

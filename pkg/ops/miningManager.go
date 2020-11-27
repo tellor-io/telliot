@@ -16,15 +16,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/contracts/getter"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/pow"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/tracker"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/pow"
+	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var minSubmitPeriod = 15 * time.Minute
@@ -52,7 +53,6 @@ type MiningMgr struct {
 	tasker          WorkSource
 	solHandler      SolutionSink
 	solutionPending *pow.Result
-	dataRequester   *DataRequester
 	database        db.DataServerProxy
 	contractGetter  *getter.TellorGetters
 	cfg             *config.Config
@@ -63,6 +63,7 @@ type MiningMgr struct {
 
 // CreateMiningManager is the MiningMgr contructor.
 func CreateMiningManager(
+	logger log.Logger,
 	exitCh chan os.Signal,
 	cfg *config.Config,
 	database db.DataServerProxy,
@@ -70,7 +71,7 @@ func CreateMiningManager(
 
 	group, err := pow.SetupMiningGroup(cfg, exitCh)
 	if err != nil {
-		return nil, errors.Errorf("failed to setup miners: %s", err.Error())
+		return nil, errors.Wrap(err, "setup miners")
 	}
 
 	client, err := rpc.NewClient(cfg.NodeURL)
@@ -83,10 +84,10 @@ func CreateMiningManager(
 		return nil, errors.Wrap(err, "getting addresses")
 	}
 
-	submitter := NewSubmitter()
+	submitter := NewSubmitter(logger)
 	mng := &MiningMgr{
 		exitCh:          exitCh,
-		log:             util.NewLogger("ops", "MiningMgr"),
+		log:             util.NewLogger("ops", "miningMgr"),
 		Running:         false,
 		group:           group,
 		tasker:          nil,
@@ -107,10 +108,6 @@ func CreateMiningManager(
 	} else {
 		mng.tasker = pow.CreateTasker(cfg, database)
 		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, database)
-		if cfg.RequestData > 0 {
-			mng.log.Info("dataRequester created")
-			mng.dataRequester = CreateDataRequester(exitCh, submitter, cfg.RequestDataInterval.Duration, database)
-		}
 	}
 	return mng, nil
 }
@@ -119,12 +116,6 @@ func CreateMiningManager(
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.Running = true
 	ticker := time.NewTicker(mgr.cfg.MiningInterruptCheckInterval.Duration)
-
-	if mgr.cfg.RequestData > 0 {
-		if err := mgr.dataRequester.Start(ctx); err != nil {
-			mgr.log.Error("error starting the data requester error:%v", err)
-		}
-	}
 
 	// Start the mining group.
 	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)

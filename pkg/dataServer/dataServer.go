@@ -11,12 +11,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/tellor-io/TellorMiner/pkg/common"
-	"github.com/tellor-io/TellorMiner/pkg/config"
-	"github.com/tellor-io/TellorMiner/pkg/db"
-	"github.com/tellor-io/TellorMiner/pkg/rest"
-	"github.com/tellor-io/TellorMiner/pkg/rpc"
-	"github.com/tellor-io/TellorMiner/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rest"
+	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
 // DataServer holds refs to primary stack of utilities for data retrieval and serving.
@@ -40,11 +40,11 @@ func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
 	client := ctx.Value(common.ClientContextKey).(rpc.ETHClient)
 	run, err := tracker.NewRunner(client, DB, logger)
 	if err != nil {
-		return nil, errors.Wrapf(err, "creating  tracker runner instance")
+		return nil, errors.Wrapf(err, "creating data server tracker runner instance")
 	}
 	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
 	if err != nil {
-		return nil, errors.Wrapf(err, "creating runner instance")
+		return nil, errors.Wrapf(err, "creating data server instance")
 	}
 	// Make sure channel buffer size 1 since there is no guarantee that anyone
 	// Would be listening to the channel
@@ -68,7 +68,7 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 	ds.Stopped = false
 	err := ds.runner.Start(ctx, ds.runnerExitCh)
 	if err != nil {
-		return errors.Wrap(err, "starting runner")
+		return errors.Wrap(err, "starting runner data server")
 	}
 
 	ds.server.Start()

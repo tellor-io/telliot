@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/tellor-io/TellorMiner/pkg/dataServer"
+	"github.com/tellor-io/telliot/pkg/dataServer"
 )
 
 // DataServerOps is the driver for data server.

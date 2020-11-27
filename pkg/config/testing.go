@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/phayes/freeport"
-	"github.com/tellor-io/TellorMiner/pkg/util"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var mainConfig = `
