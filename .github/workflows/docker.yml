@@ -16,7 +16,7 @@ jobs:
       -
         name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@master
+        uses: crazy-max/ghaction-docker-meta@v1
         with:
           images: tellor/${{ github.event.repository.name }}
       -
