@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
@@ -25,7 +26,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/pow"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var minSubmitPeriod = 15 * time.Minute
@@ -46,14 +46,13 @@ type SolutionSink interface {
 // the manager needs to complete few transaction to gather the tx cost for each slot.
 type MiningMgr struct {
 	exitCh          chan os.Signal
-	log             *util.Logger
+	logger          log.Logger
 	Running         bool
 	ethClient       rpc.ETHClient
 	group           *pow.MiningGroup
 	tasker          WorkSource
 	solHandler      SolutionSink
 	solutionPending *pow.Result
-	dataRequester   *DataRequester
 	database        db.DataServerProxy
 	contractGetter  *getter.TellorGetters
 	cfg             *config.Config
@@ -88,7 +87,7 @@ func CreateMiningManager(
 	submitter := NewSubmitter(logger)
 	mng := &MiningMgr{
 		exitCh:          exitCh,
-		log:             util.NewLogger("ops", "miningMgr"),
+		logger:          logger,
 		Running:         false,
 		group:           group,
 		tasker:          nil,
@@ -109,10 +108,6 @@ func CreateMiningManager(
 	} else {
 		mng.tasker = pow.CreateTasker(cfg, database)
 		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, database)
-		if cfg.RequestData > 0 {
-			mng.log.Info("dataRequester created")
-			mng.dataRequester = CreateDataRequester(exitCh, submitter, cfg.RequestDataInterval.Duration, database)
-		}
 	}
 	return mng, nil
 }
@@ -121,12 +116,6 @@ func CreateMiningManager(
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.Running = true
 	ticker := time.NewTicker(mgr.cfg.MiningInterruptCheckInterval.Duration)
-
-	if mgr.cfg.RequestData > 0 {
-		if err := mgr.dataRequester.Start(ctx); err != nil {
-			mgr.log.Error("error starting the data requester error:%v", err)
-		}
-	}
 
 	// Start the mining group.
 	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)
@@ -149,7 +138,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				for _, id := range mgr.solutionPending.Work.Challenge.RequestIDs {
 					ids = append(ids, id.Int64())
 				}
-				mgr.log.Debug("re-submitting a pending solution - req IDs:%v", ids)
+				level.Debug(mgr.logger).Log("msg", "re-submitting a pending solution", "reqIDs", fmt.Sprintf("%+v", ids))
 			}
 
 			// Set this solution as pending so that if
@@ -160,26 +149,26 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			if mgr.cfg.ProfitThreshold > 0 {
 				isProftable, err := mgr.isProfitable()
 				if err != nil {
-					mgr.log.Error("solution profit err:%v", err)
+					level.Error(mgr.logger).Log("msg", "solution profit check", "err", err)
 				} else if !isProftable {
-					mgr.log.Debug("transaction not profitable, so will wait for the next cycle")
+					level.Debug(mgr.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
 					continue
 				}
 			}
 
 			lastSubmit, err := mgr.lastSubmit()
 			if err != nil {
-				mgr.log.Error("checking last submit time err:%v", err)
+				level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
 			} else if lastSubmit < minSubmitPeriod {
-				mgr.log.Debug("min transaction submit threshold of %v hasn't passed, last submit:%v", minSubmitPeriod, lastSubmit)
+				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", minSubmitPeriod, "lastSubmit", lastSubmit)
 				continue
 			}
 			tx, err := mgr.solHandler.Submit(ctx, solution)
 			if err != nil {
-				mgr.log.Error("submiting a solution err:%v", err)
+				level.Error(mgr.logger).Log("msg", "submiting a solution", err)
 				continue
 			}
-			mgr.log.Debug("submited a solution tx:%v", tx.Hash().String())
+			level.Debug(mgr.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
 			mgr.saveTXCost(ctx, tx)
 
 			// A solution has been submitted so the
@@ -217,7 +206,7 @@ func (mgr *MiningMgr) newWork() {
 				for _, id := range work.Challenge.RequestIDs {
 					ids = append(ids, id.Int64())
 				}
-				mgr.log.Debug("sending new chalenge for mining - req IDs:%v", ids)
+				level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
 				mgr.toMineInput <- work
 			}
 		}
@@ -333,10 +322,10 @@ func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
 	go func(tx *types.Transaction) {
 		receipt, err := bind.WaitMined(ctx, mgr.ethClient, tx)
 		if err != nil {
-			mgr.log.Error("transaction result for calculating transaction cost err:%v", err)
+			level.Error(mgr.logger).Log("msg", "transaction result for calculating transaction cost", "err", err)
 		}
 		if receipt.Status != 1 {
-			mgr.log.Error("unsuccessful submitSolution transaction, not saving the tx cost in the db tx:%v", receipt.TxHash.String())
+			level.Error(mgr.logger).Log("msg", "unsuccessful submitSolution transaction, not saving the tx cost in the db", "txHash", receipt.TxHash.String())
 			return
 		}
 
@@ -344,16 +333,15 @@ func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
 		txCost := gasUsed.Mul(gasUsed, tx.GasPrice())
 		slotNum, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
 		if err != nil {
-			mgr.log.Error("getting slotProgress for calculating transaction cost err:%v", err)
+			level.Error(mgr.logger).Log("msg", "getting slotProgress for calculating transaction cost", "err", err)
 		}
 
 		txCostID := tellorCommon.PriceTXs + slotNum.String()
 		_, err = mgr.database.Put(txCostID, txCost.Bytes())
 		if err != nil {
-			mgr.log.Error("saving transaction cost err:%v", err)
+			level.Error(mgr.logger).Log("msg", "saving transaction cost", "err", err)
 		}
-		mgr.log.Debug("saved transaction cost txHash:%v cost GWEI:%v slot:%v", receipt.TxHash.String(), txCost.Int64()/tellorCommon.GWEI, slotNum.Int64())
-
+		level.Debug(mgr.logger).Log("msg", "saved transaction cost", "txHash", receipt.TxHash.String(), "cost(GWEI)", txCost.Int64()/tellorCommon.GWEI, "slot", slotNum.Int64())
 	}(tx)
 }
 
@@ -375,14 +363,14 @@ func (mgr *MiningMgr) isProfitable() (bool, error) {
 
 	profit := big.NewInt(0).Sub(reward, txCost)
 	profitPercent := big.NewInt(0).Div(profit, txCost).Int64() * 100
-	mgr.log.Debug(
-		"profit checking - reward:%v, txCost:%v, slot:%v, profit:%v, profit margin:%v%%, profit threshold:%v%%",
-		fmt.Sprintf("%.2e", float64(reward.Int64())),
-		fmt.Sprintf("%.2e", float64(txCost.Int64())),
-		slotNum,
-		fmt.Sprintf("%.2e", float64(profit.Int64())),
-		profitPercent,
-		mgr.cfg.ProfitThreshold,
+	level.Debug(mgr.logger).Log(
+		"msg", "profit checking",
+		"reward", fmt.Sprintf("%.2e", float64(reward.Int64())),
+		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
+		"slot", slotNum,
+		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
+		"profitMargin", profitPercent,
+		"profitThreshold", mgr.cfg.ProfitThreshold,
 	)
 	if profitPercent > int64(mgr.cfg.ProfitThreshold) {
 		return true, nil
