@@ -1,6 +1,8 @@
-# Release Process
+---
+description: Release cadence and process for the project.
+---
 
-This page describes the release cadence and process for the project.
+# Release Process
 
 We use [Semantic Versioning](http://semver.org/).
 
