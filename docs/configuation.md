@@ -34,7 +34,7 @@ If you have multiple GPUs connected, you can specify different config settings f
             "groupSize":256,
             "groups":4096,
             "count":16
-        }, 
+        },
         "<GPUName3>":{
             "disabled":true
         },
