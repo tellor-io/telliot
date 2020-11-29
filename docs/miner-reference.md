@@ -43,8 +43,8 @@ description: TellorMiner commands and config file options are found here.
 * `heartbeat` - an integer that controls how frequently the miner process should report the hashrate \(larger is less frequent, try 1000000 to start\)
 * `numProcessors` - an integer number of CPU cores/threads to use for mining. \(cpu mining is disabled if there is a suitable GPU is found
 * `disputeTimeDelta` - how far back to store values for min/max range - default 5 \(in minutes\)
-* `disputeThreshold` - percentage of acceptable range outside min/max for dispute checking - default
-* `psrFolder` - folder location holding your psr.json file, default working directory
+* `disputeThreshold` - percentage of acceptable range outside min/max for dispute checking - default 
+* `psrFolder` - folder location holding your psr.json file, default working directory 
 
 #### LogConfig file options:
 
