@@ -1,3 +1,7 @@
+---
+description: Coding style guide for contributors.
+---
+
 # Coding Style Guide
 
 This document details the official style guides for the various languages we use in the project.
