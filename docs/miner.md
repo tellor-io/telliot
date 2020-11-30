@@ -8,7 +8,7 @@ description: >-
 
 For over a decade now, the Bitcoin network has shown how proof-of-work can incentivize individuals and companies to compete for the honor of finding block rewards and achieving consensus. This phenomenon is global, and anonymous. The network is democratized and decentralized, because the creators have no direct control over who is providing computing power on their network.
 
-Tellor takes this concept and applies it directly to the delivery of oracle data. Anyone who is able may start up TellorMiner and begin competing for blocks. There is no whitelisting. Miners compete very much the same way that Bitcoin miners do, but with a twist. _Tellor Miners must also run a database from which to pull values to submit to the Tellor oracle._ When a "block" is found, the winners submit their data.
+Tellor takes this concept and applies it directly to the delivery of oracle data. Anyone who is able may start up telliot and begin competing for blocks. There is no whitelisting. Miners compete very much the same way that Bitcoin miners do, but with a twist. _Tellor Miners must also run a database from which to pull values to submit to the Tellor oracle._ When a "block" is found, the winners submit their data.
 
 Mining is one of the most exciting ways to help Tellor grow and become a leader in the DeFi / Oracle space. Here are a few things to consider before jumping in:
 

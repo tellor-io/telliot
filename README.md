@@ -13,8 +13,6 @@
 # Telloit
 This is the main cli of the project. The project uses Gitbook for documentation purpose.
 ## Documentation
-you can see the documentation in the [docs](./docs) folder
-or
-Gitbook documentations:
-[Telliot Docs](https://docs.telliot.tellor.io)
-[Tellor Project](https://docs.tellor.io)
+you can see the documentation in the [docs](./docs) folder<br/>
+or the Gitbook websites: [Telliot docs](https://docs.telliot.tellor.io)
+, [Tellor project docs](https://docs.tellor.io)

@@ -4,17 +4,17 @@ description: Here are the nuts and bolts for mining TRB.
 
 # The Guide
 
-## Download the Latest TellorMiner
+## Download the Latest telliot
 
 This is the workhorse of the Miner system.
 
-[https://github.com/tellor-io/TellorMiner/releases](https://github.com/tellor-io/TellorMiner/releases)
+[https://github.com/tellor-io/telliot/releases](https://github.com/tellor-io/telliot/releases)
 
 ```text
-wget https://github.com/tellor-io/TellorMiner/releases/[release-num]/download/tellor
+wget https://github.com/tellor-io/telliot/releases/[release-num]/download/tellor
 ```
 
-Depending on your miner setup you may need to give TellorMiner permission to run. If so, this will need to be done after updates as well.
+Depending on your miner setup you may need to give telliot permission to run. If so, this will need to be done after updates as well.
 
 ```text
 chmod +x tellor
@@ -22,10 +22,10 @@ chmod +x tellor
 
 ## Download and Edit config.json
 
-config.json is where you will enter your wallet address and configure TellorMiner for your machine.
+config.json is where you will enter your wallet address and configure telliot for your machine.
 
 ```text
-wget https://raw.githubusercontent.com/tellor-io/TellorMiner/master/configs/config.json
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.json
 ```
 
 Open config.json and update the following values:
@@ -48,9 +48,9 @@ ETH_PRIVATE_KEY="3a10b4bc1258e8bfefb95b498fb8c0f0cd6964a811eabca87df56xxxxxxxxxx
 Run the following commands:
 
 ```text
-wget https://raw.githubusercontent.com/tellor-io/TellorMiner/master/configs/indexes.json
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/indexes.json
 
-wget https://raw.githubusercontent.com/tellor-io/TellorMiner/master/configs/loggingConfig.json
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/loggingConfig.json
 ```
 
 ## Download and Edit the Manual Data Entry File
@@ -60,7 +60,7 @@ Tellor currently has one data point which must be manually created. The rolling 
 Run the following command:
 
 ```text
-wget https://raw.githubusercontent.com/tellor-io/TellorMiner/master/configs/manualData.json
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manualData.json
 ```
 
 For testing purposes, or if you want to hardcode in a specific value to enter, you can use the manualdata.json file to add manual data for a given requestID. Similar to the manual data structure, you add the request ID, a given value \(with granularity\), and a date which the manual data is valid until.

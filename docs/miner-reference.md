@@ -1,5 +1,5 @@
 ---
-description: TellorMiner commands and config file options are found here.
+description: Telliot commands and config file options are found here.
 ---
 
 # Reference
@@ -8,7 +8,7 @@ description: TellorMiner commands and config file options are found here.
 
 * `--config` \(path to your config file.\)
 
-#### TellorMiner Commands
+#### Telliot Commands
 
 * `--logConfig` \(location of logging config file; default path is current directory\)
 * `mine` \(indicates to run the miner\)
