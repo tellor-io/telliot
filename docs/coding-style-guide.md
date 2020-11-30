@@ -72,7 +72,7 @@ defer runutil.CloseWithLogOnErr(logger, f, "close file")
 ```
 
 
-<p align="center">Avoid 🔥</p>
+_Avoid 🔥_
 
 ----
 ```go

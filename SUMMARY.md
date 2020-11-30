@@ -1,6 +1,6 @@
 ## Telliot documentation
 
-* [Telliot](docs/READtelliotME.md)
+* [Telliot](docs/README.md)
 * [Become a Miner](docs/miner.md)
 * [The Guide](docs/the-guide.md)
 * [Configuation](docs/configuation.md)
