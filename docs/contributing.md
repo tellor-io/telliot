@@ -44,7 +44,7 @@ $ git clone https://github.com/tellor-io/telliot.git
 $ cd telliot
 $ git remote add fork git remote add fork git@github.com/<your_github_id>/telliot.git
 $ make build
-$ ./tellor -h
+$ ./telliot -h
 ```
 
 
