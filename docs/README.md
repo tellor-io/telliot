@@ -11,6 +11,15 @@
   </a>
 </p>
 
+
+> ## ⚠️ Note!
+> Telliot docs are synced from the project repository.
+To Edit please visit:<br/>
+[Telliot gitbook space](https://docs.telliot.tellor.io)<br/>
+or<br/>
+[Telliot github repo](https://github.com/tellor-io/telliot/tree/master/docs)
+
+
 # Telloit
 
 This is the main cli of the project. One if its commands is to run in mining mode(solve a POW challenge) and submit values to the tellor oracle contract.
