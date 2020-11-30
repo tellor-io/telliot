@@ -1,3 +1,5 @@
+## Telliot documentation
+
 * [Introduction](README.md)
 * [Become a Miner](miner.md)
 * [The Guide](the-guide.md)
