@@ -1,6 +1,8 @@
-# Contributing
-This document explain the process of contributing to the project.
+---
+description: Process of contributing to the project.
+---
 
+# Contributing
 
 ## Philosophy
 - The philosophy is borrowing much from UNIX philosophy and the golang programming language.Each sub command should do one thing and do it well
@@ -42,7 +44,7 @@ $ git clone https://github.com/tellor-io/telliot.git
 $ cd telliot
 $ git remote add fork git remote add fork git@github.com/<your_github_id>/telliot.git
 $ make build
-$ ./tellor -h
+$ ./telliot -h
 ```
 
 
