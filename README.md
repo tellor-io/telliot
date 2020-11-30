@@ -10,6 +10,15 @@
   </a>
 </p>
 
+
+> ## ⚠️ Note!
+> Telliot docs are synced from the project repository.
+To Edit please visit:<br/>
+[Telliot gitbook space](https://docs.telliot.tellor.io)<br/>
+or<br/>
+[Telliot github repo](https://github.com/tellor-io/telliot/tree/master/docs)
+
+
 # Telloit
 This is the main cli of the project. The project uses Gitbook for documentation purpose.
 ## Documentation

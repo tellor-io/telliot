@@ -12,13 +12,6 @@
 </p>
 
 
-> ## ⚠️ Note!
-> Telliot docs are synced from the project repository.
-To Edit please visit:<br/>
-[Telliot gitbook space](https://docs.telliot.tellor.io)<br/>
-or<br/>
-[Telliot github repo](https://github.com/tellor-io/telliot/tree/master/docs)
-
 
 # Telloit
 
