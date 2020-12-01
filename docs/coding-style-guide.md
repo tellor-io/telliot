@@ -71,11 +71,10 @@ defer runutil.CloseWithErrCapture(&err, f, "close file")
 defer runutil.CloseWithLogOnErr(logger, f, "close file")
 ```
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
 
+_Avoid 🔥_
+
+----
 ```go
 func writeToFile(...) error {
     f, err := os.Open(...)
@@ -88,11 +87,9 @@ func writeToFile(...) error {
     return nil
 }
 ```
+<p align="center">Better 🤓</p>
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
-
+----
 ```go
 func writeToFile(...) (err error) {
     f, err := os.Open(...)
@@ -107,9 +104,6 @@ func writeToFile(...) (err error) {
 }
 ```
 
-</td></tr>
-</tbody></table>
-
 #### Exhaust Readers
 
 One of the most common bugs is forgetting to close or fully read the bodies of HTTP requests and responses, especially on
@@ -120,11 +114,9 @@ helper as well:
 defer runutil.ExhaustCloseWithLogOnErr(logger, resp.Body, "close response")
 ```
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 resp, err := http.Get("http://example.com/")
 if err != nil {
@@ -139,10 +131,9 @@ scanner := bufio.NewScanner(resp.Body)
 for scanner.Scan() {
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 resp, err := http.Get("http://example.com/")
 if err != nil {
@@ -156,8 +147,6 @@ scanner := bufio.NewScanner(resp.Body)
 for scanner.Scan() {
 ```
 
-</td></tr>
-</tbody></table>
 
 #### Avoid Globals
 
@@ -179,11 +168,9 @@ Variable shadowing is when you use the same variable name in a smaller scope tha
 dangerous as it leads to many surprises. It's extremely hard to debug such problems as they might appear in unrelated parts of the code.
 And what's broken is tiny `:` or lack of it.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
     var client ClientInterface
     if clientTypeASpecified {
@@ -203,10 +190,9 @@ And what's broken is tiny `:` or lack of it.
     resp, err := client.Call(....) // nil pointer panic!
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
     var client ClientInterface = NewNoop(...)
     if clientTypeASpecified {
@@ -220,9 +206,6 @@ And what's broken is tiny `:` or lack of it.
 
     resp, err := client.Call(....)
 ```
-
-</td></tr>
-</tbody></table>
 
 This is also why we recommend to scope errors if you can:
 
@@ -255,11 +238,9 @@ code paths with big arrays.
 NOTE: This is because, in very simple view, the Go runtime allocates 2 times the current size. So if you expect million of elements, Go will do many allocations
 on `append` in between instead of just one if you preallocate.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 func copyIntoSliceAndMap(biggy []string) (a []string, b map[string]struct{})
     b = map[string]struct{}{}
@@ -271,10 +252,9 @@ func copyIntoSliceAndMap(biggy []string) (a []string, b map[string]struct{})
 }
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 func copyIntoSliceAndMap(biggy []string) (a []string, b map[string]struct{})
     b = make(map[string]struct{}, len(biggy))
@@ -288,9 +268,6 @@ func copyIntoSliceAndMap(biggy []string) (a []string, b map[string]struct{})
 }
 ```
 
-</td></tr>
-</tbody></table>
-
 #### Reuse arrays
 
 To extend the above point, there are cases where you don't need to allocate new space in memory all the time. If you repeat
@@ -302,11 +279,9 @@ NOTE: Why you cannot just allocate slice and release and in new iteration alloca
 available space and just reuses that no? (: Well, it's not that easy. TL;DR is that Go Garbage Collection runs periodically or on certain cases
 (big heap), but definitely not on every iteration of your loop (that would be super slow). Read more in details [here](https://about.sourcegraph.com/go/gophercon-2018-allocator-wrestling).
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 var messages []string
 for _, msg := range recv {
@@ -323,10 +298,9 @@ for _, msg := range recv {
 }
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 var messages []string
 for _, msg := range recv {
@@ -341,9 +315,6 @@ for _, msg := range recv {
     }
 }
 ```
-
-</td></tr>
-</tbody></table>
 
 ### Readability
 
@@ -362,11 +333,9 @@ or methods. There are two general rules:
 * Simpler (usually it means smaller) interfaces are better. This might mean a smaller, simpler function signature as well as fewer methods
 in the interfaces. Try to group interfaces based on functionality to expose at max 1-3 methods if possible.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 // Compactor aka: The Big Boy. Such big interface is really useless ):
 type Compactor interface {
@@ -383,10 +352,9 @@ type Compactor interface {
 }
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 // Smaller interfaces with a smaller number of arguments allow functional grouping, clean composition and clear testability.
 type Compactor interface {
@@ -419,18 +387,14 @@ type Cleaner interface {
 }
 ```
 
-</td></tr>
-</tbody></table>
 
 * It's better if you can hide more unnecessary complexity from the user. This means that having shallow function introduce
 more cognitive load to understand the function name or navigate to implementation to understand it better. It might be much
 more readable to inline those few lines directly on the caller side.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
     // Some code...
     s.doSomethingAndHandleError()
@@ -445,11 +409,9 @@ func (s *myStruct) doSomethingAndHandleError() {
 }
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
-
+----
 ```go
     // Some code...
     if err := doSomething(); err != nil {
@@ -460,18 +422,13 @@ func (s *myStruct) doSomethingAndHandleError() {
 }
 ```
 
-</td></tr>
-</tbody></table>
-
 This is a little bit connected to `There should be one-- and preferably only one --obvious way to do it` and [`DRY`](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)
 rules. If you have more ways of doing something than one, it means you have a wider interface, allowing more opportunities for
 errors, ambiguity and maintenance burden.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 // We have here SIX potential ways the caller can get an ID. Can you find all of them?
 
@@ -495,10 +452,9 @@ func (b *Block) ID() ulid.ULID {
 func (b *Block) IDNoLock() ulid.ULID {  return b.ID }
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 type Block struct {
     // Things...
@@ -514,9 +470,6 @@ func (b *Block) ID() ulid.ULID {
 }
 ```
 
-</td></tr>
-</tbody></table>
-
 #### Use Named Return Parameters Carefully
 
 It's OK to name return parameters if the types do not give enough information about what function or method actually returns.
@@ -530,11 +483,9 @@ implicit and thus more prone to surprises.
 There is a way to sacrifice defer in order to properly close all on each error. Repetition makes it easier to make an error
 and forget something when changing the code, so on-error deferring is doable:
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 func OpenSomeFileAndDoSomeStuff() (*os.File, error) {
     f, err := os.OpenFile("file.txt", os.O_RDONLY, 0)
@@ -558,10 +509,9 @@ func OpenSomeFileAndDoSomeStuff() (*os.File, error) {
 }
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 func OpenSomeFileAndDoSomeStuff() (f *os.File, err error) {
     f, err = os.OpenFile("file.txt", os.O_RDONLY, 0)
@@ -586,34 +536,26 @@ func OpenSomeFileAndDoSomeStuff() (f *os.File, err error) {
     return f, nil
 }
 ```
-</td></tr>
-</tbody></table>
 
 #### Explicitly Handle Returned Errors
 
 Always handle returned errors. It does not mean you cannot "ignore" the error for some reason, e.g. if we know implementation
 will not return anything meaningful. You can ignore the error, but do so explicitly:
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 someMethodThatReturnsError(...)
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
-
+----
 ```go
 _ = someMethodThatReturnsError(...)
 ```
 
-</td></tr>
-</tbody></table>
 
 The exception: well-known cases such as `level.Debug|Warn` etc and `fmt.Fprint*`
 
@@ -623,11 +565,9 @@ It's tempting to define a variable as an intermittent step to create something b
 such a variable if it's used only once. When you create a variable *the reader* expects some other usage of this variable than
 one, so it can be annoying to every time double check that and realize that it's only used once.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
     someConfig := a.GetConfig()
     address124 := someConfig.Addresses[124]
@@ -637,10 +577,9 @@ one, so it can be annoying to every time double check that and realize that it's
     return c
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
     // This variable is required for potentially consistent results. It is used twice.
     someConfig := a.FetchConfig()
@@ -650,18 +589,13 @@ one, so it can be annoying to every time double check that and realize that it's
     }
 ```
 
-</td></tr>
-</tbody></table>
-
 #### Only Two Ways of Formatting Functions/Methods
 
 Prefer function/method definitions with arguments in a single line. If it's too wide, put each argument on a new line.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 func function(argument1 int, argument2 string,
     argument3 time.Duration, argument4 someType,
@@ -669,10 +603,9 @@ func function(argument1 int, argument2 string,
 ) (ret int, err error) {
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 func function(
     argument1 int,
@@ -683,9 +616,6 @@ func function(
     argument6 time.Time,
 ) (ret int, err error)
 ```
-
-</td></tr>
-</tbody></table>
 
 This applies for both calling and defining method / function.
 
@@ -705,11 +635,9 @@ level.Info(logger).Log(
 In most of the cases, you don't need `else`. You can usually use `continue`, `break` or `return` to end an `if` block.
 This enables having one less indent and better consistency so code is more readable.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 for _, elem := range elems {
     if a == 1 {
@@ -720,10 +648,9 @@ for _, elem := range elems {
 }
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 for _, elem := range elems {
     if a == 1 {
@@ -734,9 +661,6 @@ for _, elem := range elems {
 }
 ```
 
-</td></tr>
-</tbody></table>
-
 #### Wrap Errors for More Context; Don't Repeat "failed ..." There.
 
 We use [`pkg/errors`](https://github.com/pkg/errors) package for `errors`. We prefer it over standard wrapping with `fmt.Errorf` + `%w`,
@@ -746,50 +670,37 @@ Use [`pkg/errors.Wrap`](https://github.com/pkg/errors) to wrap errors for future
 to add more interesting variables to add context using `errors.Wrapf`, e.g. file names, IDs or things that fail, etc.
 
 When using `Errorf,Warpf` put arguments at the end to make it easyer to read and use `%v` to reduce human error if the argument type changed.
-<table>
-<tbody>
-<tr><th>Difficult to read 🔥</th></tr>
-<tr><td>
+<p align="center">Difficult to read 🔥</p>
 
+----
 ```go
 errors.Errorf("insufficient balance %s, mining stake requires %s", a, b)
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 errors.Errorf("insufficient mining stake TRB balance - actual:%v, required:%v", a, b)
 ```
-
-</td></tr>
-</tbody></table>
 
 NOTE: never prefix wrap messages with wording like `failed...`, `couldn't...` or `error occurred while...`. Just describe what we
 wanted to do when the failure occurred. Those prefixes are just noise. We are wrapping error, so it's obvious that some error
 occurred, right? (: Improve readability and consider avoiding those.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 fmt.Errorf("error while reading from file %s: %w", f.Name, err)
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 errors.Wrapf(err, "read file %s", f.Name)
 ```
-
-</td></tr>
-</tbody></table>
-
 #### Use the Blank Identifier `_`
 
 Blank identifiers are very useful to mark variables that are not used. Consider the following cases:
@@ -823,27 +734,21 @@ separate fields. Keep in mind that all log lines should be `lowercase` (readabil
 all struct keys are using `camelCase`. It's suggested to keep key names short and consistent. For example, if
 we always use `block` for block ID, let's not use in the other single log message `id`.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 level.Info(logger).Log("msg", fmt.Sprintf("Found something epic during compaction number %v. This looks amazing.", compactionNumber),
  "block_id", id, "elapsed-time", timeElapsed)
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 level.Info(logger).Log("msg", "found something epic during compaction; this looks amazing", "compNumber", compNumber,
 "block", id, "elapsed", timeElapsed)
 ```
-
-</td></tr>
-</tbody></table>
 
 Additionally, there are certain rules we suggest while using different log levels:
 
@@ -869,11 +774,9 @@ was done temporarily add `TODO(<github name>): <something, with GitHub issue lin
 Use table-driven tests that use [t.Run](https://blog.golang.org/subtests) for readability. They are easy to read
 and allows to add a clean description of each test case. Adding or adapting test cases is also easier.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 host, port, err := net.SplitHostPort("1.2.3.4:1234")
 testutil.Ok(t, err)
@@ -894,9 +797,9 @@ host, port, err = net.SplitHostPort("yolo")
 testutil.NotOk(t, err)
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
+
+----
 
 ```go
 for _, tcase := range []struct{
@@ -950,19 +853,14 @@ for _, tcase := range []struct{
 }
 ```
 
-</td></tr>
-</tbody></table>
-
 #### Tests for Packages / Structs That Involve `time` package.
 
 Avoid unit testing based on real-time. Always try to mock time that is used within struct by using, for example, a `timeNow func() time.Time` field.
 For production code, you can initialize the field with `time.Now`. For test code, you can set a custom time that will be used by the struct.
 
-<table>
-<tbody>
-<tr><th>Avoid 🔥</th></tr>
-<tr><td>
+<p align="center">Avoid 🔥</p>
 
+----
 ```go
 func (s *SomeType) IsExpired(created time.Time) bool {
     // Code is hardly testable.
@@ -970,19 +868,15 @@ func (s *SomeType) IsExpired(created time.Time) bool {
 }
 ```
 
-</td></tr>
-<tr><th>Better 🤓</th></tr>
-<tr><td>
+<p align="center">Better 🤓</p>
 
+----
 ```go
 func (s *SomeType) IsExpired(created time.Time) bool {
     // s.timeNow is time.Now on production, mocked in tests.
     return created.Add(s.expiryDuration).Before(s.timeNow())
 }
 ```
-
-</td></tr>
-</tbody></table>
 
 ## Enforced by Linters
 
