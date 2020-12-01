@@ -578,7 +578,6 @@ type tokenCmd struct {
 	Amount  string `arg required`
 }
 
-<<<<<<< HEAD
 func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		remoteDS := cmd.BoolOpt("remote r", false, "connect to remote dataserver")
@@ -730,7 +729,6 @@ func dataserverCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 		}
 
 	}
-=======
 func (c *tokenCmd) Run() error {
 	return nil
 }
@@ -738,7 +736,6 @@ func (c *tokenCmd) Run() error {
 func (c ConfigFlag) BeforeResolve(kong *Kong, ctx *Context, trace *Path) error {
 	fmt.Println(c)
 	return nil
->>>>>>> WIP cli-replace
 }
 
 func main() {
