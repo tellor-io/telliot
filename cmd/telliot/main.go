@@ -553,6 +553,11 @@ type newDisputeCmd struct {
 }
 
 type voteCmd struct {
+	disputeId int  `arg required`
+	support   bool `arg required`
+}
+type stakeCmd struct {
+	Operation string `arg required`
 }
 type stakeCmd struct {
 }
