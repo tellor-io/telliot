@@ -6,6 +6,7 @@
 * [Configuation](docs/configuation.md)
 * [Contributing](docs/contributing.md)
 * [Coding style guide](docs/coding-style-guide.md)
-* [Release process](docs/release-process.md)
 * [Reference](docs/miner-reference.md)
+* [Release process](docs/release-process.md)
+* [Changelog](docs/CHANGELOG.md)
 * [Disclaimer](docs/disclaimer.md)

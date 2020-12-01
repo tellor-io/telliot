@@ -12,7 +12,7 @@
 
 
 > ## ⚠️ Note!
-> Telliot docs are synced from the project repository.  
+> Telliot docs are synced from the project repository.
 To edit please visit:<br/>
 [Telliot gitbook space](https://docs.telliot.tellor.io)<br/>
 or<br/>
