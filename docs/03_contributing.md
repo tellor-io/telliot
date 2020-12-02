@@ -29,7 +29,7 @@ method before making a change.
 The following section explains various suggestions and procedures to note during development.
 
 ### First Steps
-* Familiarizing yourself with our [coding style guidelines.](coding-style-guide.md).
+* Familiarizing yourself with our [coding style guidelines.](04_coding-style-guide.md).
 * Familiarizing yourself with the [Makefile](../Makefile) commands, for example, `build`, `format`, `test`, `lint`.
 `make help` will print all available commands with some description.
 
