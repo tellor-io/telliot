@@ -36,7 +36,7 @@ A list of all PSR's(pre specified requests) and the expected data can be found [
 
 
 ## Instructions for deployment
- - [Telliot Instructions](docs/00_setup-and-usage.md)
+ - [Telliot Instructions](docs/01_setup-and-usage.md)
 
 ## Contributing and building from source
 Contributions are very welcome!<br/>
