@@ -152,11 +152,29 @@ func AddDBToCtx(remote bool) error {
 	proxy = dataProxy
 	return nil
 	"fmt"
+	"context"
+	"crypto/ecdsa"
+
+	"github.com/go-kit/kit/log"
 
 	"github.com/alecthomas/kong"
+<<<<<<< HEAD
+=======
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/pkg/errors"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/ops"
+	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/util"
+>>>>>>> more development on cli replace
 )
 
-// var ctx context.Context
+var ctx context.Context
+
 // var cont tellorCommon.Contract
 // var acc tellorCommon.Account
 // var clt rpc.ETHClient
@@ -168,65 +186,70 @@ func AddDBToCtx(remote bool) error {
 // 	}
 // }
 
-// func setup() error {
-// 	cfg := config.GetConfig()
+func setup() (rpc.ETHClient, tellorCommon.Contract, tellorCommon.Account, error) {
+	cfg := config.GetConfig()
 
-// 	if !cfg.EnablePoolWorker {
-// 		// Create an rpc client
-// 		client, err := rpc.NewClient(cfg.NodeURL)
-// 		if err != nil {
-// 			return errors.Wrap(err, "create rpc client instance")
-// 		}
+	if !cfg.EnablePoolWorker {
+		// Create an rpc client
+		client, err := rpc.NewClient(cfg.NodeURL)
+		if err != nil {
+			return nil, tellorCommon.Contract{}, tellorCommon.Account{}, errors.Wrap(err, "create rpc client instance")
+		}
 
-// 		// Create an instance of the tellor master contract for on-chain interactions
-// 		contractAddress := common.HexToAddress(cfg.ContractAddress)
-// 		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
-// 		if err != nil {
-// 			return errors.Wrap(err, "create tellor master instance")
-// 		}
+		// Create an instance of the tellor master contract for on-chain interactions
+		contractAddress := common.HexToAddress(cfg.ContractAddress)
+		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
+		if err != nil {
+			return nil, tellorCommon.Contract{}, tellorCommon.Account{}, errors.Wrap(err, "create tellor master instance")
+		}
 
-// 		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
+		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
 
-// 		if err != nil {
-// 			return errors.Wrap(err, "create tellor transactor instance")
-// 		}
-// 		// Leaving those in because are still used in some places(miner submission mostly).
-// 		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
-// 		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
-// 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
-// 		ctx = context.WithValue(ctx, tellorCommon.ContractsGetterContextKey, contractGetterInstance)
+		if err != nil {
+			return nil, tellorCommon.Contract{}, tellorCommon.Account{}, errors.Wrap(err, "create tellor transactor instance")
+		}
+		// Leaving those in because are still used in some places(miner submission mostly).
+		ctx := context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
+		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
+		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
+		ctx = context.WithValue(ctx, tellorCommon.ContractsGetterContextKey, contractGetterInstance)
 
-// 		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
-// 		if err != nil {
-// 			return errors.Wrap(err, "getting private key to ECDSA")
-// 		}
+		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
+		if err != nil {
+			return nil, tellorCommon.Contract{}, tellorCommon.Account{}, errors.Wrap(err, "getting private key to ECDSA")
+		}
 
-// 		publicKey := privateKey.Public()
-// 		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-// 		if !ok {
-// 			return errors.New("casting public key to ECDSA")
-// 		}
+		publicKey := privateKey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			return nil, tellorCommon.Contract{}, tellorCommon.Account{}, errors.New("casting public key to ECDSA")
+		}
 
-// 		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-// 		// Issue #55, halt if client is still syncing with Ethereum network
-// 		s, err := client.IsSyncing(ctx)
-// 		if err != nil {
-// 			return errors.Wrap(err, "determining if Ethereum client is syncing")
-// 		}
-// 		if s {
-// 			return errors.New("ethereum node is still syncing with the network")
-// 		}
+		// Issue #55, halt if client is still syncing with Ethereum network
+		s, err := client.IsSyncing(ctx)
+		if err != nil {
+			return nil, tellorCommon.Contract{}, tellorCommon.Account{}, errors.Wrap(err, "determining if Ethereum client is syncing")
+		}
+		if s {
+			return nil, tellorCommon.Contract{}, tellorCommon.Account{}, errors.New("ethereum node is still syncing with the network")
+		}
 
-// 		clt = client
-// 		acc.Address = publicAddress
-// 		acc.PrivateKey = privateKey
-// 		cont.Getter = contractGetterInstance
-// 		cont.Caller = contractTellorInstance
-// 		cont.Address = contractAddress
-// 	}
-// 	return nil
-// }
+		account := tellorCommon.Account{
+			Address:    publicAddress,
+			PrivateKey: privateKey,
+		}
+		contract := tellorCommon.Contract{
+			Getter:  contractGetterInstance,
+			Caller:  contractTellorInstance,
+			Address: contractAddress,
+		}
+		return client, contract, account, nil
+	}
+	// Not sure why we need this case.
+	return nil, tellorCommon.Contract{}, tellorCommon.Account{}, nil
+}
 
 // func AddDBToCtx(remote bool) error {
 // 	cfg := config.GetConfig()
@@ -537,16 +560,68 @@ func AddDBToCtx(remote bool) error {
 // }
 
 var cli struct {
-	Config   kong.ConfigFlag
-	Transfer tokenCmd   `cmd help:"Transfer tokens"`
-	Approve  tokenCmd   `cmd help:"Approve tokens"`
-	Balance  balanceCmd `cmd help:"Check the balance of an address"`
-	Stake    struct {
-		Deposit  stakeCmd `cmd`
-		Withdraw stakeCmd `cmd`
-		Request  stakeCmd `cmd`
-		Status   stakeCmd `cmd`
-	} `cmd`
+	Config    configPath    `type:"path"`
+	logConfig logConfigPath `optional type:"path"`
+	logLevel  logLevel      `optional`
+	Transfer  transferCmd   `cmd help:"Transfer tokens"`
+	Approve   approveCmd    `cmd help:"Approve tokens"`
+	Balance   balanceCmd    `cmd help:"Check the balance of an address"`
+	Stake     stakeCmd      `cmd help:"perform one of the stake operations"`
+	Dispute   struct {
+		New struct {
+			Requestid  int `arg required`
+			Timestamp  int `arg required`
+			MinerIndex int `arg required`
+		} `cmd`
+		Vote struct {
+			disputeId int  `arg required`
+			support   bool `arg required`
+		} `cmd`
+		Show struct {
+		} `cmd`
+	}
+	Dataserver dataserverCmd `cmd`
+	Mine       mineCmd       `cmd`
+}
+
+type configPath string
+type logConfigPath string
+type logLevel string
+
+type dataserverCmd struct {
+}
+
+type mineCmd struct {
+	remote bool
+}
+
+func (l logLevel) BeforeApply(ctx *kong.Context) error {
+	logger := util.GetLogger(string(l))
+	ctx.Bind(logger)
+	return nil
+}
+
+func (c configPath) BeforeApply(ctx *kong.Context) error {
+	err := config.ParseConfig(string(c))
+	if err != nil {
+		return errors.Wrapf(err, "parsing config")
+	}
+	client, contract, account, err := setup()
+	if err != nil {
+		return errors.Wrapf(err, "setting up variables")
+	}
+	ctx.Bind(client)
+	ctx.Bind(contract)
+	ctx.Bind(account)
+	return nil
+}
+
+func (c logConfigPath) BeforeApply(ctx *kong.Context) error {
+	err := util.ParseLoggingConfig(string(c))
+	if err != nil {
+		return errors.Wrapf(err, "parsing log config")
+	}
+	return nil
 }
 
 type newDisputeCmd struct {
@@ -562,8 +637,24 @@ type stakeCmd struct {
 type stakeCmd struct {
 }
 
+<<<<<<< HEAD
 func (s *stakeCmd) Run() error {
 	return nil
+=======
+func (s *stakeCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+	switch s.Operation {
+	case "deposit":
+		return ops.Deposit(ctx, logger, client, contract, account)
+	case "withdraw":
+		return ops.WithdrawStake(ctx, logger, client, contract, account)
+	case "request":
+		return ops.RequestStakingWithdraw(ctx, logger, client, contract, account)
+	case "status":
+		return ops.ShowStatus(ctx, logger, client, contract, account)
+	default:
+		return errors.New("unknown stake command")
+	}
+>>>>>>> more development on cli replace
 }
 
 type balanceCmd struct {
@@ -583,164 +674,35 @@ type tokenCmd struct {
 	Amount  string `arg required`
 }
 
-func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
-	return func(cmd *cli.Cmd) {
-		remoteDS := cmd.BoolOpt("remote r", false, "connect to remote dataserver")
-		cmd.Action = func() {
-			logger := logSetup(logLevel)
-			// Create os kill sig listener.
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt)
-			exitChannels := make([]*chan os.Signal, 0)
-
-			cfg := config.GetConfig()
-			var ds *ops.DataServerOps
-			if !cfg.EnablePoolWorker {
-				ExitOnError(AddDBToCtx(*remoteDS), "initializing database")
-				if !*remoteDS {
-					ch := make(chan os.Signal)
-					exitChannels = append(exitChannels, &ch)
-
-					var err error
-					ds, err = ops.CreateDataServerOps(ctx, logger, cfg, database, &proxy, clt, &cont, &acc, ch)
-					ExitOnError(err, "creating data server")
-					// Start and wait for it to be ready.
-					ExitOnError(ds.Start(ctx), "starting data server")
-					<-ds.Ready()
-				}
-			}
-
-			level.Info(logger).Log("msg", "starting metrics server", "address", cfg.Mine.ListenHost+":"+strconv.Itoa(int(cfg.Mine.ListenPort)))
-			http.Handle("/metrics", promhttp.Handler())
-			srv, err := rest.Create(ctx, proxy, cfg.Mine.ListenHost, cfg.Mine.ListenPort)
-			ExitOnError(err, "creating data server instance")
-			srv.Start()
-
-			// Start miner
-			v, err := proxy.Get(db.DisputeStatusKey)
-			if err != nil {
-				level.Warn(logger).Log("msg", "getting dispute status. Check if staked")
-			}
-			status, _ := hexutil.DecodeBig(string(v))
-			if status.Cmp(big.NewInt(1)) != 0 {
-				ExitOnError(errors.New("miner is not able to mine with current status"), "checking miner")
-			}
-			ch := make(chan os.Signal)
-			exitChannels = append(exitChannels, &ch)
-			miner, err := ops.CreateMiningManager(logger, ch, cfg, proxy, cont, acc)
-			ExitOnError(err, "creating miner")
-			go func() {
-				miner.Start(ctx)
-			}()
-
-			// Wait for kill sig.
-			<-c
-			// Then notify exit channels.
-			for _, ch := range exitChannels {
-				*ch <- os.Interrupt
-			}
-
-			if err := srv.Stop(); err != nil {
-				level.Warn(logger).Log("msg", "shutting down the server", "err", err)
-			}
-
-			cnt := 0
-			start := time.Now()
-			for {
-				cnt++
-				dsStopped := false
-				minerStopped := false
-
-				if ds != nil {
-					dsStopped = !ds.Running
-				} else {
-					dsStopped = true
-				}
-
-				if miner != nil {
-					minerStopped = !miner.Running
-				} else {
-					minerStopped = true
-				}
-
-				if !dsStopped && !minerStopped && cnt > 60 {
-					level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
-				} else if dsStopped && minerStopped {
-					break
-				}
-				time.Sleep(500 * time.Millisecond)
-			}
-			level.Info(logger).Log("msg", "main shutdown complete")
-		}
+func (b *balanceCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract) error {
+	addr := ETHAddress{}
+	addr.Set(b.Address)
+	if b.Address == "" {
+		addr.Set(contract.Address.String())
+	} else {
+		addr.Set(b.Address)
 	}
+	return ops.Balance(ctx, client, contract.Getter, addr.addr)
 }
 
-func dataserverCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
-	return func(cmd *cli.Cmd) {
-		cmd.Action = func() {
-			logger := logSetup(logLevel)
-			// Create os kill sig listener.
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt)
+func (c *transferCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+	address := ETHAddress{}
+	address.Set(c.Address)
 
-			var ds *ops.DataServerOps
-			ExitOnError(AddDBToCtx(true), "initializing database")
-			ch := make(chan os.Signal)
-			var err error
-			ds, err = ops.CreateDataServerOps(ctx, logger, config.GetConfig(), database, &proxy, clt, &cont, &acc, ch)
-			ExitOnError(err, "creating data server")
+	amount := EthereumInt{}
+	amount.Set(c.Amount)
 
-			// Start and wait for it to be ready
-			err = ds.Start(ctx)
-			ExitOnError(err, "starting data server")
-
-			<-ds.Ready()
-
-			http.Handle("/metrics", promhttp.Handler())
-			cfg := config.GetConfig()
-			srv, err := rest.Create(ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
-			ExitOnError(err, "creating data server instance")
-			srv.Start()
-
-			// Wait for kill sig.
-			<-c
-			// Notify exit channels.
-			ch <- os.Interrupt
-
-			if err := srv.Stop(); err != nil {
-				level.Warn(logger).Log("msg", "shutting down the server", "err", err)
-			}
-
-			cnt := 0
-			start := time.Now()
-			for {
-				cnt++
-				dsStopped := false
-
-				if ds != nil {
-					dsStopped = !ds.Running
-				} else {
-					dsStopped = true
-				}
-
-				if !dsStopped && cnt > 60 {
-					level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
-				} else if dsStopped {
-					break
-				}
-				time.Sleep(500 * time.Millisecond)
-			}
-			level.Info(logger).Log("msg", "main shutdown complete")
-		}
-
-	}
-func (c *tokenCmd) Run() error {
-	return nil
+	return ops.Transfer(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
 
-func (c ConfigFlag) BeforeResolve(kong *Kong, ctx *Context, trace *Path) error {
-	fmt.Println(c)
-	return nil
+func (c *approveCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+	address := ETHAddress{}
+	address.Set(c.Address)
+
+	amount := EthereumInt{}
+	amount.Set(c.Amount)
+
+	return ops.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
 
 func main() {
