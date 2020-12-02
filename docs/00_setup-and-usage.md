@@ -2,7 +2,22 @@
 description: Here are the nuts and bolts for mining TRB.
 ---
 
-# The Guide
+# Setup and usage
+
+## Become a Miner
+
+For over a decade now, the Bitcoin network has shown how proof-of-work can incentivize individuals and companies to compete for the honor of finding block rewards and achieving consensus. This phenomenon is global, and anonymous. The network is democratized and decentralized, because the creators have no direct control over who is providing computing power on their network.
+
+Tellor takes this concept and applies it directly to the delivery of oracle data. Anyone who is able may start up telliot and begin competing for blocks. There is no whitelisting. Miners compete very much the same way that Bitcoin miners do, but with a twist. _Tellor Miners must also run a database from which to pull values to submit to the Tellor oracle._ When a "block" is found, the winners submit their data.
+
+Mining is one of the most exciting ways to help Tellor grow and become a leader in the DeFi / Oracle space. Here are a few things to consider before jumping in:
+
+As of now, mining requires you deposit 500 Tellor Tributes. These are a security deposit. If you are a malicious actor \(aka submit a bad value\), the community can vote to slash your 500 tokens.
+
+* Mining requires access to an Ethereum node. If you don’t have your own node, you can use an Infura API endpoint.
+* Miners must hold a balance of ETH to cover gas fees, which can be significant. Please reach out to the community to find the best tips for keeping gas costs under control.
+
+The guide that follows assumes that you have access to a suitable machine running linux to use for mining. For information about what constitutes a "suitable machine", we recommend reaching out to the community.
 
 ## Download the Latest telliot
 
@@ -142,4 +157,10 @@ Now when running the dataServer, you will store historical values and check for 
 Where 5 and .01 are the defaults, the variables are the amount of time in minutes to store historical values for comparison and the the threshold outside the min/max of the values \(e.g. 0.01 = 1%\);
 
 If the disputer is successful and finds a submitted outside of your acceptable range, a text file containing pertinent information will be created in your working directory \(the one you're running the miner out of\) in the format: `"possible-dispute-(blocktime).txt"`
+
+# Disclaimer
+
+If you are building a competing client, please contact us.  A lot of the miner specifications are off-chain and a significant portion of the mining process hinges on the consensus of the Tellor community to determine what proper values are.  Competing clients that change different pieces run the risk of being disputed by the community.
+
+As an example, request ID 4 is BTC/USD. If the api's all go down, it is the responsibility of the miner to still submit a valid BTC/USD price. If they do not, they risk being disputed and slashed. For these reasons, please contribute openly to the official Tellor miner \(or an open source variant\), as consensus here is key. If your miner gets a different value than the majority of the other miners, you risk being punished!
 

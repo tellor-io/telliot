@@ -29,7 +29,7 @@ method before making a change.
 The following section explains various suggestions and procedures to note during development.
 
 ### First Steps
-* Familiarizing yourself with our [coding style guidelines.](05_coding-style-guide.md).
+* Familiarizing yourself with our [coding style guidelines.](04_coding-style-guide.md).
 * Familiarizing yourself with the [Makefile](../Makefile) commands, for example, `build`, `format`, `test`, `lint`.
 `make help` will print all available commands with some description.
 
@@ -59,7 +59,7 @@ $ <Iterate your development>
 $ git push fork <your_PR_branch>
 ```
 
-1. If your change affects users (adds,removes or changes a feature) add the item to the [CHANGELOG](08_CHANGELOG.md).
+1. If your change affects users (adds,removes or changes a feature) add the item to the [CHANGELOG](CHANGELOG.md).
 1. Add e2e tests for new features and changes to functionality. Add unit tests for key components of the packages.
 1. A PR will me merged once the PR has been approved by at least one developer with write access.
 1. If you feel like your PR is waiting too long for a review, feel free to ping in the [Discord](https://discord.gg/n7drGjh) channel for a review!

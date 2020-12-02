@@ -36,11 +36,11 @@ A list of all PSR's(pre specified requests) and the expected data can be found [
 
 
 ## Instructions for deployment
- - [Telliot Instructions](02_the-guide.md)
+ - [Telliot Instructions](docs/00_setup-and-usage.md)
 
 ## Contributing and building from source
 Contributions are very welcome!<br/>
-See our [04_contributing.md](04_contributing.md) for more information.
+See our [04_contributing.md](03_contributing.md) for more information.
 
 ## Run with Docker
 Available tags: https://hub.docker.com/u/tellor
@@ -50,18 +50,21 @@ docker run -v $(pwd)/.local:/configs tellor/telliot:master mine
 This repository is maintained by the [Tellor team](https://github.com/orgs/tellor-io/people)
 
 ### DISCLAIMER
-    Mine at your own risk.
 
-    Mining requires you deposit 1000 Tellor Tributes. These are a security deposity. If you are a malicious actor (aka submit a bad value), the community can vote to slash your 1000 tokens.
+-------
 
-    Mining also requires submitting on-chain transactions on Ethereum. These transactions cost gas (ETH) and can sometimes be signifiant if the cost of gas on EThereum is high (i.e. the network is clogged). Please reach out to the community to find the best tips for keeping gas costs under control or at least being aware of the costs.
+Mine at your own risk.
 
-    If you are building a competing client, please contact us. The miner specifications are off-chain and the validity of the mining process hinges on the consensus of the Tellor community to determine what proper values are. Competing clients that change different pieces run the risk of being disputed by the commmunity.
+Mining requires you deposit 1000 Tellor Tributes. These are a security deposity. If you are a malicious actor (aka submit a bad value), the community can vote to slash your 1000 tokens.
 
-    There is no guaruntee of profit from mining.
+Mining also requires submitting on-chain transactions on Ethereum. These transactions cost gas (ETH) and can sometimes be signifiant if the cost of gas on EThereum is high (i.e. the network is clogged). Please reach out to the community to find the best tips for keeping gas costs under control or at least being aware of the costs.
 
-    There is no promise that Tellor Tributes currently hold or will ever hold any value.
+If you are building a competing client, please contact us. The miner specifications are off-chain and the validity of the mining process hinges on the consensus of the Tellor community to determine what proper values are. Competing clients that change different pieces run the risk of being disputed by the commmunity.
 
+There is no guaruntee of profit from mining.
 
+There is no promise that Tellor Tributes currently hold or will ever hold any value.
+
+----------
 ### Copyright
 Tellor Inc. 2019

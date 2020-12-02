@@ -42,11 +42,11 @@ later follow-up.
 
 # Cutting a release
 
-## Update `08_CHANGELOG.md`
+## Update `CHANGELOG.md`
 Do this in a PR against `master` as this gives others the opportunity to chime in on the release and the changelog changes.
 
 Note:
-> that `08_CHANGELOG.md` should only document changes relevant to users of the project, including external API changes, performance improvements, and new features. Do not document changes of internal interfaces, code refactorings and clean-ups, changes to the build process, etc. People interested in these are asked to refer to the git history.
+> that `CHANGELOG.md` should only document changes relevant to users of the project, including external API changes, performance improvements, and new features. Do not document changes of internal interfaces, code refactorings and clean-ups, changes to the build process, etc. People interested in these are asked to refer to the git history.
 
 ## Draft the new release
 On `master` tag the current commit as a new release via the following commands:
