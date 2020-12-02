@@ -36,11 +36,11 @@ A list of all PSR's(pre specified requests) and the expected data can be found [
 
 
 ## Instructions for deployment
- - [Telliot Instructions](the-guide.md)
+ - [Telliot Instructions](02_the-guide.md)
 
 ## Contributing and building from source
 Contributions are very welcome!<br/>
-See our [contributing.md](contributing.md) for more information.
+See our [04_contributing.md](04_contributing.md) for more information.
 
 ## Run with Docker
 Available tags: https://hub.docker.com/u/tellor
