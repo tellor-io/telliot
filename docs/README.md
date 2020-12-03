@@ -15,7 +15,7 @@
 > ## ⚠️ Note!
 > Telliot docs are synced from the project repository.
 To edit please visit:<br/>
-[Telliot gitbook space](https://docs.telliot.tellor.io)<br/>
+[Telliot gitbook space](https://docs.tellor.io/telliot)<br/>
 or<br/>
 [Telliot github repo](https://github.com/tellor-io/telliot/tree/master/docs)
 
