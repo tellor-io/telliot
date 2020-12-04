@@ -1,13 +1,9 @@
 ---
 description: Telliot tweaks and settings to keep your rig running smoothly.
 ---
-
-# Configuation
-
+# Telliot configuration
 ## Cli reference
-
 Telliot commands and config file options are as the following:
-
 #### Required Flags <a id="docs-internal-guid-d1a57725-7fff-a753-9236-759dd3f42eed"></a>
 
 * `--config` \(path to your config file.\)
@@ -29,7 +25,7 @@ Telliot commands and config file options are as the following:
 #### Config file options:
 
 * `contractAddress` \(required\) - address of TellorContract
-* `nodeURL` \(required\) - node URL \(e.g [https://mainnet.infura.io/bbbb](https://mainnet.infura.io/bbbb) or [https://localhost:8545](https://localhost:8545) if own node\)
+* `nodeURL` \(required\) - node URL \(e.g https://mainnet.infura.io/bbbb or https://localhost:8545 if own node\)
 * `privateKey` \(required\) - privateKey for your address
 * `databaseURL` \(required\) - where you are reading from for the server database \(if hosted\)
 * `publicAddress` \(required\) - public address for your miner \(note, no 0x\)
@@ -162,6 +158,7 @@ Note that your dataServer and miners must be started with separate commands.
 
 For more detailed instructions:[ https://docs.google.com/document/d/1k8ELb1cXkEpztHkHUt8QTL4JCcnHw5\_yQjTKIHCaSCE](https://docs.google.com/document/d/1k8ELb1cXkEpztHkHUt8QTL4JCcnHw5_yQjTKIHCaSCE)
 
+
 ### LogConfig file options
 
 The logging.config file consists of two fields: \* component \* level
@@ -179,4 +176,3 @@ INFO - logs most information about the mining operation
 WARN - logs all warnings and errors
 
 ERROR - logs only serious errors
-
