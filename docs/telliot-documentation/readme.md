@@ -1,6 +1,6 @@
 # Introduction
 
- [![tellor.io](.gitbook/assets/Tellor.png)](https://www.tellor.io/)
+ [![tellor.io](../.gitbook/assets/Tellor.png)](https://www.tellor.io/)
 
  [![Twitter WeAreTellor](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/WeAreTellor)
 
@@ -19,7 +19,7 @@ The Tellor system is a way to push data on-chain. What pieces of data are pushed
 
 A list of all PSR's\(pre specified requests\) and the expected data can be found [here](https://github.com/tellor-io/telliot/tree/f6791d8fb61f7d49051624a70a96b7d6a3f77345/pkg/tracker/psrs.go).
 
-![MinerSpecs](.gitbook/assets/minerspecs.png)
+![MinerSpecs](../.gitbook/assets/minerspecs.png)
 
 ### Instructions for deployment
 
@@ -28,7 +28,7 @@ A list of all PSR's\(pre specified requests\) and the expected data can be found
 ### Contributing and building from source
 
 Contributions are very welcome!  
- See our [04\_contributing.md](telliot-documentation/contributing.md) for more information.
+ See our [04\_contributing.md](contributing.md) for more information.
 
 ### Run with Docker
 
@@ -51,4 +51,8 @@ If you are building a competing client, please contact us. The miner specificati
 There is no guaruntee of profit from mining.
 
 There is no promise that Tellor Tributes currently hold or will ever hold any value.
+
+#### Copyright
+
+Tellor Inc. 2019
 
