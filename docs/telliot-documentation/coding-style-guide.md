@@ -2,11 +2,11 @@
 description: Coding style guide for contributors.
 ---
 
-# Coding Style Guide
+# Coding style guide
 
-This document details the official style guides for the various languages we use in the project.
-Feel free to familiarize yourself with and refer to this document during code reviews. If something in our codebase does not match the style, it means it
-was missed or it was written before this document. Help wanted to fix it! (:
+## Coding Style Guide
+
+This document details the official style guides for the various languages we use in the project. Feel free to familiarize yourself with and refer to this document during code reviews. If something in our codebase does not match the style, it means it was missed or it was written before this document. Help wanted to fix it! \(:
 
 Generally, we care about:
 
@@ -16,30 +16,23 @@ Generally, we care about:
 * Testability. Even if it means some changes to the production code, like `timeNow func() time.Time` mock.
 * Consistency: If some pattern repeats, it means fewer surprises.
 
-Some style is enforced by our linters and is covered in separate smaller sections. Please look there if you want to
-embrace some of the rules in your own project! Some of those are currently impossible to detect with linters. Ideally, everything would be automated. (:
+Some style is enforced by our linters and is covered in separate smaller sections. Please look there if you want to embrace some of the rules in your own project! Some of those are currently impossible to detect with linters. Ideally, everything would be automated. \(:
 
-# Go
+## Go
 
-For code written in [Go](https://golang.org/) we use the standard Go style guides ([Effective Go](https://golang.org/doc/effective_go.html),
-[CodeReviewComments](https://github.com/golang/go/wiki/CodeReviewComments)) with a few additional rules that make certain areas stricter
-than the standard guides. This ensures even better consistency in modern distributed systems, where reliability, performance,
-and maintainability are extremely important.
+For code written in [Go](https://golang.org/) we use the standard Go style guides \([Effective Go](https://golang.org/doc/effective_go.html), [CodeReviewComments](https://github.com/golang/go/wiki/CodeReviewComments)\) with a few additional rules that make certain areas stricter than the standard guides. This ensures even better consistency in modern distributed systems, where reliability, performance, and maintainability are extremely important.
 
-## Development / Code Review
+### Development / Code Review
 
 In this section, we will go through rules that on top of the standard guides that we apply during development and code reviews.
 
-NOTE: If you know that any of those rules can be enabled by some linter, automatically, let us know! (:
+NOTE: If you know that any of those rules can be enabled by some linter, automatically, let us know! \(:
 
-### Reliability
+#### Reliability
 
-The coding style is not purely about what is ugly and what is not. It's mainly to make sure programs are reliable for
-running on production 24h per day without causing incidents. The following rules are describing some unhealthy patterns
-we have seen across the Go community that are often forgotten. Those things can be considered bugs or can significantly
-increase the chances of introducing a bug.
+The coding style is not purely about what is ugly and what is not. It's mainly to make sure programs are reliable for running on production 24h per day without causing incidents. The following rules are describing some unhealthy patterns we have seen across the Go community that are often forgotten. Those things can be considered bugs or can significantly increase the chances of introducing a bug.
 
-#### Defers: Don't Forget to Check Returned Errors
+**Defers: Don't Forget to Check Returned Errors**
 
 It's easy to forget to check the error returned by a `Close` method that we deferred.
 
@@ -53,11 +46,9 @@ defer f.Close() // What if an error occurs here?
 // Write something to file... etc.
 ```
 
-Unchecked errors like this can lead to major bugs. Consider the above example: the `*os.File` `Close` method can be responsible
-for actually flushing to the file, so if an error occurs at that point, the whole **write might be aborted!** 😱
+Unchecked errors like this can lead to major bugs. Consider the above example: the `*os.File` `Close` method can be responsible for actually flushing to the file, so if an error occurs at that point, the whole **write might be aborted!** 😱
 
-Always check errors! To make it consistent and not distracting, use [runutil](https://pkg.go.dev/github.com/thanos-io/thanos@v0.11.0/pkg/runutil?tab=doc)
-helper package, e.g.:
+Always check errors! To make it consistent and not distracting, use [runutil](https://pkg.go.dev/github.com/thanos-io/thanos@v0.11.0/pkg/runutil?tab=doc) helper package, e.g.:
 
 ```go
 // Use `CloseWithErrCapture` if you want to close and fail the function or
@@ -71,10 +62,8 @@ defer runutil.CloseWithErrCapture(&err, f, "close file")
 defer runutil.CloseWithLogOnErr(logger, f, "close file")
 ```
 
-
 _Avoid 🔥_
 
-----
 ```go
 func writeToFile(...) error {
     f, err := os.Open(...)
@@ -87,9 +76,9 @@ func writeToFile(...) error {
     return nil
 }
 ```
-<p align="center">Better 🤓</p>
 
-----
+Better 🤓
+
 ```go
 func writeToFile(...) (err error) {
     f, err := os.Open(...)
@@ -104,19 +93,16 @@ func writeToFile(...) (err error) {
 }
 ```
 
-#### Exhaust Readers
+**Exhaust Readers**
 
-One of the most common bugs is forgetting to close or fully read the bodies of HTTP requests and responses, especially on
-error. If you read the body of such structures, you can use the [runutil](https://pkg.go.dev/github.com/thanos-io/thanos@v0.11.0/pkg/runutil?tab=doc)
-helper as well:
+One of the most common bugs is forgetting to close or fully read the bodies of HTTP requests and responses, especially on error. If you read the body of such structures, you can use the [runutil](https://pkg.go.dev/github.com/thanos-io/thanos@v0.11.0/pkg/runutil?tab=doc) helper as well:
 
 ```go
 defer runutil.ExhaustCloseWithLogOnErr(logger, resp.Body, "close response")
 ```
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 resp, err := http.Get("http://example.com/")
 if err != nil {
@@ -131,9 +117,8 @@ scanner := bufio.NewScanner(resp.Body)
 for scanner.Scan() {
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 resp, err := http.Get("http://example.com/")
 if err != nil {
@@ -147,30 +132,24 @@ scanner := bufio.NewScanner(resp.Body)
 for scanner.Scan() {
 ```
 
+**Avoid Globals**
 
-#### Avoid Globals
+No globals other than `const` are allowed. Period. This means also, no `init` functions.
 
-No globals other than `const` are allowed. Period.
-This means also, no `init` functions.
+**Never Use Panics**
 
-#### Never Use Panics
+Never use them. If some dependency uses it, use [recover](https://golang.org/doc/effective_go.html#recover). Also, consider avoiding that dependency. 🙈
 
-Never use them. If some dependency uses it, use [recover](https://golang.org/doc/effective_go.html#recover). Also, consider
-avoiding that dependency. 🙈
-
-#### Avoid Using the `reflect` or `unsafe` Packages
+**Avoid Using the reflect or unsafe Packages**
 
 Use those only for very specific, critical cases. Especially `reflect` tend to be very slow. For testing code, it's fine to use reflect.
 
-#### Avoid variable shadowing
+**Avoid variable shadowing**
 
-Variable shadowing is when you use the same variable name in a smaller scope that "shadows". This is very
-dangerous as it leads to many surprises. It's extremely hard to debug such problems as they might appear in unrelated parts of the code.
-And what's broken is tiny `:` or lack of it.
+Variable shadowing is when you use the same variable name in a smaller scope that "shadows". This is very dangerous as it leads to many surprises. It's extremely hard to debug such problems as they might appear in unrelated parts of the code. And what's broken is tiny `:` or lack of it.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
     var client ClientInterface
     if clientTypeASpecified {
@@ -190,9 +169,8 @@ And what's broken is tiny `:` or lack of it.
     resp, err := client.Call(....) // nil pointer panic!
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
     var client ClientInterface = NewNoop(...)
     if clientTypeASpecified {
@@ -215,32 +193,24 @@ This is also why we recommend to scope errors if you can:
     }
 ```
 
-While it's not yet configured, we might think consider not permitting variable shadowing with [`golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow`](https://godoc.org/golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow)
-in future. There was even Go 2 proposal for [disabling this in the language itself, but was rejected](https://github.com/golang/go/issues/21114):
+While it's not yet configured, we might think consider not permitting variable shadowing with [`golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow`](https://godoc.org/golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow) in future. There was even Go 2 proposal for [disabling this in the language itself, but was rejected](https://github.com/golang/go/issues/21114):
 
 Similar to this problem is the package name shadowing. While it is less dangerous, it can cause similar issues, so avoid package shadowing if you can.
 
-### Performance
+#### Performance
 
-After all better performance is important and this might require some additional patterns in our code. With those patterns, we try to not sacrifice the readability and apply those only
-on the critical code paths.
+After all better performance is important and this might require some additional patterns in our code. With those patterns, we try to not sacrifice the readability and apply those only on the critical code paths.
 
-**Keep in mind to always measure the results.** The Go performance relies on many hidden things and tweaks, so the good
-micro benchmark, following with the real system load test is in most times required to tell if optimization makes sense.
+**Keep in mind to always measure the results.** The Go performance relies on many hidden things and tweaks, so the good micro benchmark, following with the real system load test is in most times required to tell if optimization makes sense.
 
-#### Pre-allocating Slices and Maps
+**Pre-allocating Slices and Maps**
 
-Try to always preallocate slices and map. If you know the number of elements you want to put
-apriori, use that knowledge!  This significantly improves the latency of such code. Consider this as micro optimization,
-however, it's a good pattern to do it always, as it does not add much complexity. Performance wise, it's only relevant for critical,
-code paths with big arrays.
+Try to always preallocate slices and map. If you know the number of elements you want to put apriori, use that knowledge! This significantly improves the latency of such code. Consider this as micro optimization, however, it's a good pattern to do it always, as it does not add much complexity. Performance wise, it's only relevant for critical, code paths with big arrays.
 
-NOTE: This is because, in very simple view, the Go runtime allocates 2 times the current size. So if you expect million of elements, Go will do many allocations
-on `append` in between instead of just one if you preallocate.
+NOTE: This is because, in very simple view, the Go runtime allocates 2 times the current size. So if you expect million of elements, Go will do many allocations on `append` in between instead of just one if you preallocate.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 func copyIntoSliceAndMap(biggy []string) (a []string, b map[string]struct{})
     b = map[string]struct{}{}
@@ -252,9 +222,8 @@ func copyIntoSliceAndMap(biggy []string) (a []string, b map[string]struct{})
 }
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 func copyIntoSliceAndMap(biggy []string) (a []string, b map[string]struct{})
     b = make(map[string]struct{}, len(biggy))
@@ -268,20 +237,14 @@ func copyIntoSliceAndMap(biggy []string) (a []string, b map[string]struct{})
 }
 ```
 
-#### Reuse arrays
+**Reuse arrays**
 
-To extend the above point, there are cases where you don't need to allocate new space in memory all the time. If you repeat
-the certain operation on slices sequentially and you just release the array on every iteration, it's reasonable to reuse
-the underlying array for those. This can give quite enormous gains for critical paths.
-Unfortunately, currently there is no way to reuse the underlying array for maps.
+To extend the above point, there are cases where you don't need to allocate new space in memory all the time. If you repeat the certain operation on slices sequentially and you just release the array on every iteration, it's reasonable to reuse the underlying array for those. This can give quite enormous gains for critical paths. Unfortunately, currently there is no way to reuse the underlying array for maps.
 
-NOTE: Why you cannot just allocate slice and release and in new iteration allocate and release again etc? Go should know it has
-available space and just reuses that no? (: Well, it's not that easy. TL;DR is that Go Garbage Collection runs periodically or on certain cases
-(big heap), but definitely not on every iteration of your loop (that would be super slow). Read more in details [here](https://about.sourcegraph.com/go/gophercon-2018-allocator-wrestling).
+NOTE: Why you cannot just allocate slice and release and in new iteration allocate and release again etc? Go should know it has available space and just reuses that no? \(: Well, it's not that easy. TL;DR is that Go Garbage Collection runs periodically or on certain cases \(big heap\), but definitely not on every iteration of your loop \(that would be super slow\). Read more in details [here](https://about.sourcegraph.com/go/gophercon-2018-allocator-wrestling).
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 var messages []string
 for _, msg := range recv {
@@ -298,9 +261,8 @@ for _, msg := range recv {
 }
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 var messages []string
 for _, msg := range recv {
@@ -316,26 +278,22 @@ for _, msg := range recv {
 }
 ```
 
-### Readability
+#### Readability
 
 The part that all Gophers love ❤️ How to make code more readable?
 
-For the Team, readability is about programming in a way that does not surprise the reader of the code. All the details
-and inconsistencies can distract or mislead the reader, so every character or newline might matter. That's why we might be spending
-more time on every Pull Requests' review, especially in the beginning, but for a good reason! To make sure we can quickly understand,
-extend and fix problems with our system.
+For the Team, readability is about programming in a way that does not surprise the reader of the code. All the details and inconsistencies can distract or mislead the reader, so every character or newline might matter. That's why we might be spending more time on every Pull Requests' review, especially in the beginning, but for a good reason! To make sure we can quickly understand, extend and fix problems with our system.
 
-#### Keep the Interface Narrow; Avoid Shallow Functions
+**Keep the Interface Narrow; Avoid Shallow Functions**
 
-This is connected more to the API design than coding, but even during small coding decisions it matter. For example how you define functions
-or methods. There are two general rules:
+This is connected more to the API design than coding, but even during small coding decisions it matter. For example how you define functions or methods. There are two general rules:
 
-* Simpler (usually it means smaller) interfaces are better. This might mean a smaller, simpler function signature as well as fewer methods
-in the interfaces. Try to group interfaces based on functionality to expose at max 1-3 methods if possible.
+* Simpler \(usually it means smaller\) interfaces are better. This might mean a smaller, simpler function signature as well as fewer methods
 
-<p align="center">Avoid 🔥</p>
+  in the interfaces. Try to group interfaces based on functionality to expose at max 1-3 methods if possible.
 
-----
+Avoid 🔥
+
 ```go
 // Compactor aka: The Big Boy. Such big interface is really useless ):
 type Compactor interface {
@@ -352,9 +310,8 @@ type Compactor interface {
 }
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 // Smaller interfaces with a smaller number of arguments allow functional grouping, clean composition and clear testability.
 type Compactor interface {
@@ -387,14 +344,14 @@ type Cleaner interface {
 }
 ```
 
-
 * It's better if you can hide more unnecessary complexity from the user. This means that having shallow function introduce
-more cognitive load to understand the function name or navigate to implementation to understand it better. It might be much
-more readable to inline those few lines directly on the caller side.
 
-<p align="center">Avoid 🔥</p>
+  more cognitive load to understand the function name or navigate to implementation to understand it better. It might be much
 
-----
+  more readable to inline those few lines directly on the caller side.
+
+Avoid 🔥
+
 ```go
     // Some code...
     s.doSomethingAndHandleError()
@@ -409,9 +366,8 @@ func (s *myStruct) doSomethingAndHandleError() {
 }
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
     // Some code...
     if err := doSomething(); err != nil {
@@ -422,13 +378,10 @@ func (s *myStruct) doSomethingAndHandleError() {
 }
 ```
 
-This is a little bit connected to `There should be one-- and preferably only one --obvious way to do it` and [`DRY`](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)
-rules. If you have more ways of doing something than one, it means you have a wider interface, allowing more opportunities for
-errors, ambiguity and maintenance burden.
+This is a little bit connected to `There should be one-- and preferably only one --obvious way to do it` and [`DRY`](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) rules. If you have more ways of doing something than one, it means you have a wider interface, allowing more opportunities for errors, ambiguity and maintenance burden.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 // We have here SIX potential ways the caller can get an ID. Can you find all of them?
 
@@ -452,9 +405,8 @@ func (b *Block) ID() ulid.ULID {
 func (b *Block) IDNoLock() ulid.ULID {  return b.ID }
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 type Block struct {
     // Things...
@@ -470,22 +422,18 @@ func (b *Block) ID() ulid.ULID {
 }
 ```
 
-#### Use Named Return Parameters Carefully
+**Use Named Return Parameters Carefully**
 
-It's OK to name return parameters if the types do not give enough information about what function or method actually returns.
-Another use case is when you want to define a variable, e.g. a slice.
+It's OK to name return parameters if the types do not give enough information about what function or method actually returns. Another use case is when you want to define a variable, e.g. a slice.
 
-**IMPORTANT:** never use naked `return` statements with named return parameters. This compiles but it makes returning values
-implicit and thus more prone to surprises.
+**IMPORTANT:** never use naked `return` statements with named return parameters. This compiles but it makes returning values implicit and thus more prone to surprises.
 
-#### Clean Defer Only if Function Fails
+**Clean Defer Only if Function Fails**
 
-There is a way to sacrifice defer in order to properly close all on each error. Repetition makes it easier to make an error
-and forget something when changing the code, so on-error deferring is doable:
+There is a way to sacrifice defer in order to properly close all on each error. Repetition makes it easier to make an error and forget something when changing the code, so on-error deferring is doable:
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 func OpenSomeFileAndDoSomeStuff() (*os.File, error) {
     f, err := os.OpenFile("file.txt", os.O_RDONLY, 0)
@@ -509,9 +457,8 @@ func OpenSomeFileAndDoSomeStuff() (*os.File, error) {
 }
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 func OpenSomeFileAndDoSomeStuff() (f *os.File, err error) {
     f, err = os.OpenFile("file.txt", os.O_RDONLY, 0)
@@ -537,37 +484,30 @@ func OpenSomeFileAndDoSomeStuff() (f *os.File, err error) {
 }
 ```
 
-#### Explicitly Handle Returned Errors
+**Explicitly Handle Returned Errors**
 
-Always handle returned errors. It does not mean you cannot "ignore" the error for some reason, e.g. if we know implementation
-will not return anything meaningful. You can ignore the error, but do so explicitly:
+Always handle returned errors. It does not mean you cannot "ignore" the error for some reason, e.g. if we know implementation will not return anything meaningful. You can ignore the error, but do so explicitly:
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 someMethodThatReturnsError(...)
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 _ = someMethodThatReturnsError(...)
 ```
 
-
 The exception: well-known cases such as `level.Debug|Warn` etc and `fmt.Fprint*`
 
-#### Avoid Defining Variables Used Only Once.
+**Avoid Defining Variables Used Only Once.**
 
-It's tempting to define a variable as an intermittent step to create something bigger. Avoid defining
-such a variable if it's used only once. When you create a variable *the reader* expects some other usage of this variable than
-one, so it can be annoying to every time double check that and realize that it's only used once.
+It's tempting to define a variable as an intermittent step to create something bigger. Avoid defining such a variable if it's used only once. When you create a variable _the reader_ expects some other usage of this variable than one, so it can be annoying to every time double check that and realize that it's only used once.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
     someConfig := a.GetConfig()
     address124 := someConfig.Addresses[124]
@@ -577,9 +517,8 @@ one, so it can be annoying to every time double check that and realize that it's
     return c
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
     // This variable is required for potentially consistent results. It is used twice.
     someConfig := a.FetchConfig()
@@ -589,13 +528,12 @@ one, so it can be annoying to every time double check that and realize that it's
     }
 ```
 
-#### Only Two Ways of Formatting Functions/Methods
+**Only Two Ways of Formatting Functions/Methods**
 
 Prefer function/method definitions with arguments in a single line. If it's too wide, put each argument on a new line.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 func function(argument1 int, argument2 string,
     argument3 time.Duration, argument4 someType,
@@ -603,9 +541,8 @@ func function(argument1 int, argument2 string,
 ) (ret int, err error) {
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 func function(
     argument1 int,
@@ -619,7 +556,7 @@ func function(
 
 This applies for both calling and defining method / function.
 
-NOTE: One exception would be when you expect the variadic (e.g. `...string`) arguments to be filled in pairs, e.g:
+NOTE: One exception would be when you expect the variadic \(e.g. `...string`\) arguments to be filled in pairs, e.g:
 
 ```go
 level.Info(logger).Log(
@@ -630,14 +567,12 @@ level.Info(logger).Log(
 )
 ```
 
-#### Control Structure: Prefer early returns and avoid `else`
+**Control Structure: Prefer early returns and avoid else**
 
-In most of the cases, you don't need `else`. You can usually use `continue`, `break` or `return` to end an `if` block.
-This enables having one less indent and better consistency so code is more readable.
+In most of the cases, you don't need `else`. You can usually use `continue`, `break` or `return` to end an `if` block. This enables having one less indent and better consistency so code is more readable.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 for _, elem := range elems {
     if a == 1 {
@@ -648,9 +583,8 @@ for _, elem := range elems {
 }
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 for _, elem := range elems {
     if a == 1 {
@@ -661,47 +595,41 @@ for _, elem := range elems {
 }
 ```
 
-#### Wrap Errors for More Context; Don't Repeat "failed ..." There.
+**Wrap Errors for More Context; Don't Repeat "failed ..." There.**
 
-We use [`pkg/errors`](https://github.com/pkg/errors) package for `errors`. We prefer it over standard wrapping with `fmt.Errorf` + `%w`,
-as `errors.Wrap` is explicit. It's easy to by accident replace `%w` with `%v` or to add extra inconsistent characters to the string.
+We use [`pkg/errors`](https://github.com/pkg/errors) package for `errors`. We prefer it over standard wrapping with `fmt.Errorf` + `%w`, as `errors.Wrap` is explicit. It's easy to by accident replace `%w` with `%v` or to add extra inconsistent characters to the string.
 
-Use [`pkg/errors.Wrap`](https://github.com/pkg/errors) to wrap errors for future context when errors occur. It's recommended
-to add more interesting variables to add context using `errors.Wrapf`, e.g. file names, IDs or things that fail, etc.
+Use [`pkg/errors.Wrap`](https://github.com/pkg/errors) to wrap errors for future context when errors occur. It's recommended to add more interesting variables to add context using `errors.Wrapf`, e.g. file names, IDs or things that fail, etc.
 
 When using `Errorf,Warpf` put arguments at the end to make it easyer to read and use `%v` to reduce human error if the argument type changed.
-<p align="center">Difficult to read 🔥</p>
 
-----
+Difficult to read 🔥
+
 ```go
 errors.Errorf("insufficient balance %s, mining stake requires %s", a, b)
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 errors.Errorf("insufficient mining stake TRB balance - actual:%v, required:%v", a, b)
 ```
 
-NOTE: never prefix wrap messages with wording like `failed...`, `couldn't...` or `error occurred while...`. Just describe what we
-wanted to do when the failure occurred. Those prefixes are just noise. We are wrapping error, so it's obvious that some error
-occurred, right? (: Improve readability and consider avoiding those.
+NOTE: never prefix wrap messages with wording like `failed...`, `couldn't...` or `error occurred while...`. Just describe what we wanted to do when the failure occurred. Those prefixes are just noise. We are wrapping error, so it's obvious that some error occurred, right? \(: Improve readability and consider avoiding those.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 fmt.Errorf("error while reading from file %s: %w", f.Name, err)
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 errors.Wrapf(err, "read file %s", f.Name)
 ```
-#### Use the Blank Identifier `_`
+
+**Use the Blank Identifier \_**
 
 Blank identifiers are very useful to mark variables that are not used. Consider the following cases:
 
@@ -726,25 +654,19 @@ var _ InterfaceA = TypeA
 func (t *Type) SomeMethod(_ context.Context, abc int) error {
 ```
 
-#### Rules for Log Messages
+**Rules for Log Messages**
 
-The project uses [go-kit logger](https://github.com/go-kit/kit/tree/master/log). This means that we expect log lines
-to have a certain structure. Structure means that instead of adding variables to the message, those should be passed as
-separate fields. Keep in mind that all log lines should be `lowercase` (readability and consistency) and
-all struct keys are using `camelCase`. It's suggested to keep key names short and consistent. For example, if
-we always use `block` for block ID, let's not use in the other single log message `id`.
+The project uses [go-kit logger](https://github.com/go-kit/kit/tree/master/log). This means that we expect log lines to have a certain structure. Structure means that instead of adding variables to the message, those should be passed as separate fields. Keep in mind that all log lines should be `lowercase` \(readability and consistency\) and all struct keys are using `camelCase`. It's suggested to keep key names short and consistent. For example, if we always use `block` for block ID, let's not use in the other single log message `id`.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 level.Info(logger).Log("msg", fmt.Sprintf("Found something epic during compaction number %v. This looks amazing.", compactionNumber),
  "block_id", id, "elapsed-time", timeElapsed)
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 level.Info(logger).Log("msg", "found something epic during compaction; this looks amazing", "compNumber", compNumber,
 "block", id, "elapsed", timeElapsed)
@@ -753,30 +675,31 @@ level.Info(logger).Log("msg", "found something epic during compaction; this look
 Additionally, there are certain rules we suggest while using different log levels:
 
 * level.Info: Should always have `msg` field. It should be used only for important events that we expect to happen not too
-often.
+
+  often.
+
 * level.Debug: Should always have `msg` field. It can be a bit more spammy, but should not be everywhere as well. Use it
-only when you want to really dive into some problems in certain areas.
+
+  only when you want to really dive into some problems in certain areas.
+
 * level.Warn: Should have either `msg` or `err` or both fields. They should warn about events that are suspicious and to investigate
-but the process can gracefully mitigate it. Always try to describe *how* it was mitigated, what action will be performed e.g. `value will be skipped`
+
+  but the process can gracefully mitigate it. Always try to describe _how_ it was mitigated, what action will be performed e.g. `value will be skipped`
+
 * level.Error: Should have either `msg` or `err` or both fields. Use it only for a critical event.
 
-#### Comment Necessary Surprises
+**Comment Necessary Surprises**
 
-Comments are not the best. They age quickly and the compiler does not fail if you will forget to update them. So use comments
-only when necessary. **And it is necessary to comment on code that can surprise the user.** Sometimes, complexity
-is necessary, for example for performance. Comment in this case why such optimization was needed. If something
-was done temporarily add `TODO(<github name>): <something, with GitHub issue link ideally>`.
+Comments are not the best. They age quickly and the compiler does not fail if you will forget to update them. So use comments only when necessary. **And it is necessary to comment on code that can surprise the user.** Sometimes, complexity is necessary, for example for performance. Comment in this case why such optimization was needed. If something was done temporarily add `TODO(<github name>): <something, with GitHub issue link ideally>`.
 
-### Testing
+#### Testing
 
-#### Table Tests
+**Table Tests**
 
-Use table-driven tests that use [t.Run](https://blog.golang.org/subtests) for readability. They are easy to read
-and allows to add a clean description of each test case. Adding or adapting test cases is also easier.
+Use table-driven tests that use [t.Run](https://blog.golang.org/subtests) for readability. They are easy to read and allows to add a clean description of each test case. Adding or adapting test cases is also easier.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 host, port, err := net.SplitHostPort("1.2.3.4:1234")
 testutil.Ok(t, err)
@@ -797,9 +720,7 @@ host, port, err = net.SplitHostPort("yolo")
 testutil.NotOk(t, err)
 ```
 
-<p align="center">Better 🤓</p>
-
-----
+Better 🤓
 
 ```go
 for _, tcase := range []struct{
@@ -853,14 +774,12 @@ for _, tcase := range []struct{
 }
 ```
 
-#### Tests for Packages / Structs That Involve `time` package.
+**Tests for Packages / Structs That Involve time package.**
 
-Avoid unit testing based on real-time. Always try to mock time that is used within struct by using, for example, a `timeNow func() time.Time` field.
-For production code, you can initialize the field with `time.Now`. For test code, you can set a custom time that will be used by the struct.
+Avoid unit testing based on real-time. Always try to mock time that is used within struct by using, for example, a `timeNow func() time.Time` field. For production code, you can initialize the field with `time.Now`. For test code, you can set a custom time that will be used by the struct.
 
-<p align="center">Avoid 🔥</p>
+Avoid 🔥
 
-----
 ```go
 func (s *SomeType) IsExpired(created time.Time) bool {
     // Code is hardly testable.
@@ -868,9 +787,8 @@ func (s *SomeType) IsExpired(created time.Time) bool {
 }
 ```
 
-<p align="center">Better 🤓</p>
+Better 🤓
 
-----
 ```go
 func (s *SomeType) IsExpired(created time.Time) bool {
     // s.timeNow is time.Now on production, mocked in tests.
@@ -878,21 +796,21 @@ func (s *SomeType) IsExpired(created time.Time) bool {
 }
 ```
 
-## Enforced by Linters
+### Enforced by Linters
 
-This is the list of rules we ensure automatically. This section is for those who are curious why such linting rules
-were added or want similar ones in their Go project. 🤗
+This is the list of rules we ensure automatically. This section is for those who are curious why such linting rules were added or want similar ones in their Go project. 🤗
 
-#### Avoid Prints
+**Avoid Prints**
 
 Never use `print`. Always use a passed `go-kit/log.Logger`.
 
-#### Comments Should be Full Sentences
+**Comments Should be Full Sentences**
 
 All comments should be full sentences. They should start with an uppercase letter and end with a period.
 
-# Bash
+## Bash
 
 Overall try to NOT use bash. For scripts longer than 30 lines, consider writing it in Go as we did [here](https://github.com/tellor-io/telliot/blob/e502c668c0f76aa4d382eadcb7d3f0c26cfee9fb/scripts/copyright/copyright.go).
 
-If you have to, we follow the Google Shell style guide: https://google.github.io/styleguide/shellguide.html
+If you have to, we follow the Google Shell style guide: [https://google.github.io/styleguide/shellguide.html](https://google.github.io/styleguide/shellguide.html)
+
