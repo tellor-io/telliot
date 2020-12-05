@@ -1,7 +1,7 @@
 
 <p align="center">
   <a href='https://www.tellor.io/'>
-    <img src= '../assets/Tellor.png' width="250" height="200" alt='tellor.io' />
+    <img src= '../.gitbook/assets/Tellor.png' width="250" height="200" alt='tellor.io' />
   </a>
 </p>
 
@@ -31,16 +31,16 @@ The Tellor system is a way to push data on-chain. What pieces of data are pushed
 A list of all PSR's(pre specified requests) and the expected data can be found [here](../pkg/tracker/psrs.go).
 
 <p align="center">
-    <img src= '../assets/minerspecs.png' width="450" alt='MinerSpecs' />
+    <img src= '../.gitbook/assets/minerspecs.png' width="450" alt='MinerSpecs' />
 </p>
 
 
 ## Instructions for deployment
- - [Telliot Instructions](docs/setup-and-usage.md)
+ - [Telliot Instructions](setup-and-usage.md)
 
 ## Contributing and building from source
 Contributions are very welcome!<br/>
-See our [04_contributing.md](contributing.md) for more information.
+See our [contributing.md](contributing.md) for more information.
 
 ## Run with Docker
 Available tags: https://hub.docker.com/u/tellor

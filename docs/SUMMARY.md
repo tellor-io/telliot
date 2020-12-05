@@ -1,5 +1,8 @@
-## Telliot Documentation
+# Table of contents
+
 * [Introduction](README.md)
+
+## Docs
 * [Setup and usage](setup-and-usage.md)
 * [Configuation](configuation.md)
 * [Contributing](contributing.md)
