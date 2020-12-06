@@ -63,6 +63,6 @@ Once a tag is pushed, the release process is triggered through the CI and it wil
 
 ### Wrapping up
 
-Announce the release on the communication channels.  
+Announce the release on the communication channels.
  Check out previous announcements for inspiration.
 
