@@ -51,8 +51,3 @@ If you are building a competing client, please contact us. The miner specificati
 There is no guaruntee of profit from mining.
 
 There is no promise that Tellor Tributes currently hold or will ever hold any value.
-
-#### Copyright
-
-Tellor Inc. 2019
-
