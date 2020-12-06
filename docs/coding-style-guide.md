@@ -19,7 +19,7 @@ Generally, we care about:
 Some style is enforced by our linters and is covered in separate smaller sections. Please look there if you want to
 embrace some of the rules in your own project! Some of those are currently impossible to detect with linters. Ideally, everything would be automated. (:
 
-# Go
+## Go
 
 For code written in [Go](https://golang.org/) we use the standard Go style guides ([Effective Go](https://golang.org/doc/effective_go.html),
 [CodeReviewComments](https://github.com/golang/go/wiki/CodeReviewComments)) with a few additional rules that make certain areas stricter
