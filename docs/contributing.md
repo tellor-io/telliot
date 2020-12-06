@@ -98,4 +98,4 @@ git commit
 
 ### Project development go tools
 
-The project uses [Bingo](https://github.com/hhio618/telliot/tree/master/.bingo/README.md) for adding any go tools required by the project.
+The project uses [Bingo](https://github.com/tellor-io/telliot/blob/master/.bingo/README.md) for adding any go tools required by the project.
