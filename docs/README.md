@@ -28,7 +28,7 @@ It's built on Go and utilizes a split structure. The database piece is a LevelDB
 
 The Tellor system is a way to push data on-chain. What pieces of data are pushed are specificied in the `configs/indexes.json`. Note that the data corresponds to a specific API. The tellor mining system is set up to pull api data to generate these values to submit on-chain once a correct nonce is mined. These specific apis are just suggestions. The system is not guarunteed to work for everyone. It is up to the consnesus of the Tellor token holders to determine what a correct value is. As an example, request ID 4 is BTC/USD. If the api's all go down, it is the responsibility of the miner to still submit a valid BTC/USD price. If they do not, they risk being disputed and slashed. For these reasons, please contribute openly to the official Tellor miner (or an open source variant), as consensus here is key. If you're miner gets a different value than the majority of the of the other miners, you risk being punished.
 
-A list of all PSR's(pre specified requests) and the expected data can be found [here](../pkg/tracker/psrs.go).
+A list of all PSR's(pre specified requests) and the expected data can be found [here](https://github.com/tellor-io/telliot/blob/master/pkg/tracker/psrs.go).
 
 <p align="center">
     <img src= '../.gitbook/assets/minerspecs.png' width="450" alt='MinerSpecs' />

@@ -2,7 +2,7 @@
 description: Coding style guide for contributors.
 ---
 
-# Coding Style Guide
+# Coding style guide
 
 This document details the official style guides for the various languages we use in the project.
 Feel free to familiarize yourself with and refer to this document during code reviews. If something in our codebase does not match the style, it means it
@@ -891,7 +891,7 @@ Never use `print`. Always use a passed `go-kit/log.Logger`.
 
 All comments should be full sentences. They should start with an uppercase letter and end with a period.
 
-# Bash
+## Bash
 
 Overall try to NOT use bash. For scripts longer than 30 lines, consider writing it in Go as we did [here](https://github.com/tellor-io/telliot/blob/e502c668c0f76aa4d382eadcb7d3f0c26cfee9fb/scripts/copyright/copyright.go).
 
