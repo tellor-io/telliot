@@ -4,8 +4,6 @@ description: Release cadence and process for the project.
 
 # Release process
 
-## Release Process
-
 We use [Semantic Versioning](http://semver.org/).
 
 NOTE: As [Semantic Versioning](http://semver.org/spec/v2.0.0.html) states all 0.y.z releases can contain breaking changes in API \(flags, grpc API, any backward compatibility\)
@@ -63,6 +61,5 @@ Once a tag is pushed, the release process is triggered through the CI and it wil
 
 ### Wrapping up
 
-Announce the release on the communication channels.
- Check out previous announcements for inspiration.
+Announce the release on the communication channels. Check out previous announcements for inspiration.
 

@@ -1,15 +1,12 @@
 # Introduction
 
- [![tellor.io](../.gitbook/assets/Tellor.png)](https://www.tellor.io/)
+[![tellor.io](../.gitbook/assets/Tellor.png)](https://www.tellor.io/)
 
- [![Twitter WeAreTellor](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/WeAreTellor)
+[![Twitter WeAreTellor](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/WeAreTellor)
 
 > ### ⚠️ Note!
 >
-> Telliot docs are synced from the project repository. To edit please visit:
->  [Telliot gitbook space](https://app.gitbook.com/@tellor-2/s/telliot/)
->  or
->  [Telliot github repo](https://github.com/tellor-io/telliot/tree/master/docs)
+> Telliot docs are synced from the project repository. To edit please visit: [Telliot gitbook space](https://app.gitbook.com/@tellor-2/s/telliot/) or [Telliot github repo](https://github.com/tellor-io/telliot/tree/master/docs)
 
 ## Telloit
 
@@ -27,8 +24,7 @@ A list of all PSR's\(pre specified requests\) and the expected data can be found
 
 ### Contributing and building from source
 
-Contributions are very welcome!
- See our [contributing.md](contributing.md) for more information.
+Contributions are very welcome! See our [contributing.md](contributing.md) for more information.
 
 ### Run with Docker
 

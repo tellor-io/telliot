@@ -4,8 +4,6 @@ description: Here are the nuts and bolts for mining TRB.
 
 # Setup and usage
 
-## Setup and usage
-
 ### Become a Miner
 
 For over a decade now, the Bitcoin network has shown how proof-of-work can incentivize individuals and companies to compete for the honor of finding block rewards and achieving consensus. This phenomenon is global, and anonymous. The network is democratized and decentralized, because the creators have no direct control over who is providing computing power on their network.
