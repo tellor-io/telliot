@@ -4,10 +4,16 @@ description: Process of contributing to the project.
 
 # Contributing
 
+{% hint style="success" %}
+Thank you for considering to help.  
+Contributions are very welcome and additionally incentivized through [Gitcoin bounties](https://gitcoin.co/tellor-io).   
+Ping us on the [discord dev's channel](https://discord.gg/2rw2wQ38) to get started.
+{% endhint %}
+
 ## Philosophy
 
 * The philosophy is borrowing much from UNIX philosophy and the golang programming language.Each sub command should do one thing and do it well
-  * Every component behaviour should be covered with an e2e tests and if an  e2e tests is not appropriate should at least have unit tests for key components of a package.
+  * Every component behavior should be covered with an e2e test and if an  e2e test is not appropriate should at least have unit tests for key components of a package.
 
 ## Feedback / Issues
 
@@ -15,17 +21,16 @@ If you encounter any issue or you have an idea to improve, please:
 
 * Search through Google and [existing open and closed GitHub Issues](https://github.com/tellor-io/telliot/issues) for the
 
-  answer first. If you find relevant topic, please comment on the issue.
+  answer first. If you find a relevant topic, please comment on the issue.
 
-* If not found, please add an issue to [GitHub issues](https://github.com/tellor-io/telliot/issues). Please provide
-
-  all relevant information as template suggest.
-
+* If not found, please add an issue to [GitHub issues](https://github.com/tellor-io/telliot/issues).
 * If you have a quick question you might want to also ask on our [Discord](https://discord.gg/n7drGjh).
 
-  We are recommending, using GitHub issues for issues and feedback, because GitHub issues are track-able.
+{% hint style="info" %}
+We are recommending, using GitHub issues for issues and feedback because GitHub issues are track-able and will help other people searcing for solutions or answers.
+{% endhint %}
 
-If you encounter security vulnerability, please let us know privately via the Team email address: [info@tellor.io](mailto:info@tellor.io?subject=Security%20vulnerability%20report)
+If you encounter a security vulnerability, please let us know privately via: [info@tellor.io](mailto:info@tellor.io?subject=Security%20vulnerability%20report)
 
 ## Adding New Features / Components
 
@@ -37,14 +42,14 @@ The following section explains various suggestions and procedures to note during
 
 ### First Steps
 
-* Familiarizing yourself with our [coding style guidelines.](coding-style-guide.md).
+* Familiarizing yourself with our [coding style guidelines.](coding-style-guide.md)
 * Familiarizing yourself with the [Makefile](https://github.com/tellor-io/telliot/blob/master/Makefile) commands, for example, `build`, `format`, `test`, `lint`.
 
   `make help` will print all available commands with some description.
 
 ### Pull Request Process
 
-1. Fork tellor-io/telliot.git and start development from your own fork. Here are sample steps to setup your development environment:
+1. Fork the repository and start development from your own fork. Here are sample steps to setup your development environment:
 
 ```text
 $ GOPATH=$(go env GOPATH)
