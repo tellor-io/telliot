@@ -79,6 +79,7 @@ type Config struct {
 	Worker                       string                `json:"worker"`
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
+	MainnetRPC					 string				   `json: mainnetRPC`
 	ConfigFolder                 string                `json:"configFolder"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
@@ -151,7 +152,9 @@ func ParseConfigBytes(data []byte) error {
 			return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
 		}
 	}
-
+	if len(config.MainnetRPC) ==0{
+		config.MainnetRPC = config.NodeURL;
+	}
 	if len(config.ServerWhitelist) == 0 {
 		if strings.Contains(config.PublicAddress, "0x") {
 			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)
