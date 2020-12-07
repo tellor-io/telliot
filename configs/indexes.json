@@ -6,10 +6,14 @@
 		"json(https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd).ampleforth.usd",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST).0.7,.0.8",
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD).0.7,.0.8",
-		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD"
+		"json(https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD).USD", 
+		"CUSTOM[BalancerGetter(0x49f2beff98ce62999792ec98d0ee4ad790e7786f)]"
 	],
 	"AMPL/BTC": [
 		"json(https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC).0.7,.0.8"
+	],
+	"AMPL/ETH":[
+		"CUSTOM[UniswapGetter(0xc5be99a02c6857f9eac67bbce58df5572498f40c)]"
 	],
 	"ATOM/USD": [
 		"json(https://api.binance.com/api/v1/klines?symbol=ATOMUSDT&interval=1d&limit=1).0.4",

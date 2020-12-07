@@ -62,36 +62,41 @@ func BuildIndexTrackers() ([]Tracker, error) {
 			// Tracker for this API already added?
 			_, ok := indexers[api]
 			if !ok {
-				pathStr, args := util.ParseQueryString(api)
-
-				// Expand any env variables with their values from the .env file.
-				vars, err := godotenv.Read(cfg.EnvFile)
-				// Ignore file doesn't exist errors.
-				if _, ok := err.(*os.PathError); err != nil && !ok {
-					return nil, errors.Wrap(err, "reading .env file")
+				if strings.HasPrefix(api,"CUSTOM"){
+					fmt.Println("testing custom")
 				}
-				pathStr = os.Expand(pathStr, func(key string) string {
-					return vars[key]
-				})
+				else{
+					pathStr, args := util.ParseQueryString(api)
 
-				var name string
-				var source DataSource
-				if strings.HasPrefix(pathStr, "http") {
-					source = &JSONapi{&FetchRequest{queryURL: pathStr, timeout: cfg.FetchTimeout.Duration}}
-					u, err := url.Parse(pathStr)
-					if err != nil {
-						return nil, errors.Wrapf(err, "invalid API URL: %s", pathStr)
+					// Expand any env variables with their values from the .env file.
+					vars, err := godotenv.Read(cfg.EnvFile)
+					// Ignore file doesn't exist errors.
+					if _, ok := err.(*os.PathError); err != nil && !ok {
+						return nil, errors.Wrap(err, "reading .env file")
 					}
-					name = u.Host
-				} else {
-					source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, pathStr)}
-					name = filepath.Base(pathStr)
-				}
-				indexers[api] = &IndexTracker{
-					Name:       name,
-					Identifier: api,
-					Source:     source,
-					Args:       args,
+					pathStr = os.Expand(pathStr, func(key string) string {
+						return vars[key]
+					})
+
+					var name string
+					var source DataSource
+					if strings.HasPrefix(pathStr, "http") {
+						source = &JSONapi{&FetchRequest{queryURL: pathStr, timeout: cfg.FetchTimeout.Duration}}
+						u, err := url.Parse(pathStr)
+						if err != nil {
+							return nil, errors.Wrapf(err, "invalid API URL: %s", pathStr)
+						}
+						name = u.Host
+					} else {
+						source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, pathStr)}
+						name = filepath.Base(pathStr)
+					}
+					indexers[api] = &IndexTracker{
+						Name:       name,
+						Identifier: api,
+						Source:     source,
+						Args:       args,
+					}
 				}
 			}
 			//now we definitely have one
