@@ -57,7 +57,7 @@ Mining also requires submitting on-chain transactions on Ethereum. These transac
 
 If you are building a competing client, please contact us. The miner specifications are off-chain and the validity of the mining process hinges on the consensus of the community to determine what proper values are. Competing clients that change different pieces run the risk of being disputed by the community.
 
-There is no guarantee of profit from mining.  
+There is no guarantee of profit from mining.
 There is no promise that Tellor Tributes currently hold or will ever hold any value.
 {% endhint %}
 
@@ -197,8 +197,8 @@ If the disputer is successful and finds a submitted outside of your acceptable r
 Advanced usage! If you are setting up a Tellor miner for the first time, it might be a good idea to skip this section and come back after you're up and running with one miner.
 {% endhint %}
 
-If you are running multiple miners, there is no reason to run multiple databases \(the values you will submit should be identical\). In addition, querying the same API from multiple processes can lead to rate limits on the public APIs. To get around this, you can utilize a system where you run one.  
-  
+If you are running multiple miners, there is no reason to run multiple databases \(the values you will submit should be identical\). In addition, querying the same API from multiple processes can lead to rate limits on the public APIs. To get around this, you can utilize a system where you run one.
+
 In this example will 5 miners connected to a single data server. These 5 miners will start the mining process and the 1 data server will be how each of the 5 miners fetch data from the internet. The network topology of this setup is as follow:
 
 ```text
@@ -206,7 +206,7 @@ In this example will 5 miners connected to a single data server. These 5 miners 
            <-> Miner (0xcdd8) <->
 Tellor     <-> Miner (0xb9dD) <-> Data Server <-> Internet
 (on chain) <-> Miner (0x2305) <->
-           <-> Miner (0x3233) <->       
+           <-> Miner (0x3233) <->
 ```
 
 The data server pulls data from the internet, the 5 staked miners pull data from the data server and submit on-chain to the Tellor Core smart contracts. The following instructions cover setting this up locally.
