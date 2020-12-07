@@ -5,9 +5,7 @@ description: Process of contributing to the project.
 # Contributing
 
 {% hint style="success" %}
-Thank you for considering to help.
-Contributions are very welcome and additionally incentivized through [Gitcoin bounties](https://gitcoin.co/tellor-io).
-Ping us on the [discord dev's channel](https://discord.gg/2rw2wQ38) to get started.
+Thank you for considering to help. Contributions are very welcome and additionally incentivized through [Gitcoin bounties](https://gitcoin.co/tellor-io). Ping us on the [discord dev's channel](https://discord.gg/2rw2wQ38) to get started.
 {% endhint %}
 
 ## Philosophy

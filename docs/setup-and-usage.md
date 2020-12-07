@@ -57,8 +57,7 @@ Mining also requires submitting on-chain transactions on Ethereum. These transac
 
 If you are building a competing client, please contact us. The miner specifications are off-chain and the validity of the mining process hinges on the consensus of the community to determine what proper values are. Competing clients that change different pieces run the risk of being disputed by the community.
 
-There is no guarantee of profit from mining.
-There is no promise that Tellor Tributes currently hold or will ever hold any value.
+There is no guarantee of profit from mining. There is no promise that Tellor Tributes currently hold or will ever hold any value.
 {% endhint %}
 
 {% hint style="info" %}
@@ -211,7 +210,7 @@ Tellor     <-> Miner (0xb9dD) <-> Data Server <-> Internet
 
 The data server pulls data from the internet, the 5 staked miners pull data from the data server and submit on-chain to the Tellor Core smart contracts. The following instructions cover setting this up locally.
 
-```
+```text
 wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.json
 cp config.json config1.json
 telliot --config=config1.json dataServer
@@ -258,8 +257,6 @@ Edit `config1.json` to include the following:
 }
 ```
 
-
-
 After saving this `config1.json` file. Create 4 copies of this file and edit the `dbFile`, `publicAddress`, `envFile` location for each of the files to include the other 5 staked miner addresses \(the command below do this for you with `cp` and `sed`\):
 
 ```text
@@ -284,9 +281,7 @@ sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826
 sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826750853899394dE7F024fee/0x3233afA02644CCd048587F8ba6e99b3C00A34DcC/' config5.json
 ```
 
-
-
-Create `.env1`  file with the private key for each miner.
+Create `.env1` file with the private key for each miner.
 
 ```text
 echo "4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16" > .env1
