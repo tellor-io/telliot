@@ -6,7 +6,7 @@ description: Telliot tweaks and settings to keep your rig running smoothly.
 
 ## CLI reference
 
-Telliot commands and config file options are as the following:
+`Telliot` commands and config file options are as the following:
 
 #### Required Flags <a id="docs-internal-guid-d1a57725-7fff-a753-9236-759dd3f42eed"></a>
 
