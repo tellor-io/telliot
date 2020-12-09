@@ -2,7 +2,7 @@
 description: Telliot tweaks and settings to keep your rig running smoothly.
 ---
 
-# Configuation reference
+# Configuration reference
 
 ## CLI reference
 
