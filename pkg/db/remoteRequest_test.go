@@ -18,7 +18,7 @@ import (
 
 func TestRemoteRequestCodec(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
+	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
@@ -46,7 +46,7 @@ func TestRemoteRequestCodec(t *testing.T) {
 
 func TestRequestReplayAttack(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
+	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
@@ -77,7 +77,7 @@ func TestRequestReplayAttack(t *testing.T) {
 
 func TestRequestForData(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
+	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
@@ -114,7 +114,7 @@ func TestRequestForData(t *testing.T) {
 
 func TestRequestPut(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
+	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
