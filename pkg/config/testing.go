@@ -13,12 +13,11 @@ import (
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
-
 var mainConfig = `
 {
     "contractAddress": "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5",
     "databaseURL": "http://localhost7545",
-    "publicAddress": "3808C441402D0418C52237B697bBC5D18c84839A",
+    "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
     "serverHost": "localhost",
     "serverPort": 5000,
     "trackerCycle": 1,
@@ -26,7 +25,7 @@ var mainConfig = `
     "dbFile": "/tellorDB",
     "requestTips": 1,
     "configFolder": "` + filepath.Join("..", "..", "configs") + `",
-    "envFile": "` + filepath.Join("..", "..", "configs/env.example") + `"
+    "envFile": "` + filepath.Join("..", "..", "configs/.env.example") + `"
 }`
 
 const loggingConfig = `
