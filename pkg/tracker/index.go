@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/benbjohnson/clock"
@@ -19,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/yalp/jsonpath"
 )
 
 var clck clock.Clock
@@ -44,7 +45,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "read index file @ %s", indexPath)
 	}
-	var baseIndexes map[string][]string
+	var baseIndexes map[string][]TrackerInfo
 	err = json.Unmarshal(byteValue, &baseIndexes)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse index file")
@@ -60,9 +61,8 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	for symbol, apis := range baseIndexes {
 		for _, api := range apis {
 			// Tracker for this API already added?
-			_, ok := indexers[api]
+			_, ok := indexers[api.URL]
 			if !ok {
-				pathStr, args := util.ParseQueryString(api)
 
 				// Expand any env variables with their values from the .env file.
 				vars, err := godotenv.Read(cfg.EnvFile)
@@ -70,32 +70,32 @@ func BuildIndexTrackers() ([]Tracker, error) {
 				if _, ok := err.(*os.PathError); err != nil && !ok {
 					return nil, errors.Wrap(err, "reading .env file")
 				}
-				pathStr = os.Expand(pathStr, func(key string) string {
+				api.URL = os.Expand(api.URL, func(key string) string {
 					return vars[key]
 				})
 
 				var name string
 				var source DataSource
-				if strings.HasPrefix(pathStr, "http") {
-					source = &JSONapi{&FetchRequest{queryURL: pathStr, timeout: cfg.FetchTimeout.Duration}}
-					u, err := url.Parse(pathStr)
+				if strings.HasPrefix(api.URL, "http") {
+					source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}}
+					u, err := url.Parse(api.URL)
 					if err != nil {
-						return nil, errors.Wrapf(err, "invalid API URL: %s", pathStr)
+						return nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
 					}
 					name = u.Host
 				} else {
-					source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, pathStr)}
-					name = filepath.Base(pathStr)
+					source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, api.URL)}
+					name = filepath.Base(api.URL)
 				}
-				indexers[api] = &IndexTracker{
+				indexers[api.URL] = &IndexTracker{
 					Name:       name,
-					Identifier: api,
+					Identifier: api.URL,
 					Source:     source,
-					Args:       args,
+					JsonPath:   api.JsonPath,
 				}
 			}
 			//now we definitely have one
-			thisOne := indexers[api]
+			thisOne := indexers[api.URL]
 
 			//insert add it and it's more specific variant to the symbol->api map
 			indexes[symbol] = append(indexes[symbol], thisOne)
@@ -103,7 +103,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 			indexes[specificName] = append(indexes[specificName], thisOne)
 
 			//save this for later so we can build the api->symbol map
-			symbolsForAPI[api] = append(symbolsForAPI[api], symbol, specificName)
+			symbolsForAPI[api.URL] = append(symbolsForAPI[api.URL], symbol, specificName)
 		}
 	}
 
@@ -132,12 +132,17 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	return trackers, nil
 }
 
+type TrackerInfo struct {
+	URL         string `json:"URL"`
+	TrackerType string `json:"type"`
+	JsonPath    string `json:"jsonPath"`
+}
 type IndexTracker struct {
 	Name       string
 	Identifier string
 	Symbols    []string
 	Source     DataSource
-	Args       [][]string
+	JsonPath   string
 }
 
 type DataSource interface {
@@ -165,10 +170,20 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	vals, err := util.ParsePayload(payload, i.Args)
+	vals := make([]float64, 0)
+	res, err := jsonpath.Read(payload, i.JsonPath)
 	if err != nil {
 		return err
+	}
+	fmt.Printf("res: %v", res)
+	arr, ok := res.([]interface{})
+	if !ok {
+		return errors.Wrap(err, "JsonPath output need to be an array")
+	}
+	for _, a := range arr {
+		fmt.Printf("a: %v", a)
+		val, _ := strconv.ParseFloat(fmt.Sprintf("%v", a), 64)
+		vals = append(vals, val)
 	}
 
 	//fmt.Printf("got value of %f for %s\n", val, i.Identifier )
