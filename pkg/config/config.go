@@ -58,6 +58,7 @@ type GPUConfig struct {
 // Config holds global config info derived from config.json.
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
+	NodeURL                      string                `json:"nodeURL"`
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
@@ -87,6 +88,8 @@ type Config struct {
 	// the gas cost is lowered.
 	// a ProfitThreshold of 199% or less will submit
 	ProfitThreshold uint64 `json:"profitThreshold"`
+	// Config parameters excluded from the json config file.
+	PrivateKey string `json:"privateKey"`
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
 }
@@ -145,14 +148,11 @@ func ParseConfigBytes(data []byte) error {
 	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 	if config.PrivateKey == "" {
 		return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
-	}
-
+	} 
 	config.NodeURL = os.Getenv(NodeURLEnvName)
-	if config.PrivateKey == "" {
-		return errors.Errorf("missing ethereum wallet private key environment variable '%v'", NodeURLEnvName)
+	if config.NodeURL == "" {
+		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
 	}
-
-
 	if len(config.ServerWhitelist) == 0 {
 		if strings.Contains(config.PublicAddress, "0x") {
 			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)
