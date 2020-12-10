@@ -88,8 +88,6 @@ type Config struct {
 	// the gas cost is lowered.
 	// a ProfitThreshold of 199% or less will submit
 	ProfitThreshold uint64 `json:"profitThreshold"`
-	// Config parameters excluded from the json config file.
-	PrivateKey string `json:"privateKey"`
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
 }
@@ -139,17 +137,14 @@ func ParseConfigBytes(data []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "parse config json")
 	}
-	// Check if the env is already set, only try loading .env if its not there.
-	if config.PrivateKey == "" {
-		err = godotenv.Load(config.EnvFile)
-		if err != nil {
-			return errors.Wrap(err, "loading .env file")
-		}
+	err = godotenv.Load(config.EnvFile)
+	if err != nil {
+		return errors.Wrap(err, "loading .env file")
+	}
 
-		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
-		if config.PrivateKey == "" {
-			return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
-		}
+	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
+	if config.PrivateKey == "" {
+		return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
 	}
 
 	if len(config.ServerWhitelist) == 0 {
