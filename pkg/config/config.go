@@ -148,7 +148,7 @@ func ParseConfigBytes(data []byte) error {
 	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
 	if config.PrivateKey == "" {
 		return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
-	} 
+	}
 	config.NodeURL = os.Getenv(NodeURLEnvName)
 	if config.NodeURL == "" {
 		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
