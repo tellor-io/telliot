@@ -31,17 +31,17 @@ wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.j
 
 Open config.json and update the following values:
 
-* Set `"nodeURL"` to an Ethereum node endpoint. \(e.g. Infura API endpoint\)
 * Set `"publicAddress"` to the public key for the Ethereum wallet you plan to use for mining. Remove the 0x prefix at the beginning of the address.
 
 ### Create .env file
 
 Most commands require some secrets and these are kept in a separate `configs/.env` so . This is a precaution so that are not accidentally exposed as part of the main configs.
 
-Copy and paste the following into your `.env` file, and edit this to match your mining address private key.
+Copy and paste the following into your `.env` file, and edit this to match your mining address private key and Ethereum node endpoint
 
 ```text
 ETH_PRIVATE_KEY="3a10b4bc1258e8bfefb95b498fb8c0f0cd6964a811eabca87df56xxxxxxxxxxxx"
+NODE_URL = "https://mainnet.infura.io/v3/xxxxxxxxxxxxx"
 ```
 
 ## mine - Become a Miner
@@ -222,7 +222,6 @@ Edit `config1.json` to include the following:
 {
     "publicAddress": "0xE037EC8EC9ec423826750853899394dE7F024fee",
     "contractAddress": "0x7DdC408C0Cd13D3543156AE2bc5772C56E91AA0f",
-    "nodeURL": "http://localhost:8545",
     "databaseURL":"http://localhost7545",
     "serverWhitelist": [
                 "0xE037EC8EC9ec423826750853899394dE7F024fee",
