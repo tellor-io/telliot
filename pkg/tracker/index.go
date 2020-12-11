@@ -171,22 +171,26 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 		return err
 	}
 	vals := make([]float64, 0)
-	res, err := jsonpath.Read(payload, i.JsonPath)
+
+	var decodedPayload interface{}
+	err = json.Unmarshal(payload, &decodedPayload)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("res: %v", res)
-	arr, ok := res.([]interface{})
+	match, err := jsonpath.Read(decodedPayload, i.JsonPath)
+	if err != nil {
+		return err
+	}
+	arr, ok := match.([]interface{})
 	if !ok {
-		return errors.Wrap(err, "JsonPath output need to be an array")
+		return errors.Wrap(err, "JsonPath match need to be an array")
 	}
 	for _, a := range arr {
-		fmt.Printf("a: %v", a)
 		val, _ := strconv.ParseFloat(fmt.Sprintf("%v", a), 64)
 		vals = append(vals, val)
 	}
 
-	//fmt.Printf("got value of %f for %s\n", val, i.Identifier )
+	fmt.Fprintln(os.Stdout, fmt.Sprintf("got value of %f for %s\n", vals, i.Identifier))
 	volume := 0.0
 	if len(vals) >= 2 {
 		volume = vals[1]
