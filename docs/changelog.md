@@ -13,6 +13,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 * [\#317](https://github.com/tellor-io/telliot/pull/317) Removed nodeURL and private key from config file
 
 * [\#272](https://github.com/tellor-io/telliot/pull/272) Automated Docker images on every push to master and with every tagged release.
+* [\#318](https://github.com/tellor-io/telliot/pull/318) `indexes.json` file format migrated to JSONPath format.
 
 ## [v5.2.0](https://github.com/tellor-io/telliot/releases/tag/v5.2.0) - 2020.11.12
 
