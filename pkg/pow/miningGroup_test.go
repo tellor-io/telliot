@@ -197,7 +197,7 @@ var configJSON = `{
     "dbFile": "/tellorDB",
     "requestTips": 1,
     "configFolder": "` + filepath.Join("..", "..", "configs") + `",
-    "envFile": "` + filepath.Join("..", "..", "configs/.env.example") + `"
+    "envFile": "` + filepath.Join("..", "..", "configs",".env.example") + `"
 }`
 
 func TestMain(m *testing.M) {
