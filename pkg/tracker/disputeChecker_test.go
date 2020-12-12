@@ -52,7 +52,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	testutil.Equals(t, len(files), 1, "expected a possible-dispute file")
+	testutil.Assert(t, len(files) >= 1, "expected a possible-dispute file")
 
 	for _, f := range files {
 		testutil.Ok(t, os.Remove(f))
