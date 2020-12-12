@@ -25,7 +25,7 @@ var mainConfig = `
     "dbFile": "/tellorDB",
     "requestTips": 1,
     "configFolder": "` + filepath.Join("..", "..", "configs") + `",
-    "envFile": "` + filepath.Join("..", "..", "configs/.env.example") + `"
+    "envFile": "` + filepath.Join("..", "..", "configs",".env.example") + `"
 }`
 
 const loggingConfig = `
