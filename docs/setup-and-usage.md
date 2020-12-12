@@ -280,14 +280,18 @@ sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826
 sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826750853899394dE7F024fee/0x3233afA02644CCd048587F8ba6e99b3C00A34DcC/' config5.json
 ```
 
-Create `.env1` file with the private key for each miner.
+Create `.env` file with the private key for each miner.
 
 ```text
-echo "4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16" > .env1
-echo "d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env2
-echo "d13dc98a245bd29193d5b41203a1d3a4ae564257d60e00d6f68d120ef6b796c5" > .env3
-echo "4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe" > .env4
-echo "78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14" > .env5
+SAMPLE ETH_PRIVATE_KEY(S):
+"4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16" > .env1
+"d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env2
+"d13dc98a245bd29193d5b41203a1d3a4ae564257d60e00d6f68d120ef6b796c5" > .env3
+"4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe" > .env4
+"78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14" > .env5
+
+SAMPLE NODE_URL
+"https://mainnet.infura.io/v3/xxxxxxxxxxxxx"
 ```
 
 Finaly, make 1 more copy of the config for the data server and update the `serverHost` address to `0.0.0.0`:
