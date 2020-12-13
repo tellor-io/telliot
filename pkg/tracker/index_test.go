@@ -64,11 +64,11 @@ func TestIndexTracker(t *testing.T) {
 	// Test jsonpath parsing per test cases.
 	for _, testCase := range testCases {
 		payload, _ := testCase.IndexTracker.Source.Get()
-		vals, err := testCase.IndexTracker.parsePayload(payload)
+		actual, err := testCase.IndexTracker.parsePayload(payload)
 		if err != nil {
 			testutil.Ok(t, fmt.Errorf("failed to parse payload: %v", err))
 		}
-		testutil.Equals(t, testCase.Expected, vals)
+		testutil.Equals(t, testCase.Expected, actual)
 
 	}
 }
