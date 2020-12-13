@@ -283,15 +283,18 @@ sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826
 Create `.env` file with the private key for each miner.
 
 ```text
-SAMPLE ETH_PRIVATE_KEY(S):
-"4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16" > .env1
-"d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env2
-"d13dc98a245bd29193d5b41203a1d3a4ae564257d60e00d6f68d120ef6b796c5" > .env3
-"4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe" > .env4
-"78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14" > .env5
+echo "ETH_PRIVATE_KEY=4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16" > .env1
+echo "ETH_PRIVATE_KEY=d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env2
+echo "ETH_PRIVATE_KEY=d13dc98a245bd29193d5b41203a1d3a4ae564257d60e00d6f68d120ef6b796c5" > .env3
+echo "ETH_PRIVATE_KEY=4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe" > .env4
+echo "ETH_PRIVATE_KEY=78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14" > .env5
 
-SAMPLE NODE_URL
-"https://mainnet.infura.io/v3/xxxxxxxxxxxxx"
+
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env1
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env2
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env3
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env4
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env5
 ```
 
 Finaly, make 1 more copy of the config for the data server and update the `serverHost` address to `0.0.0.0`:
@@ -324,4 +327,3 @@ At this point, you will have 7 terminals running: 6 terminals for the `telliot` 
 let difficulty = await oracle.getUintVar("0xb12aff7664b16cb99339be399b863feecd64d14817be7e1f042f97e3f358e64e")
 difficulty.toNumber()
 ```
-
