@@ -41,7 +41,7 @@ Copy and paste the following into your `.env` file, and edit this to match your 
 
 ```text
 ETH_PRIVATE_KEY="3a10b4bc1258e8bfefb95b498fb8c0f0cd6964a811eabca87df56xxxxxxxxxxxx"
-NODE_URL = "https://mainnet.infura.io/v3/xxxxxxxxxxxxx"
+NODE_URL="https://mainnet.infura.io/v3/xxxxxxxxxxxxx"
 ```
 
 ## mine - Become a Miner
