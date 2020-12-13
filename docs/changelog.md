@@ -10,7 +10,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ## Unreleased
 
-*[\#317](https://github.com/tellor-io/telliot/pull/317) Removed nodeURL and private key from config file
+* [\#317](https://github.com/tellor-io/telliot/pull/317) Removed nodeURL and private key from config file
 
 * [\#272](https://github.com/tellor-io/telliot/pull/272) Automated Docker images on every push to master and with every tagged release.
 
@@ -26,4 +26,3 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 * Profitability calculations which is set through the `ProfitThreshold`\(in percents\) settings in the config,
 * Docs how to contribute.
-
