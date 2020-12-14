@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 }
 
 func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
-	cfg := config.GetConfig()
+	cfg := config.OpenTestConfig(t)
 	_string := fmt.Sprintf("%x", challenge.Challenge) + cfg.PublicAddress
 	hashIn := decodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
@@ -48,7 +49,7 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 }
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
-	cfg := config.GetConfig()
+	cfg := config.OpenTestConfig(t)
 	exitCh := make(chan os.Signal)
 	group := NewMiningGroup([]Hasher{impl}, exitCh)
 
@@ -97,13 +98,12 @@ func TestCpuMiner(t *testing.T) {
 }
 
 func TestGpuMiner(t *testing.T) {
-	config.OpenTestConfig(t)
+	cfg := config.OpenTestConfig(t)
 	gpus, err := GetOpenCLGPUs()
 	testutil.Ok(t, err)
 	if len(gpus) == 0 {
 		t.Skip("no mining gpus")
 	}
-	cfg := config.GetConfig()
 
 	impl, err := NewGpuMiner(gpus[0], cfg.GPUConfig[gpus[0].Name()], false)
 	testutil.Ok(t, err)
@@ -187,11 +187,18 @@ func BenchmarkHashFunction(b *testing.B) {
 }
 
 var configJSON = `{
-	"publicAddress":"0000000000000000000000000000000000000000",
-	"privateKey":"1111111111111111111111111111111111111111111111111111111111111111",
-	"contractAddress":"0x724D1B69a7Ba352F11D73fDBdEB7fF869cB22E19"
-}
-`
+    "contractAddress": "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5",
+    "databaseURL": "http://localhost7545",
+    "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
+    "serverHost": "localhost",
+    "serverPort": 5000,
+    "trackerCycle": 1,
+    "trackers": {},
+    "dbFile": "/tellorDB",
+    "requestTips": 1,
+    "configFolder": "` + filepath.Join("..", "..", "configs") + `",
+    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
+}`
 
 func TestMain(m *testing.M) {
 	err := config.ParseConfigBytes([]byte(configJSON))

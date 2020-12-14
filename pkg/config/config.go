@@ -123,6 +123,7 @@ var config = Config{
 }
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
+const NodeURLEnvName = "NODE_URL"
 
 // ParseConfig and set a shared config entry.
 func ParseConfig(path string) error {
@@ -139,19 +140,19 @@ func ParseConfigBytes(data []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "parse config json")
 	}
-	// Check if the env is already set, only try loading .env if its not there.
-	if config.PrivateKey == "" {
-		err = godotenv.Load(config.EnvFile)
-		if err != nil {
-			return errors.Wrap(err, "loading .env file")
-		}
-
-		config.PrivateKey = os.Getenv(PrivateKeyEnvName)
-		if config.PrivateKey == "" {
-			return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
-		}
+	err = godotenv.Load(config.EnvFile)
+	if err != nil {
+		return errors.Wrap(err, "loading .env file")
 	}
 
+	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
+	if config.PrivateKey == "" {
+		return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
+	}
+	config.NodeURL = os.Getenv(NodeURLEnvName)
+	if config.NodeURL == "" {
+		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
+	}
 	if len(config.ServerWhitelist) == 0 {
 		if strings.Contains(config.PublicAddress, "0x") {
 			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)

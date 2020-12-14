@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/tellor-io/telliot/pkg/apiOracle"
@@ -16,13 +17,17 @@ import (
 
 // TODO: Set threshold low and test the  "out of range" failure.
 var configJSON = `{
-	"publicAddress":"0000000000000000000000000000000000000000",
-	"privateKey":"1111111111111111111111111111111111111111111111111111111111111111",
-	"contractAddress":"0x724D1B69a7Ba352F11D73fDBdEB7fF869cB22E19",
-	"trackers": {"disputeChecker": true},
-	"ConfigFolder": "..",
-	"disputeThreshold": 1.0,
-	"disputeTimeDelta": "50s"
+    "contractAddress": "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5",
+    "databaseURL": "http://localhost7545",
+    "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
+    "serverHost": "localhost",
+    "serverPort": 5000,
+    "trackerCycle": 1,
+    "trackers": {},
+    "dbFile": "/tellorDB",
+    "requestTips": 1,
+    "configFolder": "` + filepath.Join("..", "..", "configs") + `",
+    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
 }
 `
 

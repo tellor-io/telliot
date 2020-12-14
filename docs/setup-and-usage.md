@@ -31,17 +31,17 @@ wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.j
 
 Open config.json and update the following values:
 
-* Set `"nodeURL"` to an Ethereum node endpoint. \(e.g. Infura API endpoint\)
 * Set `"publicAddress"` to the public key for the Ethereum wallet you plan to use for mining. Remove the 0x prefix at the beginning of the address.
 
 ### Create .env file
 
 Most commands require some secrets and these are kept in a separate `configs/.env` so . This is a precaution so that are not accidentally exposed as part of the main configs.
 
-Copy and paste the following into your `.env` file, and edit this to match your mining address private key.
+Copy and paste the following into your `.env` file, and edit this to match your mining address private key and Ethereum node endpoint
 
 ```text
 ETH_PRIVATE_KEY="3a10b4bc1258e8bfefb95b498fb8c0f0cd6964a811eabca87df56xxxxxxxxxxxx"
+NODE_URL="https://mainnet.infura.io/v3/xxxxxxxxxxxxx"
 ```
 
 ## mine - Become a Miner
@@ -222,7 +222,6 @@ Edit `config1.json` to include the following:
 {
     "publicAddress": "0xE037EC8EC9ec423826750853899394dE7F024fee",
     "contractAddress": "0x7DdC408C0Cd13D3543156AE2bc5772C56E91AA0f",
-    "nodeURL": "http://localhost:8545",
     "databaseURL":"http://localhost7545",
     "serverWhitelist": [
                 "0xE037EC8EC9ec423826750853899394dE7F024fee",
@@ -281,14 +280,21 @@ sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826
 sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826750853899394dE7F024fee/0x3233afA02644CCd048587F8ba6e99b3C00A34DcC/' config5.json
 ```
 
-Create `.env1` file with the private key for each miner.
+Create `.env` file with the private key for each miner.
 
 ```text
-echo "4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16" > .env1
-echo "d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env2
-echo "d13dc98a245bd29193d5b41203a1d3a4ae564257d60e00d6f68d120ef6b796c5" > .env3
-echo "4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe" > .env4
-echo "78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14" > .env5
+echo "ETH_PRIVATE_KEY=4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16" > .env1
+echo "ETH_PRIVATE_KEY=d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env2
+echo "ETH_PRIVATE_KEY=d13dc98a245bd29193d5b41203a1d3a4ae564257d60e00d6f68d120ef6b796c5" > .env3
+echo "ETH_PRIVATE_KEY=4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe" > .env4
+echo "ETH_PRIVATE_KEY=78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14" > .env5
+
+
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env1
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env2
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env3
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env4
+echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env5
 ```
 
 Finaly, make 1 more copy of the config for the data server and update the `serverHost` address to `0.0.0.0`:
@@ -321,4 +327,3 @@ At this point, you will have 7 terminals running: 6 terminals for the `telliot` 
 let difficulty = await oracle.getUintVar("0xb12aff7664b16cb99339be399b863feecd64d14817be7e1f042f97e3f358e64e")
 difficulty.toNumber()
 ```
-
