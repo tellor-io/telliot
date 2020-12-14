@@ -164,8 +164,6 @@ func AddDBToCtx(remote bool) error {
 	"github.com/go-kit/kit/log/level"
 
 	"github.com/alecthomas/kong"
-<<<<<<< HEAD
-=======
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -178,7 +176,6 @@ func AddDBToCtx(remote bool) error {
 	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
->>>>>>> more development on cli replace
 )
 
 var ctx context.Context
@@ -300,114 +297,6 @@ func AddDBToCtx(remote bool) error {
 // 	Website: https://tellor.io
 // 	Github:  https://github.com/tellor-io/telliot
 // `
-
-// func App() *cli.Cli {
-
-// 	app := cli.App("telliot", "The tellor.io official cli tool")
-
-// 	// App wide config options
-// 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
-// 	logLevel := app.StringOpt("logLevel", "error", "The level of log messages")
-// 	logPath := app.StringOpt("logConfig", "", "Path to a JSON logging config file")
-
-// 	logSetup := util.SetupLogger()
-// 	// This will get run before any of the commands
-// 	app.Before = func() {
-// 		ExitOnError(util.ParseLoggingConfig(*logPath), "parsing log file")
-// 		ExitOnError(config.ParseConfig(*configPath), "parsing config file")
-// 		ExitOnError(setup(), "setting up")
-// 	}
-
-// 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
-// 	app.Version("version", versionMessage)
-
-// 	app.Command("stake", "staking operations", stakeCmd(logSetup, logLevel))
-// 	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel))
-// 	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel))
-// 	app.Command("balance", "check balance of address", balanceCmd)
-// 	app.Command("dispute", "dispute operations", disputeCmd(logSetup, logLevel))
-// 	app.Command("mine", "mine for TRB", mineCmd(logSetup, logLevel))
-// 	app.Command("dataserver", "start an independent dataserver", dataserverCmd(logSetup, logLevel))
-// 	return app
-// }
-
-// func stakeCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
-// 	return func(cmd *cli.Cmd) {
-// 		cmd.Command("deposit", "deposit TRB stake", simpleCmd(ops.Deposit, logSetup, logLevel))
-// 		cmd.Command("withdraw", "withdraw TRB stake", simpleCmd(ops.WithdrawStake, logSetup, logLevel))
-// 		cmd.Command("request", "withdraw TRB stake", simpleCmd(ops.RequestStakingWithdraw, logSetup, logLevel))
-// 		cmd.Command("status", "show current staking status", simpleCmd(ops.ShowStatus, logSetup, logLevel))
-// 	}
-// }
-
-// func simpleCmd(
-// 	f func(context.Context,
-// 		log.Logger,
-// 		rpc.ETHClient,
-// 		tellorCommon.Contract,
-// 		tellorCommon.Account) error,
-// 	logSetup func(string) log.Logger,
-// 	logLevel *string) func(*cli.Cmd) {
-// 	return func(cmd *cli.Cmd) {
-// 		cmd.Action = func() {
-// 			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc), "")
-// 		}
-// 	}
-// }
-
-// func moveCmd(
-// 	f func(context.Context,
-// 		log.Logger,
-// 		rpc.ETHClient,
-// 		tellorCommon.Contract,
-// 		tellorCommon.Account,
-// 		common.Address,
-// 		*big.Int) error,
-// 	logSetup func(string) log.Logger,
-// 	logLevel *string) func(*cli.Cmd) {
-// 	return func(cmd *cli.Cmd) {
-// 		amt := TRBAmount{}
-// 		addr := ETHAddress{}
-// 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
-// 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
-// 		cmd.Action = func() {
-// 			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc, addr.addr, amt.Int), "move")
-// 		}
-// 	}
-// }
-
-// func balanceCmd(cmd *cli.Cmd) {
-// 	addr := ETHAddress{}
-// 	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
-// 	cmd.Spec = "[ADDRESS]"
-// 	cmd.Action = func() {
-// 		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
-// 		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
-// 		var zero [20]byte
-// 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
-// 			addr.addr = commonAddress
-// 		}
-// 		ExitOnError(ops.Balance(ctx, clt, cont.Getter, addr.addr), "checking balance")
-// 	}
-
-// }
-
-// func disputeCmd(loggerSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
-// 	return func(cmd *cli.Cmd) {
-// 		cmd.Command("vote", "vote on an active dispute", voteCmd)
-// 		cmd.Command("new", "start a new dispute", newDisputeCmd)
-// 		cmd.Command("show", "show existing disputes", simpleCmd(ops.List, loggerSetup, logLevel))
-// 	}
-// }
-
-// func voteCmd(cmd *cli.Cmd) {
-// 	disputeID := EthereumInt{}
-// 	cmd.VarArg("DISPUTE_ID", &disputeID, "dispute id")
-// 	supports := cmd.BoolArg("SUPPORT", false, "do you support the dispute? (true|false)")
-// 	cmd.Action = func() {
-// 		ExitOnError(ops.Vote(ctx, clt, cont, acc, disputeID.Int, *supports), "vote")
-// 	}
-// }
 
 func (m mineCmd) Run(logger log.Logger) error {
 	// Create os kill sig listener.
@@ -544,58 +433,6 @@ func (d dataserverCmd) Run(logger log.Logger) error {
 	return nil
 }
 
-// func main() {
-// 	// Programming is easy. Just create an App() and run it!!!!!
-// 	app := App()
-// 	err := app.Run(os.Args)
-// 	if err != nil {
-// 		fmt.Fprintf(os.Stderr, "app.Run failed: %v\n", err)
-// 	}
-// }
-
-type gen struct {
-	Transfer transferCmd `cmd help:"Transfer tokens"`
-	Setup    setupCmd    `cmd`
-}
-
-var cli struct {
-	LogConfig logConfigPath `type:"path"`
-	Config    configPath    `required help:"path to config file"`
-	LogLevel  logLevel      `type:"path"`
-	Transfer  transferCmd   `cmd help:"Transfer tokens"`
-	Approve   approveCmd    `cmd help:"Approve tokens"`
-	Balance   balanceCmd    `cmd help:"Check the balance of an address"`
-	Stake     stakeCmd      `cmd help:"perform one of the stake operations"`
-	Setup     setupCmd      `cmd`
-	// Dispute   struct {
-	// 	//		New newDisputeCmd `cmd`
-	// 	New struct {
-	// 		Requestid  int `arg required`
-	// 		Timestamp  int `arg required`
-	// 		MinerIndex int `arg required`
-	// 	} `cmd`
-	// 	Vote struct {
-	// 		disputeId int  `arg required`
-	// 		support   bool `arg required`
-	// 	} `cmd`
-	// 	Show struct {
-	// 	} `cmd`
-	// } `cmd`
-	// Dataserver dataserverCmd `cmd`
-	Mine mineCmd `cmd`
-}
-
-type configPath string
-type logConfigPath string
-type logLevel string
-
-type dataserverCmd struct {
-}
-
-type mineCmd struct {
-	remote bool
-}
-
 func (l logLevel) AfterApply(ctx *kong.Context) error {
 	logger := util.GetLogger(string(l))
 	ctx.Bind(logger)
@@ -612,9 +449,7 @@ func (c configPath) AfterApply(ctx *kong.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "setting up variables")
 	}
-	fmt.Printf("%T\n", client)
 	ctx.BindTo(client, (*rpc.ETHClient)(nil))
-	// ctx.Bind(client)
 	ctx.Bind(contract)
 	ctx.Bind(account)
 
@@ -629,12 +464,6 @@ func (c logConfigPath) AfterApply(ctx *kong.Context) error {
 		return errors.Wrapf(err, "parsing log config")
 	}
 	return nil
-}
-
-type newDisputeCmd struct {
-	requestID  string `arg required `
-	minerIndex string `arg required `
-	timestamp  string `arg required `
 }
 
 func (n newDisputeCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
@@ -656,11 +485,6 @@ func (n newDisputeCmd) Run(logger log.Logger, client rpc.ETHClient, contract tel
 	return ops.Dispute(ctx, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
 }
 
-type voteCmd struct {
-	disputeId string `arg required`
-	support   bool   `arg required`
-}
-
 func (v voteCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
 	disputeID := EthereumInt{}
 	err := disputeID.Set(v.disputeId)
@@ -670,6 +494,7 @@ func (v voteCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract, accou
 	return ops.Vote(ctx, client, contract, account, disputeID.Int, v.support)
 }
 
+<<<<<<< HEAD
 type stakeCmd struct {
 	Operation string `arg required`
 }
@@ -680,6 +505,8 @@ type stakeCmd struct {
 func (s *stakeCmd) Run() error {
 	return nil
 =======
+=======
+>>>>>>> cleanup
 func (s *stakeCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
 	switch s.Operation {
 	case "deposit":
@@ -696,6 +523,7 @@ func (s *stakeCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorC
 >>>>>>> more development on cli replace
 }
 
+<<<<<<< HEAD
 type balanceCmd struct {
 	Address string `arg optional`
 }
@@ -713,6 +541,8 @@ type tokenCmd struct {
 	Amount  string `arg required`
 }
 
+=======
+>>>>>>> cleanup
 func (b *balanceCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract) error {
 	fmt.Println("balancecmd")
 	addr := ETHAddress{}
@@ -759,12 +589,29 @@ func (c *approveCmd) Run(logger log.Logger, client rpc.ETHClient, contract tello
 	return ops.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
 
-type setupCmd struct {
-}
-
-func (s setupCmd) Run(client rpc.ETHClient) error {
-	fmt.Println("runnig setup cmd")
-	return nil
+var cli struct {
+	LogConfig logConfigPath `type:"path" help:"path for log config file"`
+	Config    configPath    `required help:"path to config file"`
+	LogLevel  logLevel      `help:"string for the log level"`
+	Transfer  transferCmd   `cmd help:"Transfer tokens"`
+	Approve   approveCmd    `cmd help:"Approve tokens"`
+	Balance   balanceCmd    `cmd help:"Check the balance of an address"`
+	Stake     stakeCmd      `cmd help:"perform one of the stake operations"`
+	Dispute   struct {
+		New struct {
+			Requestid  int `arg required`
+			Timestamp  int `arg required`
+			MinerIndex int `arg required`
+		} `cmd`
+		Vote struct {
+			disputeId int  `arg required`
+			support   bool `arg required`
+		} `cmd`
+		Show struct {
+		} `cmd`
+	} `cmd`
+	Dataserver dataserverCmd `cmd`
+	Mine       mineCmd       `cmd`
 }
 
 func main() {
