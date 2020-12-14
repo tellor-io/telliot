@@ -50,8 +50,19 @@ func TestIndexTracker(t *testing.T) {
 		},
 		{
 			IndexTracker: &IndexTracker{
-				Name:       "test1",
-				Identifier: "id1",
+				Name:       "test3",
+				Identifier: "id3",
+				JSONPath:   `$[dummy][test]`,
+				Source: TestDataSource{
+					Payload: `{"dummy":{"test": "1321,67.3"}}`,
+				},
+			},
+			Expected: []float64{132167.3},
+		},
+		{
+			IndexTracker: &IndexTracker{
+				Name:       "test4",
+				Identifier: "id4",
 				JSONPath:   "$[0][7,8]",
 				Source: TestDataSource{
 					Payload: "[[768,68,324.34,53453.534,4443.3,45.53453,53.63653,454.534,454.837]]",
@@ -60,7 +71,6 @@ func TestIndexTracker(t *testing.T) {
 			Expected: []float64{454.534, 454.837},
 		},
 	}
-
 	// Test jsonpath parsing per test cases.
 	for _, testCase := range testCases {
 		payload, _ := testCase.IndexTracker.Source.Get()

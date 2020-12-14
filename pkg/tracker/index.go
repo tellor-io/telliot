@@ -241,7 +241,10 @@ func (i *IndexTracker) parsePayload(payload []byte) (vals []float64, err error) 
 	// Parse each item of slice to a float.
 	vals = make([]float64, 0)
 	for _, a := range resultList {
-		val, err := strconv.ParseFloat(fmt.Sprintf("%v", a), 64)
+		strValue := fmt.Sprintf("%v", a)
+		// Normalize based on american locale.
+		strValue = strings.Replace(strValue, ",", "", -1)
+		val, err := strconv.ParseFloat(strValue, 64)
 		if err != nil {
 			return nil, errors.Wrap(err, "JSON value needs to be a valid float")
 		}
