@@ -553,14 +553,20 @@ func (d dataserverCmd) Run(logger log.Logger) error {
 // 	}
 // }
 
+type gen struct {
+	Transfer transferCmd `cmd help:"Transfer tokens"`
+	Setup    setupCmd    `cmd`
+}
+
 var cli struct {
-	Config    configPath    `help: path to config file`
-	LogConfig logConfigPath `optional type:"path"`
+	LogConfig logConfigPath `type:"path"`
+	Config    configPath    `required help:"path to config file"`
 	LogLevel  logLevel      `type:"path"`
 	Transfer  transferCmd   `cmd help:"Transfer tokens"`
 	Approve   approveCmd    `cmd help:"Approve tokens"`
 	Balance   balanceCmd    `cmd help:"Check the balance of an address"`
 	Stake     stakeCmd      `cmd help:"perform one of the stake operations"`
+	Setup     setupCmd      `cmd`
 	// Dispute   struct {
 	// 	//		New newDisputeCmd `cmd`
 	// 	New struct {
@@ -575,8 +581,8 @@ var cli struct {
 	// 	Show struct {
 	// 	} `cmd`
 	// } `cmd`
-	Dataserver dataserverCmd `cmd`
-	Mine       mineCmd       `cmd`
+	// Dataserver dataserverCmd `cmd`
+	Mine mineCmd `cmd`
 }
 
 type configPath string
@@ -590,30 +596,34 @@ type mineCmd struct {
 	remote bool
 }
 
-func (l logLevel) BeforeApply(ctx *kong.Context) error {
+func (l logLevel) AfterApply(ctx *kong.Context) error {
 	logger := util.GetLogger(string(l))
 	ctx.Bind(logger)
 	return nil
 }
 
 func (c configPath) AfterApply(ctx *kong.Context) error {
+	fmt.Println("config path")
 	err := config.ParseConfig(string(c))
 	if err != nil {
 		return errors.Wrapf(err, "parsing config")
 	}
-	fmt.Println("llalas")
 	client, contract, account, err := setup()
 	if err != nil {
 		return errors.Wrapf(err, "setting up variables")
 	}
-
-	ctx.Bind(client)
+	fmt.Printf("%T\n", client)
+	ctx.BindTo(client, (*rpc.ETHClient)(nil))
+	// ctx.Bind(client)
 	ctx.Bind(contract)
 	ctx.Bind(account)
+
+	fmt.Println(contract.Address)
+
 	return nil
 }
 
-func (c logConfigPath) BeforeApply(ctx *kong.Context) error {
+func (c logConfigPath) AfterApply(ctx *kong.Context) error {
 	err := util.ParseLoggingConfig(string(c))
 	if err != nil {
 		return errors.Wrapf(err, "parsing log config")
@@ -704,7 +714,7 @@ type tokenCmd struct {
 }
 
 func (b *balanceCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract) error {
-	fmt.Println("las")
+	fmt.Println("balancecmd")
 	addr := ETHAddress{}
 	var err error
 	if b.Address == "" {
@@ -749,8 +759,16 @@ func (c *approveCmd) Run(logger log.Logger, client rpc.ETHClient, contract tello
 	return ops.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
 
+type setupCmd struct {
+}
+
+func (s setupCmd) Run(client rpc.ETHClient) error {
+	fmt.Println("runnig setup cmd")
+	return nil
+}
+
 func main() {
 	ctx := kong.Parse(&cli)
-	err := ctx.Run(ctx)
+	err := ctx.Run(*ctx)
 	ctx.FatalIfErrorf(err)
 }
