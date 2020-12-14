@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/benbjohnson/clock"
@@ -19,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/yalp/jsonpath"
 )
 
 var clck clock.Clock
@@ -30,6 +31,83 @@ func init() {
 
 var indexes map[string][]*IndexTracker
 
+// parseIndexFile parses indexes.json file and returns a *IndexTracker,
+// for every URL in index file, also a map[string][]string that describes which APIs
+// influence which symbols.
+func parseIndexFile() (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
+	cfg := config.GetConfig()
+
+	// Load index file.
+	indexFilePath := filepath.Join(cfg.ConfigFolder, "indexes.json")
+	byteValue, err := ioutil.ReadFile(indexFilePath)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "read index file @ %s", indexFilePath)
+	}
+	// Parse to json.
+	baseIndexes := make(map[string][]IndexObject)
+	err = json.Unmarshal(byteValue, &baseIndexes)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "parse index file")
+	}
+	// Keep track of tracker per symbol.
+	indexes = make(map[string][]*IndexTracker)
+	// Build a tracker for each unique URL.
+	trackersPerURL = make(map[string]*IndexTracker)
+	// Keep track of which APIs influence which symbols so we know what to update later.
+	symbolsForAPI = make(map[string][]string)
+
+	for symbol, apis := range baseIndexes {
+		for _, api := range apis {
+			// Tracker for this API already added?
+			_, ok := trackersPerURL[api.URL]
+			if !ok {
+
+				// Expand any env variables with their values from the .env file.
+				vars, err := godotenv.Read(cfg.EnvFile)
+				// Ignore file doesn't exist errors.
+				if _, ok := err.(*os.PathError); err != nil && !ok {
+					return nil, nil, errors.Wrap(err, "reading .env file")
+				}
+				api.URL = os.Expand(api.URL, func(key string) string {
+					return vars[key]
+				})
+
+				var name string
+				var source DataSource
+				if strings.HasPrefix(api.URL, "http") {
+					source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}}
+					u, err := url.Parse(api.URL)
+					if err != nil {
+						return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
+					}
+					name = u.Host
+				} else {
+					source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, api.URL)}
+					name = filepath.Base(api.URL)
+				}
+				trackersPerURL[api.URL] = &IndexTracker{
+					Name:       name,
+					Identifier: api.URL,
+					Source:     source,
+					JSONPath:   api.JSONPath,
+				}
+			}
+			// Now we definitely have one.
+			thisOne := trackersPerURL[api.URL]
+
+			// Insert add it and it's more specific variant to the symbol -> api map.
+			indexes[symbol] = append(indexes[symbol], thisOne)
+			specificName := fmt.Sprintf("%s~%s", symbol, thisOne.Name)
+			indexes[specificName] = append(indexes[specificName], thisOne)
+
+			// Save this for later so we can build the api->symbol map.
+			symbolsForAPI[api.URL] = append(symbolsForAPI[api.URL], symbol, specificName)
+		}
+	}
+	return
+
+}
+
 // BuildIndexTrackers creates and initializes a new tracker instance.
 func BuildIndexTrackers() ([]Tracker, error) {
 	err := apiOracle.EnsureValueOracle()
@@ -37,93 +115,30 @@ func BuildIndexTrackers() ([]Tracker, error) {
 		return nil, err
 	}
 
-	cfg := config.GetConfig()
-
-	indexPath := filepath.Join(cfg.ConfigFolder, "indexes.json")
-	byteValue, err := ioutil.ReadFile(indexPath)
+	// Load trackers from the index file,
+	// and build a tracker for each unique URL, symbol
+	indexers, symbolsForAPI, err := parseIndexFile()
 	if err != nil {
-		return nil, errors.Wrapf(err, "read index file @ %s", indexPath)
-	}
-	var baseIndexes map[string][]string
-	err = json.Unmarshal(byteValue, &baseIndexes)
-	if err != nil {
-		return nil, errors.Wrap(err, "parse index file")
-	}
-
-	indexes = make(map[string][]*IndexTracker)
-
-	//build a tracker for each unique API
-	indexers := make(map[string]*IndexTracker)
-	//and keep track of which APIs influence which symbols so we know what to update later
-	symbolsForAPI := make(map[string][]string)
-
-	for symbol, apis := range baseIndexes {
-		for _, api := range apis {
-			// Tracker for this API already added?
-			_, ok := indexers[api]
-			if !ok {
-				pathStr, args := util.ParseQueryString(api)
-
-				// Expand any env variables with their values from the .env file.
-				vars, err := godotenv.Read(cfg.EnvFile)
-				// Ignore file doesn't exist errors.
-				if _, ok := err.(*os.PathError); err != nil && !ok {
-					return nil, errors.Wrap(err, "reading .env file")
-				}
-				pathStr = os.Expand(pathStr, func(key string) string {
-					return vars[key]
-				})
-
-				var name string
-				var source DataSource
-				if strings.HasPrefix(pathStr, "http") {
-					source = &JSONapi{&FetchRequest{queryURL: pathStr, timeout: cfg.FetchTimeout.Duration}}
-					u, err := url.Parse(pathStr)
-					if err != nil {
-						return nil, errors.Wrapf(err, "invalid API URL: %s", pathStr)
-					}
-					name = u.Host
-				} else {
-					source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, pathStr)}
-					name = filepath.Base(pathStr)
-				}
-				indexers[api] = &IndexTracker{
-					Name:       name,
-					Identifier: api,
-					Source:     source,
-					Args:       args,
-				}
-			}
-			//now we definitely have one
-			thisOne := indexers[api]
-
-			//insert add it and it's more specific variant to the symbol->api map
-			indexes[symbol] = append(indexes[symbol], thisOne)
-			specificName := fmt.Sprintf("%s~%s", symbol, thisOne.Name)
-			indexes[specificName] = append(indexes[specificName], thisOne)
-
-			//save this for later so we can build the api->symbol map
-			symbolsForAPI[api] = append(symbolsForAPI[api], symbol, specificName)
-		}
+		return nil, err
 	}
 
 	var sortedIndexers []string
-	//set the reverse map
+	// Set the reverse map.
 	for api, symbols := range symbolsForAPI {
 		indexers[api].Symbols = symbols
 		sortedIndexers = append(sortedIndexers, api)
 	}
 
-	// sort the Indexer array so we return the same order every time
+	// Sort the Indexer array so we return the same order every time.
 	sort.Strings(sortedIndexers)
 
-	//make an array of trackers to be sent to Runner
+	// Make an array of trackers to be sent to Runner.
 	trackers := make([]Tracker, len(indexers))
 	for idx, api := range sortedIndexers {
 		trackers[idx] = indexers[api]
 	}
 
-	//start the PSR system that will feed from these indexes
+	// Start the PSR system that will feed from these indexes.
 	err = InitPSRs()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize PSRs")
@@ -132,12 +147,17 @@ func BuildIndexTrackers() ([]Tracker, error) {
 	return trackers, nil
 }
 
+// IndexObject will be used in parsing index file.
+type IndexObject struct {
+	URL      string `json:"URL"`
+	JSONPath string `json:"JSONPath"`
+}
 type IndexTracker struct {
 	Name       string
 	Identifier string
 	Symbols    []string
 	Source     DataSource
-	Args       [][]string
+	JSONPath   string
 }
 
 type DataSource interface {
@@ -166,12 +186,11 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	vals, err := util.ParsePayload(payload, i.Args)
+	vals, err := i.parsePayload(payload)
 	if err != nil {
 		return err
 	}
 
-	//fmt.Printf("got value of %f for %s\n", val, i.Identifier )
 	volume := 0.0
 	if len(vals) >= 2 {
 		volume = vals[1]
@@ -185,4 +204,51 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 
 func (i *IndexTracker) String() string {
 	return fmt.Sprintf("%s on %s", strings.Join(i.Symbols, ","), i.Name)
+}
+
+// parsePayload parses the input JSON payload to a slice of float64
+// The input JSON will get queried using JSONPath query language if
+// the JSONPath expression is not empty.
+func (i *IndexTracker) parsePayload(payload []byte) (vals []float64, err error) {
+
+	var decodedPayload, result interface{}
+	err = json.Unmarshal(payload, &decodedPayload)
+	if err != nil {
+		return
+	}
+
+	// Query the json payload using JSONPath expression if needed.
+	result = decodedPayload
+	if len(strings.TrimSpace(i.JSONPath)) > 0 {
+		if err != nil {
+			return
+		}
+		result, err = jsonpath.Read(decodedPayload, i.JSONPath)
+		if err != nil {
+			return
+		}
+	}
+
+	// Expect result to be a slice of float or a single float value.
+	var resultList []interface{}
+	switch result := result.(type) {
+	case []interface{}:
+		resultList = result
+	default:
+		resultList = []interface{}{result}
+	}
+
+	// Parse each item of slice to a float.
+	vals = make([]float64, 0)
+	for _, a := range resultList {
+		strValue := fmt.Sprintf("%v", a)
+		// Normalize based on american locale.
+		strValue = strings.Replace(strValue, ",", "", -1)
+		val, err := strconv.ParseFloat(strValue, 64)
+		if err != nil {
+			return nil, errors.Wrap(err, "JSON value needs to be a valid float")
+		}
+		vals = append(vals, val)
+	}
+	return
 }
