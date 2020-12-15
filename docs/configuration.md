@@ -27,6 +27,7 @@ Telliot commands and config file options are as the following:
 * `balance` \(shows your balance\)
 
 #### .env file options:
+
 * `NODE_URL` \(required\) - node URL \(e.g [https://mainnet.infura.io/bbbb](https://mainnet.infura.io/bbbb) or [https://localhost:8545](https://localhost:8545) if own node\)
 * `ETH_PRIVATE_KEY` \(required\) - privateKey for your address
 * `$PSR$_KEY` - API key for getting a specific indexes.json api \(required if you use authenticated API's\)
@@ -34,7 +35,6 @@ Telliot commands and config file options are as the following:
 #### Config file options:
 
 * `contractAddress` \(required\) - address of TellorContract
-
 * `databaseURL` \(required\) - where you are reading from for the server database \(if hosted\)
 * `publicAddress` \(required\) - public address for your miner \(note, no 0x\)
 * `ethClientTimeout` \(required\) - timeout for making requests from your node
