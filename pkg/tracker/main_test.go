@@ -12,7 +12,6 @@ import (
 
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // TODO: Set threshold low and test the  "out of range" failure.
@@ -37,9 +36,9 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "failed to parse mock config: %v\n", err)
 		os.Exit(-1)
 	}
-	if err := util.ParseLoggingConfig(""); err != nil {
-		log.Fatal(err)
-	}
+	// if err := util.ParseLoggingConfig(""); err != nil {
+	// 	log.Fatal(err)
+	// }
 	if err := apiOracle.EnsureValueOracle(); err != nil {
 		log.Fatal(err)
 	}

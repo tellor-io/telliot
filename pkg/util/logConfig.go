@@ -3,14 +3,6 @@
 
 package util
 
-import (
-	"encoding/json"
-	"fmt"
-	"os"
-
-	"github.com/pkg/errors"
-)
-
 // Entry holds specific component log level.
 type Entry struct {
 	Level     string `json:"level"`
@@ -27,41 +19,16 @@ var (
 )
 
 // ParseLoggingConfig parses the given JSON log level config file for use in log configuration.
-func ParseLoggingConfig(file string) error {
+func ParseLoggingConfig(packageLevels map[string]string) error {
 
-	if len(file) > 0 {
-		info, err := os.Stat(file)
-		if os.IsNotExist(err) {
-			return errors.Wrapf(err, "loggingConfigPath references an invalid file at: %s", file)
-		}
-		if info.IsDir() {
-			return errors.Errorf("logging config is a directory on file:%s", file)
-		}
-
-		configFile, err := os.Open(file)
-		defer func() {
-			err := configFile.Close()
-			if err != nil {
-				fmt.Print("error closing the file", err)
-			}
-		}()
-		if err != nil {
-			return err
-		}
-		var entries []Entry
-
-		dec := json.NewDecoder(configFile)
-		err = dec.Decode(&entries)
-		if err != nil {
-			return err
-		}
+	if len(packageLevels) > 0 {
 		cfg := &LogConfig{make(map[string]LogLevel)}
-		for _, e := range entries {
-			lvl, err := StringToLevel(e.Level)
+		for component, level := range packageLevels {
+			lvl, err := StringToLevel(level)
 			if err != nil {
 				return err
 			}
-			cfg.levels[e.Component] = lvl
+			cfg.levels[component] = lvl
 		}
 		sharedConfig = cfg
 	} else {

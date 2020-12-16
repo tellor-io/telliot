@@ -23,6 +23,9 @@ var mainConfig = `
     "trackerCycle": 1,
     "trackers": {},
     "dbFile": "/tellorDB",
+    "packageLogLevel": {
+        "db.DB": "ERROR"
+    },
     "requestTips": 1,
     "configFolder": "` + filepath.Join("..", "..", "configs") + `",
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
@@ -108,12 +111,12 @@ func OpenTestConfig(t *testing.T) *Config {
 	if err := loggingConfigFile.Close(); err != nil {
 		t.Fatal(err)
 	}
-	err = util.ParseLoggingConfig(loggingConfigFile.Name())
+	cfg := GetConfig()
+	err = util.ParseLoggingConfig(cfg.PackageLogLevel)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cfg := GetConfig()
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(err)
