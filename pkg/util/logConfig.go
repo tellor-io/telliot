@@ -3,7 +3,7 @@
 
 package util
 
-// Entry holds specific component log level.
+// // Entry holds specific component log level.
 type Entry struct {
 	Level     string `json:"level"`
 	Component string `json:"component"`
@@ -19,21 +19,18 @@ var (
 )
 
 // ParseLoggingConfig parses the given JSON log level config file for use in log configuration.
-func ParseLoggingConfig(packageLevels map[string]string) error {
+func ParseLoggingConfig(entries []Entry) error {
 
-	if len(packageLevels) > 0 {
-		cfg := &LogConfig{make(map[string]LogLevel)}
-		for component, level := range packageLevels {
-			lvl, err := StringToLevel(level)
-			if err != nil {
-				return err
-			}
-			cfg.levels[component] = lvl
+	cfg := &LogConfig{make(map[string]LogLevel)}
+	for _, e := range entries {
+		lvl, err := StringToLevel(e.Level)
+		if err != nil {
+			return err
 		}
-		sharedConfig = cfg
-	} else {
-		sharedConfig = &LogConfig{make(map[string]LogLevel)}
+		cfg.levels[e.Component] = lvl
 	}
+	sharedConfig = cfg
+
 	// Initialize all the loggers that have already been declared as global vars.
 	initLoggers(sharedConfig)
 	return nil

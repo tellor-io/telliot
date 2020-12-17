@@ -14,6 +14,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // Unfortunate hack to enable json parsing of human readable time strings
@@ -22,6 +23,11 @@ import (
 type Duration struct {
 	time.Duration
 }
+
+// type Entry struct {
+// 	Level     string `json:"level"`
+// 	Component string `json:"component"`
+// }
 
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	var v interface{}
@@ -80,8 +86,8 @@ type Config struct {
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
 	ConfigFolder                 string                `json:"configFolder"`
-	LogLevel                     string                `json:logLevel`
-	PackageLogLevel              map[string]string     `json:packageLogLevel`
+	LogLevel                     string                `json:"logLevel"`
+	Logger                       []util.Entry          `json:"logger"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 	// Minimum percent of profit when submitting a solution.
@@ -122,19 +128,19 @@ var config = Config{
 	},
 	ConfigFolder: ConfigFolder,
 	LogLevel:     "info",
-	PackageLogLevel: map[string]string{
-		"config.Config":            "INFO",
-		"db.DB":                    "INFO",
-		"rpc.client":               "INFO",
-		"rpc.ABICodec":             "INFO",
-		"rpc.mockClient":           "INFO",
-		"tracker.Top50Tracker":     "INFO",
-		"tracker.FetchDataTracker": "INFO",
-		"pow.MiningWorker-0":       "INFO",
-		"pow.MiningWorker-1":       "INFO",
-		"pow.MiningTasker-0":       "INFO",
-		"pow.MiningTasker-1":       "INFO",
-		"tracker.PSRTracker":       "INFO",
+	Logger: []util.Entry{
+		{Component: "config.Config", Level: "INFO"},
+		{Component: "db.DB", Level: "INFO"},
+		{Component: "rpc.client", Level: "INFO"},
+		{Component: "rpc.ABICodec", Level: "INFO"},
+		{Component: "rpc.mockClient", Level: "INFO"},
+		{Component: "tracker.Top50Tracker", Level: "INFO"},
+		{Component: "tracker.FetchDataTracker", Level: "INFO"},
+		{Component: "pow.MiningWorker-0", Level: "INFO"},
+		{Component: "pow.MiningWorker-1", Level: "INFO"},
+		{Component: "pow.MiningTasker-0", Level: "INFO"},
+		{Component: "pow.MiningTasker-1", Level: "INFO"},
+		{Component: "tracker.PSRTracker", Level: "INFO"},
 	},
 	EnvFile: path.Join(ConfigFolder, ".env"),
 }

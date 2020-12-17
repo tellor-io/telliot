@@ -46,7 +46,7 @@ func ExitOnError(err error, operation string) {
 func setup() error {
 	cfg := config.GetConfig()
 
-	err := util.ParseLoggingConfig(cfg.PackageLogLevel)
+	err := util.ParseLoggingConfig(cfg.Logger)
 	if err != nil {
 		return errors.Wrapf(err, "parsing log config")
 	}
