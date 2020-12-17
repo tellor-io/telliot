@@ -128,21 +128,8 @@ var config = Config{
 	},
 	ConfigFolder: ConfigFolder,
 	LogLevel:     "info",
-	Logger: []util.Entry{
-		{Component: "config.Config", Level: "INFO"},
-		{Component: "db.DB", Level: "INFO"},
-		{Component: "rpc.client", Level: "INFO"},
-		{Component: "rpc.ABICodec", Level: "INFO"},
-		{Component: "rpc.mockClient", Level: "INFO"},
-		{Component: "tracker.Top50Tracker", Level: "INFO"},
-		{Component: "tracker.FetchDataTracker", Level: "INFO"},
-		{Component: "pow.MiningWorker-0", Level: "INFO"},
-		{Component: "pow.MiningWorker-1", Level: "INFO"},
-		{Component: "pow.MiningTasker-0", Level: "INFO"},
-		{Component: "pow.MiningTasker-1", Level: "INFO"},
-		{Component: "tracker.PSRTracker", Level: "INFO"},
-	},
-	EnvFile: path.Join(ConfigFolder, ".env"),
+	Logger:       []util.Entry{},
+	EnvFile:      path.Join(ConfigFolder, ".env"),
 }
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
@@ -223,6 +210,24 @@ func validateConfig(cfg *Config) error {
 			return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
 		}
 	}
+
+	var defaultEntries = []util.Entry{
+		{Component: "config.Config", Level: "INFO"},
+		{Component: "db.DB", Level: "INFO"},
+		{Component: "rpc.client", Level: "INFO"},
+		{Component: "rpc.ABICodec", Level: "INFO"},
+		{Component: "rpc.mockClient", Level: "INFO"},
+		{Component: "tracker.Top50Tracker", Level: "INFO"},
+		{Component: "tracker.FetchDataTracker", Level: "INFO"},
+		{Component: "pow.MiningWorker-0", Level: "INFO"},
+		{Component: "pow.MiningWorker-1", Level: "INFO"},
+		{Component: "pow.MiningTasker-0", Level: "INFO"},
+		{Component: "pow.MiningTasker-1", Level: "INFO"},
+		{Component: "tracker.PSRTracker", Level: "INFO"},
+	}
+
+	// Prepeding default entries to avoid iterating to find duplicates, the setupLoggingConfig will correctly handle it
+	cfg.Logger = append(defaultEntries, config.Logger...)
 
 	for name, gpuConfig := range cfg.GPUConfig {
 		if gpuConfig.Disabled {

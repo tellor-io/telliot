@@ -46,7 +46,7 @@ func ExitOnError(err error, operation string) {
 func setup() error {
 	cfg := config.GetConfig()
 
-	err := util.ParseLoggingConfig(cfg.Logger)
+	err := util.SetupLoggingConfig(cfg.Logger)
 	if err != nil {
 		return errors.Wrapf(err, "parsing log config")
 	}
@@ -156,13 +156,12 @@ func App() *cli.Cli {
 
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
-	//logLevel := app.StringOpt("logLevel", "error", "The level of log messages")
-	// logPath := app.StringOpt("logConfig", "", "Path to a JSON logging config file")
 
+	// Leaving this logSetup here because will change soon with new CLI
 	logSetup := util.SetupLogger()
+
 	// This will get run before any of the commands
 	app.Before = func() {
-		// ExitOnError(util.ParseLoggingConfig(*logPath), "parsing log file")
 		ExitOnError(config.ParseConfig(*configPath), "parsing config file")
 		ExitOnError(setup(), "setting up")
 	}

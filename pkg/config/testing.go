@@ -112,7 +112,7 @@ func OpenTestConfig(t *testing.T) *Config {
 		t.Fatal(err)
 	}
 	cfg := GetConfig()
-	err = util.ParseLoggingConfig(cfg.Logger)
+	err = util.SetupLoggingConfig(cfg.Logger)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -24,7 +24,9 @@ var configJSON = `{
     "trackerCycle": 1,
     "trackers": {},
     "dbFile": "/tellorDB",
-    "requestTips": 1,
+	"requestTips": 1,
+	"logger": [{"component": "db.Db", "level":"DEBUG"}],
+	"logLevel": "info:",
     "configFolder": "` + filepath.Join("..", "..", "configs") + `",
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
 }
@@ -36,9 +38,6 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "failed to parse mock config: %v\n", err)
 		os.Exit(-1)
 	}
-	// if err := util.ParseLoggingConfig(""); err != nil {
-	// 	log.Fatal(err)
-	// }
 	if err := apiOracle.EnsureValueOracle(); err != nil {
 		log.Fatal(err)
 	}
