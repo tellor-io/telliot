@@ -19,15 +19,15 @@ var (
 )
 
 // ParseLoggingConfig parses the given JSON log level config file for use in log configuration.
-func SetupLoggingConfig(entries []Entry) error {
+func SetupLoggingConfig(entries map[string]string) error {
 
 	cfg := &LogConfig{make(map[string]LogLevel)}
-	for _, e := range entries {
-		lvl, err := StringToLevel(e.Level)
+	for component, level := range entries {
+		lvl, err := StringToLevel(level)
 		if err != nil {
 			return err
 		}
-		cfg.levels[e.Component] = lvl
+		cfg.levels[component] = lvl
 	}
 	sharedConfig = cfg
 

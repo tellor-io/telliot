@@ -25,7 +25,7 @@ var configJSON = `{
     "trackers": {},
     "dbFile": "/tellorDB",
 	"requestTips": 1,
-	"logger": [{"component": "db.Db", "level":"DEBUG"}],
+	"logger": {"db.Db":"DEBUG"},
 	"logLevel": "info:",
     "configFolder": "` + filepath.Join("..", "..", "configs") + `",
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"

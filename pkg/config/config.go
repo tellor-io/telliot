@@ -14,7 +14,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // Unfortunate hack to enable json parsing of human readable time strings
@@ -87,7 +86,7 @@ type Config struct {
 	PoolURL                      string                `json:"poolURL"`
 	ConfigFolder                 string                `json:"configFolder"`
 	LogLevel                     string                `json:"logLevel"`
-	Logger                       []util.Entry          `json:"logger"`
+	Logger                       map[string]string    `json:"logger"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 	// Minimum percent of profit when submitting a solution.
@@ -104,7 +103,7 @@ type Config struct {
 
 const ConfigFolder = "configs"
 
-var config = Config{
+var defaultConfig = Config{
 	GasMax:                       10,
 	GasMultiplier:                1,
 	MinConfidence:                0.2,
@@ -128,7 +127,20 @@ var config = Config{
 	},
 	ConfigFolder: ConfigFolder,
 	LogLevel:     "info",
-	Logger:       []util.Entry{},
+	Logger:   map[string]string {
+		"config.Config": "INFO",
+		"db.DB": "INFO",
+		"rpc.client": "INFO",
+		"rpc.ABICodec": "INFO",
+		"rpc.mockClient": "INFO",
+		"tracker.Top50Tracker": "INFO",
+		"tracker.FetchDataTracker": "INFO",
+		"pow.MiningWorker-0:": "INFO",
+		"pow.MiningWorker-1:": "INFO",
+		"pow.MiningTasker-0:": "INFO",
+		"pow.MiningTasker-1:": "INFO",
+		"tracker.PSRTracker": "INFO",
+	},
 	EnvFile:      path.Join(ConfigFolder, ".env"),
 }
 
@@ -146,35 +158,35 @@ func ParseConfig(path string) error {
 }
 
 func ParseConfigBytes(data []byte) error {
-	err := json.Unmarshal(data, &config)
+	err := json.Unmarshal(data, &defaultConfig)
 	if err != nil {
 		return errors.Wrap(err, "parse config json")
 	}
-	err = godotenv.Load(config.EnvFile)
+	err = godotenv.Load(defaultConfig.EnvFile)
 	if err != nil {
 		return errors.Wrap(err, "loading .env file")
 	}
 
-	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
-	if config.PrivateKey == "" {
+	defaultConfig.PrivateKey = os.Getenv(PrivateKeyEnvName)
+	if defaultConfig.PrivateKey == "" {
 		return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
 	}
-	config.NodeURL = os.Getenv(NodeURLEnvName)
-	if config.NodeURL == "" {
+	defaultConfig.NodeURL = os.Getenv(NodeURLEnvName)
+	if defaultConfig.NodeURL == "" {
 		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
 	}
-	if len(config.ServerWhitelist) == 0 {
-		if strings.Contains(config.PublicAddress, "0x") {
-			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)
+	if len(defaultConfig.ServerWhitelist) == 0 {
+		if strings.Contains(defaultConfig.PublicAddress, "0x") {
+			defaultConfig.ServerWhitelist = append(defaultConfig.ServerWhitelist, defaultConfig.PublicAddress)
 		} else {
-			config.ServerWhitelist = append(config.ServerWhitelist, "0x"+config.PublicAddress)
+			defaultConfig.ServerWhitelist = append(defaultConfig.ServerWhitelist, "0x"+defaultConfig.PublicAddress)
 		}
 	}
 
-	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
-	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
+	defaultConfig.PrivateKey = strings.ToLower(strings.ReplaceAll(defaultConfig.PrivateKey, "0x", ""))
+	defaultConfig.PublicAddress = strings.ToLower(strings.ReplaceAll(defaultConfig.PublicAddress, "0x", ""))
 
-	err = validateConfig(&config)
+	err = validateConfig(&defaultConfig)
 	if err != nil {
 		return errors.Wrap(err, "config validation")
 	}
@@ -211,24 +223,6 @@ func validateConfig(cfg *Config) error {
 		}
 	}
 
-	var defaultEntries = []util.Entry{
-		{Component: "config.Config", Level: "INFO"},
-		{Component: "db.DB", Level: "INFO"},
-		{Component: "rpc.client", Level: "INFO"},
-		{Component: "rpc.ABICodec", Level: "INFO"},
-		{Component: "rpc.mockClient", Level: "INFO"},
-		{Component: "tracker.Top50Tracker", Level: "INFO"},
-		{Component: "tracker.FetchDataTracker", Level: "INFO"},
-		{Component: "pow.MiningWorker-0", Level: "INFO"},
-		{Component: "pow.MiningWorker-1", Level: "INFO"},
-		{Component: "pow.MiningTasker-0", Level: "INFO"},
-		{Component: "pow.MiningTasker-1", Level: "INFO"},
-		{Component: "tracker.PSRTracker", Level: "INFO"},
-	}
-
-	// Prepeding default entries to avoid iterating to find duplicates, the setupLoggingConfig will correctly handle it
-	cfg.Logger = append(defaultEntries, config.Logger...)
-
 	for name, gpuConfig := range cfg.GPUConfig {
 		if gpuConfig.Disabled {
 			continue
@@ -249,5 +243,5 @@ func validateConfig(cfg *Config) error {
 
 // GetConfig returns a shared instance of config.
 func GetConfig() *Config {
-	return &config
+	return &defaultConfig
 }

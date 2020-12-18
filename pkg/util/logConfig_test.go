@@ -11,19 +11,19 @@ import (
 )
 
 func TestLogConfig(t *testing.T) {
-	var defaultEntries = []Entry{
-		{Component: "config.Config", Level: "INFO"},
-		{Component: "db.DB", Level: "INFO"},
-		{Component: "rpc.client", Level: "INFO"},
-		{Component: "rpc.ABICodec", Level: "INFO"},
-		{Component: "rpc.mockClient", Level: "INFO"},
-		{Component: "tracker.Top50Tracker", Level: "INFO"},
-		{Component: "tracker.FetchDataTracker", Level: "INFO"},
-		{Component: "pow.MiningWorker-0", Level: "INFO"},
-		{Component: "pow.MiningWorker-1", Level: "INFO"},
-		{Component: "pow.MiningTasker-0", Level: "INFO"},
-		{Component: "pow.MiningTasker-1", Level: "INFO"},
-		{Component: "tracker.PSRTracker", Level: "INFO"},
+	var defaultEntries = map[string]string {
+		"config.Config": "INFO",
+		"db.DB": "INFO",
+		"rpc.client": "INFO",
+		"rpc.ABICodec": "INFO",
+		"rpc.mockClient": "INFO",
+		"tracker.Top50Tracker": "INFO",
+		"tracker.FetchDataTracker": "INFO",
+		"pow.MiningWorker-0:": "INFO",
+		"pow.MiningWorker-1:": "INFO",
+		"pow.MiningTasker-0:": "INFO",
+		"pow.MiningTasker-1:": "INFO",
+		"tracker.PSRTracker": "INFO",
 	}
 	err := SetupLoggingConfig(defaultEntries)
 	testutil.Ok(t, err)
