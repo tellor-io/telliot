@@ -86,7 +86,7 @@ type Config struct {
 	PoolURL                      string                `json:"poolURL"`
 	ConfigFolder                 string                `json:"configFolder"`
 	LogLevel                     string                `json:"logLevel"`
-	Logger                       map[string]string    `json:"logger"`
+	Logger                       map[string]string     `json:"logger"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 	// Minimum percent of profit when submitting a solution.
@@ -127,21 +127,21 @@ var defaultConfig = Config{
 	},
 	ConfigFolder: ConfigFolder,
 	LogLevel:     "info",
-	Logger:   map[string]string {
-		"config.Config": "INFO",
-		"db.DB": "INFO",
-		"rpc.client": "INFO",
-		"rpc.ABICodec": "INFO",
-		"rpc.mockClient": "INFO",
-		"tracker.Top50Tracker": "INFO",
+	Logger: map[string]string{
+		"config.Config":            "INFO",
+		"db.DB":                    "INFO",
+		"rpc.client":               "INFO",
+		"rpc.ABICodec":             "INFO",
+		"rpc.mockClient":           "INFO",
+		"tracker.Top50Tracker":     "INFO",
 		"tracker.FetchDataTracker": "INFO",
-		"pow.MiningWorker-0:": "INFO",
-		"pow.MiningWorker-1:": "INFO",
-		"pow.MiningTasker-0:": "INFO",
-		"pow.MiningTasker-1:": "INFO",
-		"tracker.PSRTracker": "INFO",
+		"pow.MiningWorker-0:":      "INFO",
+		"pow.MiningWorker-1:":      "INFO",
+		"pow.MiningTasker-0:":      "INFO",
+		"pow.MiningTasker-1:":      "INFO",
+		"tracker.PSRTracker":       "INFO",
 	},
-	EnvFile:      path.Join(ConfigFolder, ".env"),
+	EnvFile: path.Join(ConfigFolder, ".env"),
 }
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
