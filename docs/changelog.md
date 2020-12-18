@@ -14,6 +14,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 * [\#317](https://github.com/tellor-io/telliot/pull/317) Removed nodeURL and private key from config file
 * [\#318](https://github.com/tellor-io/telliot/pull/318) `indexes.json` file format migrated to JSONPath format.
+* [\#321](https://github.com/tellor-io/telliot/pull/321) Unified all configuration files. LoggingConfig and LogLevel now reside in the main config file. 
 
 #### Added
 
