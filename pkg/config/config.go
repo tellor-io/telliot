@@ -80,6 +80,8 @@ type Config struct {
 	Password                     string                `json:"password"`
 	PoolURL                      string                `json:"poolURL"`
 	ConfigFolder                 string                `json:"configFolder"`
+	LogLevel                     string                `json:"logLevel"`
+	Logger                       map[string]string     `json:"logger"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 	// Minimum percent of profit when submitting a solution.
@@ -96,7 +98,8 @@ type Config struct {
 
 const ConfigFolder = "configs"
 
-var config = Config{
+// TODO remove or refactor to not a global config instance.
+var defaultConfig = Config{
 	GasMax:                       10,
 	GasMultiplier:                1,
 	MinConfidence:                0.2,
@@ -119,7 +122,22 @@ var config = Config{
 		"disputeChecker":   false,
 	},
 	ConfigFolder: ConfigFolder,
-	EnvFile:      path.Join(ConfigFolder, ".env"),
+	LogLevel:     "info",
+	Logger: map[string]string{
+		"config.Config":            "INFO",
+		"db.DB":                    "INFO",
+		"rpc.client":               "INFO",
+		"rpc.ABICodec":             "INFO",
+		"rpc.mockClient":           "INFO",
+		"tracker.Top50Tracker":     "INFO",
+		"tracker.FetchDataTracker": "INFO",
+		"pow.MiningWorker-0:":      "INFO",
+		"pow.MiningWorker-1:":      "INFO",
+		"pow.MiningTasker-0:":      "INFO",
+		"pow.MiningTasker-1:":      "INFO",
+		"tracker.PSRTracker":       "INFO",
+	},
+	EnvFile: path.Join(ConfigFolder, ".env"),
 }
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
@@ -136,11 +154,12 @@ func ParseConfig(path string) error {
 }
 
 func ParseConfigBytes(data []byte) error {
-	err := json.Unmarshal(data, &config)
+	err := json.Unmarshal(data, &defaultConfig)
+	config := &defaultConfig
 	if err != nil {
 		return errors.Wrap(err, "parse config json")
 	}
-	err = godotenv.Load(config.EnvFile)
+	err = godotenv.Load(defaultConfig.EnvFile)
 	if err != nil {
 		return errors.Wrap(err, "loading .env file")
 	}
@@ -164,7 +183,7 @@ func ParseConfigBytes(data []byte) error {
 	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
-	err = validateConfig(&config)
+	err = validateConfig(config)
 	if err != nil {
 		return errors.Wrap(err, "config validation")
 	}
@@ -221,5 +240,5 @@ func validateConfig(cfg *Config) error {
 
 // GetConfig returns a shared instance of config.
 func GetConfig() *Config {
-	return &config
+	return &defaultConfig
 }

@@ -4,7 +4,6 @@
 package util
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -12,8 +11,21 @@ import (
 )
 
 func TestLogConfig(t *testing.T) {
-	path := filepath.Join("..", "..", "configs", "loggingConfig.json")
-	err := ParseLoggingConfig(path)
+	var defaultEntries = map[string]string{
+		"config.Config":            "INFO",
+		"db.DB":                    "INFO",
+		"rpc.client":               "INFO",
+		"rpc.ABICodec":             "INFO",
+		"rpc.mockClient":           "INFO",
+		"tracker.Top50Tracker":     "INFO",
+		"tracker.FetchDataTracker": "INFO",
+		"pow.MiningWorker-0:":      "INFO",
+		"pow.MiningWorker-1:":      "INFO",
+		"pow.MiningTasker-0:":      "INFO",
+		"pow.MiningTasker-1:":      "INFO",
+		"tracker.PSRTracker":       "INFO",
+	}
+	err := SetupLoggingConfig(defaultEntries)
 	testutil.Ok(t, err)
 	cfg := GetLoggingConfig()
 	if cfg.levels["config.Config"] == 0 {

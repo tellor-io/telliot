@@ -34,6 +34,7 @@ var ctx context.Context
 var cont tellorCommon.Contract
 var acc tellorCommon.Account
 var clt rpc.ETHClient
+var logLevel string
 
 func ExitOnError(err error, operation string) {
 	if err != nil {
@@ -44,6 +45,13 @@ func ExitOnError(err error, operation string) {
 
 func setup() error {
 	cfg := config.GetConfig()
+
+	err := util.SetupLoggingConfig(cfg.Logger)
+	if err != nil {
+		return errors.Wrapf(err, "parsing log config")
+	}
+
+	logLevel = cfg.LogLevel
 
 	if !cfg.EnablePoolWorker {
 		// Create an rpc client
@@ -148,13 +156,12 @@ func App() *cli.Cli {
 
 	// App wide config options
 	configPath := app.StringOpt("config", "configs/config.json", "Path to the primary JSON config file")
-	logLevel := app.StringOpt("logLevel", "error", "The level of log messages")
-	logPath := app.StringOpt("logConfig", "", "Path to a JSON logging config file")
 
+	// Leaving this logSetup here because will change soon with new CLI
 	logSetup := util.SetupLogger()
+
 	// This will get run before any of the commands
 	app.Before = func() {
-		ExitOnError(util.ParseLoggingConfig(*logPath), "parsing log file")
 		ExitOnError(config.ParseConfig(*configPath), "parsing config file")
 		ExitOnError(setup(), "setting up")
 	}
@@ -162,22 +169,22 @@ func App() *cli.Cli {
 	versionMessage := fmt.Sprintf(versionMessage, GitTag, GitHash)
 	app.Version("version", versionMessage)
 
-	app.Command("stake", "staking operations", stakeCmd(logSetup, logLevel))
-	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup, logLevel))
-	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup, logLevel))
+	app.Command("stake", "staking operations", stakeCmd(logSetup))
+	app.Command("transfer", "send TRB to address", moveCmd(ops.Transfer, logSetup))
+	app.Command("approve", "approve TRB to address", moveCmd(ops.Approve, logSetup))
 	app.Command("balance", "check balance of address", balanceCmd)
-	app.Command("dispute", "dispute operations", disputeCmd(logSetup, logLevel))
-	app.Command("mine", "mine for TRB", mineCmd(logSetup, logLevel))
-	app.Command("dataserver", "start an independent dataserver", dataserverCmd(logSetup, logLevel))
+	app.Command("dispute", "dispute operations", disputeCmd(logSetup))
+	app.Command("mine", "mine for TRB", mineCmd(logSetup))
+	app.Command("dataserver", "start an independent dataserver", dataserverCmd(logSetup))
 	return app
 }
 
-func stakeCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func stakeCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
-		cmd.Command("deposit", "deposit TRB stake", simpleCmd(ops.Deposit, logSetup, logLevel))
-		cmd.Command("withdraw", "withdraw TRB stake", simpleCmd(ops.WithdrawStake, logSetup, logLevel))
-		cmd.Command("request", "request to withdraw TRB stake", simpleCmd(ops.RequestStakingWithdraw, logSetup, logLevel))
-		cmd.Command("status", "show current staking status", simpleCmd(ops.ShowStatus, logSetup, logLevel))
+		cmd.Command("deposit", "deposit TRB stake", simpleCmd(ops.Deposit, logSetup))
+		cmd.Command("withdraw", "withdraw TRB stake", simpleCmd(ops.WithdrawStake, logSetup))
+		cmd.Command("request", "request to withdraw TRB stake", simpleCmd(ops.RequestStakingWithdraw, logSetup))
+		cmd.Command("status", "show current staking status", simpleCmd(ops.ShowStatus, logSetup))
 	}
 }
 
@@ -187,11 +194,10 @@ func simpleCmd(
 		rpc.ETHClient,
 		tellorCommon.Contract,
 		tellorCommon.Account) error,
-	logSetup func(string) log.Logger,
-	logLevel *string) func(*cli.Cmd) {
+	logSetup func(string) log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc), "")
+			ExitOnError(f(ctx, logSetup(logLevel), clt, cont, acc), "")
 		}
 	}
 }
@@ -204,15 +210,14 @@ func moveCmd(
 		tellorCommon.Account,
 		common.Address,
 		*big.Int) error,
-	logSetup func(string) log.Logger,
-	logLevel *string) func(*cli.Cmd) {
+	logSetup func(string) log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		amt := TRBAmount{}
 		addr := ETHAddress{}
 		cmd.VarArg("AMOUNT", &amt, "amount to transfer")
 		cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 		cmd.Action = func() {
-			ExitOnError(f(ctx, logSetup(*logLevel), clt, cont, acc, addr.addr, amt.Int), "move")
+			ExitOnError(f(ctx, logSetup(logLevel), clt, cont, acc, addr.addr, amt.Int), "move")
 		}
 	}
 }
@@ -222,22 +227,20 @@ func balanceCmd(cmd *cli.Cmd) {
 	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 	cmd.Spec = "[ADDRESS]"
 	cmd.Action = func() {
-		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
-		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		var zero [20]byte
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
-			addr.addr = commonAddress
+			addr.addr = acc.Address
 		}
 		ExitOnError(ops.Balance(ctx, clt, cont.Getter, addr.addr), "checking balance")
 	}
 
 }
 
-func disputeCmd(loggerSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func disputeCmd(loggerSetup func(string) log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Command("vote", "vote on an active dispute", voteCmd)
 		cmd.Command("new", "start a new dispute", newDisputeCmd)
-		cmd.Command("show", "show existing disputes", simpleCmd(ops.List, loggerSetup, logLevel))
+		cmd.Command("show", "show existing disputes", simpleCmd(ops.List, loggerSetup))
 	}
 }
 
@@ -262,11 +265,11 @@ func newDisputeCmd(cmd *cli.Cmd) {
 	}
 }
 
-func mineCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		remoteDS := cmd.BoolOpt("remote r", false, "connect to remote dataserver")
 		cmd.Action = func() {
-			logger := logSetup(*logLevel)
+			logger := logSetup(logLevel)
 			// Create os kill sig listener.
 			c := make(chan os.Signal, 1)
 			signal.Notify(c, os.Interrupt)
@@ -349,10 +352,10 @@ func mineCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) 
 	}
 }
 
-func dataserverCmd(logSetup func(string) log.Logger, logLevel *string) func(*cli.Cmd) {
+func dataserverCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
-			logger := logSetup(*logLevel)
+			logger := logSetup(logLevel)
 			// Create os kill sig listener.
 			c := make(chan os.Signal, 1)
 			signal.Notify(c, os.Interrupt)
