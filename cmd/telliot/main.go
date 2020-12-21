@@ -227,11 +227,9 @@ func balanceCmd(cmd *cli.Cmd) {
 	cmd.VarArg("ADDRESS", &addr, "ethereum public address")
 	cmd.Spec = "[ADDRESS]"
 	cmd.Action = func() {
-		// Using values from context, until we have a function that setups the client and returns as values, not as part of the context
-		commonAddress := ctx.Value(tellorCommon.PublicAddress).(common.Address)
 		var zero [20]byte
 		if bytes.Equal(addr.addr.Bytes(), zero[:]) {
-			addr.addr = commonAddress
+			addr.addr = acc.Address
 		}
 		ExitOnError(ops.Balance(ctx, clt, cont.Getter, addr.addr), "checking balance")
 	}

@@ -6,5 +6,6 @@
     "gasMax": 10,
     "dbFile": "/tellorDB",
     "configFolder": "/configs",
-    "envFile": "/configs/.env.example"
+    "logLevel": "info",
+    "envFile": "configs/.env.example"
 }
