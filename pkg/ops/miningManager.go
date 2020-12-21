@@ -94,7 +94,7 @@ func CreateMiningManager(
 		tasker:          nil,
 		solutionPending: nil,
 		solHandler:      nil,
-		submitted:		 false,
+		submitted:       false,
 		contractGetter:  getter,
 		cfg:             cfg,
 		database:        database,

@@ -65,7 +65,7 @@ type clientInstance struct {
 
 var (
 	// retry delays that range from .5s to 2mins.
-	backoff = []uint64{500,1000, 2000, 5000, 10000, 20000, 40000, 80000, 100000, 120000}
+	backoff = []uint64{500, 1000, 2000, 5000, 10000, 20000, 40000, 80000, 100000, 120000}
 
 	// rate to print errors if continue to occur in retry loop.
 	errorPrintTick = time.Duration(5000)
