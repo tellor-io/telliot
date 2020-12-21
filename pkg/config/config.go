@@ -23,11 +23,6 @@ type Duration struct {
 	time.Duration
 }
 
-// type Entry struct {
-// 	Level     string `json:"level"`
-// 	Component string `json:"component"`
-// }
-
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	var v interface{}
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -159,6 +154,7 @@ func ParseConfig(path string) error {
 
 func ParseConfigBytes(data []byte) error {
 	err := json.Unmarshal(data, &defaultConfig)
+	config := &defaultConfig
 	if err != nil {
 		return errors.Wrap(err, "parse config json")
 	}
@@ -167,26 +163,26 @@ func ParseConfigBytes(data []byte) error {
 		return errors.Wrap(err, "loading .env file")
 	}
 
-	defaultConfig.PrivateKey = os.Getenv(PrivateKeyEnvName)
-	if defaultConfig.PrivateKey == "" {
+	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
+	if config.PrivateKey == "" {
 		return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
 	}
-	defaultConfig.NodeURL = os.Getenv(NodeURLEnvName)
-	if defaultConfig.NodeURL == "" {
+	config.NodeURL = os.Getenv(NodeURLEnvName)
+	if config.NodeURL == "" {
 		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
 	}
-	if len(defaultConfig.ServerWhitelist) == 0 {
-		if strings.Contains(defaultConfig.PublicAddress, "0x") {
-			defaultConfig.ServerWhitelist = append(defaultConfig.ServerWhitelist, defaultConfig.PublicAddress)
+	if len(config.ServerWhitelist) == 0 {
+		if strings.Contains(config.PublicAddress, "0x") {
+			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)
 		} else {
-			defaultConfig.ServerWhitelist = append(defaultConfig.ServerWhitelist, "0x"+defaultConfig.PublicAddress)
+			config.ServerWhitelist = append(config.ServerWhitelist, "0x"+config.PublicAddress)
 		}
 	}
 
-	defaultConfig.PrivateKey = strings.ToLower(strings.ReplaceAll(defaultConfig.PrivateKey, "0x", ""))
-	defaultConfig.PublicAddress = strings.ToLower(strings.ReplaceAll(defaultConfig.PublicAddress, "0x", ""))
+	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
+	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
-	err = validateConfig(&defaultConfig)
+	err = validateConfig(config)
 	if err != nil {
 		return errors.Wrap(err, "config validation")
 	}

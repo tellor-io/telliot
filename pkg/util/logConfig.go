@@ -3,13 +3,6 @@
 
 package util
 
-// // Entry holds specific component log level.
-type Entry struct {
-	Level     string `json:"level"`
-	Component string `json:"component"`
-}
-
-// LogConfig holds individual log level settings.
 type LogConfig struct {
 	levels map[string]LogLevel
 }
