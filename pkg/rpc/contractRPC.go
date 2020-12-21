@@ -90,7 +90,7 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 	}
 
 	var finalError error
-	for i := 0; i <= 5; i++ {
+	for i := 0; i <= 3; i++ {
 		balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
 		if err != nil {
 			finalError = err
@@ -98,7 +98,7 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 		}
 
 		cost := big.NewInt(1)
-		cost = cost.Mul(gasPrice, big.NewInt(200000))
+		cost = cost.Mul(gasPrice, big.NewInt(3000000))
 		if balance.Cmp(cost) < 0 {
 			// FIXME: notify someone that we're out of funds!
 			finalError = errors.Errorf("insufficient funds to send transaction: %v < %v", balance, cost)
@@ -161,7 +161,7 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 		time.Sleep(15 * time.Second)
 	}
 
-	return nil, errors.Wrapf(finalError, "could not submit txn after 5 attempts ctx:%v", ctxName)
+	return nil, errors.Wrapf(finalError, "could not submit txn after 3 attempts ctx:%v", ctxName)
 }
 
 func getInt(data []byte) *big.Int {

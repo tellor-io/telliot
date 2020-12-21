@@ -53,6 +53,7 @@ type MiningMgr struct {
 	tasker          WorkSource
 	solHandler      SolutionSink
 	solutionPending *pow.Result
+	submitted       bool
 	database        db.DataServerProxy
 	contractGetter  *getter.TellorGetters
 	cfg             *config.Config
@@ -93,6 +94,7 @@ func CreateMiningManager(
 		tasker:          nil,
 		solutionPending: nil,
 		solHandler:      nil,
+		submitted:		 false,
 		contractGetter:  getter,
 		cfg:             cfg,
 		database:        database,
@@ -141,6 +143,10 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				level.Debug(mgr.logger).Log("msg", "re-submitting a pending solution", "reqIDs", fmt.Sprintf("%+v", ids))
 			}
 
+			if mgr.submitted {
+				continue
+			}
+
 			// Set this solution as pending so that if
 			// any of the checks below fail and will be retried
 			// when there is no new challenge.
@@ -173,6 +179,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 
 			// A solution has been submitted so the
 			// pending solution doesn't matter here any more so reset it.
+			mgr.submitted = true
 			mgr.solutionPending = nil
 
 		// Time to check for a new challenge.
@@ -207,6 +214,7 @@ func (mgr *MiningMgr) newWork() {
 					ids = append(ids, id.Int64())
 				}
 				level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
+				mgr.submitted = false
 				mgr.toMineInput <- work
 			}
 		}

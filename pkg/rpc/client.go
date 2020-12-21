@@ -64,8 +64,8 @@ type clientInstance struct {
 }
 
 var (
-	// retry delays that range from 100ms to 2mins.
-	backoff = []uint64{100, 500, 1000, 2000, 5000, 10000, 15000, 30000, 60000, 120000}
+	// retry delays that range from .5s to 2mins.
+	backoff = []uint64{500,1000, 2000, 5000, 10000, 20000, 40000, 80000, 100000, 120000}
 
 	// rate to print errors if continue to occur in retry loop.
 	errorPrintTick = time.Duration(5000)
@@ -87,7 +87,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 	defer cancel()
 	tryCount := 0
 	nextTick := time.Now().Add(errorPrintTick)
-	for tryCount < 20 {
+	for tryCount < 10 {
 		err := fn(&wTo)
 		if err == nil {
 			return nil
@@ -100,7 +100,7 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		}
 		c.log.Debug("Problem in calling eth client:%v", err)
 		//pause for a bit and try again
-		sleepTime := backoff[tryCount%len(backoff)]
+		sleepTime := backoff[tryCount]
 		tryCount++
 		if time.Now().After(nextTick) {
 			c.log.Error("calling ethClient: %v\n", err)
