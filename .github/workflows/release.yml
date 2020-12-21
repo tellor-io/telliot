@@ -39,7 +39,7 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: true
           prerelease: false
-          body: "[CHANGELOG.md](../master/CHANGELOG.md) contains all release changes"
+          body: "[changelog.md](../master/docs/changelog.md) contains all release changes"
 
       - name: Upload Source
         uses: actions/upload-release-asset@v1
