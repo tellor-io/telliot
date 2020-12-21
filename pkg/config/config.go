@@ -98,6 +98,7 @@ type Config struct {
 
 const ConfigFolder = "configs"
 
+// TODO remove or refactor to not a global config instance.
 var defaultConfig = Config{
 	GasMax:                       10,
 	GasMultiplier:                1,
