@@ -12,6 +12,15 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 #### Changed
 
+#### Added
+
+#### Fixed
+
+
+## [v5.3.0](https://github.com/tellor-io/telliot/releases/tag/v5.3.0) - 2020.12.21
+
+#### Changed
+
 * [\#317](https://github.com/tellor-io/telliot/pull/317) Removed nodeURL and private key from config file
 * [\#318](https://github.com/tellor-io/telliot/pull/318) `indexes.json` file format migrated to JSONPath format.
 
