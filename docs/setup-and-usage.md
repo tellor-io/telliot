@@ -87,8 +87,6 @@ Run the following commands:
 
 ```text
 wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/indexes.json
-
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/loggingConfig.json
 ```
 
 ### Download and Edit the Manual Data Entry File
