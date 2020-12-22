@@ -70,6 +70,28 @@ func TestIndexTracker(t *testing.T) {
 			},
 			Expected: []float64{454.534, 454.837},
 		},
+		{
+			IndexTracker: &IndexTracker{
+				Name:       "test5",
+				Identifier: "id5",
+				JSONPath:   "$[\"bitcoin-cash-sv\"][\"usd\"]", // If there is a dash in JSONPath, then we must use double quotation!
+				Source: TestDataSource{
+					Payload: `{"bitcoin-cash-sv":{"usd":169.55}}`,
+				},
+			},
+			Expected: []float64{169.55},
+		},
+		{
+			IndexTracker: &IndexTracker{
+				Name:       "test6",
+				Identifier: "id6",
+				JSONPath:   "$.dummy.test.usd[a,b]",
+				Source: TestDataSource{
+					Payload: `{"dummy": { "test": {"usd": {"a": 567.43,"b": 567.23}}}}`,
+				},
+			},
+			Expected: []float64{567.43, 567.23},
+		},
 	}
 	// Test jsonpath parsing per test cases.
 	for _, testCase := range testCases {

@@ -92,7 +92,7 @@
     "BSV/USD": [
         {
             "URL": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash-sv&vs_currencies=usd",
-            "jsonPath": "$[bitcoin-cash-sv][usd]"
+            "jsonPath": "$[\"bitcoin-cash-sv\"][\"usd\"]"
         }
     ],
     "BTC/USD": [
@@ -282,13 +282,13 @@
         },
         {
             "URL": "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd",
-            "jsonPath": "$[matic-network][usd]"
+            "jsonPath": "$[\"matic-network\"][\"usd\"]"
         }
     ],
     "OGN/USD": [
         {
             "URL": "https://api.coingecko.com/api/v3/simple/price?ids=origin-protocol&vs_currencies=usd",
-            "jsonPath": "$[origin-protocol][usd]"
+            "jsonPath": "$[\"origin-protocol\"][\"usd\"]"
         },
         {
             "URL": "https://min-api.cryptocompare.com/data/price?fsym=OGN&tsyms=USD",
@@ -344,7 +344,7 @@
     "TUSD/ETH": [
         {
             "URL": "https://api.coingecko.com/api/v3/simple/price?ids=true-usd&vs_currencies=eth",
-            "jsonPath": "$[true-usd][eth]"
+            "jsonPath": "$[\"true-usd\"][\"eth\"]"
         }
     ],
     "USDC/USDT": [
