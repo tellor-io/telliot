@@ -31,56 +31,6 @@ var mainConfig = `
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
 }`
 
-const loggingConfig = `
-[
-    {
-        "component": "config.Config",
-        "level": "DEBUG"
-    },
-    {
-        "component":"db.DB",
-        "level": "WARN"
-    },
-    {
-        "component": "rpc.client",
-        "level": "INFO"
-    },
-    {
-        "component": "rpc.ABICodec",
-        "level": "INFO"
-    },
-    {
-        "component": "rpc.mockClient",
-        "level": "INFO"
-    },
-    {
-        "component": "tracker.Top50Tracker",
-        "level": "INFO"
-    },
-    {
-        "component": "tracker.FetchDataTracker",
-        "level": "ERROR"
-    },
-    {
-        "component": "pow.MiningWorker-0",
-        "level": "ERROR"
-    },    {
-        "component": "pow.MiningWorker-1",
-        "level": "ERROR"
-    },    {
-        "component": "pow.MiningTasker-0",
-        "level": "ERROR"
-    },    {
-        "component": "pow.MiningTasker-1",
-        "level": "ERROR"
-    },
-    {
-        "component":"tracker.PSRTracker",
-        "level":"INFO"
-    }
-]
-`
-
 func OpenTestConfig(t *testing.T) *Config {
 	mainConfigFile, err := ioutil.TempFile(os.TempDir(), "testing")
 	if err != nil {
@@ -99,18 +49,6 @@ func OpenTestConfig(t *testing.T) *Config {
 		t.Fatal(err)
 	}
 
-	loggingConfigFile, err := ioutil.TempFile(os.TempDir(), "testing")
-	if err != nil {
-		t.Fatal("Cannot create temporary file", err)
-	}
-	defer os.Remove(loggingConfigFile.Name())
-
-	if _, err = loggingConfigFile.Write([]byte(loggingConfig)); err != nil {
-		t.Fatal("Failed to write the main config file", err)
-	}
-	if err := loggingConfigFile.Close(); err != nil {
-		t.Fatal(err)
-	}
 	cfg := GetConfig()
 	err = util.SetupLoggingConfig(cfg.Logger)
 	if err != nil {
