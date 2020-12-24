@@ -153,6 +153,12 @@
             "jsonPath": "$[0][4]"
         }
     ],
+    "DEFIMARKETCAP": [
+        {
+            "URL": "https://api.coingecko.com/api/v3/global/decentralized_finance_defi",
+            "jsonPath": "$.data.defi_market_cap"
+        }
+    ],
     "EOS/USD": [
         {
             "URL": "https://api.coingecko.com/api/v3/simple/price?ids=eos&vs_currencies=usd",
