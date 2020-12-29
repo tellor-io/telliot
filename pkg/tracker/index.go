@@ -61,15 +61,14 @@ func parseIndexFile() (trackersPerURL map[string]*IndexTracker, symbolsForAPI ma
 			// Tracker for this API already added?
 			_, ok := trackersPerURL[api.URL]
 			if !ok {
-
 				// Expand any env variables with their values from the .env file.
-				vars, err := godotenv.Read(cfg.EnvFile)
+				_, err := godotenv.Read(cfg.EnvFile)
 				// Ignore file doesn't exist errors.
-				if _, ok := err.(*os.PathError); err != nil && !ok {
+				if err != nil && !os.IsNotExist(err) {
 					return nil, nil, errors.Wrap(err, "reading .env file")
 				}
 				api.URL = os.Expand(api.URL, func(key string) string {
-					return vars[key]
+					return os.Getenv(key)
 				})
 
 				var name string
