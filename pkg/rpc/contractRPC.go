@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
+	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -51,7 +52,7 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 	cfg := config.GetConfig()
 	client := ctx.Value(tellorCommon.ClientContextKey).(ETHClient)
 
-	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
+	privateKey, err := crypto.HexToECDSA(os.Getenv(config.PrivateKeyEnvName))
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding private key")
 	}

@@ -6,6 +6,7 @@ package db
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -52,7 +53,7 @@ func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
 	rdbLog = util.NewLogger("db", "RemoteDBProxy")
 
 	cfg := config.GetConfig()
-	privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
+	privateKey, err := crypto.HexToECDSA(os.Getenv(config.PrivateKeyEnvName))
 	if err != nil {
 		fmt.Println("Problem decoding private key", err)
 		return nil, err
