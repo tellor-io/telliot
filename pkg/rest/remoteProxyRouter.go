@@ -29,6 +29,11 @@ func CreateRemoteProxy(ctx context.Context) (*RemoteProxyRouter, error) {
 
 // Default http handler callback which will route to appropriate handler internally.
 func (r *RemoteProxyRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// The "/" pattern matches everything, so this is to disable any other requests.
+	if req.URL.Path != "/" {
+		http.NotFound(w, req)
+		return
+	}
 	w.Header().Add("Content-Type", "application/octet-stream")
 
 	if e := recover(); e != nil {

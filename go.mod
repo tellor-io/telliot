@@ -23,6 +23,7 @@ require (
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0
+	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.7.0 // indirect
@@ -33,7 +34,6 @@ require (
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	go.uber.org/goleak v1.1.10
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
-	golang.org/x/sys v0.0.0-20201018230417-eeed37f84f13 // indirect
 )
 
 replace github.com/miguelmota/go-solidity-sha3 => github.com/offchainlabs/go-solidity-sha3 v0.1.2

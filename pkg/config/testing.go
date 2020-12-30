@@ -19,7 +19,6 @@ var mainConfig = `
     "databaseURL": "http://localhost7545",
     "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
     "serverHost": "localhost",
-    "serverPort": 5000,
     "trackerCycle": 1,
     "trackers": {},
     "dbFile": "/tellorDB",

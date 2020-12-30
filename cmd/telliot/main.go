@@ -9,6 +9,7 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"math/big"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -20,12 +21,14 @@ import (
 	"github.com/go-kit/kit/log/level"
 	cli "github.com/jawher/mow.cli"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts/getter"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ops"
+	"github.com/tellor-io/telliot/pkg/rest"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -285,16 +288,19 @@ func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 
 					var err error
 					ds, err = ops.CreateDataServerOps(ctx, logger, ch)
-					if err != nil {
-						ExitOnError(err, "creating data server")
-					}
+					ExitOnError(err, "creating data server")
+
 					// Start and wait for it to be ready.
-					if err := ds.Start(ctx); err != nil {
-						ExitOnError(err, "starting data server")
-					}
+					ExitOnError(ds.Start(ctx), "starting data server")
 					<-ds.Ready()
 				}
 			}
+
+			http.Handle("/metrics", promhttp.Handler())
+			srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
+			ExitOnError(err, "creating data server instance")
+			srv.Start()
+
 			// Start miner
 			DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 			v, err := DB.Get(db.DisputeStatusKey)
@@ -308,9 +314,8 @@ func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
 			miner, err := ops.CreateMiningManager(logger, ch, cfg, DB)
-			if err != nil {
-				ExitOnError(err, "creating miner")
-			}
+			ExitOnError(err, "creating miner")
+
 			go func() {
 				miner.Start(ctx)
 			}()
@@ -321,6 +326,11 @@ func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 			for _, ch := range exitChannels {
 				*ch <- os.Interrupt
 			}
+
+			if err := srv.Stop(); err != nil {
+				level.Warn(logger).Log("msg", "shutting down the server", "err", err)
+			}
+
 			cnt := 0
 			start := time.Now()
 			for {
@@ -365,19 +375,28 @@ func dataserverCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 			ch := make(chan os.Signal)
 			var err error
 			ds, err = ops.CreateDataServerOps(ctx, logger, ch)
-			if err != nil {
-				ExitOnError(err, "creating data server")
-			}
+			ExitOnError(err, "creating data server")
+
 			// Start and wait for it to be ready
-			if err := ds.Start(ctx); err != nil {
-				ExitOnError(err, "starting data server")
-			}
+			err = ds.Start(ctx)
+			ExitOnError(err, "starting data server")
+
 			<-ds.Ready()
+
+			http.Handle("/metrics", promhttp.Handler())
+			cfg := config.GetConfig()
+			srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
+			ExitOnError(err, "creating data server instance")
+			srv.Start()
 
 			// Wait for kill sig.
 			<-c
 			// Notify exit channels.
 			ch <- os.Interrupt
+
+			if err := srv.Stop(); err != nil {
+				level.Warn(logger).Log("msg", "shutting down the server", "err", err)
+			}
 
 			cnt := 0
 			start := time.Now()
