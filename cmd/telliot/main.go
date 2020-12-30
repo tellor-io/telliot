@@ -574,8 +574,7 @@ var cli struct {
 	Dispute  struct {
 		New  newDisputeCmd `cmd help:"start a new dispute"`
 		Vote voteCmd       `cmd "vote on a open dispute"`
-		Show struct {
-		} `cmd help:"show open disputes"`
+		Show showCmd       `cmd help:"show open disputes"`
 	} `cmd help:"Perform commands related to disputes"`
 	Dataserver dataserverCmd `cmd help:"launch only a dataserver instance"`
 	Mine       mineCmd       `cmd help:"mine TRB and submit values"`

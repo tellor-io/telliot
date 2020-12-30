@@ -156,6 +156,12 @@ func (v voteCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract, accou
 	return ops.Vote(ctx, client, contract, account, disputeID.Int, v.support)
 }
 
+type showCmd struct{}
+
+func (v showCmd) Run(client rpc.ETHClient, logger log.Logger, contract tellorCommon.Contract, account tellorCommon.Account) error {
+	return ops.List(ctx, logger, client, contract, account)
+}
+
 type dataserverCmd struct{}
 
 func (d dataserverCmd) Run(logger log.Logger) error {
