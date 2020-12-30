@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tellor-io/telliot/pkg/rest"
 	"github.com/tellor-io/telliot/pkg/tcontext"
 	"github.com/tellor-io/telliot/pkg/testutil"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -26,6 +27,10 @@ func TestDataServer(t *testing.T) {
 	ds, err := CreateServer(ctx, logger)
 	testutil.Ok(t, err, "creating server in test")
 	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
+
+	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
+	testutil.Ok(t, err)
+	srv.Start()
 
 	time.Sleep(2 * time.Second)
 	resp, err := http.Get("http://" + cfg.ServerHost + ":" + strconv.Itoa(int(cfg.ServerPort)) + "/balance")

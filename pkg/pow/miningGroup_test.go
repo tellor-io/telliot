@@ -141,7 +141,7 @@ func TestMulti(t *testing.T) {
 	input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
 	time.Sleep(1 * time.Second)
 	input <- nil
-	timeout := 200 * time.Millisecond
+	timeout := 500 * time.Millisecond
 	select {
 	case <-output:
 		group.PrintHashRateSummary()

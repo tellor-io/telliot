@@ -12,16 +12,13 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/tellor-io/telliot/pkg/common"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/rest"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
 // DataServer holds refs to primary stack of utilities for data retrieval and serving.
 type DataServer struct {
-	server       *rest.Server
 	DB           db.DB
 	runner       *tracker.Runner
 	ethClient    rpc.ETHClient
@@ -34,7 +31,6 @@ type DataServer struct {
 
 // CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data.
 func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
-	cfg := config.GetConfig()
 
 	DB := ctx.Value(common.DBContextKey).(db.DB)
 	client := ctx.Value(common.ClientContextKey).(rpc.ETHClient)
@@ -42,14 +38,11 @@ func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating data server tracker runner instance")
 	}
-	srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating data server instance")
-	}
+
 	// Make sure channel buffer size 1 since there is no guarantee that anyone
 	// Would be listening to the channel
 	ready := make(chan bool, 1)
-	return &DataServer{server: srv,
+	return &DataServer{
 		DB:           DB,
 		runner:       run,
 		ethClient:    client,
@@ -71,7 +64,6 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 		return errors.Wrap(err, "starting runner data server")
 	}
 
-	ds.server.Start()
 	go func() {
 		<-ds.runner.Ready()
 		level.Info(ds.logger).Log("msg", "runner signaled it is ready")
@@ -95,11 +87,6 @@ func (ds *DataServer) stop() error {
 	var final error
 	// Stop tracker run loop.
 	ds.runnerExitCh <- 1
-
-	// Stop REST erver.
-	if err := ds.server.Stop(); err != nil {
-		final = multierror.Append(final, err)
-	}
 
 	// Stop the DB.
 	if err := ds.DB.Close(); err != nil {
