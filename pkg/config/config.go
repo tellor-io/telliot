@@ -105,6 +105,7 @@ var defaultConfig = Config{
 	MinConfidence:                0.2,
 	DisputeThreshold:             0.01,
 	Heartbeat:                    Duration{15 * time.Second},
+	DBFile:                       "db",
 	MiningInterruptCheckInterval: Duration{15 * time.Second},
 	FetchTimeout:                 Duration{30 * time.Second},
 	TrackerSleepCycle:            Duration{30 * time.Second},
@@ -160,7 +161,8 @@ func ParseConfigBytes(data []byte) error {
 		return errors.Wrap(err, "parse config json")
 	}
 	err = godotenv.Load(defaultConfig.EnvFile)
-	if err != nil {
+	// Ignore file doesn't exist errors.
+	if err != nil && !os.IsNotExist(err) {
 		return errors.Wrap(err, "loading .env file")
 	}
 
