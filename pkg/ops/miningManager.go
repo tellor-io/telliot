@@ -74,7 +74,7 @@ func CreateMiningManager(
 		return nil, errors.Wrap(err, "setup miners")
 	}
 
-	client, err := rpc.NewClient(cfg.NodeURL)
+	client, err := rpc.NewClient(os.Getenv(config.NodeURLEnvName))
 	if err != nil {
 		return nil, errors.Wrap(err, "creating client")
 	}

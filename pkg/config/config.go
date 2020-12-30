@@ -58,7 +58,6 @@ type GPUConfig struct {
 // Config holds global config info derived from config.json.
 type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
-	NodeURL                      string                `json:"nodeURL"`
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
@@ -90,8 +89,6 @@ type Config struct {
 	// the gas cost is lowered.
 	// a ProfitThreshold of 199% or less will submit
 	ProfitThreshold uint64 `json:"profitThreshold"`
-	// Config parameters excluded from the json config file.
-	PrivateKey string `json:"privateKey"`
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
 }
@@ -166,14 +163,6 @@ func ParseConfigBytes(data []byte) error {
 		return errors.Wrap(err, "loading .env file")
 	}
 
-	config.PrivateKey = os.Getenv(PrivateKeyEnvName)
-	if config.PrivateKey == "" {
-		return errors.Errorf("missing ethereum wallet private key environment variable '%v'", PrivateKeyEnvName)
-	}
-	config.NodeURL = os.Getenv(NodeURLEnvName)
-	if config.NodeURL == "" {
-		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
-	}
 	if len(config.ServerWhitelist) == 0 {
 		if strings.Contains(config.PublicAddress, "0x") {
 			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)
@@ -182,7 +171,7 @@ func ParseConfigBytes(data []byte) error {
 		}
 	}
 
-	config.PrivateKey = strings.ToLower(strings.ReplaceAll(config.PrivateKey, "0x", ""))
+	os.Setenv(PrivateKeyEnvName, strings.ToLower(strings.ReplaceAll(os.Getenv(PrivateKeyEnvName), "0x", "")))
 	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
 
 	err = validateConfig(config)
@@ -197,6 +186,9 @@ func validateConfig(cfg *Config) error {
 	if err != nil || len(b) != 20 {
 		return errors.Wrapf(err, "expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
 	}
+	if os.Getenv(NodeURLEnvName) == "" {
+		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
+	}
 	if cfg.EnablePoolWorker {
 		if len(cfg.Worker) == 0 {
 			return errors.Errorf("worker name required for pool")
@@ -205,9 +197,9 @@ func validateConfig(cfg *Config) error {
 			return errors.Errorf("password name required for pool")
 		}
 	} else {
-		b, err = hex.DecodeString(cfg.PrivateKey)
+		b, err = hex.DecodeString(os.Getenv(PrivateKeyEnvName))
 		if err != nil || len(b) != 32 {
-			return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", cfg.PrivateKey)
+			return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", os.Getenv(PrivateKeyEnvName))
 		}
 		if len(cfg.ContractAddress) != 42 {
 			return errors.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)

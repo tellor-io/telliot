@@ -58,7 +58,7 @@ func setup() error {
 
 	if !cfg.EnablePoolWorker {
 		// Create an rpc client
-		client, err := rpc.NewClient(cfg.NodeURL)
+		client, err := rpc.NewClient(os.Getenv(config.NodeURLEnvName))
 		if err != nil {
 			return errors.Wrap(err, "create rpc client instance")
 		}
@@ -81,7 +81,7 @@ func setup() error {
 		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
 		ctx = context.WithValue(ctx, tellorCommon.ContractsGetterContextKey, contractGetterInstance)
 
-		privateKey, err := crypto.HexToECDSA(cfg.PrivateKey)
+		privateKey, err := crypto.HexToECDSA(os.Getenv(config.PrivateKeyEnvName))
 		if err != nil {
 			return errors.Wrap(err, "getting private key to ECDSA")
 		}
