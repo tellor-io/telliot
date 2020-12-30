@@ -102,6 +102,7 @@ var defaultConfig = Config{
 	MinConfidence:                0.2,
 	DisputeThreshold:             0.01,
 	Heartbeat:                    Duration{15 * time.Second},
+	DBFile:                       "db",
 	MiningInterruptCheckInterval: Duration{15 * time.Second},
 	FetchTimeout:                 Duration{30 * time.Second},
 	TrackerSleepCycle:            Duration{30 * time.Second},
