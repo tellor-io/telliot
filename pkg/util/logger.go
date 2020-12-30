@@ -152,7 +152,7 @@ func xlateLevel(level LogLevel) logrus.Level {
 
 }
 
-func GetLogger(logLevel string) log.Logger {
+func SetupLogger(logLevel string) log.Logger {
 	var lvl level.Option
 	switch logLevel {
 	case "error":
@@ -171,6 +171,7 @@ func GetLogger(logLevel string) log.Logger {
 	logger = level.NewFilter(logger, lvl)
 	return log.With(logger, "ts", log.TimestampFormat(func() time.Time { return time.Now().UTC() }, "Jan 02 15:04:05.99 -0700"), "caller", log.DefaultCaller)
 }
+<<<<<<< HEAD
 
 func SetupLogger() func(string) log.Logger {
 	return func(logLevel string) log.Logger {
@@ -193,3 +194,5 @@ func SetupLogger() func(string) log.Logger {
 		return log.With(logger, "ts", log.TimestampFormat(func() time.Time { return time.Now().UTC() }, "Jan 02 15:04:05.99"), "caller", log.DefaultCaller)
 	}
 }
+=======
+>>>>>>> wip - replacing cli

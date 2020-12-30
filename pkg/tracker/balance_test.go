@@ -19,6 +19,7 @@ import (
 )
 
 func TestStringId(t *testing.T) {
+<<<<<<< HEAD
 	client := rpc.NewMockClient()
 	config.OpenTestConfig(t)
 	DB, cleanup := db.OpenTestDB(t)
@@ -26,6 +27,10 @@ func TestStringId(t *testing.T) {
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
 	tracker := NewBalanceTracker(logger, DB, client, nil)
+=======
+	logger := util.SetupLogger("debug")
+	tracker := NewBalanceTracker(logger)
+>>>>>>> wip - replacing cli
 	res := tracker.String()
 
 	testutil.Equals(t, res, BalanceTrackerName, "didn't return expected string", BalanceTrackerName)

@@ -237,34 +237,34 @@ func setup() (rpc.ETHClient, tellorCommon.Contract, tellorCommon.Account, error)
 	return nil, tellorCommon.Contract{}, tellorCommon.Account{}, nil
 }
 
-func AddDBToCtx(remote bool) error {
+func AddDBToCtx(remote bool) (db.DataServerProxy, db.DB, error) {
 	cfg := config.GetConfig()
 	// Create a db instance
 	os.RemoveAll(cfg.DBFile)
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
-		return errors.Wrapf(err, "opening DB instance")
+		return nil, nil, errors.Wrapf(err, "opening DB instance")
 	}
 
 	var dataProxy db.DataServerProxy
 	if remote {
 		proxy, err := db.OpenRemoteDB(DB)
 		if err != nil {
-			return errors.Wrapf(err, "open remote DB instance")
+			return nil, nil, errors.Wrapf(err, "open remote DB instance")
 
 		}
 		dataProxy = proxy
 	} else {
 		proxy, err := db.OpenLocalProxy(DB)
 		if err != nil {
-			return errors.Wrapf(err, "opening local DB instance:")
+			return nil, nil, errors.Wrapf(err, "opening local DB instance:")
 
 		}
 		dataProxy = proxy
 	}
 	ctx = context.WithValue(ctx, tellorCommon.DataProxyKey, dataProxy)
 	ctx = context.WithValue(ctx, tellorCommon.DBContextKey, DB)
-	return nil
+	return dataProxy, DB, nil
 }
 
 // var GitTag string
@@ -277,7 +277,7 @@ func AddDBToCtx(remote bool) error {
 // 	Github:  https://github.com/tellor-io/telliot
 // `
 
-<<<<<<< HEAD
+
 func (m mineCmd) Run(logger log.Logger) error {
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)

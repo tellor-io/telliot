@@ -17,20 +17,31 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 type configPath string
 
 func (c configPath) AfterApply(ctx *kong.Context) error {
-	fmt.Println("config path")
 	err := config.ParseConfig(string(c))
 	if err != nil {
 		return errors.Wrapf(err, "parsing config")
 	}
+
+	cfg := config.GetConfig()
+	err = util.SetupLoggingConfig(cfg.Logger)
+	if err != nil {
+		return errors.Wrapf(err, "parsing log config")
+	}
+
+	logger := util.SetupLogger(cfg.LogLevel)
+
 	client, contract, account, err := setup()
 	if err != nil {
 		return errors.Wrapf(err, "setting up variables")
 	}
+
+	ctx.BindTo(logger, (*log.Logger)(nil))
 	ctx.BindTo(client, (*rpc.ETHClient)(nil))
 	ctx.Bind(contract)
 	ctx.Bind(account)
@@ -228,7 +239,7 @@ func (m mineCmd) Run(logger log.Logger) error {
 	var ds *ops.DataServerOps
 	if !cfg.EnablePoolWorker {
 		var err error
-		err = AddDBToCtx(m.remote)
+		DB, database, err := AddDBToCtx(m.remote)
 		if err != nil {
 			return errors.Wrapf(err, "initializing database")
 		}
