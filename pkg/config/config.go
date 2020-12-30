@@ -101,6 +101,8 @@ var defaultConfig = Config{
 	GasMultiplier:                1,
 	MinConfidence:                0.2,
 	DisputeThreshold:             0.01,
+	ServerHost:                   "localhost",
+	ServerPort:                   8080,
 	Heartbeat:                    Duration{15 * time.Second},
 	DBFile:                       "db",
 	MiningInterruptCheckInterval: Duration{15 * time.Second},
