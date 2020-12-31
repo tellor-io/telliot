@@ -41,6 +41,7 @@ kubectl apply -f https://raw.githubusercontent.com/tellor-io/telliot/master/conf
 ```
  - Optionally deploy the monitoring stack with Prometheus and Grafana.
 ```bash
+kubectl apply -f https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manifests/monitoring-persist.yml
 kubectl apply -f https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manifests/monitoring.yml
 ```
 
