@@ -19,6 +19,8 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts/getter"
@@ -57,8 +59,11 @@ type MiningMgr struct {
 	contractGetter  *getter.TellorGetters
 	cfg             *config.Config
 
-	toMineInput    chan *pow.Work
-	solutionOutput chan *pow.Result
+	toMineInput     chan *pow.Work
+	solutionOutput  chan *pow.Result
+	submitCount     prometheus.Counter
+	submitFailCount prometheus.Counter
+	submitProfit    *prometheus.GaugeVec
 }
 
 // CreateMiningManager is the MiningMgr contructor.
@@ -99,6 +104,26 @@ func CreateMiningManager(
 		ethClient:       client,
 		toMineInput:     make(chan *pow.Work),
 		solutionOutput:  make(chan *pow.Result),
+		submitCount: promauto.NewCounter(prometheus.CounterOpts{
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_total",
+			Help:      "The total number of submitted solutions",
+		}),
+		submitFailCount: promauto.NewCounter(prometheus.CounterOpts{
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_fails_total",
+			Help:      "The total number of failed submission",
+		}),
+		submitProfit: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_profit",
+			Help:      "The submission profit in percents",
+		},
+			[]string{"slot"},
+		),
 	}
 
 	if cfg.EnablePoolWorker {
@@ -146,11 +171,16 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			// when there is no new challenge.
 			mgr.solutionPending = solution
 
+			var profitPercent int64
+			var slot int64
+			var err error
 			if mgr.cfg.ProfitThreshold > 0 {
-				isProftable, err := mgr.isProfitable()
+				profitPercent, slot, err = mgr.profit()
 				if err != nil {
-					level.Error(mgr.logger).Log("msg", "solution profit check", "err", err)
-				} else if !isProftable {
+					level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)
+					continue
+				}
+				if profitPercent != -1 && profitPercent < int64(mgr.cfg.ProfitThreshold) {
 					level.Debug(mgr.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
 					continue
 				}
@@ -166,10 +196,13 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			tx, err := mgr.solHandler.Submit(ctx, solution)
 			if err != nil {
 				level.Error(mgr.logger).Log("msg", "submiting a solution", err)
+				mgr.submitFailCount.Inc()
 				continue
 			}
 			level.Debug(mgr.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
-			mgr.saveTXCost(ctx, tx)
+			mgr.saveGasUsed(ctx, tx)
+			mgr.submitCount.Inc()
+			mgr.submitProfit.With(prometheus.Labels{"slot": strconv.Itoa(int(slot))}).(prometheus.Gauge).Set(float64(profitPercent))
 
 			// A solution has been submitted so the
 			// pending solution doesn't matter here any more so reset it.
@@ -285,7 +318,7 @@ func (mgr *MiningMgr) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
 	return eth, nil
 }
 
-func (mgr *MiningMgr) txCost() (*big.Int, *big.Int, error) {
+func (mgr *MiningMgr) gasUsed() (*big.Int, *big.Int, error) {
 	slotNum, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting slotProgress")
@@ -295,72 +328,80 @@ func (mgr *MiningMgr) txCost() (*big.Int, *big.Int, error) {
 	// Slots numbers should be from 0 to 4 so
 	// use mod of 5 in order to save 5 as slot 0.
 	slotNum.Add(slotNum, big.NewInt(1)).Mod(slotNum, big.NewInt(5))
-	txCostID := tellorCommon.PriceTXs + slotNum.String()
-	cost, err := mgr.database.Get(txCostID)
+	txID := tellorCommon.PriceTXs + slotNum.String()
+	gas, err := mgr.database.Get(txID)
 	if err != nil {
 		return nil, nil, errors.New("getting the tx eth cost from the db")
 	}
 	// No price record in the db yet.
-	if cost == nil {
+	if gas == nil {
 		return big.NewInt(0), slotNum, nil
 	}
 
-	return big.NewInt(0).SetBytes(cost), slotNum, nil
+	return big.NewInt(0).SetBytes(gas), slotNum, nil
 }
 
-// saveTXCost calculates the price for a given slot.
-// Since the transaction doesn't include the slot number it was submited for
-// it gets the slot number as soon as the transaction passes and
-// saves it in the database for profit calculations use.
+// saveGasUsed calculates the price for a given slot.
+// Since the transaction doesn't include the slot number it gets the slot number
+// as soon as the transaction passes and
+// saves it in the database for profit calculations.
 // TODO[Krasi] To be more detirministic and simplify this
 // should get the `slotProgress` and `gasUsed` from the `NonceSubmitted` event.
 // At the moment there is a slight chance of a race condition if
 // another transaction has passed between checking the transaction cost and
 // checking the `slotProgress`
 // Tracking issue https://github.com/tellor-io/TellorCore/issues/101
-func (mgr *MiningMgr) saveTXCost(ctx context.Context, tx *types.Transaction) {
+func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 	go func(tx *types.Transaction) {
 		receipt, err := bind.WaitMined(ctx, mgr.ethClient, tx)
 		if err != nil {
 			level.Error(mgr.logger).Log("msg", "transaction result for calculating transaction cost", "err", err)
 		}
 		if receipt.Status != 1 {
+			mgr.submitFailCount.Inc()
 			level.Error(mgr.logger).Log("msg", "unsuccessful submitSolution transaction, not saving the tx cost in the db", "txHash", receipt.TxHash.String())
 			return
 		}
 
 		gasUsed := big.NewInt(int64(receipt.GasUsed))
-		txCost := gasUsed.Mul(gasUsed, tx.GasPrice())
 		slotNum, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
 		if err != nil {
 			level.Error(mgr.logger).Log("msg", "getting slotProgress for calculating transaction cost", "err", err)
 		}
 
-		txCostID := tellorCommon.PriceTXs + slotNum.String()
-		_, err = mgr.database.Put(txCostID, txCost.Bytes())
+		txID := tellorCommon.PriceTXs + slotNum.String()
+		_, err = mgr.database.Put(txID, gasUsed.Bytes())
 		if err != nil {
 			level.Error(mgr.logger).Log("msg", "saving transaction cost", "err", err)
 		}
-		level.Debug(mgr.logger).Log("msg", "saved transaction cost", "txHash", receipt.TxHash.String(), "cost(GWEI)", txCost.Int64()/tellorCommon.GWEI, "slot", slotNum.Int64())
+		level.Debug(mgr.logger).Log("msg", "saved transaction cost", "txHash", receipt.TxHash.String(), "gas", gasUsed.Int64(), "slot", slotNum.Int64())
 	}(tx)
 }
 
-func (mgr *MiningMgr) isProfitable() (bool, error) {
-	txCost, slotNum, err := mgr.txCost()
+// profit returns the profit in percents.
+// When the transaction cost is unknown it returns -1 so
+// that the caller can decide how to handle.
+// Transaction cost is zero when the manager hasn't done any transactions yet.
+// Each transaction cost is known for any siquential transactions.
+func (mgr *MiningMgr) profit() (int64, int64, error) {
+	gasUsed, slotNum, err := mgr.gasUsed()
 	if err != nil {
-		return false, errors.Wrap(err, "getting TX cost")
+		return 0, slotNum.Int64(), errors.Wrap(err, "getting TX cost")
 	}
-	// Transction cost is zero when the manager hasn't done any transactions yet.
-	// Each transaction cost recorder to it is known for any siquential transactions.
-	// When transaction cost is unknown it shouldn't block the submission hence returning true here.
-	if txCost.Int64() == 0 {
-		return true, nil
+	if gasUsed.Int64() == 0 {
+		level.Debug(mgr.logger).Log("msg", "profit checking no data for gas used", "slot", slotNum)
+		return -1, slotNum.Int64(), nil
+	}
+	gasPrice, err := mgr.ethClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		return 0, slotNum.Int64(), errors.Wrap(err, "getting gas price")
 	}
 	reward, err := mgr.currentReward()
 	if err != nil {
-		return false, errors.Wrap(err, "getting current rewards")
+		return 0, slotNum.Int64(), errors.Wrap(err, "getting current rewards")
 	}
 
+	txCost := gasPrice.Mul(gasPrice, gasUsed)
 	profit := big.NewInt(0).Sub(reward, txCost)
 	profitPercent := big.NewInt(0).Div(profit, txCost).Int64() * 100
 	level.Debug(mgr.logger).Log(
@@ -372,8 +413,6 @@ func (mgr *MiningMgr) isProfitable() (bool, error) {
 		"profitMargin", profitPercent,
 		"profitThreshold", mgr.cfg.ProfitThreshold,
 	)
-	if profitPercent > int64(mgr.cfg.ProfitThreshold) {
-		return true, nil
-	}
-	return false, nil
+
+	return profitPercent, slotNum.Int64(), nil
 }
