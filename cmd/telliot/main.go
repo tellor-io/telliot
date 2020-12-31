@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -113,15 +114,49 @@ func setup() error {
 	return nil
 }
 
-func AddDBToCtx(remote bool) error {
+// migrateAndOpenDB migrates the tx costs and deletes the db.
+// The DB is always deleted because the price avarages calculations
+// is not calculated properly between restarts.
+// TODO don't do this and just improve the price calculations.
+func migrateAndOpenDB() (db.DB, error) {
 	cfg := config.GetConfig()
 	// Create a db instance
-	os.RemoveAll(cfg.DBFile)
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
-		return errors.Wrapf(err, "opening DB instance")
+		return nil, errors.Wrapf(err, "opening DB instance")
 	}
 
+	var txsGas [][]byte
+	for i := 0; i <= 5; i++ {
+		txID := tellorCommon.PriceTXs + strconv.Itoa(i)
+		txGas, err := DB.Get(txID)
+		if err == nil && len(txGas) > 0 {
+			txsGas = append(txsGas, txGas)
+		}
+	}
+	if err := DB.Close(); err != nil {
+		return nil, errors.Wrapf(err, "closing DB instance for migration")
+	}
+	os.RemoveAll(cfg.DBFile)
+
+	DB, err = db.Open(cfg.DBFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening DB instance")
+	}
+
+	for i, txGas := range txsGas {
+		txID := tellorCommon.PriceTXs + strconv.Itoa(i)
+		_ = DB.Put(txID, txGas)
+	}
+
+	return DB, nil
+}
+
+func AddDBToCtx(remote bool) error {
+	DB, err := migrateAndOpenDB()
+	if err != nil {
+		return errors.Wrap(err, "opening DB instance")
+	}
 	var dataProxy db.DataServerProxy
 	if remote {
 		proxy, err := db.OpenRemoteDB(DB)
