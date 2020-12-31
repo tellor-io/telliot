@@ -60,6 +60,7 @@ type Config struct {
 	ContractAddress              string                `json:"contractAddress"`
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
+	MinSubmitPeriod              time.Duration         `json:"minSubmitPeriod"`
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
 	Trackers                     map[string]bool       `json:"trackers"`
 	DBFile                       string                `json:"dbFile"`
@@ -100,6 +101,7 @@ var defaultConfig = Config{
 	GasMax:                       10,
 	GasMultiplier:                1,
 	MinConfidence:                0.2,
+	MinSubmitPeriod:              15 * time.Minute,
 	DisputeThreshold:             0.01,
 	ServerHost:                   "localhost",
 	ServerPort:                   8080,
