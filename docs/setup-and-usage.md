@@ -23,7 +23,9 @@ docker run -v $(pwd)/local:/configs tellor/telliot:master mine
 ```
 
 ### Run with k8s
-> tested with [google cloud](https://cloud.google.com), but should work with any k8s cluster.
+{% hint style="info" %}tested with [google cloud](https://cloud.google.com), but should work with any k8s cluster.
+{% endhint %}
+
  - Install [`gcloud`](https://cloud.google.com/sdk/docs/install)
  - Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl)
  - Create a k8s cluster with a single node
