@@ -145,7 +145,7 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
           - name: GF_SERVER_ROOT_URL
-            value: "http://www.tellor.io/grafana"
+            value: "http://monitor.tellor.io/"
           - name: GF_SERVER_SERVE_FROM_SUB_PATH
             value: "true"
           - name: GF_AUTH_ANONYMOUS_ENABLED
