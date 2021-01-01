@@ -30,8 +30,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
-var minSubmitPeriod = 15 * time.Minute
-
 type WorkSource interface {
 	GetWork(toMine chan *pow.Work) (*pow.Work, bool)
 }
@@ -189,8 +187,8 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			lastSubmit, err := mgr.lastSubmit()
 			if err != nil {
 				level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
-			} else if lastSubmit < minSubmitPeriod {
-				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", minSubmitPeriod, "lastSubmit", lastSubmit)
+			} else if lastSubmit < mgr.cfg.MinSubmitPeriod {
+				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.MinSubmitPeriod, "lastSubmit", lastSubmit)
 				continue
 			}
 			tx, err := mgr.solHandler.Submit(ctx, solution)
