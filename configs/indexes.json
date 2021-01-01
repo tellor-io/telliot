@@ -153,6 +153,16 @@
             "jsonPath": "$[0][4]"
         }
     ],
+    "DEFITVL": [
+        {
+            "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData?api-key=${DEFIPULSE_KEY}",
+            "jsonPath": "$.All.total"
+        },
+        {
+            "URL": "https://api.defillama.com/charts",
+            "jsonPath": "$.[-1:].totalLiquidityUSD"
+        }
+    ],
     "EOS/USD": [
         {
             "URL": "https://api.coingecko.com/api/v3/simple/price?ids=eos&vs_currencies=usd",
