@@ -109,7 +109,7 @@ var defaultConfig = Config{
 	DBFile:                       "db",
 	MiningInterruptCheckInterval: Duration{15 * time.Second},
 	FetchTimeout:                 Duration{30 * time.Second},
-	TrackerSleepCycle:            Duration{30 * time.Second},
+	TrackerSleepCycle:            Duration{660 * time.Second}, // 11 minutes to meet DefiPulse.com ratelimit
 	DisputeTimeDelta:             Duration{5 * time.Minute},
 	NumProcessors:                2,
 	EthClientTimeout:             3000,
