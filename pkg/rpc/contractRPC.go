@@ -106,7 +106,10 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 			continue
 		}
 
-		auth := bind.NewKeyedTransactor(privateKey)
+		auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(1))
+		if err != nil {
+			return nil, errors.Wrap(err, "creating transactor")
+		}
 		auth.Nonce = big.NewInt(IntNonce)
 		auth.Value = big.NewInt(0)      // in weiF
 		auth.GasLimit = uint64(3000000) // in units

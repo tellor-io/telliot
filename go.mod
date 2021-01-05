@@ -5,13 +5,13 @@ go 1.12
 require (
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190712234253-ed1100a1c015 // indirect
-	github.com/benbjohnson/clock v1.0.3
+	github.com/benbjohnson/clock v1.1.0
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/charliehorse55/go-opencl v0.0.0-20200204192503-ff58893da7e7
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
-	github.com/ethereum/go-ethereum v1.9.23
+	github.com/ethereum/go-ethereum v1.9.26-0.20210104105223-f83fc302a504
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/go-kit/kit v0.10.0
 	github.com/hashicorp/go-multierror v1.1.0
@@ -33,7 +33,8 @@ require (
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	go.uber.org/goleak v1.1.10
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+	golang.org/x/sys v0.0.0-20201231184435-2d18734c6014 // indirect
 )
 
 replace github.com/miguelmota/go-solidity-sha3 => github.com/offchainlabs/go-solidity-sha3 v0.1.2

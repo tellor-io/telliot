@@ -36,7 +36,10 @@ func PrepareEthTransaction(ctx context.Context, client rpc.ETHClient, account te
 		return nil, errors.Errorf("insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
 	}
 
-	auth := bind.NewKeyedTransactor(account.PrivateKey)
+	auth, err := bind.NewKeyedTransactorWithChainID(account.PrivateKey, big.NewInt(1))
+	if err != nil {
+		return nil, errors.Wrap(err, "creating transactor")
+	}
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0)      // in wei
 	auth.GasLimit = uint64(3000000) // in units
