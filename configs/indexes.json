@@ -157,7 +157,11 @@
         {
             "URL": "https://api.defillama.com/charts",
             "jsonPath": "$[-1:].totalLiquidityUSD"
-        }
+        },
+        {
+            "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
+            "jsonPath": "$.All.total"
+        },
     ],
     "EOS/USD": [
         {
