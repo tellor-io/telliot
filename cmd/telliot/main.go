@@ -25,8 +25,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/rest"
@@ -66,12 +66,12 @@ func setup() error {
 
 		// Create an instance of the tellor master contract for on-chain interactions
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
+		contractTellorInstance, err := master.NewTellor(contractAddress, client)
 		if err != nil {
 			return errors.Wrap(err, "create tellor master instance")
 		}
 
-		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
+		contractGetterInstance, err := proxy.NewTellorGetters(contractAddress, client)
 
 		if err != nil {
 			return errors.Wrap(err, "create tellor transactor instance")

@@ -7,13 +7,13 @@ import (
 	"crypto/ecdsa"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 )
 
 type Contract struct {
-	Getter  *getter.TellorGetters
-	Caller  *tellor.Tellor
+	Getter  *proxy.TellorGetters
+	Caller  *master.Tellor
 	Address common.Address
 }
 

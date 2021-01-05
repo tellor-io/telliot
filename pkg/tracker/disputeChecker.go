@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
@@ -118,7 +118,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 		return nil
 	}
 
-	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
+	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorLibraryABI))
 	if err != nil {
 		return errors.Wrap(err, "parse abi")
 	}
@@ -141,7 +141,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 	}
 	blockTimes := make(map[uint64]time.Time)
 	for _, l := range logs {
-		nonceSubmit := tellor.TellorLibraryNonceSubmitted{}
+		nonceSubmit := master.TellorLibraryNonceSubmitted{}
 		err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 		if err != nil {
 			return errors.Wrap(err, "unpack into object")

@@ -14,8 +14,8 @@ import (
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -40,7 +40,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	_fromAddress := cfg.PublicAddress
 	fromAddress := common.HexToAddress(_fromAddress)
 
-	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
+	instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*master.Tellor)
 	returnNewVariables, err := instanceTellor.GetNewCurrentVariables(nil)
 	if err != nil {
 		level.Warn(b.logger).Log("msg", "new current variables retrieval - contract might not be upgraded", "err", err)
@@ -52,7 +52,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	}
 
 	// If it has been mined, don't save it.
-	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+	instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*proxy.TellorGetters)
 	myStatus, err := instanceGetter.DidMine(nil, returnNewVariables.Challenge, fromAddress)
 	if err != nil {
 		return errors.Wrap(err, "status retrieval")

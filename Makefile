@@ -18,7 +18,6 @@ BIN_DIR ?= /tmp/bin
 OS      ?= $(shell uname -s | tr '[A-Z]' '[a-z]')
 ARCH    ?= $(shell uname -m)
 
-SOLCCHECK  ?= $(BIN_DIR)/solc
 SHELLCHECK ?= $(BIN_DIR)/shellcheck
 
 define require_clean_work_tree
@@ -50,7 +49,7 @@ deps: ## Ensures fresh go.mod and go.sum.
 
 .PHONY: generate
 generate: ## Generate all dynamic files.
-generate: pkg/pow/kernelSource.go generate-sol
+generate: pkg/pow/kernelSource.go generate-bindings
 
 .PHONY: generate-check
 generate-check: ## Check that all generated files are up to date. Mainly used in the CI.
@@ -60,13 +59,9 @@ generate-check: check-git generate
 pkg/pow/kernelSource.go: scripts/opencl/sources/*
 	go run ./scripts/opencl
 
-.PHONY: generate-sol
-generate-sol: $(SOLCCHECK) $(ABIGEN)
-	@rm -Rf pkg/contracts
-	@mkdir -p pkg/contracts/tellor
-	@mkdir -p pkg/contracts/getter
-	$(ABIGEN) --sol=contracts/Tellor.sol --solc=$(SOLCCHECK) --pkg=tellor --type=Tellor --out=pkg/contracts/tellor/tellor.go
-	$(ABIGEN) --sol=contracts/TellorGetters.sol --solc=$(SOLCCHECK) --pkg=getter --type=Tellor --out=pkg/contracts/getter/getter.go
+.PHONY: generate-bindings
+generate-bindings:
+	@go run ./scripts/bindings
 
 .PHONY: build
 build: ## Build the project.
@@ -91,16 +86,6 @@ endif
 test: ## Run all project tests.
 test: pkg/pow/kernelSource.go
 	go test $(GOTEST_OPTS) ./...
-
-.PHONY: abi
-abi: ## Download the latest smart contracts and generate the go bindings.
-abi: contracts-download generate-sol
-
-.PHONY: contracts-download
-contracts-download:
-	@rm -Rf contracts/*
-	@svn checkout https://github.com/tellor-io/TellorCore/trunk/contracts contracts
-	@rm -Rf contracts/.svn
 
 .PHONY: go-format
 go-format: ## Formats Go code including imports.
@@ -160,9 +145,3 @@ $(BIN_DIR):
 $(SHELLCHECK): $(BIN_DIR)
 	@echo "Downloading Shellcheck"
 	curl -sNL "https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.$(OS).$(ARCH).tar.xz" | tar --strip-components=1 -xJf - -C $(BIN_DIR)
-
-$(SOLCCHECK): $(BIN_DIR)
-	@echo "Downloading Solc"
-	@curl -sNL -o $(SOLCCHECK) "https://github.com/ethereum/solidity/releases/download/v0.5.16/solc-static-linux"
-	@chmod 766 $(SOLCCHECK)
-	

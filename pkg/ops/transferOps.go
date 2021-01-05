@@ -14,7 +14,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -23,7 +23,7 @@ import (
  * This is the operational transfer component. Its purpose is to transfer tellor tokens
  */
 
-func prepareTransfer(ctx context.Context, client rpc.ETHClient, instance *getter.TellorGetters, account tellorCommon.Account, amt *big.Int) (*bind.TransactOpts, error) {
+func prepareTransfer(ctx context.Context, client rpc.ETHClient, instance *proxy.TellorGetters, account tellorCommon.Account, amt *big.Int) (*bind.TransactOpts, error) {
 	balance, err := instance.BalanceOf(nil, account.Address)
 	if err != nil {
 		return nil, errors.Wrap(err, "get balance")
@@ -69,7 +69,7 @@ func Approve(ctx context.Context, logger log.Logger, client rpc.ETHClient, contr
 	return nil
 }
 
-func Balance(ctx context.Context, client rpc.ETHClient, getterInstance *getter.TellorGetters, addr common.Address) error {
+func Balance(ctx context.Context, client rpc.ETHClient, getterInstance *proxy.TellorGetters, addr common.Address) error {
 	ethBalance, err := client.BalanceAt(context.Background(), addr, nil)
 	if err != nil {
 		return errors.Wrap(err, "get eth balance")

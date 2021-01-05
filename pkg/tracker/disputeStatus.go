@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -56,7 +56,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	//convert to address
 	contractAddress := common.HexToAddress(_conAddress)
 
-	instance, err := getter.NewTellorGetters(contractAddress, client)
+	instance, err := proxy.NewTellorGetters(contractAddress, client)
 	if err != nil {
 		return errors.Wrap(err, "getting master instance")
 	}

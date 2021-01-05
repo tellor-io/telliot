@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -59,7 +59,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	masterInstance := ctx.Value(tellorCommon.ContractsTellorContextKey)
 	if masterInstance == nil {
 		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		masterInstance, err = tellor.NewTellor(contractAddress, r.client)
+		masterInstance, err = master.NewTellor(contractAddress, r.client)
 		if err != nil {
 			return errors.Wrap(err, "creating tellor master instance")
 		}

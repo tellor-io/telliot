@@ -20,7 +20,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -90,8 +90,8 @@ func Vote(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contr
 	return nil
 }
 
-func getNonceSubmissions(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, valueBlock *big.Int, dispute *tellor.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
-	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorLibraryABI))
+func getNonceSubmissions(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, valueBlock *big.Int, dispute *master.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
+	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorLibraryABI))
 	if err != nil {
 		return nil, errors.Wrap(err, "parse abi")
 	}
@@ -129,7 +129,7 @@ func getNonceSubmissions(ctx context.Context, client rpc.ETHClient, contract tel
 		}
 
 		for _, l := range logs {
-			nonceSubmit := tellor.TellorLibraryNonceSubmitted{}
+			nonceSubmit := master.TellorLibraryNonceSubmitted{}
 			err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 			if err != nil {
 				return nil, errors.Wrap(err, "unpack into object")
@@ -163,7 +163,7 @@ func getNonceSubmissions(ctx context.Context, client rpc.ETHClient, contract tel
 
 func List(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
 	cfg := config.GetConfig()
-	tokenAbi, err := abi.JSON(strings.NewReader(tellor.TellorDisputeABI))
+	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorDisputeABI))
 	if err != nil {
 		return errors.Wrap(err, "parse abi")
 	}
@@ -194,7 +194,7 @@ func List(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract
 	fmt.Printf("There are currently %d open disputes\n", len(logs))
 	fmt.Printf("-------------------------------------\n")
 	for _, rawDispute := range logs {
-		dispute := tellor.TellorDisputeNewDispute{}
+		dispute := master.TellorDisputeNewDispute{}
 		err := bar.UnpackLog(&dispute, "NewDispute", rawDispute)
 		if err != nil {
 			return errors.Wrap(err, "unpack dispute event from logs")

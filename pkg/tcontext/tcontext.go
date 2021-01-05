@@ -13,8 +13,8 @@ import (
 
 	"github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
@@ -50,18 +50,18 @@ func CreateTestContext(t *testing.T) (context.Context, *config.Config, func()) {
 	ctx = context.WithValue(ctx, common.ClientContextKey, client)
 
 	contractAddress := eth_common.HexToAddress(cfg.ContractAddress)
-	master, err := tellor.NewTellor(contractAddress, client)
+	m, err := master.NewTellor(contractAddress, client)
 	testutil.Ok(t, err)
 
 	ctx = context.WithValue(ctx, common.ContractAddress, contractAddress)
-	ctx = context.WithValue(ctx, common.ContractsTellorContextKey, master)
+	ctx = context.WithValue(ctx, common.ContractsTellorContextKey, m)
 
-	instanceTellor, err := tellor.NewTellor(contractAddress, client)
+	instanceTellor, err := master.NewTellor(contractAddress, client)
 	testutil.Ok(t, err)
 
 	ctx = context.WithValue(ctx, common.ContractsTellorContextKey, instanceTellor)
 
-	instanceGetter, err := getter.NewTellorGetters(contractAddress, client)
+	instanceGetter, err := proxy.NewTellorGetters(contractAddress, client)
 	testutil.Ok(t, err)
 
 	ctx = context.WithValue(ctx, common.ContractsGetterContextKey, instanceGetter)

@@ -21,8 +21,8 @@ import (
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/db"
 )
 
@@ -31,8 +31,8 @@ type contractWrapper struct {
 	options     *bind.TransactOpts
 	fromAddress common.Address
 
-	*tellor.Tellor
-	*getter.TellorGetters
+	*master.Tellor
+	*proxy.TellorGetters
 }
 
 func (c contractWrapper) AddTip(requestID *big.Int, amount *big.Int) (*types.Transaction, error) {
@@ -47,7 +47,7 @@ func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
 	return c.TellorGetters.DidMine(nil, challenge, c.fromAddress)
 }
 
-func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
+func SubmitContractTxn(ctx context.Context, logger log.Logger, dbProxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
 
 	cfg := config.GetConfig()
 	client := ctx.Value(tellorCommon.ClientContextKey).(ETHClient)
@@ -72,7 +72,7 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 	keys := []string{
 		db.GasKey,
 	}
-	m, err := proxy.BatchGet(keys)
+	m, err := dbProxy.BatchGet(keys)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting data from the db")
 	}
@@ -140,8 +140,8 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 
 		level.Info(logger).Log("msg", "gas price", "value", gasPrice)
 		// Create a wrapper to callback the actual txn generator fn.
-		instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
-		instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
+		instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*master.Tellor)
+		instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*proxy.TellorGetters)
 
 		wrapper := contractWrapper{auth, fromAddress, instanceTellor, instanceGetter}
 		tx, err := callback(ctx, wrapper)
