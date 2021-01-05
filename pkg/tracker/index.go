@@ -102,7 +102,15 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					}
 				case ethereumIndexType:
 					{
-						// Skip as there is no ethereum index type in the index file right now.
+						if api.Parser == "Uniswap" {
+							source = NewUniswap(symbol, api.URL)
+	
+						} else if api.Parser == "Balancer" {
+							source = NewBalancer(symbol, api.URL)
+						} else {
+							return nil, nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
+						}
+						name = fmt.Sprintf("%s(%s)", api.Type, api.URL)
 						continue
 					}
 				default:
@@ -201,11 +209,17 @@ const (
 
 // IndexObject will be used in parsing index file.
 type IndexObject struct {
+<<<<<<< HEAD
 	URL      string          `json:"URL"`
 	Type     IndexType       `json:"type"`
 	Parser   IndexParser     `json:"format"`
 	Param    string          `json:"param"`
 	Interval config.Duration `json:"interval"`
+=======
+	URL      string `json:"URL"`
+	Type     string `json:"type"`
+	JSONPath string `json:"JSONPath,omitempty"`
+>>>>>>> d6f9356 (add On-chain index tracker for Uniswap,Balancer)
 }
 
 type IndexTracker struct {
@@ -220,14 +234,14 @@ type IndexTracker struct {
 }
 
 type DataSource interface {
-	Get() ([]byte, error)
+	Get(ctx context.Context) ([]byte, error)
 }
 
 type JSONapi struct {
 	Request *FetchRequest
 }
 
-func (j *JSONapi) Get() ([]byte, error) {
+func (j *JSONapi) Get(ctx context.Context) ([]byte, error) {
 	return fetchWithRetries(j.Request)
 }
 
@@ -235,11 +249,12 @@ type JSONfile struct {
 	filepath string
 }
 
-func (j *JSONfile) Get() ([]byte, error) {
+func (j *JSONfile) Get(ctx context.Context) ([]byte, error) {
 	return ioutil.ReadFile(j.filepath)
 }
 
 func (i *IndexTracker) Exec(ctx context.Context) error {
+<<<<<<< HEAD
 	now := time.Now()
 	if now.Sub(i.lastRunTimestamp) < i.Interval {
 		return nil
@@ -247,6 +262,9 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	i.lastRunTimestamp = now
 
 	payload, err := i.Source.Get()
+=======
+	payload, err := i.Source.Get(ctx)
+>>>>>>> d6f9356 (add On-chain index tracker for Uniswap,Balancer)
 	if err != nil {
 		return err
 	}

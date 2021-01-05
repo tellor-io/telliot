@@ -5,7 +5,6 @@ package tracker
 
 import (
 	"bytes"
-	"context"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -41,7 +40,11 @@ func TestAmpl(t *testing.T) {
 	indexers = append(indexers, amplBtcTrackers...)
 	for i := 0; i < 288; i++ {
 		for _, indexer := range indexers {
-			if err := indexer.Exec(context.Background()); err != nil {
+			// Ignore on-chain trackers, as they could be tested in other test cases.
+			if strings.Contains(indexer.Identifier, "ethereum:") {
+				continue
+			}
+			if err := indexer.Exec(ctx.Background()); err != nil {
 				testutil.Ok(t, err)
 			}
 		}
