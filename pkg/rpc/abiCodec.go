@@ -11,6 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/telliot/pkg/contracts/master"
 	"github.com/tellor-io/telliot/pkg/contracts/proxy"
+	balancerpool "github.com/tellor-io/telliot/pkg/tracker/balancer/balancerpool"
+	balancerToken "github.com/tellor-io/telliot/pkg/tracker/balancer/balancertoken"
+	uniswapcontract "github.com/tellor-io/telliot/pkg/tracker/uniswap"
+
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -33,6 +37,10 @@ func BuildCodec() (*ABICodec, error) {
 		master.TellorStakeABI,
 		master.TellorTransferABI,
 		proxy.TellorGettersABI,
+		balancerpool.BalancerpoolABI,
+		balancerToken.BalancertokenABI,
+		uniswapcontract.IERC20ABI,
+		uniswapcontract.IUniswapV2PairABI,
 	}
 
 	parsed := make([]interface{}, 0)
@@ -75,14 +83,16 @@ func AllEvents() (map[[32]byte]abi.Event, error) {
 		master.TellorDisputeABI,
 		master.TellorGettersLibraryABI,
 		master.TellorLibraryABI,
-		master.TellorStakeABI,
 		master.TellorStorageABI,
 		master.TellorTransferABI,
+		balancerpool.BalancerpoolABI,
+		balancerToken.BalancertokenABI,
+		uniswapcontract.IERC20ABI,
+		uniswapcontract.IUniswapV2PairABI,
 	}
 
 	parsed := make([]interface{}, 0)
 	for _, abi := range all {
-		var f interface{}
 		if err := json.Unmarshal([]byte(abi), &f); err != nil {
 			return nil, err
 		}
