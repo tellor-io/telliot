@@ -161,7 +161,7 @@
         {
             "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
             "jsonPath": "$.All.total"
-        },
+        }
     ],
     "EOS/USD": [
         {
