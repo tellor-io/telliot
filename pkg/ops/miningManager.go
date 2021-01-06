@@ -196,7 +196,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			}
 			tx, err := mgr.solHandler.Submit(ctx, solution)
 			if err != nil {
-				level.Error(mgr.logger).Log("msg", "submiting a solution", err)
+				level.Error(mgr.logger).Log("msg", "submiting a solution", "err", err)
 				mgr.submitFailCount.Inc()
 				continue
 			}

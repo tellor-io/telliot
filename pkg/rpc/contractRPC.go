@@ -6,12 +6,12 @@ package rpc
 import (
 	"context"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-kit/kit/log"
@@ -136,24 +136,23 @@ func SubmitContractTxn(
 
 		wrapper := contractWrapper{auth, account.Address, tellor.Caller, tellor.Getter}
 		tx, err := callback(ctx, wrapper)
-
 		if err != nil {
-			if errors.Is(err, core.ErrNonceTooLow) {
+			// TODO use better error matching https://github.com/ethereum/go-ethereum/issues/22106
+			if strings.Contains(err.Error(), "nonce too low") {
 				IntNonce = IntNonce + 1
-			} else if errors.Is(err, core.ErrReplaceUnderpriced) {
+			} else if strings.Contains(err.Error(), "replacement transaction underpriced") {
 				finalError = err
-				continue
+
 			} else {
 				finalError = errors.Wrap(err, "callback")
-				continue
 			}
+			time.Sleep(15 * time.Second)
+			continue
 		}
 
 		if tx != nil {
 			return tx, nil
 		}
-
-		time.Sleep(15 * time.Second)
 	}
 
 	return nil, errors.Wrapf(finalError, "could not submit txn after 5 attempts ctx:%v", ctxName)
