@@ -152,68 +152,68 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		case <-mgr.exitCh:
 			mgr.Running = false
 			return
-		// Found a solution.
+		// New solution from the miner.
 		case solution := <-mgr.solutionOutput:
-			// There is no new challenge so resend any pending solution.
-			if solution == nil {
-				if mgr.solutionPending == nil {
-					continue
-				}
-				solution = mgr.solutionPending
-				var ids []int64
-				for _, id := range mgr.solutionPending.Work.Challenge.RequestIDs {
-					ids = append(ids, id.Int64())
-				}
-				level.Debug(mgr.logger).Log("msg", "re-submitting a pending solution", "reqIDs", fmt.Sprintf("%+v", ids))
+			if !mgr.submit(solution, ctx) {
+				mgr.solutionPending = solution
 			}
-
-			// Set this solution as pending so that if
-			// any of the checks below fail and will be retried
-			// when there is no new challenge.
-			mgr.solutionPending = solution
-
-			var profitPercent int64
-			var slot int64
-			var err error
-			if mgr.cfg.ProfitThreshold > 0 {
-				profitPercent, slot, err = mgr.profit()
-				if err != nil {
-					level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)
-					continue
-				}
-				if profitPercent != -1 && profitPercent < int64(mgr.cfg.ProfitThreshold) {
-					level.Debug(mgr.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
-					continue
-				}
-			}
-
-			lastSubmit, err := mgr.lastSubmit()
-			if err != nil {
-				level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
-			} else if lastSubmit < mgr.cfg.MinSubmitPeriod {
-				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.MinSubmitPeriod, "lastSubmit", lastSubmit)
-				continue
-			}
-			tx, err := mgr.solHandler.Submit(ctx, solution)
-			if err != nil {
-				level.Error(mgr.logger).Log("msg", "submiting a solution", "err", err)
-				mgr.submitFailCount.Inc()
-				continue
-			}
-			level.Debug(mgr.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
-			mgr.saveGasUsed(ctx, tx)
-			mgr.submitCount.Inc()
-			mgr.submitProfit.With(prometheus.Labels{"slot": strconv.Itoa(int(slot))}).(prometheus.Gauge).Set(float64(profitPercent))
-
-			// A solution has been submitted so the
-			// pending solution doesn't matter here any more so reset it.
-			mgr.solutionPending = nil
-
-		// Time to check for a new challenge.
+		// Time to check for a new challenge and
+		// while waiting resubmit any unsubmitted solutions.
 		case <-ticker.C:
 			mgr.newWork()
+			if mgr.solutionPending != nil {
+				if mgr.submit(mgr.solutionPending, ctx) {
+					mgr.solutionPending = nil
+				}
+			}
 		}
 	}
+}
+
+// submit returns true when the provided solution has been submited without an error or
+// with an error which can be ignored.
+func (mgr *MiningMgr) submit(solution *pow.Result, ctx context.Context) bool {
+	lastSubmit, err := mgr.lastSubmit()
+	if err != nil {
+		level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
+	} else if lastSubmit < mgr.cfg.MinSubmitPeriod {
+		level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.MinSubmitPeriod, "lastSubmit", lastSubmit)
+		return false
+	}
+
+	var ids []int64
+	for _, id := range solution.Work.Challenge.RequestIDs {
+		ids = append(ids, id.Int64())
+	}
+	level.Debug(mgr.logger).Log("msg", "submitting solution", "reqIDs", fmt.Sprintf("%+v", ids))
+
+	var profitPercent int64
+	var slot int64
+	if mgr.cfg.ProfitThreshold > 0 {
+		profitPercent, slot, err = mgr.profit()
+		if err != nil {
+			level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)
+			return false
+		}
+		if profitPercent != -1 && profitPercent < int64(mgr.cfg.ProfitThreshold) {
+			level.Debug(mgr.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
+			return false
+		}
+	}
+
+	tx, err := mgr.solHandler.Submit(ctx, solution)
+	if err != nil {
+		level.Error(mgr.logger).Log("msg", "submiting a solution", "err", err)
+		mgr.submitFailCount.Inc()
+		// This error can be ignored so return true when a match.
+		return err.Error() == "Miner already submitted the value"
+	}
+	level.Debug(mgr.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
+	mgr.saveGasUsed(ctx, tx)
+	mgr.submitCount.Inc()
+	mgr.submitProfit.With(prometheus.Labels{"slot": strconv.Itoa(int(slot))}).(prometheus.Gauge).Set(float64(profitPercent))
+
+	return true
 }
 
 // newWork is non blocking worker that sends new work to the pow workers
@@ -230,12 +230,9 @@ func (mgr *MiningMgr) newWork() {
 			if instantSubmit {
 				mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
 			} else {
-				// It sends even nil work to indicate that no new challenge is available.
 				if work == nil {
-					mgr.solutionOutput <- nil
 					return
 				}
-
 				var ids []int64
 				for _, id := range work.Challenge.RequestIDs {
 					ids = append(ids, id.Int64())

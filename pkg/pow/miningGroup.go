@@ -275,6 +275,4 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			}
 		}
 	}
-	// Send a nil value to signal that it is done.
-	output <- nil
 }

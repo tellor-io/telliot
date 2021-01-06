@@ -135,10 +135,10 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
 		m2, err := mt.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			mt.log.Info("Could not retrieve pricing data for current request id:%v", err)
-			//return nil, false
+			mt.log.Error("retrieve pricing data for current request id err:%v", err)
 		}
 		val := m2[valKey]
+		// Try the manual entries.
 		if len(val) == 0 {
 			cfg := config.GetConfig()
 			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")

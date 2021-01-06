@@ -78,18 +78,6 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 			testutil.Ok(t, errors.Errorf("Expected result for challenge in less than %s", timeout.String()))
 		}
 	}
-	// Tell the mining group to close.
-	input <- nil
-
-	// Wait for it to close.
-	select {
-	case result := <-output:
-		if result != nil {
-			testutil.Ok(t, errors.New("expected nil result when closing mining group"))
-		}
-	case <-time.After(timeout):
-		testutil.Ok(t, errors.Errorf("Expected mining group to close in less than %s", timeout.String()))
-	}
 }
 
 func TestCpuMiner(t *testing.T) {
@@ -140,14 +128,8 @@ func TestMulti(t *testing.T) {
 	challenge := createChallenge(0, math.MaxInt64)
 	input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
 	time.Sleep(1 * time.Second)
-	input <- nil
-	timeout := 500 * time.Millisecond
-	select {
-	case <-output:
-		group.PrintHashRateSummary()
-	case <-time.After(timeout):
-		testutil.Ok(t, errors.Errorf("mining group didn't quit before %s", timeout.String()))
-	}
+
+	group.PrintHashRateSummary()
 }
 
 func TestHashFunction(t *testing.T) {
