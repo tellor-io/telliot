@@ -4,6 +4,7 @@
 package rest
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"testing"
@@ -12,18 +13,17 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/phayes/freeport"
-	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/tcontext"
 	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 func TestServer(t *testing.T) {
-	ctx, cfg, cleanup := tcontext.CreateTestContext(t)
-	defer t.Cleanup(cleanup)
+	cfg := config.OpenTestConfig(t)
 	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
 
-	DB := ctx.Value(common.DBContextKey).(db.DB)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
 
 	balInt := big.NewInt(350000)
 	err := DB.Put(db.BalanceKey, []byte(hexutil.EncodeBig(balInt)))
@@ -32,7 +32,10 @@ func TestServer(t *testing.T) {
 	port, err := freeport.GetFreePort()
 	testutil.Ok(t, err)
 
-	srv, err := Create(ctx, cfg.ServerHost, uint(port))
+	proxy, err := db.OpenLocalProxy(DB)
+	testutil.Ok(t, err)
+
+	srv, err := Create(context.Background(), proxy, cfg.ServerHost, uint(port))
 	testutil.Ok(t, err)
 
 	srv.Start()
@@ -42,7 +45,6 @@ func TestServer(t *testing.T) {
 		}
 	}()
 
-	proxy := ctx.Value(common.DataProxyKey).(db.DataServerProxy)
 	data, err := proxy.Get(db.BalanceKey)
 	if err != nil {
 		testutil.Ok(t, err)

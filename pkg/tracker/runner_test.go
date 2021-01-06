@@ -4,25 +4,25 @@
 package tracker
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
-	"github.com/tellor-io/telliot/pkg/tcontext"
 	"github.com/tellor-io/telliot/pkg/testutil"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestRunner(t *testing.T) {
-	ctx, _, cleanup := tcontext.CreateTestContext(t)
+	cfg := config.OpenTestConfig(t)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	defer t.Cleanup(cleanup)
 
 	exitCh := make(chan int)
 
@@ -50,10 +50,17 @@ func TestRunner(t *testing.T) {
 		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: top50, CurrentChallenge: chal, DisputeStatus: big.NewInt(1), QueryMetadata: paramsMap}
 	client := rpc.NewMockClientWithValues(opts)
 
-	runner, _ := NewRunner(client, ctx.Value(common.DBContextKey).(db.DB), logger)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+	contract, err := contracts.NewTellor(cfg, client)
+	testutil.Ok(t, err)
+	account, err := rpc.NewAccount(cfg)
+	testutil.Ok(t, err)
+
+	runner, _ := NewRunner(logger, cfg, DB, client, &contract, &account)
 
 	runner.Ready()
-	if err := runner.Start(ctx, exitCh); err != nil {
+	if err := runner.Start(context.Background(), exitCh); err != nil {
 		testutil.Ok(t, err)
 	}
 	fmt.Println("runner done")

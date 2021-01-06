@@ -8,10 +8,10 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/pkg/errors"
-
 	"github.com/hashicorp/go-multierror"
-	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
@@ -30,15 +30,19 @@ type DataServer struct {
 }
 
 // CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data.
-func CreateServer(ctx context.Context, logger log.Logger) (*DataServer, error) {
-
-	DB := ctx.Value(common.DBContextKey).(db.DB)
-	client := ctx.Value(common.ClientContextKey).(rpc.ETHClient)
-	run, err := tracker.NewRunner(client, DB, logger)
+func CreateServer(
+	ctx context.Context,
+	logger log.Logger,
+	config *config.Config,
+	DB db.DB,
+	client rpc.ETHClient,
+	contract *contracts.Tellor,
+	account *rpc.Account,
+) (*DataServer, error) {
+	run, err := tracker.NewRunner(logger, config, DB, client, contract, account)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating data server tracker runner instance")
 	}
-
 	// Make sure channel buffer size 1 since there is no guarantee that anyone
 	// Would be listening to the channel
 	ready := make(chan bool, 1)
