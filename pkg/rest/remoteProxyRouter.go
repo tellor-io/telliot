@@ -11,8 +11,6 @@ import (
 
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/util"
-
-	"github.com/tellor-io/telliot/pkg/common"
 )
 
 // RemoteProxyRouter handles incoming http requests.
@@ -22,8 +20,7 @@ type RemoteProxyRouter struct {
 }
 
 // CreateRemoteProxy creates a remote proxy instance.
-func CreateRemoteProxy(ctx context.Context) (*RemoteProxyRouter, error) {
-	proxy := ctx.Value(common.DataProxyKey).(db.DataServerProxy)
+func CreateRemoteProxy(ctx context.Context, proxy db.DataServerProxy) (*RemoteProxyRouter, error) {
 	return &RemoteProxyRouter{dataProxy: proxy, log: util.NewLogger("rest", "RemoteProxyRouter")}, nil
 }
 

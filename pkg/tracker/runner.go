@@ -7,39 +7,39 @@ import (
 	"context"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 // Runner will execute all configured trackers.
 type Runner struct {
-	client       rpc.ETHClient
 	db           db.DB
+	client       rpc.ETHClient
+	contract     *contracts.Tellor
+	account      *rpc.Account
 	readyChannel chan bool
 	logger       log.Logger
+	config       *config.Config
 }
 
 // NewRunner will create a new runner instance.
-func NewRunner(client rpc.ETHClient, db db.DB, logger log.Logger) (*Runner, error) {
-	return &Runner{client: client, db: db, readyChannel: make(chan bool, 1), logger: log.With(logger, "component", "runner")}, nil
+func NewRunner(logger log.Logger, config *config.Config, db db.DB, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) (*Runner, error) {
+	return &Runner{config: config, db: db, client: client, contract: contract, account: account, readyChannel: make(chan bool, 1), logger: log.With(logger, "component", "runner")}, nil
 }
 
 // Start will kick off the runner until the given exit channel selects.
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
-	cfg := config.GetConfig()
-	trackerNames := cfg.Trackers
+	trackerNames := r.config.Trackers
 	var trackers []Tracker
 	for name, activated := range trackerNames {
 		if activated {
 			level.Info(r.logger).Log("msg", "starting tracker", "name", name)
-			t, err := createTracker(name, r.logger)
+			t, err := createTracker(name, r.logger, r.config, r.db, r.client, r.contract, r.account)
 			if err != nil {
 				return errors.Wrapf(err, "creating tracker. Name: %s", name)
 			}
@@ -55,25 +55,8 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		return nil
 	}
 
-	var err error
-	masterInstance := ctx.Value(tellorCommon.ContractsTellorContextKey)
-	if masterInstance == nil {
-		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		masterInstance, err = tellor.NewTellor(contractAddress, r.client)
-		if err != nil {
-			return errors.Wrap(err, "creating tellor master instance")
-		}
-		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, masterInstance)
-	}
-
-	level.Info(r.logger).Log("msg", "starting trackers", "sleepCycle", cfg.TrackerSleepCycle)
-	ticker := time.NewTicker(cfg.TrackerSleepCycle.Duration / time.Duration(len(trackers)))
-	if ctx.Value(tellorCommon.ClientContextKey) == nil {
-		ctx = context.WithValue(ctx, tellorCommon.ClientContextKey, r.client)
-	}
-	if ctx.Value(tellorCommon.DBContextKey) == nil {
-		ctx = context.WithValue(ctx, tellorCommon.DBContextKey, r.db)
-	}
+	level.Info(r.logger).Log("msg", "starting trackers", "sleepCycle", r.config.TrackerSleepCycle)
+	ticker := time.NewTicker(r.config.TrackerSleepCycle.Duration / time.Duration(len(trackers)))
 
 	// after first run, let others know that tracker output data is ready for use.
 	doneFirstExec := make(chan bool, len(trackers))
@@ -102,7 +85,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 						idx := count % len(trackers)
 						err := trackers[idx].Exec(ctx)
 						if err != nil {
-							level.Warn(r.logger).Log("msg", "problem in traker", "tracker", trackers[idx].String(), "err", err)
+							level.Warn(r.logger).Log("msg", "problem in tracker", "tracker", trackers[idx].String(), "err", err)
 						}
 						// Only the first trackers round execution.
 						if count < len(trackers) {

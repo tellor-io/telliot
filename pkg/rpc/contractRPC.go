@@ -5,9 +5,7 @@ package rpc
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"math/big"
-	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -21,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/getter"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -47,24 +46,19 @@ func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
 	return c.TellorGetters.DidMine(nil, challenge, c.fromAddress)
 }
 
-func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
+func SubmitContractTxn(
+	ctx context.Context,
+	logger log.Logger,
+	cfg *config.Config,
+	proxy db.DataServerProxy,
+	client ETHClient,
+	tellor contracts.Tellor,
+	account Account,
+	ctxName string,
+	callback tellorCommon.TransactionGeneratorFN,
+) (*types.Transaction, error) {
 
-	cfg := config.GetConfig()
-	client := ctx.Value(tellorCommon.ClientContextKey).(ETHClient)
-
-	privateKey, err := crypto.HexToECDSA(os.Getenv(config.PrivateKeyEnvName))
-	if err != nil {
-		return nil, errors.Wrap(err, "decoding private key")
-	}
-
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return nil, errors.New("casting public key to ECDSA")
-	}
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := client.NonceAt(context.Background(), fromAddress)
+	nonce, err := client.NonceAt(ctx, account.Address)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting nonce for miner address")
 	}
@@ -79,7 +73,7 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 	gasPrice := getInt(m[db.GasKey])
 	if gasPrice.Cmp(big.NewInt(0)) == 0 {
 		level.Warn(logger).Log("msg", "Missing gas price from DB, falling back to client suggested gas price")
-		gasPrice, err = client.SuggestGasPrice(context.Background())
+		gasPrice, err = client.SuggestGasPrice(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "determine gas price to submit txn")
 		}
@@ -92,7 +86,7 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 
 	var finalError error
 	for i := 0; i <= 5; i++ {
-		balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
+		balance, err := client.BalanceAt(ctx, account.Address, nil)
 		if err != nil {
 			finalError = err
 			continue
@@ -110,8 +104,7 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 		if err != nil {
 			return nil, errors.Wrap(err, "getting network id")
 		}
-
-		auth, err := bind.NewKeyedTransactorWithChainID(privateKey, netID)
+		auth, err := bind.NewKeyedTransactorWithChainID(account.PrivateKey, netID)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating transactor")
 		}
@@ -144,11 +137,8 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 		}
 
 		level.Info(logger).Log("msg", "gas price", "value", gasPrice)
-		// Create a wrapper to callback the actual txn generator fn.
-		instanceTellor := ctx.Value(tellorCommon.ContractsTellorContextKey).(*tellor.Tellor)
-		instanceGetter := ctx.Value(tellorCommon.ContractsGetterContextKey).(*getter.TellorGetters)
 
-		wrapper := contractWrapper{auth, fromAddress, instanceTellor, instanceGetter}
+		wrapper := contractWrapper{auth, account.Address, tellor.Caller, tellor.Getter}
 		tx, err := callback(ctx, wrapper)
 
 		if err != nil {

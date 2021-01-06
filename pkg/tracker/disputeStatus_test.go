@@ -6,14 +6,13 @@ package tracker
 import (
 	"context"
 	"math/big"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
@@ -21,27 +20,33 @@ import (
 )
 
 func TestDisputeString(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	tracker := NewDisputeTracker(logger)
+	tracker := NewDisputeTracker(logger, cfg, DB, nil, nil)
 	res := tracker.String()
 	testutil.Assert(t, res == DisputeTrackerName, "didn't return expected string", DisputeTrackerName)
 }
 
 func TestDisputeStatus(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
 	startBal := big.NewInt(356000)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, DisputeStatus: big.NewInt(1)}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_disputeStatus"))
-	testutil.Ok(t, err)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	tracker := NewDisputeTracker(logger)
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	testutil.Ok(t, tracker.Exec(ctx))
+	contract, err := contracts.NewTellor(cfg, client)
+	testutil.Ok(t, err)
+	account, err := rpc.NewAccount(cfg)
+	testutil.Ok(t, err)
+	tracker := NewDisputeTracker(logger, cfg, DB, &contract, &account)
+	testutil.Ok(t, tracker.Exec(context.Background()))
 	v, err := DB.Get(db.DisputeStatusKey)
 	testutil.Ok(t, err)
 	b, err := hexutil.DecodeBig(string(v))
@@ -52,16 +57,22 @@ func TestDisputeStatus(t *testing.T) {
 }
 
 func TestDisputeStatusNegativeBalance(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
 	startBal := big.NewInt(356000)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
-		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, DisputeStatus: big.NewInt(0)}
+		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}, DisputeStatus: big.NewInt(1)}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_disputeStatus"))
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+	logSetup := util.SetupLogger()
+	logger := logSetup("debug")
+	contract, err := contracts.NewTellor(cfg, client)
 	testutil.Ok(t, err)
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	context.WithValue(ctx, common.DBContextKey, DB)
-
+	account, err := rpc.NewAccount(cfg)
+	testutil.Ok(t, err)
+	tracker := NewDisputeTracker(logger, cfg, DB, &contract, &account)
+	testutil.Ok(t, tracker.Exec(context.Background()))
 	v, err := DB.Get(db.DisputeStatusKey)
 	testutil.Ok(t, err)
 	b, err := hexutil.DecodeBig(string(v))

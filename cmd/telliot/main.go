@@ -6,7 +6,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	cli "github.com/jawher/mow.cli"
@@ -25,8 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/rest"
@@ -35,10 +32,12 @@ import (
 )
 
 var ctx context.Context
-var cont tellorCommon.Contract
-var acc tellorCommon.Account
+var cont contracts.Tellor
+var acc rpc.Account
 var clt rpc.ETHClient
 var logLevel string
+var database db.DB
+var proxy db.DataServerProxy
 
 func ExitOnError(err error, operation string) {
 	if err != nil {
@@ -64,37 +63,16 @@ func setup() error {
 			return errors.Wrap(err, "create rpc client instance")
 		}
 
-		// Create an instance of the tellor master contract for on-chain interactions
-		contractAddress := common.HexToAddress(cfg.ContractAddress)
-		contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
+		contract, err := contracts.NewTellor(cfg, client)
 		if err != nil {
-			return errors.Wrap(err, "create tellor master instance")
+			return errors.Wrap(err, "creating contract")
 		}
 
-		contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
-
+		account, err := rpc.NewAccount(cfg)
 		if err != nil {
-			return errors.Wrap(err, "create tellor transactor instance")
+			return errors.Wrap(err, "creating account")
 		}
-		// Leaving those in because are still used in some places(miner submission mostly).
-		ctx = context.WithValue(context.Background(), tellorCommon.ClientContextKey, client)
-		ctx = context.WithValue(ctx, tellorCommon.ContractAddress, contractAddress)
-		ctx = context.WithValue(ctx, tellorCommon.ContractsTellorContextKey, contractTellorInstance)
-		ctx = context.WithValue(ctx, tellorCommon.ContractsGetterContextKey, contractGetterInstance)
-
-		privateKey, err := crypto.HexToECDSA(os.Getenv(config.PrivateKeyEnvName))
-		if err != nil {
-			return errors.Wrap(err, "getting private key to ECDSA")
-		}
-
-		publicKey := privateKey.Public()
-		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			return errors.New("casting public key to ECDSA")
-		}
-
-		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
+		ctx = context.Background()
 		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
 		if err != nil {
@@ -105,11 +83,8 @@ func setup() error {
 		}
 
 		clt = client
-		acc.Address = publicAddress
-		acc.PrivateKey = privateKey
-		cont.Getter = contractGetterInstance
-		cont.Caller = contractTellorInstance
-		cont.Address = contractAddress
+		acc = account
+		cont = contract
 	}
 	return nil
 }
@@ -173,8 +148,8 @@ func AddDBToCtx(remote bool) error {
 		}
 		dataProxy = proxy
 	}
-	ctx = context.WithValue(ctx, tellorCommon.DataProxyKey, dataProxy)
-	ctx = context.WithValue(ctx, tellorCommon.DBContextKey, DB)
+	database = DB
+	proxy = dataProxy
 	return nil
 }
 
@@ -230,8 +205,8 @@ func simpleCmd(
 	f func(context.Context,
 		log.Logger,
 		rpc.ETHClient,
-		tellorCommon.Contract,
-		tellorCommon.Account) error,
+		contracts.Tellor,
+		rpc.Account) error,
 	logSetup func(string) log.Logger) func(*cli.Cmd) {
 	return func(cmd *cli.Cmd) {
 		cmd.Action = func() {
@@ -244,8 +219,8 @@ func moveCmd(
 	f func(context.Context,
 		log.Logger,
 		rpc.ETHClient,
-		tellorCommon.Contract,
-		tellorCommon.Account,
+		contracts.Tellor,
+		rpc.Account,
 		common.Address,
 		*big.Int) error,
 	logSetup func(string) log.Logger) func(*cli.Cmd) {
@@ -322,9 +297,8 @@ func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 					exitChannels = append(exitChannels, &ch)
 
 					var err error
-					ds, err = ops.CreateDataServerOps(ctx, logger, ch)
+					ds, err = ops.CreateDataServerOps(ctx, logger, cfg, database, &proxy, clt, &cont, &acc, ch)
 					ExitOnError(err, "creating data server")
-
 					// Start and wait for it to be ready.
 					ExitOnError(ds.Start(ctx), "starting data server")
 					<-ds.Ready()
@@ -332,13 +306,12 @@ func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 			}
 
 			http.Handle("/metrics", promhttp.Handler())
-			srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
+			srv, err := rest.Create(ctx, proxy, cfg.ServerHost, cfg.ServerPort)
 			ExitOnError(err, "creating data server instance")
 			srv.Start()
 
 			// Start miner
-			DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
-			v, err := DB.Get(db.DisputeStatusKey)
+			v, err := proxy.Get(db.DisputeStatusKey)
 			if err != nil {
 				level.Warn(logger).Log("msg", "getting dispute status. Check if staked")
 			}
@@ -348,9 +321,8 @@ func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 			}
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
-			miner, err := ops.CreateMiningManager(logger, ch, cfg, DB)
+			miner, err := ops.CreateMiningManager(logger, ch, cfg, proxy, cont, acc)
 			ExitOnError(err, "creating miner")
-
 			go func() {
 				miner.Start(ctx)
 			}()
@@ -409,7 +381,7 @@ func dataserverCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 			ExitOnError(AddDBToCtx(true), "initializing database")
 			ch := make(chan os.Signal)
 			var err error
-			ds, err = ops.CreateDataServerOps(ctx, logger, ch)
+			ds, err = ops.CreateDataServerOps(ctx, logger, config.GetConfig(), database, &proxy, clt, &cont, &acc, ch)
 			ExitOnError(err, "creating data server")
 
 			// Start and wait for it to be ready
@@ -420,7 +392,7 @@ func dataserverCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 
 			http.Handle("/metrics", promhttp.Handler())
 			cfg := config.GetConfig()
-			srv, err := rest.Create(ctx, cfg.ServerHost, cfg.ServerPort)
+			srv, err := rest.Create(ctx, proxy, cfg.ServerHost, cfg.ServerPort)
 			ExitOnError(err, "creating data server instance")
 			srv.Start()
 

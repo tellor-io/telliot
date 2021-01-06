@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -24,11 +23,10 @@ type Server struct {
 }
 
 // Create a new server instance for the given host/port.
-func Create(ctx context.Context, host string, port uint) (*Server, error) {
-	proxy := ctx.Value(common.DataProxyKey).(db.DataServerProxy)
+func Create(ctx context.Context, proxy db.DataServerProxy, host string, port uint) (*Server, error) {
 	srv := &http.Server{Addr: fmt.Sprintf("%s:%d", host, port)}
 
-	remoteHandler, err := CreateRemoteProxy(ctx)
+	remoteHandler, err := CreateRemoteProxy(ctx, proxy)
 	if err != nil {
 		return nil, err
 	}
