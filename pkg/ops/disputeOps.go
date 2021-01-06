@@ -18,8 +18,8 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/master"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
@@ -30,7 +30,15 @@ import (
  * This file handles all operations related to disputes
  */
 
-func Dispute(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, requestId *big.Int, timestamp *big.Int, minerIndex *big.Int) error {
+func Dispute(
+	ctx context.Context,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+	requestId *big.Int,
+	timestamp *big.Int,
+	minerIndex *big.Int,
+) error {
 
 	if !minerIndex.IsUint64() || minerIndex.Uint64() > 4 {
 		return errors.Errorf("miner index should be between 0 and 4 (got %s)", minerIndex.Text(10))
@@ -66,9 +74,16 @@ func Dispute(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Co
 	return nil
 }
 
-func Vote(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, _disputeId *big.Int, _supportsDispute bool) error {
+func Vote(
+	ctx context.Context,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+	disputeId *big.Int,
+	supportsDispute bool,
+) error {
 
-	voted, err := contract.Getter.DidVote(nil, _disputeId, contract.Address)
+	voted, err := contract.Getter.DidVote(nil, disputeId, contract.Address)
 	if err != nil {
 		return errors.Wrapf(err, "check if you've already voted")
 	}
@@ -81,7 +96,7 @@ func Vote(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contr
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
-	tx, err := contract.Caller.Vote(auth, _disputeId, _supportsDispute)
+	tx, err := contract.Caller.Vote(auth, disputeId, supportsDispute)
 	if err != nil {
 		return errors.Wrapf(err, "submit vote transaction")
 	}
@@ -90,7 +105,13 @@ func Vote(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contr
 	return nil
 }
 
-func getNonceSubmissions(ctx context.Context, client rpc.ETHClient, contract tellorCommon.Contract, valueBlock *big.Int, dispute *master.TellorDisputeNewDispute) ([]*apiOracle.PriceStamp, error) {
+func getNonceSubmissions(
+	ctx context.Context,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	valueBlock *big.Int,
+	dispute *master.TellorDisputeNewDispute,
+) ([]*apiOracle.PriceStamp, error) {
 	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorLibraryABI))
 	if err != nil {
 		return nil, errors.Wrap(err, "parse abi")
@@ -161,7 +182,13 @@ func getNonceSubmissions(ctx context.Context, client rpc.ETHClient, contract tel
 	return timedValues, nil
 }
 
-func List(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func List(
+	ctx context.Context,
+	logger log.Logger,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+) error {
 	cfg := config.GetConfig()
 	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorDisputeABI))
 	if err != nil {
@@ -254,7 +281,7 @@ func List(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract
 		currTallyRatio := currTallyFloat / 2 * currQuorum
 		fmt.Printf("    Currently %.0f%% of %s TRB support this dispute (%s votes)\n", currTallyRatio*100, util.FormatERC20Balance(uintVars[7]), uintVars[4])
 
-		result := tracker.CheckValueAtTime(dispute.RequestId.Uint64(), uintVars[2], disputedValTime)
+		result := tracker.CheckValueAtTime(cfg, dispute.RequestId.Uint64(), uintVars[2], disputedValTime)
 		if result == nil || len(result.Datapoints) < 0 {
 			fmt.Printf("      No data available for recommendation\n")
 			continue

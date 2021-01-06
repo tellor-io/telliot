@@ -16,58 +16,50 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/proxy"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 type TimeOutTracker struct {
-	logger log.Logger
+	config   *config.Config
+	db       db.DB
+	contract *contracts.Tellor
+	account  *rpc.Account
+	logger   log.Logger
 }
 
 func (b *TimeOutTracker) String() string {
 	return "TimeOutTracker"
 }
 
-func NewTimeOutTracker(logger log.Logger) *TimeOutTracker {
+func NewTimeOutTracker(logger log.Logger, config *config.Config, db db.DB, contract *contracts.Tellor, account *rpc.Account) *TimeOutTracker {
 	return &TimeOutTracker{
-		logger: log.With(logger, "component", "timeout tracker"),
+		config:   config,
+		db:       db,
+		contract: contract,
+		account:  account,
+		logger:   log.With(logger, "component", "timeout tracker"),
 	}
 }
 
 func (b *TimeOutTracker) Exec(ctx context.Context) error {
-	//cast client using type assertion since context holds generic interface{}
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	//get the single config instance
-	cfg := config.GetConfig()
+	_fromAddress := b.account.Address.String()
 
-	//get address from config
-	_fromAddress := cfg.PublicAddress
-	_conAddress := cfg.ContractAddress
-
-	//convert to address
-	contractAddress := common.HexToAddress(_conAddress)
-
-	instance, err := proxy.NewTellorGetters(contractAddress, client)
-	if err != nil {
-		return errors.Wrap(err, "creating instance")
-	}
 	address := "000000000000000000000000" + _fromAddress[2:]
 	decoded, err := hex.DecodeString(address)
 	if err != nil {
 		return errors.Wrapf(err, "decoding address")
 	}
-	status, err := instance.GetUintVar(nil, rpc.Keccak256(decoded))
+	status, err := b.contract.Getter.GetUintVar(nil, rpc.Keccak256(decoded))
 
 	if err != nil {
 		return errors.Wrapf(err, "getting dispute status")
 	}
 	enc := hexutil.EncodeBig(status)
-	err = DB.Put(db.TimeOutKey, []byte(enc))
+	err = b.db.Put(db.TimeOutKey, []byte(enc))
 	if err != nil {
 		return errors.Wrapf(err, "storing dispute info")
 	}
@@ -78,13 +70,13 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 
 	//add all whitelisted miner addresses as well since they will be coming in
 	//asking for dispute status
-	for _, addr := range cfg.ServerWhitelist {
+	for _, addr := range b.config.ServerWhitelist {
 		address := "000000000000000000000000" + addr[2:]
 		decoded, err := hex.DecodeString(address)
 		if err != nil {
 			return errors.Wrapf(err, "decoding address")
 		}
-		status, err := instance.GetUintVar(nil, rpc.Keccak256(decoded))
+		status, err := b.contract.Getter.GetUintVar(nil, rpc.Keccak256(decoded))
 		if err != nil {
 			level.Error(b.logger).Log("msg", "getting staker timeOut status for miner", "address", addr, "err", err)
 		}
@@ -93,7 +85,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		}
 		from := common.HexToAddress(addr)
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(from.Hex()), db.TimeOutKey)
-		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
+		err = b.db.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
 			return errors.Wrapf(err, "storing last time mined")
 		}

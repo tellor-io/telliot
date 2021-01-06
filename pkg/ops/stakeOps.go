@@ -13,7 +13,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -47,7 +47,13 @@ func printStakeStatus(bigStatus *big.Int, started *big.Int) {
 	}
 }
 
-func Deposit(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func Deposit(
+	ctx context.Context,
+	logger log.Logger,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+) error {
 
 	balance, err := contract.Getter.BalanceOf(nil, account.Address)
 	if err != nil {
@@ -91,7 +97,13 @@ func Deposit(ctx context.Context, logger log.Logger, client rpc.ETHClient, contr
 	return nil
 }
 
-func ShowStatus(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func ShowStatus(
+	ctx context.Context,
+	logger log.Logger,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+) error {
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "get stake status")
@@ -101,7 +113,13 @@ func ShowStatus(ctx context.Context, logger log.Logger, client rpc.ETHClient, co
 	return nil
 }
 
-func RequestStakingWithdraw(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func RequestStakingWithdraw(
+	ctx context.Context,
+	logger log.Logger,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+) error {
 
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
@@ -126,7 +144,13 @@ func RequestStakingWithdraw(ctx context.Context, logger log.Logger, client rpc.E
 	return nil
 }
 
-func WithdrawStake(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func WithdrawStake(
+	ctx context.Context,
+	logger log.Logger,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+) error {
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "get stake status")

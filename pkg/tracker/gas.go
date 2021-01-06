@@ -14,7 +14,6 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/telliot/pkg/common"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -22,6 +21,8 @@ import (
 // GasTracker is the struct that maintains the latest gasprices.
 // note the prices are actually stored in the DB.
 type GasTracker struct {
+	db     db.DB
+	client rpc.ETHClient
 	logger log.Logger
 }
 
@@ -36,18 +37,17 @@ func (b *GasTracker) String() string {
 	return "GasTracker"
 }
 
-func NewGasTracker(logger log.Logger) *GasTracker {
+func NewGasTracker(logger log.Logger, db db.DB, client rpc.ETHClient) *GasTracker {
 	return &GasTracker{
+		db:     db,
+		client: client,
 		logger: log.With(logger, "component", "gas tracker"),
 	}
 
 }
 
 func (b *GasTracker) Exec(ctx context.Context) error {
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
-
-	netID, err := client.NetworkID(context.Background())
+	netID, err := b.client.NetworkID(ctx)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -60,7 +60,7 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 		req := &FetchRequest{queryURL: url, timeout: time.Duration(15 * time.Second)}
 		payload, err := fetchWithRetries(req)
 		if err != nil {
-			gasPrice, err = client.SuggestGasPrice(context.Background())
+			gasPrice, err = b.client.SuggestGasPrice(ctx)
 			if err != nil {
 				level.Warn(b.logger).Log("msg", "couldn't get suggested gas price", "err", err)
 			}
@@ -69,7 +69,7 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 			err = json.Unmarshal(payload, &gpModel)
 			if err != nil {
 				level.Warn(b.logger).Log("msg", "eth gas station json", "err", err)
-				gasPrice, err = client.SuggestGasPrice(context.Background())
+				gasPrice, err = b.client.SuggestGasPrice(ctx)
 				if err != nil {
 					level.Warn(b.logger).Log("msg", "getting suggested gas price", "err", err)
 				}
@@ -80,12 +80,12 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 			}
 		}
 	} else {
-		gasPrice, err = client.SuggestGasPrice(context.Background())
+		gasPrice, err = b.client.SuggestGasPrice(ctx)
 		if err != nil {
 			level.Warn(b.logger).Log("msg", "getting suggested gas price", "err", err)
 		}
 	}
 
 	enc := hexutil.EncodeBig(gasPrice)
-	return DB.Put(db.GasKey, []byte(enc))
+	return b.db.Put(db.GasKey, []byte(enc))
 }

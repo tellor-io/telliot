@@ -13,7 +13,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -23,7 +23,13 @@ import (
  * This is the operational transfer component. Its purpose is to transfer tellor tokens
  */
 
-func prepareTransfer(ctx context.Context, client rpc.ETHClient, instance *proxy.TellorGetters, account tellorCommon.Account, amt *big.Int) (*bind.TransactOpts, error) {
+func prepareTransfer(
+	ctx context.Context,
+	client rpc.ETHClient,
+	instance *proxy.TellorGetters,
+	account rpc.Account,
+	amt *big.Int,
+) (*bind.TransactOpts, error) {
 	balance, err := instance.BalanceOf(nil, account.Address)
 	if err != nil {
 		return nil, errors.Wrap(err, "get balance")
@@ -41,7 +47,15 @@ func prepareTransfer(ctx context.Context, client rpc.ETHClient, instance *proxy.
 	return auth, nil
 }
 
-func Transfer(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, toAddress common.Address, amt *big.Int) error {
+func Transfer(
+	ctx context.Context,
+	logger log.Logger,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+	toAddress common.Address,
+	amt *big.Int,
+) error {
 	auth, err := prepareTransfer(ctx, client, contract.Getter, account, amt)
 	if err != nil {
 		return errors.Wrap(err, "preparing transfer")
@@ -55,22 +69,30 @@ func Transfer(ctx context.Context, logger log.Logger, client rpc.ETHClient, cont
 	return nil
 }
 
-func Approve(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account, _spender common.Address, amt *big.Int) error {
+func Approve(
+	ctx context.Context,
+	logger log.Logger,
+	client rpc.ETHClient,
+	contract contracts.Tellor,
+	account rpc.Account,
+	spender common.Address,
+	amt *big.Int,
+) error {
 	auth, err := prepareTransfer(ctx, client, contract.Getter, account, amt)
 	if err != nil {
 		return errors.Wrap(err, "preparing transfer")
 	}
 
-	tx, err := contract.Caller.Approve(auth, _spender, amt)
+	tx, err := contract.Caller.Approve(auth, spender, amt)
 	if err != nil {
 		return errors.Wrap(err, "calling approve")
 	}
-	level.Info(logger).Log("msg", "approved", "amount", util.FormatERC20Balance(amt), "spender", _spender.String()[:12], "tx Hash", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "approved", "amount", util.FormatERC20Balance(amt), "spender", spender.String()[:12], "tx Hash", tx.Hash().Hex())
 	return nil
 }
 
 func Balance(ctx context.Context, client rpc.ETHClient, getterInstance *proxy.TellorGetters, addr common.Address) error {
-	ethBalance, err := client.BalanceAt(context.Background(), addr, nil)
+	ethBalance, err := client.BalanceAt(ctx, addr, nil)
 	if err != nil {
 		return errors.Wrap(err, "get eth balance")
 	}

@@ -6,11 +6,9 @@ package tracker
 import (
 	"context"
 	"math/big"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
@@ -18,18 +16,16 @@ import (
 )
 
 func TestETHGasStation(t *testing.T) {
+	config.OpenTestConfig(t)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	tracker := NewGasTracker(logger)
 	opts := &rpc.MockOptions{ETHBalance: big.NewInt(300000), Nonce: 1, GasPrice: big.NewInt(7000000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
-
-	DB, err := db.Open(filepath.Join(os.TempDir(), "ethGas_test"))
-	testutil.Ok(t, err)
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+	tracker := NewGasTracker(logger, DB, client)
+	err := tracker.Exec(context.Background())
 	testutil.Ok(t, err)
 	v, err := DB.Get(db.GasKey)
 	testutil.Ok(t, err)

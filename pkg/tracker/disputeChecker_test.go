@@ -10,39 +10,51 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tellor-io/telliot/pkg/tcontext"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestDisputeCheckerInRange(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	ctx, _, cleanup := tcontext.CreateTestContext(t)
-	t.Cleanup(cleanup)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
 
-	if _, err := BuildIndexTrackers(); err != nil {
+	if _, err := BuildIndexTrackers(cfg, DB); err != nil {
 		testutil.Ok(t, err)
 	}
+	client := rpc.NewMockClient()
+	contract, err := contracts.NewTellor(cfg, client)
+	testutil.Ok(t, err)
+	ctx := context.Background()
 	ethUSDPairs := indexes["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-	disputeChecker := &disputeChecker{lastCheckedBlock: 500, logger: logger}
+	disputeChecker := &disputeChecker{lastCheckedBlock: 500, config: cfg, logger: logger, client: client, contract: &contract}
 	testutil.Ok(t, disputeChecker.Exec(ctx))
 }
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
-	ctx, cfg, cleanup := tcontext.CreateTestContext(t)
-	t.Cleanup(cleanup)
-	cfg.DisputeThreshold = 0.000000001
+	cfg := config.OpenTestConfig(t)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	disputeChecker := NewDisputeChecker(logger, 500)
-	if _, err := BuildIndexTrackers(); err != nil {
+	client := rpc.NewMockClient()
+	contract, err := contracts.NewTellor(cfg, client)
+	testutil.Ok(t, err)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+	disputeChecker := NewDisputeChecker(logger, cfg, client, &contract, 500)
+	if _, err := BuildIndexTrackers(cfg, DB); err != nil {
 		testutil.Ok(t, err)
 	}
 	ethUSDPairs := indexes["ETH/USD"]
+	ctx := context.Background()
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)

@@ -9,11 +9,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
-func PrepareEthTransaction(ctx context.Context, client rpc.ETHClient, account tellorCommon.Account) (*bind.TransactOpts, error) {
+func PrepareEthTransaction(
+	ctx context.Context,
+	client rpc.ETHClient,
+	account rpc.Account,
+) (*bind.TransactOpts, error) {
 
 	nonce, err := client.PendingNonceAt(ctx, account.Address)
 	if err != nil {

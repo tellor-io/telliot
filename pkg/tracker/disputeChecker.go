@@ -19,13 +19,16 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/master"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 type disputeChecker struct {
+	config           *config.Config
+	client           rpc.ETHClient
+	contract         *contracts.Tellor
 	lastCheckedBlock uint64
 	logger           log.Logger
 }
@@ -43,9 +46,7 @@ type ValueCheckResult struct {
 }
 
 // CheckValueAtTime queries for the details regarding the disputed value.
-func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResult {
-	cfg := config.GetConfig()
-	//
+func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Time) *ValueCheckResult {
 
 	// check the value in 5 places, spread over cfg.DisputeTimeDelta.Duration.
 	var datapoints []float64
@@ -92,8 +93,17 @@ func CheckValueAtTime(reqID uint64, val *big.Int, at time.Time) *ValueCheckResul
 	}
 }
 
-func NewDisputeChecker(logger log.Logger, lastCheckedBlock uint64) *disputeChecker {
+func NewDisputeChecker(
+	logger log.Logger,
+	config *config.Config,
+	client rpc.ETHClient,
+	contract *contracts.Tellor,
+	lastCheckedBlock uint64,
+) *disputeChecker {
 	return &disputeChecker{
+		client:           client,
+		contract:         contract,
+		config:           config,
 		lastCheckedBlock: lastCheckedBlock,
 		logger:           log.With(logger, "component", "dispute checker"),
 	}
@@ -101,9 +111,7 @@ func NewDisputeChecker(logger log.Logger, lastCheckedBlock uint64) *disputeCheck
 
 func (c *disputeChecker) Exec(ctx context.Context) error {
 
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-
-	header, err := client.HeaderByNumber(ctx, nil)
+	header, err := c.client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "get latest eth block header")
 	}
@@ -122,20 +130,19 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "parse abi")
 	}
-	contractAddress := ctx.Value(tellorCommon.ContractAddress).(common.Address)
 
 	//just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
-	bar := bind.NewBoundContract(contractAddress, tokenAbi, nil, nil, nil)
+	bar := bind.NewBoundContract(c.contract.Address, tokenAbi, nil, nil, nil)
 
 	checkUntil := toCheck - blockDelay
 	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(c.lastCheckedBlock)),
 		ToBlock:   big.NewInt(int64(checkUntil)),
-		Addresses: []common.Address{contractAddress},
+		Addresses: []common.Address{c.contract.Address},
 		Topics:    [][]common.Hash{{nonceSubmitID}},
 	}
-	logs, err := client.FilterLogs(ctx, query)
+	logs, err := c.client.FilterLogs(ctx, query)
 	if err != nil {
 		return errors.Wrap(err, "filter eth logs")
 	}
@@ -148,7 +155,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 		}
 		blockTime, ok := blockTimes[l.BlockNumber]
 		if !ok {
-			header, err := client.HeaderByNumber(ctx, big.NewInt(int64(l.BlockNumber)))
+			header, err := c.client.HeaderByNumber(ctx, big.NewInt(int64(l.BlockNumber)))
 			if err != nil {
 				return errors.Wrap(err, "get nonce block header")
 			}
@@ -156,7 +163,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 			blockTimes[l.BlockNumber] = blockTime
 		}
 		for i, reqID := range nonceSubmit.RequestId {
-			result := CheckValueAtTime(nonceSubmit.RequestId[i].Uint64(), nonceSubmit.Value[i], blockTime)
+			result := CheckValueAtTime(c.config, nonceSubmit.RequestId[i].Uint64(), nonceSubmit.Value[i], blockTime)
 			if result == nil {
 				level.Warn(c.logger).Log("msg", "no value data", "reqid", reqID, "blockTime", blockTime)
 				continue

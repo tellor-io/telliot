@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/yalp/jsonpath"
 )
 
@@ -34,8 +35,7 @@ var indexes map[string][]*IndexTracker
 // parseIndexFile parses indexes.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
-func parseIndexFile() (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
-	cfg := config.GetConfig()
+func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
 	indexFilePath := filepath.Join(cfg.ConfigFolder, "indexes.json")
@@ -89,6 +89,7 @@ func parseIndexFile() (trackersPerURL map[string]*IndexTracker, symbolsForAPI ma
 					Identifier: api.URL,
 					Source:     source,
 					JSONPath:   api.JSONPath,
+					DB:         DB,
 				}
 			}
 			// Now we definitely have one.
@@ -108,7 +109,7 @@ func parseIndexFile() (trackersPerURL map[string]*IndexTracker, symbolsForAPI ma
 }
 
 // BuildIndexTrackers creates and initializes a new tracker instance.
-func BuildIndexTrackers() ([]Tracker, error) {
+func BuildIndexTrackers(cfg *config.Config, db db.DB) ([]Tracker, error) {
 	err := apiOracle.EnsureValueOracle()
 	if err != nil {
 		return nil, err
@@ -116,7 +117,7 @@ func BuildIndexTrackers() ([]Tracker, error) {
 
 	// Load trackers from the index file,
 	// and build a tracker for each unique URL, symbol
-	indexers, symbolsForAPI, err := parseIndexFile()
+	indexers, symbolsForAPI, err := parseIndexFile(cfg, db)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +153,7 @@ type IndexObject struct {
 	JSONPath string `json:"JSONPath"`
 }
 type IndexTracker struct {
+	DB         db.DB
 	Name       string
 	Identifier string
 	Symbols    []string
@@ -198,7 +200,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	//save the value into our local data window (set 0 volume for now)
 	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price: vals[0], Volume: volume})
 	//update all the values that depend on these symbols
-	return UpdatePSRs(ctx, i.Symbols)
+	return UpdatePSRs(ctx, i.DB, i.Symbols)
 }
 
 func (i *IndexTracker) String() string {
