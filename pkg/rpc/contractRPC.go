@@ -106,7 +106,12 @@ func SubmitContractTxn(ctx context.Context, logger log.Logger, proxy db.DataServ
 			continue
 		}
 
-		auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(1))
+		netID, err := client.NetworkID(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting network id")
+		}
+
+		auth, err := bind.NewKeyedTransactorWithChainID(privateKey, netID)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating transactor")
 		}
