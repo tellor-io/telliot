@@ -5,6 +5,7 @@ package tracker
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -12,20 +13,22 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/tellor-io/telliot/pkg/tcontext"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/testutil"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestAmpl(t *testing.T) {
 	util.CreateTestClient(&client, mockAPI)
-	ctx, _, cleanup := tcontext.CreateTestContext(t)
+	cfg := config.OpenTestConfig(t)
+	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 
 	mock := clock.NewMock()
 	clck = mock
 	mock.Set(time.Now())
-	if _, err := BuildIndexTrackers(); err != nil {
+	if _, err := BuildIndexTrackers(cfg, DB); err != nil {
 		testutil.Ok(t, err)
 	}
 	amplTrackers := indexes["AMPL/USD"]
@@ -38,7 +41,7 @@ func TestAmpl(t *testing.T) {
 	indexers = append(indexers, amplBtcTrackers...)
 	for i := 0; i < 288; i++ {
 		for _, indexer := range indexers {
-			if err := indexer.Exec(ctx); err != nil {
+			if err := indexer.Exec(context.Background()); err != nil {
 				testutil.Ok(t, err)
 			}
 		}

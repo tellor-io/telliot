@@ -7,13 +7,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -21,35 +18,30 @@ import (
 const BalanceTrackerName = "BalanceTracker"
 
 type BalanceTracker struct {
-	logger log.Logger
+	db      db.DB
+	client  rpc.ETHClient
+	account *rpc.Account
+	logger  log.Logger
 }
 
 func (b *BalanceTracker) String() string {
 	return BalanceTrackerName
 }
 
-func NewBalanceTracker(logger log.Logger) *BalanceTracker {
+func NewBalanceTracker(logger log.Logger, db db.DB, client rpc.ETHClient, account *rpc.Account) *BalanceTracker {
 	return &BalanceTracker{
-		logger: log.With(logger, "component", "balance tracker"),
+		db:      db,
+		client:  client,
+		account: account,
+		logger:  log.With(logger, "component", "balance tracker"),
 	}
 }
 
 func (b *BalanceTracker) Exec(ctx context.Context) error {
 
-	// cast client using type assertion since context holds generic interface{}.
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
+	_fromAddress := b.account.Address
 
-	// get the single config instance.
-	cfg := config.GetConfig()
-
-	// get address from config.
-	_fromAddress := cfg.PublicAddress
-
-	// convert to address.
-	fromAddress := common.HexToAddress(_fromAddress)
-
-	balance, err := client.BalanceAt(ctx, fromAddress, nil)
+	balance, err := b.client.BalanceAt(ctx, _fromAddress, nil)
 
 	if err != nil {
 		return errors.Wrap(err, "getting balance")
@@ -57,5 +49,5 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	level.Info(b.logger).Log("msg", "got balance", "balance", fmt.Sprintf("%.2e", float64(balance.Int64())))
 
 	enc := hexutil.EncodeBig(balance)
-	return DB.Put(db.BalanceKey, []byte(enc))
+	return b.db.Put(db.BalanceKey, []byte(enc))
 }

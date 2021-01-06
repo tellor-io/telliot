@@ -62,7 +62,8 @@ pkg/pow/kernelSource.go: scripts/opencl/sources/*
 
 .PHONY: generate-sol
 generate-sol: $(SOLCCHECK) $(ABIGEN)
-	@rm -Rf pkg/contracts
+	@rm -Rf  pkg/contracts/tellor
+	@rm -Rf  pkg/contracts/getter
 	@mkdir -p pkg/contracts/tellor
 	@mkdir -p pkg/contracts/getter
 	$(ABIGEN) --sol=contracts/Tellor.sol --solc=$(SOLCCHECK) --pkg=tellor --type=Tellor --out=pkg/contracts/tellor/tellor.go

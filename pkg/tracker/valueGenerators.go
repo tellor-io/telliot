@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 )
@@ -68,7 +67,7 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 	return PSRs[requestID].ValueAt(values, at), minConfidence
 }
 
-func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
+func UpdatePSRs(ctx context.Context, DB db.DB, updatedSymbols []string) error {
 	now := clck.Now()
 	// Generate a set of all affected PSRs.
 	var toUpdate []int
@@ -98,7 +97,6 @@ func UpdatePSRs(ctx context.Context, updatedSymbols []string) error {
 		bigInt := new(big.Int)
 		bigVal.Int(bigInt)
 		// Encode it and store to DB.
-		DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 		enc := hexutil.EncodeBig(bigInt)
 		err := DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
 		if err != nil {

@@ -10,7 +10,11 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/dataServer"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 // DataServerOps is the driver for data server.
@@ -25,8 +29,18 @@ type DataServerOps struct {
 }
 
 // CreateDataServerOps creates a data server instance for runtime.
-func CreateDataServerOps(ctx context.Context, logger log.Logger, exitCh chan os.Signal) (*DataServerOps, error) {
-	ds, err := dataServer.CreateServer(ctx, logger)
+func CreateDataServerOps(
+	ctx context.Context,
+	logger log.Logger,
+	config *config.Config,
+	DB db.DB,
+	proxy *db.DataServerProxy,
+	client rpc.ETHClient,
+	contract *contracts.Tellor,
+	account *rpc.Account,
+	exitCh chan os.Signal,
+) (*DataServerOps, error) {
+	ds, err := dataServer.CreateServer(ctx, logger, config, DB, client, contract, account)
 	if err != nil {
 		return nil, err
 	}

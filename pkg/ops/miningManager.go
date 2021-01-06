@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/getter"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/pow"
@@ -64,12 +65,14 @@ type MiningMgr struct {
 	submitProfit    *prometheus.GaugeVec
 }
 
-// CreateMiningManager is the MiningMgr contructor.
+// CreateMiningManager is the MiningMgr constructor.
 func CreateMiningManager(
 	logger log.Logger,
 	exitCh chan os.Signal,
 	cfg *config.Config,
 	database db.DataServerProxy,
+	contract contracts.Tellor,
+	account rpc.Account,
 ) (*MiningMgr, error) {
 
 	group, err := pow.SetupMiningGroup(cfg, exitCh)
@@ -87,7 +90,7 @@ func CreateMiningManager(
 		return nil, errors.Wrap(err, "getting addresses")
 	}
 
-	submitter := NewSubmitter(logger)
+	submitter := NewSubmitter(logger, cfg, client, contract, account)
 	mng := &MiningMgr{
 		exitCh:          exitCh,
 		logger:          logger,

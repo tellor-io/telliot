@@ -14,9 +14,8 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -24,51 +23,37 @@ import (
 const DisputeTrackerName = "DisputeTracker2"
 
 type DisputeTracker struct {
-	logger log.Logger
+	db       db.DB
+	contract *contracts.Tellor
+	account  *rpc.Account
+	logger   log.Logger
+	config   *config.Config
 }
 
 func (b *DisputeTracker) String() string {
 	return DisputeTrackerName
 }
 
-func NewDisputeTracker(logger log.Logger) *DisputeTracker {
+func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DB, contract *contracts.Tellor, account *rpc.Account) *DisputeTracker {
 	return &DisputeTracker{
-		logger: log.With(logger, "component", "dispute tracker"),
+		config:   config,
+		db:       db,
+		contract: contract,
+		account:  account,
+		logger:   log.With(logger, "component", "dispute tracker"),
 	}
 }
 
 func (b *DisputeTracker) Exec(ctx context.Context) error {
-	//cast client using type assertion since context holds generic interface{}
-	client := ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
-	//get the single config instance
-	cfg := config.GetConfig()
-
-	//get address from config
-	_fromAddress := cfg.PublicAddress
-
-	//convert to address
-	fromAddress := common.HexToAddress(_fromAddress)
-
-	_conAddress := cfg.ContractAddress
-
-	//convert to address
-	contractAddress := common.HexToAddress(_conAddress)
-
-	instance, err := getter.NewTellorGetters(contractAddress, client)
-	if err != nil {
-		return errors.Wrap(err, "getting master instance")
-	}
-
-	status, _, err := instance.GetStakerInfo(nil, fromAddress)
+	status, _, err := b.contract.Getter.GetStakerInfo(nil, b.account.Address)
 
 	if err != nil {
 		return errors.Wrap(err, "getting staker info")
 	}
 	enc := hexutil.EncodeBig(status)
 	level.Info(b.logger).Log("msg", "staker status", "status", enc)
-	err = DB.Put(db.DisputeStatusKey, []byte(enc))
+	err = b.db.Put(db.DisputeStatusKey, []byte(enc))
 	if err != nil {
 		return errors.Wrap(err, "storing dispute")
 	}
@@ -79,15 +64,15 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 
 	//add all whitelisted miner addresses as well since they will be coming in
 	//asking for dispute status
-	for _, addr := range cfg.ServerWhitelist {
+	for _, addr := range b.config.ServerWhitelist {
 		address := common.HexToAddress(addr)
-		status, _, err := instance.GetStakerInfo(nil, address)
+		status, _, err := b.contract.Getter.GetStakerInfo(nil, address)
 		if err != nil {
 			level.Error(b.logger).Log("msg", "getting staker dispute status for miner", "address", addr, "err", err)
 		}
 		level.Info(b.logger).Log("msg", "whitelisted miner", "address", addr, "status", status)
 		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.DisputeStatusKey)
-		err = DB.Put(dbKey, []byte(hexutil.EncodeBig(status)))
+		err = b.db.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
 			level.Error(b.logger).Log("msg", "storing staker dispute status", "err", err)
 		}

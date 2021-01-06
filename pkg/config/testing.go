@@ -59,6 +59,8 @@ func OpenTestConfig(t *testing.T) *Config {
 		t.Fatal(err)
 	}
 	cfg.ServerPort = uint(port)
+	// Don't need any trackers for the tests.
+	cfg.Trackers = make(map[string]bool)
 
 	return cfg
 }

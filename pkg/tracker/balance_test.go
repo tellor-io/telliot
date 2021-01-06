@@ -6,14 +6,12 @@ package tracker
 import (
 	"context"
 	"math/big"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
@@ -21,13 +19,18 @@ import (
 )
 
 func TestStringId(t *testing.T) {
+	client := rpc.NewMockClient()
+	config.OpenTestConfig(t)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	tracker := NewBalanceTracker(logger)
+	tracker := NewBalanceTracker(logger, DB, client, nil)
 	res := tracker.String()
 
 	testutil.Equals(t, res, BalanceTrackerName, "didn't return expected string", BalanceTrackerName)
 }
+
 func TestPositiveBalance(t *testing.T) {
 	startBal := big.NewInt(356000)
 	dbBalanceTest(startBal, t)
@@ -39,36 +42,38 @@ func TestZeroBalance(t *testing.T) {
 }
 
 func TestNegativeBalance(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
 	startBal := big.NewInt(-753)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
-	testutil.Ok(t, err)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	tracker := NewBalanceTracker(logger)
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
+	account, err := rpc.NewAccount(cfg)
+	testutil.Ok(t, err)
+	tracker := NewBalanceTracker(logger, DB, client, &account)
+	err = tracker.Exec(context.Background())
 	testutil.NotOk(t, err, "should have error")
 }
 
 func dbBalanceTest(startBal *big.Int, t *testing.T) {
+	cfg := config.OpenTestConfig(t)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_balance"))
-	testutil.Ok(t, err)
-
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	tracker := NewBalanceTracker(logger)
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
+	account, err := rpc.NewAccount(cfg)
+	testutil.Ok(t, err)
+	tracker := NewBalanceTracker(logger, DB, client, &account)
+	err = tracker.Exec(context.Background())
 	testutil.Ok(t, err)
 	v, err := DB.Get(db.BalanceKey)
 	testutil.Ok(t, err)

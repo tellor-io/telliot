@@ -6,14 +6,13 @@ package tracker
 import (
 	"context"
 	"math/big"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
@@ -21,19 +20,22 @@ import (
 )
 
 func TestTributeBalance(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
 	startBal := big.NewInt(456000)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: startBal, Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, err := db.Open(filepath.Join(os.TempDir(), "test_Tributebalance"))
-	testutil.Ok(t, err)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
 	logSetup := util.SetupLogger()
 	logger := logSetup("debug")
-	tracker := NewTributeTracker(logger)
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	ctx = context.WithValue(ctx, common.DBContextKey, DB)
-	err = tracker.Exec(ctx)
+	contract, err := contracts.NewTellor(cfg, client)
+	testutil.Ok(t, err)
+	account, err := rpc.NewAccount(cfg)
+	testutil.Ok(t, err)
+	tracker := NewTributeTracker(logger, DB, &contract, &account)
+	err = tracker.Exec(context.Background())
 	testutil.Ok(t, err)
 	v, err := DB.Get(db.TributeBalanceKey)
 	testutil.Ok(t, err)
