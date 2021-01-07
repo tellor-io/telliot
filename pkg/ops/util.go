@@ -39,7 +39,12 @@ func PrepareEthTransaction(
 		return nil, errors.Errorf("insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
 	}
 
-	auth, err := bind.NewKeyedTransactorWithChainID(account.PrivateKey, big.NewInt(1))
+	netID, err := client.NetworkID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting network id")
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(account.PrivateKey, netID)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating transactor")
 	}

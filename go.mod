@@ -36,5 +36,3 @@ require (
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/sys v0.0.0-20201231184435-2d18734c6014 // indirect
 )
-
-replace github.com/miguelmota/go-solidity-sha3 => github.com/offchainlabs/go-solidity-sha3 v0.1.2
