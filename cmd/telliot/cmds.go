@@ -39,7 +39,7 @@ func (c configPath) AfterApply(kong *kong.Context) error {
 
 	logger := util.SetupLogger(cfg.LogLevel)
 
-	client, contract, account, err := setup(ctx)
+	client, contract, account, err := setup(ctx, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "setting up variables")
 	}
@@ -49,6 +49,8 @@ func (c configPath) AfterApply(kong *kong.Context) error {
 	kong.Bind(contract)
 	kong.Bind(account)
 	kong.Bind(ctx)
+	kong.Bind(cfg)
+
 	return nil
 }
 
@@ -59,32 +61,32 @@ type tokenCmd struct {
 
 type transferCmd tokenCmd
 
-func (c *transferCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
+func (c *transferCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	address := ETHAddress{}
 	err := address.Set(c.Address)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrapf(err, "parsing address argument")
 	}
 	amount := EthereumInt{}
 	err = amount.Set(c.Amount)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrapf(err, "parsing amount argument")
 	}
 	return ops.Transfer(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
 
 type approveCmd tokenCmd
 
-func (c *approveCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
+func (c *approveCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	address := ETHAddress{}
 	err := address.Set(c.Address)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrapf(err, "parsing address argument")
 	}
 	amount := EthereumInt{}
 	err = amount.Set(c.Amount)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrapf(err, "parsing amount argument")
 	}
 	return ops.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
@@ -93,7 +95,7 @@ type balanceCmd struct {
 	Address string `arg optional`
 }
 
-func (b *balanceCmd) Run(ctx context.Context, client rpc.ETHClient, contract contracts.Tellor) error {
+func (b *balanceCmd) Run(ctx context.Context, client rpc.ETHClient, contract *contracts.Tellor) error {
 	addr := ETHAddress{}
 	var err error
 	if b.Address == "" {
@@ -114,7 +116,7 @@ type stakeCmd struct {
 	Operation string `arg required`
 }
 
-func (s *stakeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
+func (s *stakeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	switch s.Operation {
 	case "deposit":
 		return ops.Deposit(ctx, logger, client, contract, account)
@@ -135,7 +137,7 @@ type newDisputeCmd struct {
 	minerIndex string `arg required help:"the miner index to dispute"`
 }
 
-func (n newDisputeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
+func (n newDisputeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	requestID := EthereumInt{}
 	err := requestID.Set(n.requestId)
 	if err != nil {
@@ -159,7 +161,7 @@ type voteCmd struct {
 	support   bool   `arg required help:"true or false"`
 }
 
-func (v voteCmd) Run(ctx context.Context, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
+func (v voteCmd) Run(ctx context.Context, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	disputeID := EthereumInt{}
 	err := disputeID.Set(v.disputeId)
 	if err != nil {
@@ -170,25 +172,25 @@ func (v voteCmd) Run(ctx context.Context, client rpc.ETHClient, contract contrac
 
 type showCmd struct{}
 
-func (v showCmd) Run(ctx context.Context, client rpc.ETHClient, logger log.Logger, contract contracts.Tellor, account rpc.Account) error {
+func (v showCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	return ops.List(ctx, logger, client, contract, account)
 }
 
 type dataserverCmd struct{}
 
-func (d dataserverCmd) Run(ctx context.Context, logger log.Logger) error {
+func (d dataserverCmd) Run(ctx context.Context, logger log.Logger, cfg *config.Config, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
 	var ds *ops.DataServerOps
 	var err error
-	err = AddDBToCtx(true)
+	proxy, DB, err := AddDBToCtx(true)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
 	}
 	ch := make(chan os.Signal)
-	ds, err = ops.CreateDataServerOps(ctx, logger, ch)
+	ds, err = ops.CreateDataServerOps(ctx, logger, cfg, DB, &proxy, client, contract, account, ch)
 	if err != nil {
 		return errors.Wrapf(err, "creating data server")
 	}
@@ -226,29 +228,27 @@ func (d dataserverCmd) Run(ctx context.Context, logger log.Logger) error {
 	return nil
 }
 
-type mineCmd struct {
-	remote bool `default:"false" help:"use a remote dataserver"`
-}
+type mineCmd struct{}
 
-func (m mineCmd) Run(ctx context.Context, logger log.Logger) error {
+func (m mineCmd) Run(ctx context.Context, logger log.Logger, cfg *config.Config, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	exitChannels := make([]*chan os.Signal, 0)
 
-	cfg := config.GetConfig()
+	// cfg := config.GetConfig()
 	var ds *ops.DataServerOps
 	if !cfg.EnablePoolWorker {
 		var err error
-		DB, database, err := AddDBToCtx(m.remote)
+		proxy, DB, err := AddDBToCtx(cfg.RemoteMining)
 		if err != nil {
 			return errors.Wrapf(err, "initializing database")
 		}
-		if !m.remote {
+		if !cfg.RemoteMining {
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
 
-			ds, err = ops.CreateDataServerOps(ctx, logger, ch)
+			ds, err = ops.CreateDataServerOps(ctx, logger, cfg, DB, &proxy, client, contract, account, ch)
 			if err != nil {
 				return errors.Wrapf(err, "creating data server")
 			}
@@ -271,7 +271,7 @@ func (m mineCmd) Run(ctx context.Context, logger log.Logger) error {
 	}
 	ch := make(chan os.Signal)
 	exitChannels = append(exitChannels, &ch)
-	miner, err := ops.CreateMiningManager(logger, ch, cfg, DB)
+	miner, err := ops.CreateMiningManager(logger, ch, cfg, DB, contract, account)
 	if err != nil {
 		return errors.Wrapf(err, "creating miner")
 	}

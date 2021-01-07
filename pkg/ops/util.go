@@ -15,7 +15,7 @@ import (
 func PrepareEthTransaction(
 	ctx context.Context,
 	client rpc.ETHClient,
-	account rpc.Account,
+	account *rpc.Account,
 ) (*bind.TransactOpts, error) {
 
 	nonce, err := client.PendingNonceAt(ctx, account.Address)
