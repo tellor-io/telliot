@@ -1,19 +1,21 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"math/big"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/go-kit/kit/log"
+
 	"github.com/alecthomas/kong"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/rpc"
@@ -22,13 +24,14 @@ import (
 
 type configPath string
 
-func (c configPath) AfterApply(ctx *kong.Context) error {
+func (c configPath) AfterApply(kong *kong.Context) error {
 	err := config.ParseConfig(string(c))
 	if err != nil {
 		return errors.Wrapf(err, "parsing config")
 	}
 
 	cfg := config.GetConfig()
+	ctx := context.Background()
 	err = util.SetupLoggingConfig(cfg.Logger)
 	if err != nil {
 		return errors.Wrapf(err, "parsing log config")
@@ -36,18 +39,16 @@ func (c configPath) AfterApply(ctx *kong.Context) error {
 
 	logger := util.SetupLogger(cfg.LogLevel)
 
-	client, contract, account, err := setup()
+	client, contract, account, err := setup(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "setting up variables")
 	}
 
-	ctx.BindTo(logger, (*log.Logger)(nil))
-	ctx.BindTo(client, (*rpc.ETHClient)(nil))
-	ctx.Bind(contract)
-	ctx.Bind(account)
-
-	fmt.Println(contract.Address)
-
+	kong.BindTo(logger, (*log.Logger)(nil))
+	kong.BindTo(client, (*rpc.ETHClient)(nil))
+	kong.Bind(contract)
+	kong.Bind(account)
+	kong.Bind(ctx)
 	return nil
 }
 
@@ -58,7 +59,7 @@ type tokenCmd struct {
 
 type transferCmd tokenCmd
 
-func (c *transferCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func (c *transferCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
 	address := ETHAddress{}
 	err := address.Set(c.Address)
 	if err != nil {
@@ -74,7 +75,7 @@ func (c *transferCmd) Run(logger log.Logger, client rpc.ETHClient, contract tell
 
 type approveCmd tokenCmd
 
-func (c *approveCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func (c *approveCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
 	address := ETHAddress{}
 	err := address.Set(c.Address)
 	if err != nil {
@@ -92,7 +93,7 @@ type balanceCmd struct {
 	Address string `arg optional`
 }
 
-func (b *balanceCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract) error {
+func (b *balanceCmd) Run(ctx context.Context, client rpc.ETHClient, contract contracts.Tellor) error {
 	addr := ETHAddress{}
 	var err error
 	if b.Address == "" {
@@ -113,7 +114,7 @@ type stakeCmd struct {
 	Operation string `arg required`
 }
 
-func (s *stakeCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func (s *stakeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
 	switch s.Operation {
 	case "deposit":
 		return ops.Deposit(ctx, logger, client, contract, account)
@@ -134,7 +135,7 @@ type newDisputeCmd struct {
 	minerIndex string `arg required help:"the miner index to dispute"`
 }
 
-func (n newDisputeCmd) Run(logger log.Logger, client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func (n newDisputeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
 	requestID := EthereumInt{}
 	err := requestID.Set(n.requestId)
 	if err != nil {
@@ -158,7 +159,7 @@ type voteCmd struct {
 	support   bool   `arg required help:"true or false"`
 }
 
-func (v voteCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func (v voteCmd) Run(ctx context.Context, client rpc.ETHClient, contract contracts.Tellor, account rpc.Account) error {
 	disputeID := EthereumInt{}
 	err := disputeID.Set(v.disputeId)
 	if err != nil {
@@ -169,13 +170,13 @@ func (v voteCmd) Run(client rpc.ETHClient, contract tellorCommon.Contract, accou
 
 type showCmd struct{}
 
-func (v showCmd) Run(client rpc.ETHClient, logger log.Logger, contract tellorCommon.Contract, account tellorCommon.Account) error {
+func (v showCmd) Run(ctx context.Context, client rpc.ETHClient, logger log.Logger, contract contracts.Tellor, account rpc.Account) error {
 	return ops.List(ctx, logger, client, contract, account)
 }
 
 type dataserverCmd struct{}
 
-func (d dataserverCmd) Run(logger log.Logger) error {
+func (d dataserverCmd) Run(ctx context.Context, logger log.Logger) error {
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -229,7 +230,7 @@ type mineCmd struct {
 	remote bool `default:"false" help:"use a remote dataserver"`
 }
 
-func (m mineCmd) Run(logger log.Logger) error {
+func (m mineCmd) Run(ctx context.Context, logger log.Logger) error {
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
