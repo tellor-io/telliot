@@ -5,23 +5,23 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 )
 
 type Tellor struct {
-	Getter  *getter.TellorGetters
-	Caller  *tellor.Tellor
+	Getter  *proxy.TellorGetters
+	Caller  *master.Tellor
 	Address common.Address
 }
 
 func NewTellor(cfg *config.Config, client bind.ContractBackend) (Tellor, error) {
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
-	contractTellorInstance, err := tellor.NewTellor(contractAddress, client)
+	contractTellorInstance, err := master.NewTellor(contractAddress, client)
 	if err != nil {
 		return Tellor{}, errors.Wrap(err, "creating telllor caller")
 	}
-	contractGetterInstance, err := getter.NewTellorGetters(contractAddress, client)
+	contractGetterInstance, err := proxy.NewTellorGetters(contractAddress, client)
 	if err != nil {
 		return Tellor{}, errors.Wrap(err, "creating telllor getter")
 	}

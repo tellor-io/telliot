@@ -9,8 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
-	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/master"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -27,12 +27,12 @@ type ABICodec struct {
 // used for mock encoding/decoding parameters but could also be used for manual RPC operations that do not rely on geth's contract impl.
 func BuildCodec() (*ABICodec, error) {
 	all := []string{
-		tellor.TellorDisputeABI,
-		tellor.TellorLibraryABI,
-		tellor.TellorGettersLibraryABI,
-		tellor.TellorStakeABI,
-		tellor.TellorTransferABI,
-		getter.TellorGettersABI,
+		master.TellorDisputeABI,
+		master.TellorLibraryABI,
+		master.TellorGettersLibraryABI,
+		master.TellorStakeABI,
+		master.TellorTransferABI,
+		proxy.TellorGettersABI,
 	}
 
 	parsed := make([]interface{}, 0)
@@ -71,13 +71,13 @@ func BuildCodec() (*ABICodec, error) {
 // AllEventsthis lets you quickly find the type of each event. It is helpful for debugging.
 func AllEvents() (map[[32]byte]abi.Event, error) {
 	all := []string{
-		tellor.TellorABI,
-		tellor.TellorDisputeABI,
-		tellor.TellorGettersLibraryABI,
-		tellor.TellorLibraryABI,
-		tellor.TellorStakeABI,
-		tellor.TellorStorageABI,
-		tellor.TellorTransferABI,
+		master.TellorABI,
+		master.TellorDisputeABI,
+		master.TellorGettersLibraryABI,
+		master.TellorLibraryABI,
+		master.TellorStakeABI,
+		master.TellorStorageABI,
+		master.TellorTransferABI,
 	}
 
 	parsed := make([]interface{}, 0)
