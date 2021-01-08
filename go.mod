@@ -17,7 +17,6 @@ require (
 	github.com/go-kit/kit v0.10.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jawher/mow.cli v1.2.0
 	github.com/joho/godotenv v1.3.0
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.11 // indirect
