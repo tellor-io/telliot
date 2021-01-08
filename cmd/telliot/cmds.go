@@ -55,8 +55,8 @@ func (c configPath) AfterApply(kong *kong.Context) error {
 }
 
 type tokenCmd struct {
-	Address string `arg required`
-	Amount  string `arg required`
+	Address string `arg`
+	Amount  string `arg`
 }
 
 type transferCmd tokenCmd
@@ -67,7 +67,7 @@ func (c *transferCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETH
 	if err != nil {
 		return errors.Wrapf(err, "parsing address argument")
 	}
-	amount := EthereumInt{}
+	amount := TRBAmount{}
 	err = amount.Set(c.Amount)
 	if err != nil {
 		return errors.Wrapf(err, "parsing amount argument")
@@ -83,7 +83,7 @@ func (c *approveCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHC
 	if err != nil {
 		return errors.Wrapf(err, "parsing address argument")
 	}
-	amount := EthereumInt{}
+	amount := TRBAmount{}
 	err = amount.Set(c.Amount)
 	if err != nil {
 		return errors.Wrapf(err, "parsing amount argument")
@@ -137,7 +137,7 @@ type newDisputeCmd struct {
 	minerIndex string `arg required help:"the miner index to dispute"`
 }
 
-func (n newDisputeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (n newDisputeCmd) Run(ctx context.Context, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
 	requestID := EthereumInt{}
 	err := requestID.Set(n.requestId)
 	if err != nil {
@@ -185,7 +185,7 @@ func (d dataserverCmd) Run(ctx context.Context, logger log.Logger, cfg *config.C
 
 	var ds *ops.DataServerOps
 	var err error
-	proxy, DB, err := AddDBToCtx(true)
+	DB, proxy, err := migrateAndOpenDB(cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
 	}
@@ -240,7 +240,7 @@ func (m mineCmd) Run(ctx context.Context, logger log.Logger, cfg *config.Config,
 	var ds *ops.DataServerOps
 	if !cfg.EnablePoolWorker {
 		var err error
-		proxy, DB, err := AddDBToCtx(cfg.RemoteMining)
+		DB, proxy, err := migrateAndOpenDB(cfg)
 		if err != nil {
 			return errors.Wrapf(err, "initializing database")
 		}

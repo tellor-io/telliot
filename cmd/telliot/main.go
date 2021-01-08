@@ -21,12 +21,11 @@ import (
 // The DB is always deleted because the price avarages calculations
 // is not calculated properly between restarts.
 // TODO don't do this and just improve the price calculations.
-func migrateAndOpenDB() (db.DB, error) {
-	cfg := config.GetConfig()
+func migrateAndOpenDB(cfg *config.Config) (db.DB, db.DataServerProxy, error) {
 	// Create a db instance
 	DB, err := db.Open(cfg.DBFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening DB instance")
+		return nil, nil, errors.Wrapf(err, "opening DB instance")
 	}
 
 	var txsGas [][]byte
@@ -38,13 +37,13 @@ func migrateAndOpenDB() (db.DB, error) {
 		}
 	}
 	if err := DB.Close(); err != nil {
-		return nil, errors.Wrapf(err, "closing DB instance for migration")
+		return nil, nil, errors.Wrapf(err, "closing DB instance for migration")
 	}
 	os.RemoveAll(cfg.DBFile)
 
 	DB, err = db.Open(cfg.DBFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening DB instance")
+		return nil, nil, errors.Wrapf(err, "opening DB instance")
 	}
 
 	for i, txGas := range txsGas {
@@ -52,7 +51,24 @@ func migrateAndOpenDB() (db.DB, error) {
 		_ = DB.Put(txID, txGas)
 	}
 
-	return DB, nil
+	var dataProxy db.DataServerProxy
+	if cfg.RemoteMining {
+		proxy, err := db.OpenRemoteDB(DB)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "open remote DB instance")
+
+		}
+		dataProxy = proxy
+	} else {
+		proxy, err := db.OpenLocalProxy(DB)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "opening local DB instance:")
+
+		}
+		dataProxy = proxy
+	}
+
+	return DB, dataProxy, nil
 }
 
 func setup(ctx context.Context, cfg *config.Config) (rpc.ETHClient, *contracts.Tellor, *rpc.Account, error) {
@@ -88,34 +104,6 @@ func setup(ctx context.Context, cfg *config.Config) (rpc.ETHClient, *contracts.T
 	}
 	// Not sure why we need this case.
 	return nil, nil, nil, nil
-}
-
-func AddDBToCtx(remote bool) (db.DataServerProxy, db.DB, error) {
-	cfg := config.GetConfig()
-	// Create a db instance
-	os.RemoveAll(cfg.DBFile)
-	DB, err := db.Open(cfg.DBFile)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "opening DB instance")
-	}
-
-	var dataProxy db.DataServerProxy
-	if remote {
-		proxy, err := db.OpenRemoteDB(DB)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "open remote DB instance")
-
-		}
-		dataProxy = proxy
-	} else {
-		proxy, err := db.OpenLocalProxy(DB)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "opening local DB instance:")
-
-		}
-		dataProxy = proxy
-	}
-	return dataProxy, DB, nil
 }
 
 var cli struct {
