@@ -28,8 +28,7 @@ func TestTributeBalance(t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	logSetup := util.SetupLogger()
-	logger := logSetup("debug")
+	logger := util.SetupLogger("debug")
 	contract, err := contracts.NewTellor(cfg, client)
 	testutil.Ok(t, err)
 	account, err := rpc.NewAccount(cfg)

@@ -25,8 +25,7 @@ import (
 func TestDataServer(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	exitCh := make(chan int)
-	logSetup := util.SetupLogger()
-	logger := logSetup("debug")
+	logger := util.SetupLogger("debug")
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 

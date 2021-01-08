@@ -46,9 +46,9 @@ func (c configPath) AfterApply(kong *kong.Context) error {
 
 	kong.BindTo(logger, (*log.Logger)(nil))
 	kong.BindTo(client, (*rpc.ETHClient)(nil))
+	kong.BindTo(ctx, (*context.Context)(nil))
 	kong.Bind(contract)
 	kong.Bind(account)
-	kong.Bind(ctx)
 	kong.Bind(cfg)
 
 	return nil

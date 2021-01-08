@@ -21,8 +21,7 @@ import (
 
 func TestRunner(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	logSetup := util.SetupLogger()
-	logger := logSetup("debug")
+	logger := util.SetupLogger("debug")
 
 	exitCh := make(chan int)
 
