@@ -24,7 +24,7 @@ import (
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/pow"
 	"github.com/tellor-io/telliot/pkg/rpc"
@@ -55,7 +55,7 @@ type MiningMgr struct {
 	solHandler      SolutionSink
 	solutionPending *pow.Result
 	database        db.DataServerProxy
-	contractGetter  *getter.TellorGetters
+	contractGetter  *proxy.TellorGetters
 	cfg             *config.Config
 
 	toMineInput     chan *pow.Work
@@ -85,7 +85,7 @@ func CreateMiningManager(
 		return nil, errors.Wrap(err, "creating client")
 	}
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
-	getter, err := getter.NewTellorGetters(contractAddress, client)
+	getter, err := proxy.NewTellorGetters(contractAddress, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting addresses")
 	}

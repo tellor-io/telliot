@@ -7,3 +7,4 @@ configs/.env
 
 /telliot
 myconfig.json
+tmp

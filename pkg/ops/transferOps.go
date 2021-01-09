@@ -14,7 +14,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/getter"
+	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -26,7 +26,7 @@ import (
 func prepareTransfer(
 	ctx context.Context,
 	client rpc.ETHClient,
-	instance *getter.TellorGetters,
+	instance *proxy.TellorGetters,
 	account rpc.Account,
 	amt *big.Int,
 ) (*bind.TransactOpts, error) {
@@ -91,7 +91,7 @@ func Approve(
 	return nil
 }
 
-func Balance(ctx context.Context, client rpc.ETHClient, getterInstance *getter.TellorGetters, addr common.Address) error {
+func Balance(ctx context.Context, client rpc.ETHClient, getterInstance *proxy.TellorGetters, addr common.Address) error {
 	ethBalance, err := client.BalanceAt(ctx, addr, nil)
 	if err != nil {
 		return errors.Wrap(err, "get eth balance")
