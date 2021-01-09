@@ -206,7 +206,7 @@ func (mgr *MiningMgr) submit(solution *pow.Result, ctx context.Context) bool {
 		level.Error(mgr.logger).Log("msg", "submiting a solution", "err", err)
 		mgr.submitFailCount.Inc()
 		// This error can be ignored so return true when a match.
-		return err.Error() == "Miner already submitted the value"
+		return false
 	}
 	level.Debug(mgr.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
 	mgr.saveGasUsed(ctx, tx)
