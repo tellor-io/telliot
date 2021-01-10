@@ -73,24 +73,39 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 
 				var name string
 				var source DataSource
-				if strings.HasPrefix(api.URL, "http") {
-					source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}}
-					u, err := url.Parse(api.URL)
-					if err != nil {
-						return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
+				switch api.Type {
+				case httpIndexType:
+					{
+						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}}
+						u, err := url.Parse(api.URL)
+						if err != nil {
+							return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
+						}
+						name = u.Host
 					}
-					name = u.Host
-				} else {
-					source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, api.URL)}
-					name = filepath.Base(api.URL)
+				case fileIndexType:
+					{
+						source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, api.URL)}
+						name = filepath.Base(api.URL)
+					}
+				case ethereumIndexType:
+					{
+						// Skip as there is no ethereum index type in the index file right now.
+						continue
+					}
+				default:
+					return nil, nil, errors.New("unknown index type for index object")
 				}
-				trackersPerURL[api.URL] = &IndexTracker{
+				current := &IndexTracker{
 					Name:       name,
 					Identifier: api.URL,
 					Source:     source,
-					JSONPath:   api.JSONPath,
 					DB:         DB,
 				}
+				if api.Format == jsonPathIndexFormat {
+					current.JSONPath = api.JSONPath
+				}
+				trackersPerURL[api.URL] = current
 			}
 			// Now we definitely have one.
 			thisOne := trackersPerURL[api.URL]
@@ -147,11 +162,30 @@ func BuildIndexTrackers(cfg *config.Config, db db.DB) ([]Tracker, error) {
 	return trackers, nil
 }
 
+// IndexType -> index type for IndexObject.
+type IndexType string
+
+const (
+	httpIndexType     IndexType = "http"
+	ethereumIndexType IndexType = "ethereum"
+	fileIndexType     IndexType = "file"
+)
+
+// IndexFormat -> index format for IndexObject.
+type IndexFormat string
+
+const (
+	jsonPathIndexFormat IndexFormat = "jsonPath"
+)
+
 // IndexObject will be used in parsing index file.
 type IndexObject struct {
-	URL      string `json:"URL"`
-	JSONPath string `json:"JSONPath"`
+	URL      string      `json:"URL"`
+	Type     IndexType   `json:"type"`
+	Format   IndexFormat `json:"format"`
+	JSONPath string      `json:"JSONPath"`
 }
+
 type IndexTracker struct {
 	DB         db.DB
 	Name       string
