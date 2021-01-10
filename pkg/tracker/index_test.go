@@ -4,17 +4,12 @@
 package tracker
 
 import (
-	"context"
 	"fmt"
-	"net/http"
 	"testing"
-	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 type TestDataSource struct {
@@ -111,34 +106,25 @@ func TestIndexTracker(t *testing.T) {
 
 	}
 }
+
 func TestIndexParsable(t *testing.T) {
-	util.CreateTestClient(&client, mockAPI)
 	cfg := config.OpenTestConfig(t)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 
-	mock := clock.NewMock()
-	clck = mock
-	mock.Set(time.Now())
 	if _, err := BuildIndexTrackers(cfg, DB); err != nil {
 		testutil.Ok(t, err)
 	}
 
-	indexers := []*IndexTracker{}
-	for _, trackers := range indexes {
-		indexers = append(indexers, trackers...)
-	}
-	for i := 0; i < 288; i++ {
+	for _, indexers := range indexes {
 		for _, indexer := range indexers {
 			t.Logf("indexer: %v\n", indexer)
-			if err := indexer.Exec(context.Background()); err != nil {
-				testutil.Ok(t, err)
-			}
+			payload, err := indexer.Source.Get()
+			testutil.Ok(t, err)
+			t.Logf("payload: %v", string(payload))
+			t.Logf("jsonpath: %v", indexer.JSONPath)
+			_, err = indexer.parsePayload(payload)
+			testutil.Ok(t, err)
 		}
-		mock.Add(10 * time.Minute)
 	}
-
-	// reset mocks
-	client = http.Client{}
-	clck = clock.New()
 }
