@@ -219,29 +219,27 @@ func (mgr *MiningMgr) submit(solution *pow.Result, ctx context.Context) bool {
 // newWork is non blocking worker that sends new work to the pow workers
 // or re-sends a current pending solution to the submitter when the challenge hasn't changes.
 func (mgr *MiningMgr) newWork() {
-	go func() {
-		if mgr.cfg.EnablePoolWorker {
-			mgr.tasker.GetWork(mgr.toMineInput)
+	if mgr.cfg.EnablePoolWorker {
+		mgr.tasker.GetWork(mgr.toMineInput)
+	} else {
+		// instantSubmit means 15 mins have passed so
+		// the difficulty now is zero and any solution/nonce will work so
+		// can just submit without sending to the miner.
+		work, instantSubmit := mgr.tasker.GetWork(nil)
+		if instantSubmit {
+			mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
 		} else {
-			// instantSubmit means 15 mins have passed so
-			// the difficulty now is zero and any solution/nonce will work so
-			// can just submit without sending to the miner.
-			work, instantSubmit := mgr.tasker.GetWork(nil)
-			if instantSubmit {
-				mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
-			} else {
-				if work == nil {
-					return
-				}
-				var ids []int64
-				for _, id := range work.Challenge.RequestIDs {
-					ids = append(ids, id.Int64())
-				}
-				level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
-				mgr.toMineInput <- work
+			if work == nil {
+				return
 			}
+			var ids []int64
+			for _, id := range work.Challenge.RequestIDs {
+				ids = append(ids, id.Int64())
+			}
+			level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
+			mgr.toMineInput <- work
 		}
-	}()
+	}
 }
 
 func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
