@@ -92,14 +92,6 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 	var reqIDs [5]*big.Int
 
 	l, _ := mt.getInt(m[db.LastNewValueKey])
-	instantSubmit := false
-
-	today := time.Now()
-	tm := time.Unix(l.Int64(), 0)
-	mt.log.Debug("this long since last value:%v ", today.Sub(tm))
-	if today.Sub(tm) >= time.Duration(15)*time.Minute {
-		instantSubmit = true
-	}
 
 	r, stat := mt.getInt(m[db.RequestIdKey0])
 	if stat == statusWaitNext || stat == statusFailure {
@@ -166,12 +158,21 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		RequestIDs: reqIDs,
 	}
 
+	work := &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64}
+
+	today := time.Now()
+	tm := time.Unix(l.Int64(), 0)
+	mt.log.Debug("this long since last value:%v ", today.Sub(tm))
+	if today.Sub(tm) >= time.Duration(15)*time.Minute {
+		return work, true
+	}
+
 	// If this chalange is already sent out, don't do it again.
-	if mt.currChallenge != nil && !instantSubmit && bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
+	if mt.currChallenge != nil && bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
 		return nil, false
 	}
 	mt.currChallenge = newChallenge
-	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
+	return work, false
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {
