@@ -73,6 +73,12 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 
 				var name string
 				var source DataSource
+
+				// Create an index tracker based on the api type.
+				// Default value for the api type.
+				if api.Type == "" {
+					api.Type = httpIndexType
+				}
 				switch api.Type {
 				case httpIndexType:
 					{
@@ -96,15 +102,18 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 				default:
 					return nil, nil, errors.New("unknown index type for index object")
 				}
+				// Default value for the parser.
+				if api.Parser == "" {
+					api.Parser = jsonPathIndexParser
+				}
 				current := &IndexTracker{
 					Name:       name,
 					Identifier: api.URL,
 					Source:     source,
 					DB:         DB,
+					Param:      api.Param,
 				}
-				if api.Format == jsonPathIndexFormat {
-					current.JSONPath = api.JSONPath
-				}
+
 				trackersPerURL[api.URL] = current
 			}
 			// Now we definitely have one.
@@ -171,19 +180,19 @@ const (
 	fileIndexType     IndexType = "file"
 )
 
-// IndexFormat -> index format for IndexObject.
-type IndexFormat string
+// IndexParser -> index format for IndexObject.
+type IndexParser string
 
 const (
-	jsonPathIndexFormat IndexFormat = "jsonPath"
+	jsonPathIndexParser IndexParser = "jsonPath"
 )
 
 // IndexObject will be used in parsing index file.
 type IndexObject struct {
-	URL      string      `json:"URL"`
-	Type     IndexType   `json:"type"`
-	Format   IndexFormat `json:"format"`
-	JSONPath string      `json:"JSONPath"`
+	URL    string      `json:"URL"`
+	Type   IndexType   `json:"type"`
+	Parser IndexParser `json:"format"`
+	Param  string      `json:"param"`
 }
 
 type IndexTracker struct {
@@ -192,7 +201,7 @@ type IndexTracker struct {
 	Identifier string
 	Symbols    []string
 	Source     DataSource
-	JSONPath   string
+	Param      string
 }
 
 type DataSource interface {
@@ -254,11 +263,11 @@ func (i *IndexTracker) parsePayload(payload []byte) (vals []float64, err error) 
 
 	// Query the json payload using JSONPath expression if needed.
 	result = decodedPayload
-	if len(strings.TrimSpace(i.JSONPath)) > 0 {
+	if len(strings.TrimSpace(i.Param)) > 0 {
 		if err != nil {
 			return
 		}
-		result, err = jsonpath.Read(decodedPayload, i.JSONPath)
+		result, err = jsonpath.Read(decodedPayload, i.Param)
 		if err != nil {
 			return
 		}
