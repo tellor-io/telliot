@@ -58,13 +58,15 @@ type CurrentChallenge struct {
 }
 
 // CurrentReserves holds details about the current reserves on the uniswap pair contract.
+// Note: Each Uniswap smart contract, or pair, manages a liquidity pool made up of reserves of two ERC-20 tokens.
 type CurrentReserves struct {
-	Reserve0           *big.Int
+	// Token0 reserved value on Uniswap smart contract.
+	Reserve0 *big.Int
+	// Token1 reserved value on Uniswap smart contract.
 	Reserve1           *big.Int
 	BlockTimestampLast uint32
 }
 
-//
 // MockQueryMeta is hardcoded query metadata to use for testing.
 type MockQueryMeta struct {
 	QueryString string

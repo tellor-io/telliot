@@ -44,7 +44,7 @@ func TestBalancerPrice(t *testing.T) {
 	}
 	client := rpc.NewMockClientWithValues(opts)
 
-	tracker := NewBalancerGetter("T1/T2", fmt.Sprintf("ethereum:%s", bPoolContract))
+	tracker := NewBalancer("T1/T2", fmt.Sprintf("ethereum:%s", bPoolContract))
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	priceJSON, err := tracker.Get(ctx)
 	testutil.Ok(t, err)

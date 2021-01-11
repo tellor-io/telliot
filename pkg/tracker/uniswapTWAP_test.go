@@ -49,12 +49,12 @@ func TestUniswapPrice(t *testing.T) {
 	DB, err := db.Open(filepath.Join(os.TempDir(), "test_uniswapTWAP"))
 	testutil.Ok(t, err)
 
-	tracker := NewUniswapGetter("T1/T2", fmt.Sprintf("ethereum:%s", bPairContract))
+	tracker := NewUniswap("T1/T2", fmt.Sprintf("ethereum:%s", bPairContract))
 	// Add a test record to db.
-	prevPrice := &UniswapPriceCumulativeLast{
-		Price0CumulativeLast: "1000000000",
-		TimestampLast:        100,
-		CalculatedPrice0Last: 0.0,
+	prevPrice := &UniswapPriceCumulative{
+		PriceCumulative: "1000000000",
+		Timestamp:       100,
+		PriceTWAP:       0.0,
 	}
 	err = tracker.savePriceIntoDB(DB, prevPrice)
 	testutil.Ok(t, err)
@@ -66,16 +66,17 @@ func TestUniswapPrice(t *testing.T) {
 	var priceInfo []float64
 	err = json.Unmarshal(priceJSON, &priceInfo)
 	testutil.Ok(t, err)
-	// Calculated according to this: https://uniswap.org/docs/v2/core-concepts/oracles.
+	// Calculated according to this:
+	// https://uniswap.org/docs/v2/core-concepts/oracles
 	testutil.Equals(t, []float64{10.0}, priceInfo)
 	t.Logf("AMPL/ETH price on Uniswap: %f\n", priceInfo[0])
 	// Check saved db values.
 	prevPrice, err = tracker.pullPriceFromDB(DB)
 	testutil.Ok(t, err)
-	testutil.Equals(t, prevPrice.CalculatedPrice0Last, 10.0)
-	testutil.Equals(t, prevPrice.TimestampLast, uint32(200))
+	testutil.Equals(t, prevPrice.PriceTWAP, 10.0)
+	testutil.Equals(t, prevPrice.Timestamp, uint32(200))
 	testutil.Equals(t, prevPrice.Decimals, uint8(3))
 	testutil.Equals(t, prevPrice.Decimals0, uint8(6))
 	testutil.Equals(t, prevPrice.Decimals1, uint8(3))
-	testutil.Equals(t, prevPrice.Price0CumulativeLast, "2000000000")
+	testutil.Equals(t, prevPrice.PriceCumulative, "2000000000")
 }

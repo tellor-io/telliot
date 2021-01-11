@@ -5,6 +5,7 @@ package tracker
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -44,7 +45,7 @@ func TestAmpl(t *testing.T) {
 			if strings.Contains(indexer.Identifier, "ethereum:") {
 				continue
 			}
-			if err := indexer.Exec(ctx.Background()); err != nil {
+			if err := indexer.Exec(context.Background()); err != nil {
 				testutil.Ok(t, err)
 			}
 		}

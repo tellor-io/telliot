@@ -83,6 +83,7 @@ func AllEvents() (map[[32]byte]abi.Event, error) {
 		master.TellorDisputeABI,
 		master.TellorGettersLibraryABI,
 		master.TellorLibraryABI,
+		master.TellorStakeABI,
 		master.TellorStorageABI,
 		master.TellorTransferABI,
 		balancerpool.BalancerpoolABI,
@@ -93,6 +94,7 @@ func AllEvents() (map[[32]byte]abi.Event, error) {
 
 	parsed := make([]interface{}, 0)
 	for _, abi := range all {
+		var f interface{}
 		if err := json.Unmarshal([]byte(abi), &f); err != nil {
 			return nil, err
 		}

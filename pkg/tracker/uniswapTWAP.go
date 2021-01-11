@@ -23,84 +23,84 @@ import (
 	uniswapcontract "github.com/tellor-io/telliot/pkg/tracker/uniswap"
 )
 
-// UniswapPriceCumulativeLast will be used to save/load data into/from the DB, so that
+// UniswapPriceCumulative will be used to save/load data into/from the DB, so that
 // we can minimize onchain contract calls.
-type UniswapPriceCumulativeLast struct {
-	Price0CumulativeLast string
-	Decimals             uint8
-	Decimals0            uint8
-	Decimals1            uint8
-	TimestampLast        uint32
-	CalculatedPrice0Last float64
+type UniswapPriceCumulative struct {
+	PriceCumulative string
+	Decimals        uint8
+	Decimals0       uint8
+	Decimals1       uint8
+	Timestamp       uint32
+	PriceTWAP       float64
 }
 
-// UniswapGetter implements DataSource interface.
-type UniswapGetter struct {
+// Uniswap implements DataSource interface.
+type Uniswap struct {
 	pair    string
 	address string
 	client  rpc.ETHClient
 }
 
-func (u *UniswapGetter) String() string {
-	return "UniswapGetter"
+func (u *Uniswap) String() string {
+	return "Uniswap"
 }
 
-func (u *UniswapGetter) dBCumulativePriceKey() string {
+func (u *Uniswap) dBCumulativePriceKey() string {
 	return fmt.Sprintf("uniswap-%s-cumulative", u.pair)
 }
 
-// NewUniswapGetter creates new UniswapGetter for provided pair and pair address.
-func NewUniswapGetter(pair string, address string) *UniswapGetter {
+// NewUniswap creates new Uniswap for provided pair and pair address.
+func NewUniswap(pair string, address string) *Uniswap {
 	pairAddress := strings.Split(address, ":")[1]
-	return &UniswapGetter{
+	return &Uniswap{
 		pair:    pair,
 		address: pairAddress,
 	}
 }
 
 // Get calculates price for the provided pair.
-func (u *UniswapGetter) Get(ctx context.Context) ([]byte, error) {
+func (u *Uniswap) Get(ctx context.Context) ([]byte, error) {
 	//cast client using type assertion since context holds generic interface{}
 	u.client = ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 	var err error
 	DB := ctx.Value(tellorCommon.DBContextKey).(db.DB)
 
 	// getting price cumulative last onchain.
-	priceCumulativeLast, err := u.getCumulativePriceLast()
+	price, err := u.getCumulativePrice()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting price cumulative last")
 	}
 	// Try to get previous price0Cumulative, timestamp from DB so that we minimize contract calls.
-	var priceCumulative *UniswapPriceCumulativeLast
-	priceCumulative, err = u.pullPriceFromDB(DB)
+	var priceCache *UniswapPriceCumulative
+	priceCache, err = u.pullPriceFromDB(DB)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting price cumulative from DB")
 	}
 	// Return the price data based on conditions.
 	var priceData []float64
-	if priceCumulative == nil {
+	if priceCache == nil {
 		priceData = []float64{0}
-
-	} else if priceCumulative.Price0CumulativeLast == priceCumulativeLast.Price0CumulativeLast {
-		priceData = []float64{priceCumulative.CalculatedPrice0Last}
+	} else if price.Timestamp == priceCache.Timestamp {
+		priceData = []float64{priceCache.PriceTWAP}
 	} else {
-		// Calculate uniswap TWAP using cumulative prices. see https://uniswap.org/docs/v2/core-concepts/oracles.
-		priceCumulativeLast.CalculatedPrice0Last, err = calculateTWAP(priceCumulative, priceCumulativeLast)
+		// Calculate uniswap TWAP using cumulative prices.
+		// https://uniswap.org/docs/v2/core-concepts/oracles
+		price.PriceTWAP, err = calculateTWAP(priceCache, price)
 		if err != nil {
 			return nil, errors.Wrap(err, "calculate TWAP")
 		}
-		priceData = []float64{priceCumulativeLast.CalculatedPrice0Last}
+		priceData = []float64{price.PriceTWAP}
 	}
 
 	// Save cumulative price to the DB.
-	err = u.savePriceIntoDB(DB, priceCumulativeLast)
+	err = u.savePriceIntoDB(DB, price)
 	if err != nil {
 		return nil, err
 	}
 	return json.Marshal(priceData)
 }
 
-func (u *UniswapGetter) pullPriceFromDB(DB db.DB) (*UniswapPriceCumulativeLast, error) {
+func (u *Uniswap) pullPriceFromDB(DB db.DB) (*UniswapPriceCumulative, error) {
 	_prevPriceData, err := DB.Get(u.dBCumulativePriceKey())
 	if err != nil {
 		return nil, errors.Wrap(err, "loading cumulative price from DB")
@@ -111,7 +111,7 @@ func (u *UniswapGetter) pullPriceFromDB(DB db.DB) (*UniswapPriceCumulativeLast, 
 		return nil, nil
 	}
 
-	prevPrice := &UniswapPriceCumulativeLast{}
+	prevPrice := &UniswapPriceCumulative{}
 	prevPriceJSON := hexutil.MustDecode(string(_prevPriceData))
 	err = json.Unmarshal(prevPriceJSON, prevPrice)
 	if err != nil {
@@ -120,10 +120,10 @@ func (u *UniswapGetter) pullPriceFromDB(DB db.DB) (*UniswapPriceCumulativeLast, 
 	return prevPrice, nil
 }
 
-func (u *UniswapGetter) savePriceIntoDB(DB db.DB, in *UniswapPriceCumulativeLast) error {
+func (u *Uniswap) savePriceIntoDB(DB db.DB, in *UniswapPriceCumulative) error {
 	priceJSON, err := json.Marshal(in)
 	if err != nil {
-		return errors.Wrap(err, "parsing UniswapPriceCumulativeLast to JSON")
+		return errors.Wrap(err, "parsing UniswapPriceCumulative to JSON")
 	}
 	priceHex := hexutil.Encode(priceJSON)
 	err = DB.Put(u.dBCumulativePriceKey(), []byte(priceHex))
@@ -133,21 +133,21 @@ func (u *UniswapGetter) savePriceIntoDB(DB db.DB, in *UniswapPriceCumulativeLast
 	return nil
 }
 
-// calculate Time Weighted Average Price from pair of UniswapPriceCumulativeLast.
-func calculateTWAP(old, last *UniswapPriceCumulativeLast) (price0 float64, err error) {
-	price0CumulativeLast, ok := new(big.Float).SetString(last.Price0CumulativeLast)
+// calculateTWAP calculates Time Weighted Average Price from pair of UniswapPriceCumulative.
+func calculateTWAP(old, last *UniswapPriceCumulative) (price0 float64, err error) {
+	priceCumulativeLast, ok := new(big.Float).SetString(last.PriceCumulative)
 	if !ok {
-		err = errors.Wrap(err, "parsing last.Price0CumulativeLast to big.Float")
+		err = errors.Wrap(err, "parsing last.PriceCumulative to big.Float")
 		return
 	}
-	price0CumulativeOld, ok := new(big.Float).SetString(old.Price0CumulativeLast)
+	priceCumulativeOld, ok := new(big.Float).SetString(old.PriceCumulative)
 	if !ok {
-		err = errors.Wrap(err, "parsing old.Price0CumulativeLast to big.Float")
+		err = errors.Wrap(err, "parsing old.PriceCumulative to big.Float")
 		return
 	}
 
-	timeElapsed := new(big.Float).SetUint64(uint64(last.TimestampLast - old.TimestampLast))
-	_price0 := new(big.Float).Quo(new(big.Float).Sub(price0CumulativeLast, price0CumulativeOld), timeElapsed)
+	timeElapsed := new(big.Float).SetUint64(uint64(last.Timestamp - old.Timestamp))
+	_price0 := new(big.Float).Quo(new(big.Float).Sub(priceCumulativeLast, priceCumulativeOld), timeElapsed)
 	// Calculate float value of the price.
 	_price0 = new(big.Float).Quo(_price0, new(big.Float).SetFloat64(math.Pow10(int(last.Decimals))))
 	price0, _ = new(big.Float).Quo(_price0, new(big.Float).Quo(new(big.Float).SetFloat64(math.Pow10(int(last.Decimals0))),
@@ -155,7 +155,7 @@ func calculateTWAP(old, last *UniswapPriceCumulativeLast) (price0 float64, err e
 	return
 
 }
-func (u *UniswapGetter) getCumulativePriceLast() (priceLast *UniswapPriceCumulativeLast, err error) {
+func (u *Uniswap) getCumulativePrice() (priceLast *UniswapPriceCumulative, err error) {
 	var pairContract *uniswapcontract.IUniswapV2PairCaller
 	pairContract, err = uniswapcontract.NewIUniswapV2PairCaller(common.HexToAddress(u.address), u.client)
 	if err != nil {
@@ -221,12 +221,12 @@ func (u *UniswapGetter) getCumulativePriceLast() (priceLast *UniswapPriceCumulat
 		return
 	}
 
-	priceLast = &UniswapPriceCumulativeLast{
-		Price0CumulativeLast: price0CumulativeLast.String(),
-		Decimals:             decimals,
-		Decimals0:            decimals0,
-		Decimals1:            decimals1,
-		TimestampLast:        reserve.BlockTimestampLast,
+	priceLast = &UniswapPriceCumulative{
+		PriceCumulative: price0CumulativeLast.String(),
+		Decimals:        decimals,
+		Decimals0:       decimals0,
+		Decimals1:       decimals1,
+		Timestamp:       reserve.BlockTimestampLast,
 	}
 	return
 }

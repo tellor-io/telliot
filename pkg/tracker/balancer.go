@@ -28,33 +28,33 @@ type BalancerPair struct {
 	token2Decimals uint64
 }
 
-// BalancerGetter implements DataSource interface.
-type BalancerGetter struct {
+// Balancer implements DataSource interface.
+type Balancer struct {
 	address string
 	token1  string
 	token2  string
 	client  rpc.ETHClient
 }
 
-func (b *BalancerGetter) String() string {
-	return "BalancerGetter"
+func (b *Balancer) String() string {
+	return "Balancer"
 }
 
-func NewBalancerGetter(pair, address string) *BalancerGetter {
+func NewBalancer(pair, address string) *Balancer {
 	_address := strings.Split(address, ":")
 	tokens := strings.Split(pair, "/")
-	return &BalancerGetter{
+	return &Balancer{
 		address: _address[1],
 		token1:  tokens[0],
 		token2:  tokens[1],
 	}
 }
 
-func (b *BalancerGetter) Get(ctx context.Context) ([]byte, error) {
-	//cast client using type assertion since context holds generic interface{}.
+func (b *Balancer) Get(ctx context.Context) ([]byte, error) {
+	// Cast client using type assertion since context holds generic interface{}.
 	b.client = ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
 
-	// Getting current pair info from input pool
+	// Getting current pair info from input pool.
 	pair, err := b.getPair()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting pair info from balancer pool")
@@ -68,34 +68,34 @@ func (b *BalancerGetter) Get(ctx context.Context) ([]byte, error) {
 	return json.Marshal([]float64{price})
 }
 
-func (b *BalancerGetter) getPair() (pair *BalancerPair, err error) {
+func (b *Balancer) getPair() (*BalancerPair, error) {
 	var poolCaller *pool.BalancerpoolCaller
-	poolCaller, err = pool.NewBalancerpoolCaller(common.HexToAddress(b.address), b.client)
+	poolCaller, err := pool.NewBalancerpoolCaller(common.HexToAddress(b.address), b.client)
 	if err != nil {
-		return
+		return nil, err
 	}
 	currentTokens, err := poolCaller.GetCurrentTokens(&bind.CallOpts{})
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	pair = &BalancerPair{}
+	pair := &BalancerPair{}
 	var token1Seen, token2Seen bool
 	for _, token := range currentTokens {
 		var tokenCaller *balancerToken.BalancertokenCaller
 		tokenCaller, err = balancerToken.NewBalancertokenCaller(token, b.client)
 		if err != nil {
-			return
+			return nil, err
 		}
 		var symbol string
 		var decimals *big.Int
 		symbol, err = tokenCaller.Symbol(&bind.CallOpts{})
 		if err != nil {
-			return
+			return nil, err
 		}
 		decimals, err = tokenCaller.Decimals(&bind.CallOpts{})
 		if err != nil {
-			return
+			return nil, err
 		}
 		if symbol == b.token1 {
 			pair.token1Address = token
@@ -108,13 +108,12 @@ func (b *BalancerGetter) getPair() (pair *BalancerPair, err error) {
 		}
 	}
 	if !token1Seen || !token2Seen {
-		err = errors.New("we expected this pool to have the provided tokens")
-		return
+		return nil, errors.New("we expected this pool to have the provided tokens")
 	}
-	return
+	return pair, nil
 }
 
-func (b *BalancerGetter) getSpotPrice(pair *BalancerPair) (float64, error) {
+func (b *Balancer) getSpotPrice(pair *BalancerPair) (float64, error) {
 	var poolCaller *pool.BalancerpoolCaller
 	poolCaller, err := pool.NewBalancerpoolCaller(common.HexToAddress(b.address), b.client)
 	if err != nil {

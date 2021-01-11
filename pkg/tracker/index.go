@@ -104,7 +104,7 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					{
 						if api.Parser == "Uniswap" {
 							source = NewUniswap(symbol, api.URL)
-	
+
 						} else if api.Parser == "Balancer" {
 							source = NewBalancer(symbol, api.URL)
 						} else {
@@ -209,17 +209,11 @@ const (
 
 // IndexObject will be used in parsing index file.
 type IndexObject struct {
-<<<<<<< HEAD
 	URL      string          `json:"URL"`
 	Type     IndexType       `json:"type"`
 	Parser   IndexParser     `json:"format"`
 	Param    string          `json:"param"`
 	Interval config.Duration `json:"interval"`
-=======
-	URL      string `json:"URL"`
-	Type     string `json:"type"`
-	JSONPath string `json:"JSONPath,omitempty"`
->>>>>>> d6f9356 (add On-chain index tracker for Uniswap,Balancer)
 }
 
 type IndexTracker struct {
@@ -254,7 +248,6 @@ func (j *JSONfile) Get(ctx context.Context) ([]byte, error) {
 }
 
 func (i *IndexTracker) Exec(ctx context.Context) error {
-<<<<<<< HEAD
 	now := time.Now()
 	if now.Sub(i.lastRunTimestamp) < i.Interval {
 		return nil
@@ -262,9 +255,6 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	i.lastRunTimestamp = now
 
 	payload, err := i.Source.Get()
-=======
-	payload, err := i.Source.Get(ctx)
->>>>>>> d6f9356 (add On-chain index tracker for Uniswap,Balancer)
 	if err != nil {
 		return err
 	}
