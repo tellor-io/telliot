@@ -362,7 +362,8 @@
     "USPCE": [
         {
             "URL": "manualData.json",
-            "param": "$.USPCE[VALUE,DATE]"
+            "param": "$.USPCE[VALUE,DATE]",
+            "type": "file"
         }
     ],
     "VIXEOD": [

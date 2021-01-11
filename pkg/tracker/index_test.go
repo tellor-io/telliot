@@ -122,7 +122,7 @@ func TestIndexParsable(t *testing.T) {
 			payload, err := indexer.Source.Get()
 			testutil.Ok(t, err)
 			t.Logf("payload: %v", string(payload))
-			t.Logf("jsonpath: %v", indexer.JSONPath)
+			t.Logf("jsonpath: %v", indexer.Param)
 			_, err = indexer.parsePayload(payload)
 			testutil.Ok(t, err)
 		}
