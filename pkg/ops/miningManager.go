@@ -32,7 +32,7 @@ import (
 )
 
 type WorkSource interface {
-	GetWork(toMine chan *pow.Work) (*pow.Work, bool)
+	GetWork(toMine chan *pow.Work) *pow.Work
 }
 
 type SolutionSink interface {
@@ -152,11 +152,6 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 		case <-mgr.exitCh:
 			mgr.Running = false
 			return
-		// New solution from the miner.
-		case solution := <-mgr.solutionOutput:
-			if !mgr.submit(solution, ctx) {
-				mgr.solutionPending = solution
-			}
 		// Time to check for a new challenge and
 		// while waiting resubmit any unsubmitted solutions.
 		case <-ticker.C:
@@ -166,6 +161,12 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 					mgr.solutionPending = nil
 				}
 			}
+		// New solution from the miner.
+		case solution := <-mgr.solutionOutput:
+			if !mgr.submit(solution, ctx) {
+				mgr.solutionPending = solution
+			}
+
 		}
 	}
 }
@@ -222,23 +223,14 @@ func (mgr *MiningMgr) newWork() {
 	if mgr.cfg.EnablePoolWorker {
 		mgr.tasker.GetWork(mgr.toMineInput)
 	} else {
-		// instantSubmit means 15 mins have passed so
-		// the difficulty now is zero and any solution/nonce will work so
-		// can just submit without sending to the miner.
-		work, instantSubmit := mgr.tasker.GetWork(nil)
-		if instantSubmit {
-			mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
-		} else {
-			if work == nil {
-				return
-			}
-			var ids []int64
-			for _, id := range work.Challenge.RequestIDs {
-				ids = append(ids, id.Int64())
-			}
-			level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
-			mgr.toMineInput <- work
+		work := mgr.tasker.GetWork(nil)
+		var ids []int64
+		for _, id := range work.Challenge.RequestIDs {
+			ids = append(ids, id.Int64())
 		}
+		level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
+		mgr.toMineInput <- work
+
 	}
 }
 

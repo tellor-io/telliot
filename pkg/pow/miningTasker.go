@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/telliot/pkg/config"
@@ -58,7 +57,7 @@ func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 	}
 }
 
-func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
+func (mt *MiningTasker) GetWork(chan *Work) *Work {
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
 		db.DifficultyKey,
@@ -69,7 +68,6 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 		db.RequestIdKey2,
 		db.RequestIdKey3,
 		db.RequestIdKey4,
-		db.LastNewValueKey,
 		dispKey,
 		db.LastSubmissionKey,
 	}
@@ -77,49 +75,47 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
 		mt.log.Error("Could not get data from data proxy, cannot continue at all")
-		return nil, false
+		return nil
 	}
 
 	mt.log.Debug("Received data:%v", m)
 
 	if mt.checkDispute(m[dispKey]) == statusWaitNext {
-		return nil, false
+		return nil
 	}
 	diff, stat := mt.getInt(m[db.DifficultyKey])
 	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
+		return nil
 	}
 	var reqIDs [5]*big.Int
 
-	l, _ := mt.getInt(m[db.LastNewValueKey])
-
 	r, stat := mt.getInt(m[db.RequestIdKey0])
 	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
+		return nil
 	}
 	reqIDs[0] = r
 
 	r, stat = mt.getInt(m[db.RequestIdKey1])
 	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
+		return nil
 	}
 	reqIDs[1] = r
 
 	r, stat = mt.getInt(m[db.RequestIdKey2])
 	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
+		return nil
 	}
 	reqIDs[2] = r
 
 	r, stat = mt.getInt(m[db.RequestIdKey3])
 	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
+		return nil
 	}
 	reqIDs[3] = r
 
 	r, stat = mt.getInt(m[db.RequestIdKey4])
 	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
+		return nil
 	}
 	reqIDs[4] = r
 
@@ -136,7 +132,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
 			jsonFile, err := os.Open(indexPath)
 			if err != nil {
-				return nil, false
+				return nil
 			}
 			defer jsonFile.Close()
 			byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -146,7 +142,7 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 			val := result[_id]["VALUE"]
 			if val == 0 {
 				mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
-				return nil, false
+				return nil
 			}
 			mt.log.Info("USING MANUALLY ENTERED VALUE!!!! USE CAUTION")
 		}
@@ -160,19 +156,12 @@ func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
 
 	work := &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64}
 
-	today := time.Now()
-	tm := time.Unix(l.Int64(), 0)
-	mt.log.Debug("this long since last value:%v ", today.Sub(tm))
-	if today.Sub(tm) >= time.Duration(15)*time.Minute {
-		return work, true
-	}
-
 	// If this chalange is already sent out, don't do it again.
 	if mt.currChallenge != nil && bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
-		return nil, false
+		return nil
 	}
 	mt.currChallenge = newChallenge
-	return work, false
+	return work
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {
