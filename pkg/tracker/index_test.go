@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
@@ -102,5 +104,27 @@ func TestIndexTracker(t *testing.T) {
 		}
 		testutil.Equals(t, testCase.Expected, actual)
 
+	}
+}
+
+func TestIndexParsable(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+
+	if _, err := BuildIndexTrackers(cfg, DB); err != nil {
+		testutil.Ok(t, err)
+	}
+
+	for _, indexers := range indexes {
+		for _, indexer := range indexers {
+			t.Logf("indexer: %v\n", indexer)
+			payload, err := indexer.Source.Get()
+			testutil.Ok(t, err)
+			t.Logf("payload: %v", string(payload))
+			t.Logf("jsonpath: %v", indexer.Param)
+			_, err = indexer.parsePayload(payload)
+			testutil.Ok(t, err)
+		}
 	}
 }

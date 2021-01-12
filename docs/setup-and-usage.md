@@ -66,10 +66,10 @@ export NAME= # Put an instance name here. Something short as some properties are
 #### To run a custom docker image.
 ```bash
 export REPO= # Your docker repository name.
-docker build . -t $REPO/telliot:main
-docker push $REPO/telliot:main
+docker build . -t $REPO/telliot:latest
+docker push $REPO/telliot:latest
 
-sed -i "s/tellor\/telliot:master/$REPO\/telliot:main/g" .local/configs/$NAME/telliot.yml
+sed -i "s/tellor\/telliot:master/$REPO\/telliot:latest/g" .local/configs/$NAME/telliot.yml
 kubectl apply -f .local/configs/$NAME/telliot.yml
 ```
 
