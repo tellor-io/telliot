@@ -35,9 +35,9 @@ func (cmd *VersionCmd) Run() error {
 
 type configPath string
 type tokenCmd struct {
-	Config  configPath `required type:"existingfile" help:"path to config file"`
-	Address string     `arg`
-	Amount  string     `arg`
+	Config  configPath `required:"" type:"existingfile" help:"path to config file"`
+	Address string     `arg:""`
+	Amount  string     `arg:""`
 }
 
 type transferCmd tokenCmd
@@ -55,6 +55,9 @@ func (c *transferCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 
 	address := ETHAddress{}
 	err = address.Set(c.Address)
@@ -84,6 +87,9 @@ func (c *approveCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 
 	address := ETHAddress{}
 	err = address.Set(c.Address)
@@ -99,8 +105,8 @@ func (c *approveCmd) Run() error {
 }
 
 type balanceCmd struct {
-	Config  configPath `required type:"existingfile" help:"path to config file"`
-	Address string     `arg optional`
+	Config  configPath `required:"" type:"existingfile" help:"path to config file"`
+	Address string     `arg:"" optional:""`
 }
 
 func (b *balanceCmd) Run() error {
@@ -111,6 +117,9 @@ func (b *balanceCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, _, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 
 	addr := ETHAddress{}
 	if b.Address == "" {
@@ -128,8 +137,8 @@ func (b *balanceCmd) Run() error {
 }
 
 type stakeCmd struct {
-	Config    configPath `required type:"existingfile" help:"path to config file"`
-	Operation string     `arg required`
+	Config    configPath `required:"" type:"existingfile" help:"path to config file"`
+	Operation string     `arg:"" required:""`
 }
 
 func (s *stakeCmd) Run() error {
@@ -145,6 +154,9 @@ func (s *stakeCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 
 	switch s.Operation {
 	case "deposit":
@@ -161,10 +173,10 @@ func (s *stakeCmd) Run() error {
 }
 
 type newDisputeCmd struct {
-	Config     configPath `required type:"existingfile" help:"path to config file"`
-	requestId  string     `arg required help:"the request id to dispute it"`
-	timestamp  string     `arg required help:"the submitted timestamp to dispute"`
-	minerIndex string     `arg required help:"the miner index to dispute"`
+	Config     configPath `required:"" type:"existingfile" help:"path to config file"`
+	requestId  string     `arg:"" required:"" help:"the request id to dispute it"`
+	timestamp  string     `arg:"" required:"" help:"the submitted timestamp to dispute"`
+	minerIndex string     `arg:"" required:"" help:"the miner index to dispute"`
 }
 
 func (n newDisputeCmd) Run() error {
@@ -175,6 +187,9 @@ func (n newDisputeCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 
 	requestID := EthereumInt{}
 	err = requestID.Set(n.requestId)
@@ -195,9 +210,9 @@ func (n newDisputeCmd) Run() error {
 }
 
 type voteCmd struct {
-	Config    configPath `required type:"existingfile" help:"path to config file"`
-	disputeId string     `arg required help:"the dispute id"`
-	support   bool       `arg required help:"true or false"`
+	Config    configPath `required:"" type:"existingfile" help:"path to config file"`
+	disputeId string     `arg:"" required:"" help:"the dispute id"`
+	support   bool       `arg:"" required:"" help:"true or false"`
 }
 
 func (v voteCmd) Run() error {
@@ -208,6 +223,10 @@ func (v voteCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
+
 	disputeID := EthereumInt{}
 	err = disputeID.Set(v.disputeId)
 	if err != nil {
@@ -217,7 +236,7 @@ func (v voteCmd) Run() error {
 }
 
 type showCmd struct {
-	Config configPath `required type:"existingfile" help:"path to config file"`
+	Config configPath `required:"" type:"existingfile" help:"path to config file"`
 }
 
 func (s showCmd) Run() error {
@@ -233,11 +252,14 @@ func (s showCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 	return ops.List(ctx, logger, client, contract, account)
 }
 
 type dataserverCmd struct {
-	Config configPath `required type:"existingfile" help:"path to config file"`
+	Config configPath `required:"" type:"existingfile" help:"path to config file"`
 }
 
 func (d dataserverCmd) Run() error {
@@ -253,6 +275,9 @@ func (d dataserverCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)
@@ -307,7 +332,7 @@ func (d dataserverCmd) Run() error {
 }
 
 type mineCmd struct {
-	Config configPath `required type:"existingfile" help:"path to config file"`
+	Config configPath `required:"" type:"existingfile" help:"path to config file"`
 }
 
 func (m mineCmd) Run() error {
@@ -323,6 +348,9 @@ func (m mineCmd) Run() error {
 
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

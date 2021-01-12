@@ -129,18 +129,18 @@ func createProxy(cfg *config.Config, DB db.DB) (db.DataServerProxy, error) {
 }
 
 var cli struct {
-	Transfer transferCmd `cmd help:"Transfer tokens"`
-	Approve  approveCmd  `cmd help:"Approve tokens"`
-	Balance  balanceCmd  `cmd help:"Check the balance of an address"`
-	Stake    stakeCmd    `cmd help:"Perform one of the stake operations"`
+	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
+	Approve  approveCmd  `cmd:"" help:"Approve tokens"`
+	Balance  balanceCmd  `cmd:"" help:"Check the balance of an address"`
+	Stake    stakeCmd    `cmd:"" help:"Perform one of the stake operations"`
 	Dispute  struct {
-		New  newDisputeCmd `cmd help:"start a new dispute"`
-		Vote voteCmd       `cmd help:"vote on a open dispute"`
-		Show showCmd       `cmd help:"show open disputes"`
-	} `cmd help:"Perform commands related to disputes"`
-	Dataserver dataserverCmd `cmd help:"launch only a dataserver instance"`
-	Mine       mineCmd       `cmd help:"mine TRB and submit values"`
-	Version    VersionCmd    `cmd help:"Show the Docker version information"`
+		New  newDisputeCmd `cmd:"" help:"start a new dispute"`
+		Vote voteCmd       `cmd:"" help:"vote on a open dispute"`
+		Show showCmd       `cmd:"" help:"show open disputes"`
+	} `cmd:"" help:"Perform commands related to disputes"`
+	Dataserver dataserverCmd `cmd:"" help:"launch only a dataserver instance"`
+	Mine       mineCmd       `cmd:"" help:"mine TRB and submit values"`
+	Version    VersionCmd    `cmd:"" help:"Show the Docker version information"`
 }
 
 func main() {

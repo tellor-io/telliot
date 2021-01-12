@@ -96,7 +96,7 @@ type Config struct {
 	ConfigFolder                 string                `json:"configFolder"`
 	LogLevel                     string                `json:"logLevel"`
 	Logger                       map[string]string     `json:"logger"`
-	RemoteMining                 bool                  `json:remoteMining`
+	RemoteMining                 bool                  `json:"remoteMining"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 	// Minimum percent of profit when submitting a solution.
