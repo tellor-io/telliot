@@ -9,69 +9,34 @@ import (
 	"strconv"
 
 	"github.com/alecthomas/kong"
+	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
-// migrateAndOpenDB migrates the tx costs and deletes the db.
-// The DB is always deleted because the price avarages calculations
-// is not calculated properly between restarts.
-// TODO don't do this and just improve the price calculations.
-func migrateAndOpenDB(cfg *config.Config) (db.DB, db.DataServerProxy, error) {
-	// Create a db instance
-	DB, err := db.Open(cfg.DBFile)
+func parseConfig(path string) (*config.Config, error) {
+	err := config.ParseConfig(path)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "opening DB instance")
+		return nil, errors.Wrapf(err, "parsing config")
 	}
-
-	var txsGas [][]byte
-	for i := 0; i <= 5; i++ {
-		txID := tellorCommon.PriceTXs + strconv.Itoa(i)
-		txGas, err := DB.Get(txID)
-		if err == nil && len(txGas) > 0 {
-			txsGas = append(txsGas, txGas)
-		}
-	}
-	if err := DB.Close(); err != nil {
-		return nil, nil, errors.Wrapf(err, "closing DB instance for migration")
-	}
-	os.RemoveAll(cfg.DBFile)
-
-	DB, err = db.Open(cfg.DBFile)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "opening DB instance")
-	}
-
-	for i, txGas := range txsGas {
-		txID := tellorCommon.PriceTXs + strconv.Itoa(i)
-		_ = DB.Put(txID, txGas)
-	}
-
-	var dataProxy db.DataServerProxy
-	if cfg.RemoteMining {
-		proxy, err := db.OpenRemoteDB(DB)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "open remote DB instance")
-
-		}
-		dataProxy = proxy
-	} else {
-		proxy, err := db.OpenLocalProxy(DB)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "opening local DB instance:")
-
-		}
-		dataProxy = proxy
-	}
-
-	return DB, dataProxy, nil
+	return config.GetConfig(), nil
 }
 
-func setup(ctx context.Context, cfg *config.Config) (rpc.ETHClient, *contracts.Tellor, *rpc.Account, error) {
+func createLogger(logConfig map[string]string, level string) (log.Logger, error) {
+	err := util.SetupLoggingConfig(logConfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing log config")
+	}
+	logger := util.SetupLogger(level)
+	return logger, nil
+}
+
+func createTellorVariables(ctx context.Context, cfg *config.Config) (rpc.ETHClient, *contracts.Tellor, *rpc.Account, error) {
 
 	if !cfg.EnablePoolWorker {
 
@@ -106,8 +71,64 @@ func setup(ctx context.Context, cfg *config.Config) (rpc.ETHClient, *contracts.T
 	return nil, nil, nil, nil
 }
 
+// migrateAndOpenDB migrates the tx costs and deletes the db.
+// The DB is always deleted because the price avarages calculations
+// is not calculated properly between restarts.
+// TODO don't do this and just improve the price calculations.
+func migrateAndOpenDB(cfg *config.Config) (db.DB, error) {
+	// Create a db instance
+	DB, err := db.Open(cfg.DBFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening DB instance")
+	}
+
+	var txsGas [][]byte
+	for i := 0; i <= 5; i++ {
+		txID := tellorCommon.PriceTXs + strconv.Itoa(i)
+		txGas, err := DB.Get(txID)
+		if err == nil && len(txGas) > 0 {
+			txsGas = append(txsGas, txGas)
+		}
+	}
+	if err := DB.Close(); err != nil {
+		return nil, errors.Wrapf(err, "closing DB instance for migration")
+	}
+	os.RemoveAll(cfg.DBFile)
+
+	DB, err = db.Open(cfg.DBFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening DB instance")
+	}
+
+	for i, txGas := range txsGas {
+		txID := tellorCommon.PriceTXs + strconv.Itoa(i)
+		_ = DB.Put(txID, txGas)
+	}
+
+	return DB, nil
+}
+
+func createProxy(cfg *config.Config, DB db.DB) (db.DataServerProxy, error) {
+	var dataProxy db.DataServerProxy
+	if cfg.RemoteMining {
+		proxy, err := db.OpenRemoteDB(DB)
+		if err != nil {
+			return nil, errors.Wrapf(err, "open remote DB instance")
+
+		}
+		dataProxy = proxy
+	} else {
+		proxy, err := db.OpenLocalProxy(DB)
+		if err != nil {
+			return nil, errors.Wrapf(err, "opening local DB instance:")
+
+		}
+		dataProxy = proxy
+	}
+	return dataProxy, nil
+}
+
 var cli struct {
-	Config   configPath  `required type:"existingfile" help:"path to config file"`
 	Transfer transferCmd `cmd help:"Transfer tokens"`
 	Approve  approveCmd  `cmd help:"Approve tokens"`
 	Balance  balanceCmd  `cmd help:"Check the balance of an address"`

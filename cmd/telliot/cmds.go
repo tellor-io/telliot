@@ -7,63 +7,38 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/go-kit/kit/log"
-
-	"github.com/alecthomas/kong"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
-	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ops"
-	"github.com/tellor-io/telliot/pkg/rpc"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 type configPath string
-
-func (c configPath) AfterApply(kong *kong.Context) error {
-	err := config.ParseConfig(string(c))
-	if err != nil {
-		return errors.Wrapf(err, "parsing config")
-	}
-
-	cfg := config.GetConfig()
-	ctx := context.Background()
-	err = util.SetupLoggingConfig(cfg.Logger)
-	if err != nil {
-		return errors.Wrapf(err, "parsing log config")
-	}
-
-	logger := util.SetupLogger(cfg.LogLevel)
-
-	client, contract, account, err := setup(ctx, cfg)
-	if err != nil {
-		return errors.Wrapf(err, "setting up variables")
-	}
-
-	kong.BindTo(logger, (*log.Logger)(nil))
-	kong.BindTo(client, (*rpc.ETHClient)(nil))
-	kong.BindTo(ctx, (*context.Context)(nil))
-	kong.Bind(contract)
-	kong.Bind(account)
-	kong.Bind(cfg)
-
-	return nil
-}
-
 type tokenCmd struct {
-	Address string `arg`
-	Amount  string `arg`
+	Config  configPath `required type:"existingfile" help:"path to config file"`
+	Address string     `arg`
+	Amount  string     `arg`
 }
 
 type transferCmd tokenCmd
 
-func (c *transferCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (c *transferCmd) Run() error {
+	cfg, err := parseConfig(string(c.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
+
 	address := ETHAddress{}
-	err := address.Set(c.Address)
+	err = address.Set(c.Address)
 	if err != nil {
 		return errors.Wrapf(err, "parsing address argument")
 	}
@@ -77,9 +52,22 @@ func (c *transferCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETH
 
 type approveCmd tokenCmd
 
-func (c *approveCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (c *approveCmd) Run() error {
+	cfg, err := parseConfig(string(c.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
+
 	address := ETHAddress{}
-	err := address.Set(c.Address)
+	err = address.Set(c.Address)
 	if err != nil {
 		return errors.Wrapf(err, "parsing address argument")
 	}
@@ -92,12 +80,20 @@ func (c *approveCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHC
 }
 
 type balanceCmd struct {
-	Address string `arg optional`
+	Config  configPath `required type:"existingfile" help:"path to config file"`
+	Address string     `arg optional`
 }
 
-func (b *balanceCmd) Run(ctx context.Context, client rpc.ETHClient, contract *contracts.Tellor) error {
+func (b *balanceCmd) Run() error {
+	cfg, err := parseConfig(string(b.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	ctx := context.Background()
+	client, contract, _, err := createTellorVariables(ctx, cfg)
+
 	addr := ETHAddress{}
-	var err error
 	if b.Address == "" {
 		err = addr.Set(contract.Address.String())
 		if err != nil {
@@ -113,10 +109,24 @@ func (b *balanceCmd) Run(ctx context.Context, client rpc.ETHClient, contract *co
 }
 
 type stakeCmd struct {
-	Operation string `arg required`
+	Config    configPath `required type:"existingfile" help:"path to config file"`
+	Operation string     `arg required`
 }
 
-func (s *stakeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (s *stakeCmd) Run() error {
+	cfg, err := parseConfig(string(s.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
+
 	switch s.Operation {
 	case "deposit":
 		return ops.Deposit(ctx, logger, client, contract, account)
@@ -132,14 +142,23 @@ func (s *stakeCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHCli
 }
 
 type newDisputeCmd struct {
-	requestId  string `arg required help:"the request id to dispute it"`
-	timestamp  string `arg required help:"the submitted timestamp to dispute"`
-	minerIndex string `arg required help:"the miner index to dispute"`
+	Config     configPath `required type:"existingfile" help:"path to config file"`
+	requestId  string     `arg required help:"the request id to dispute it"`
+	timestamp  string     `arg required help:"the submitted timestamp to dispute"`
+	minerIndex string     `arg required help:"the miner index to dispute"`
 }
 
-func (n newDisputeCmd) Run(ctx context.Context, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (n newDisputeCmd) Run() error {
+	cfg, err := parseConfig(string(n.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
+
 	requestID := EthereumInt{}
-	err := requestID.Set(n.requestId)
+	err = requestID.Set(n.requestId)
 	if err != nil {
 		return errors.Wrapf(err, "parsing argument")
 	}
@@ -157,37 +176,77 @@ func (n newDisputeCmd) Run(ctx context.Context, client rpc.ETHClient, contract *
 }
 
 type voteCmd struct {
-	disputeId string `arg required help:"the dispute id"`
-	support   bool   `arg required help:"true or false"`
+	Config    configPath `required type:"existingfile" help:"path to config file"`
+	disputeId string     `arg required help:"the dispute id"`
+	support   bool       `arg required help:"true or false"`
 }
 
-func (v voteCmd) Run(ctx context.Context, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (v voteCmd) Run() error {
+	cfg, err := parseConfig(string(v.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
 	disputeID := EthereumInt{}
-	err := disputeID.Set(v.disputeId)
+	err = disputeID.Set(v.disputeId)
 	if err != nil {
 		return errors.Wrapf(err, "parsing argument")
 	}
 	return ops.Vote(ctx, client, contract, account, disputeID.Int, v.support)
 }
 
-type showCmd struct{}
+type showCmd struct {
+	Config configPath `required type:"existingfile" help:"path to config file"`
+}
 
-func (v showCmd) Run(ctx context.Context, logger log.Logger, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (s showCmd) Run() error {
+	cfg, err := parseConfig(string(s.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
 	return ops.List(ctx, logger, client, contract, account)
 }
 
-type dataserverCmd struct{}
+type dataserverCmd struct {
+	Config configPath `required type:"existingfile" help:"path to config file"`
+}
 
-func (d dataserverCmd) Run(ctx context.Context, logger log.Logger, cfg *config.Config, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (d dataserverCmd) Run() error {
+	cfg, err := parseConfig(string(d.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
+
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
 	var ds *ops.DataServerOps
-	var err error
-	DB, proxy, err := migrateAndOpenDB(cfg)
+	DB, err := migrateAndOpenDB(cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
+	}
+	proxy, err := createProxy(cfg, DB)
+	if err != nil {
+		return errors.Wrapf(err, "initializing proxy")
 	}
 	ch := make(chan os.Signal)
 	ds, err = ops.CreateDataServerOps(ctx, logger, cfg, DB, &proxy, client, contract, account, ch)
@@ -228,9 +287,23 @@ func (d dataserverCmd) Run(ctx context.Context, logger log.Logger, cfg *config.C
 	return nil
 }
 
-type mineCmd struct{}
+type mineCmd struct {
+	Config configPath `required type:"existingfile" help:"path to config file"`
+}
 
-func (m mineCmd) Run(ctx context.Context, logger log.Logger, cfg *config.Config, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) error {
+func (m mineCmd) Run() error {
+	cfg, err := parseConfig(string(m.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
 	// Create os kill sig listener.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -238,9 +311,16 @@ func (m mineCmd) Run(ctx context.Context, logger log.Logger, cfg *config.Config,
 
 	// cfg := config.GetConfig()
 	var ds *ops.DataServerOps
+	DB, err := migrateAndOpenDB(cfg)
+	if err != nil {
+		return errors.Wrapf(err, "initializing database")
+	}
 	if !cfg.EnablePoolWorker {
 		var err error
-		DB, proxy, err := migrateAndOpenDB(cfg)
+		proxy, err := createProxy(cfg, DB)
+		if err != nil {
+			return errors.Wrapf(err, "initializing proxy")
+		}
 		if err != nil {
 			return errors.Wrapf(err, "initializing database")
 		}
@@ -260,7 +340,6 @@ func (m mineCmd) Run(ctx context.Context, logger log.Logger, cfg *config.Config,
 		}
 	}
 	// Start miner
-	DB := ctx.Value(tellorCommon.DataProxyKey).(db.DataServerProxy)
 	v, err := DB.Get(db.DisputeStatusKey)
 	if err != nil {
 		level.Warn(logger).Log("msg", "getting dispute status. Check if staked")
