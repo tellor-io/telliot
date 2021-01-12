@@ -111,7 +111,7 @@ func migrateAndOpenDB(cfg *config.Config) (db.DB, error) {
 func createProxy(cfg *config.Config, DB db.DB) (db.DataServerProxy, error) {
 	var dataProxy db.DataServerProxy
 	if cfg.RemoteMining {
-		proxy, err := db.OpenRemoteDB(DB)
+		proxy, err := db.OpenRemoteDB(cfg, DB)
 		if err != nil {
 			return nil, errors.Wrapf(err, "open remote DB instance")
 
