@@ -104,11 +104,7 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					return nil, nil, errors.New("unknown index type for index object")
 				}
 
-				apiInterval := cfg.TrackerSleepCycle.Duration
-				if api.Interval.Duration > 0 {
-					apiInterval = api.Interval.Duration
-				}
-				if apiInterval < cfg.TrackerSleepCycle.Duration {
+				if api.Interval.Duration > 0 && (api.Interval.Duration < cfg.TrackerSleepCycle.Duration) {
 					return nil, nil, errors.New("api interval can't be smaller than the global tracker cycle")
 				}
 
@@ -121,7 +117,7 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					Identifier: api.URL,
 					Source:     source,
 					DB:         DB,
-					Interval:   apiInterval,
+					Interval:   api.Interval.Duration,
 					Param:      api.Param,
 				}
 

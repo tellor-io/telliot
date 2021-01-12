@@ -190,10 +190,8 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			// when there is no new challenge.
 			mgr.solutionPending = solution
 
-			var profitPercent int64
-			var err error
+			profitPercent, err := mgr.profit() // Call it regardless of whether we use it to set the metrics.
 			if mgr.cfg.ProfitThreshold > 0 {
-				profitPercent, err = mgr.profit()
 				if err != nil {
 					level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)
 					continue
@@ -213,7 +211,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			}
 			tx, err := mgr.solHandler.Submit(ctx, solution)
 			if err != nil {
-				level.Error(mgr.logger).Log("msg", "submiting a solution", err)
+				level.Error(mgr.logger).Log("msg", "submiting a solution", "err", err)
 				mgr.submitFailCount.Inc()
 				continue
 			}
@@ -394,7 +392,7 @@ func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		if err != nil {
 			level.Error(mgr.logger).Log("msg", "saving transaction cost", "err", err)
 		}
-		level.Debug(mgr.logger).Log("msg", "saved transaction cost", "txHash", receipt.TxHash.String(), "gas", gasUsed.Int64(), "slot", slotNum.Int64())
+		level.Debug(mgr.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slotNum.Int64())
 	}(tx)
 }
 
