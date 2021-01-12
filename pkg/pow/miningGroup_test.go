@@ -4,6 +4,8 @@
 package pow
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	"fmt"
@@ -63,7 +65,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	testVectors := []int{19, 133, 8, 442, 1231}
 	for _, v := range testVectors {
 		challenge := createChallenge(v, diff)
-		input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
+		input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64, TimeoutCtx: context.Background()}
 
 		// Wait for a solution to be found.
 		select {
@@ -126,7 +128,7 @@ func TestMulti(t *testing.T) {
 	go group.Mine(input, output)
 
 	challenge := createChallenge(0, math.MaxInt64)
-	input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
+	input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64, TimeoutCtx: context.Background()}
 	time.Sleep(1 * time.Second)
 
 	group.PrintHashRateSummary()

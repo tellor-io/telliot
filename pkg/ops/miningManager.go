@@ -31,6 +31,8 @@ import (
 	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
+const maxMiningTimeout = 15 * time.Minute
+
 type WorkSource interface {
 	GetWork(toMine chan *pow.Work) *pow.Work
 }
@@ -63,6 +65,8 @@ type MiningMgr struct {
 	submitCount     prometheus.Counter
 	submitFailCount prometheus.Counter
 	submitProfit    *prometheus.GaugeVec
+
+	miningCtxCnl context.CancelFunc
 }
 
 // CreateMiningManager is the MiningMgr constructor.
@@ -163,6 +167,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			}
 		// New solution from the miner.
 		case solution := <-mgr.solutionOutput:
+			mgr.miningCtxCnl() // This does nothing, but run it to avoid context leak.
 			if !mgr.submit(solution, ctx) {
 				mgr.solutionPending = solution
 			}
@@ -174,7 +179,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 // submit returns true when the provided solution has been submited without an error or
 // with an error which can be ignored.
 func (mgr *MiningMgr) submit(solution *pow.Result, ctx context.Context) bool {
-	lastSubmit, err := mgr.lastSubmit()
+	lastSubmit, err := mgr.lastMinerSubmit()
 	if err != nil {
 		level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
 	} else if lastSubmit < mgr.cfg.MinSubmitPeriod {
@@ -206,7 +211,6 @@ func (mgr *MiningMgr) submit(solution *pow.Result, ctx context.Context) bool {
 	if err != nil {
 		level.Error(mgr.logger).Log("msg", "submiting a solution", "err", err)
 		mgr.submitFailCount.Inc()
-		// This error can be ignored so return true when a match.
 		return false
 	}
 	level.Debug(mgr.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
@@ -224,17 +228,68 @@ func (mgr *MiningMgr) newWork() {
 		mgr.tasker.GetWork(mgr.toMineInput)
 	} else {
 		work := mgr.tasker.GetWork(nil)
+		if work == nil {
+			return
+		}
 		var ids []int64
 		for _, id := range work.Challenge.RequestIDs {
 			ids = append(ids, id.Int64())
 		}
+		// For oracle blocks that are more than 15mins old can submit any solution.
+		// No need to send it for minging.
+		if mgr.isInstantSubmit() {
+			mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
+		}
 		level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
+
+		// Send it for mining with a timeout to expire when the difficulty is zero and
+		// can submit any solution. The timeout will cancel the the mining and
+		// the mining loop will return a random nonce as after the maxMiningTimeout any nonce will work.
+		tm, err := mgr.timeOfLastNewValue()
+		ctx, cancel := context.WithTimeout(context.Background(), maxMiningTimeout)
+		if err != nil {
+			level.Error(mgr.logger).Log("msg", "get TimeOfLastNewValueKey", "err", err)
+		} else {
+			now := time.Now()
+			ctx, cancel = context.WithTimeout(context.Background(), now.Sub(tm))
+		}
+		mgr.miningCtxCnl = cancel // Not used, but needs to be called later to avoid leaks.
+		work.TimeoutCtx = ctx
 		mgr.toMineInput <- work
 
 	}
 }
 
-func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
+// isInstantSubmit checks if the current oracle block is more than maxMiningTimeout old.
+func (mgr *MiningMgr) isInstantSubmit() bool {
+	tm, err := mgr.timeOfLastNewValue()
+	if err != nil {
+		level.Error(mgr.logger).Log("msg", "get TimeOfLastNewValueKey", "err", err)
+		return false
+	}
+	now := time.Now()
+	level.Debug(mgr.logger).Log("msg", "since last value", "time", now.Sub(tm))
+
+	return now.Sub(tm) >= maxMiningTimeout
+}
+
+func (mgr *MiningMgr) timeOfLastNewValue() (time.Time, error) {
+	timeOfLastNewValue, err := mgr.database.Get(db.TimeOfLastNewValueKey)
+	if err != nil {
+		return time.Time{}, errors.Wrap(err, "get TimeOfLastNewValueKey from db")
+	}
+	if len(timeOfLastNewValue) == 0 {
+		return time.Time{}, errors.New("TimeOfLastNewValueKey is empty in the db")
+	}
+
+	t, err := hexutil.DecodeBig(string(timeOfLastNewValue))
+	if err != nil {
+		return time.Time{}, errors.Wrap(err, "decoding TimeOfLastNewValueKey from db")
+	}
+	return time.Unix(t.Int64(), 0), nil
+}
+
+func (mgr *MiningMgr) lastMinerSubmit() (time.Duration, error) {
 	fromAddress := common.HexToAddress(mgr.cfg.PublicAddress)
 	pubKey := strings.ToLower(fromAddress.Hex())
 

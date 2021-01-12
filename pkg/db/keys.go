@@ -34,36 +34,36 @@ const (
 	QueryMetadataPrefix = "qm_"
 
 	// QueriedValuePrefix is for request values that are stored with this prefix plus request id.
-	QueriedValuePrefix = "qv_"
-	LastNewValueKey    = "lastnewvalue"
-	LastSubmissionKey  = "last_submission"
-	TimeOutKey         = "time_out"
+	QueriedValuePrefix    = "qv_"
+	TimeOfLastNewValueKey = "time_of_last_new_value"
+	LastSubmissionKey     = "last_submission"
+	TimeOutKey            = "time_out"
 )
 
 var knownKeys map[string]bool
 
 func initKeyLook() {
 	knownKeys = map[string]bool{
-		BalanceKey:          true,
-		CurrentChallengeKey: true,
-		RequestIdKey:        true,
-		RequestIdKey0:       true,
-		RequestIdKey1:       true,
-		RequestIdKey2:       true,
-		RequestIdKey3:       true,
-		RequestIdKey4:       true,
-		DifficultyKey:       true,
-		QueryStringKey:      true,
-		GranularityKey:      true,
-		TotalTipKey:         true,
-		MiningStatusKey:     true,
-		GasKey:              true,
-		Top50Key:            true,
-		TributeBalanceKey:   true,
-		DisputeStatusKey:    true,
-		LastNewValueKey:     true,
-		LastSubmissionKey:   true,
-		TimeOutKey:          true,
+		BalanceKey:            true,
+		CurrentChallengeKey:   true,
+		RequestIdKey:          true,
+		RequestIdKey0:         true,
+		RequestIdKey1:         true,
+		RequestIdKey2:         true,
+		RequestIdKey3:         true,
+		RequestIdKey4:         true,
+		DifficultyKey:         true,
+		QueryStringKey:        true,
+		GranularityKey:        true,
+		TotalTipKey:           true,
+		MiningStatusKey:       true,
+		GasKey:                true,
+		Top50Key:              true,
+		TributeBalanceKey:     true,
+		DisputeStatusKey:      true,
+		TimeOfLastNewValueKey: true,
+		LastSubmissionKey:     true,
+		TimeOutKey:            true,
 	}
 }
 func isKnownKey(key string) bool {

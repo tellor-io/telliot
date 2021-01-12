@@ -81,10 +81,10 @@ func CreatePool(cfg *config.Config, group *MiningGroup) *StratumPool {
 	}
 }
 
-func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
+func (p *StratumPool) GetWork(input chan *Work) *Work {
 	if p.stratumClient != nil && p.stratumClient.running {
 		p.log.Warn("stratum client already running")
-		return nil, false
+		return nil
 	}
 
 	p.input = input
@@ -93,7 +93,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 	stratumClient, err := StratumConnect(p.url, msgChan)
 	if err != nil {
 		p.log.Error("stratum connect error: %s", err.Error())
-		return nil, false
+		return nil
 	}
 
 	p.stratumClient = stratumClient
@@ -160,7 +160,7 @@ func (p *StratumPool) GetWork(input chan *Work) (*Work, bool) {
 		}
 	}()
 
-	return nil, false
+	return nil
 }
 
 func (p *StratumPool) Submit(ctx context.Context, result *Result) (*types.Transaction, error) {

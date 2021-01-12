@@ -9,6 +9,7 @@ package pow
 //go:generate go run generate_opencl.go
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -137,7 +138,7 @@ func (g *GpuMiner) Name() string {
 	return g.name
 }
 
-func (g *GpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
+func (g *GpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64, ctx context.Context) (string, uint64, error) {
 	if n%g.StepSize() != 0 {
 		return "", 0, errors.Errorf("must be a multiple n (%v) of GPU step size (%v)", n, g.StepSize())
 	}
@@ -154,6 +155,11 @@ func (g *GpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 
 	done := uint64(0)
 	for done < n {
+		select {
+		case <-ctx.Done():
+			return string("context expired"), done, nil
+		default:
+		}
 		if err := g.kernel.SetArgs(g.prefix, g.mulDivisor, g.output, start, g.Count); err != nil {
 			return "", done, errors.Wrap(err, "SetKernelArgs")
 		}

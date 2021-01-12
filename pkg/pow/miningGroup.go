@@ -4,6 +4,7 @@
 package pow
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math"
@@ -19,12 +20,12 @@ type HashSettings struct {
 	difficulty *big.Int
 }
 
-// interface for all mining implementations.
+// Hasher interface for all mining implementations.
 type Hasher interface {
 	//base is a 52 byte slice containing the challenge and public address
 	// the guessed nonce is appended to this slice and used as input to the first hash fn
 	// returns a valid nonce, or empty string if none was found
-	CheckRange(hash *HashSettings, start uint64, n uint64) (string, uint64, error)
+	CheckRange(hash *HashSettings, start uint64, n uint64, ctx context.Context) (string, uint64, error)
 
 	//number of hashes this backend checks at a time
 	StepSize() uint64
@@ -93,9 +94,9 @@ type backendResult struct {
 }
 
 // do some work and write the result back to a channel.
-func (b *Backend) doWork(hash *HashSettings, start uint64, n uint64, resultCh chan *backendResult) {
+func (b *Backend) doWork(hash *HashSettings, start uint64, n uint64, resultCh chan *backendResult, ctx context.Context) {
 	timeStarted := time.Now()
-	sol, nchecked, err := b.CheckRange(hash, start, n)
+	sol, nchecked, err := b.CheckRange(hash, start, n, ctx)
 	if err != nil {
 		resultCh <- &backendResult{err: err}
 		return
@@ -163,6 +164,7 @@ type Work struct {
 	PublicAddr string
 	Start      uint64
 	N          uint64
+	TimeoutCtx context.Context
 }
 
 type Result struct {
@@ -171,7 +173,7 @@ type Result struct {
 }
 
 // dispatches a chunk and returns the number of hashes chosen.
-func (b *Backend) dispatchWork(hash *HashSettings, start uint64, resultCh chan *backendResult) uint64 {
+func (b *Backend) dispatchWork(hash *HashSettings, start uint64, resultCh chan *backendResult, ctx context.Context) uint64 {
 	target := b.HashRateEstimate * targetChunkTime.Seconds()
 	step := b.StepSize()
 	nsteps := uint64(math.Round(target / float64(step)))
@@ -179,7 +181,7 @@ func (b *Backend) dispatchWork(hash *HashSettings, start uint64, resultCh chan *
 		nsteps = 1
 	}
 	n := nsteps * step
-	go b.doWork(hash, start, n, resultCh)
+	go b.doWork(hash, start, n, resultCh, ctx)
 	return n
 }
 
@@ -271,7 +273,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		if currWork != nil {
 			for sent < currWork.N && len(idleWorkers) > 0 {
 				worker := <-idleWorkers
-				sent += worker.dispatchWork(currHashSettings, currWork.Start+sent, resultChannel)
+				sent += worker.dispatchWork(currHashSettings, currWork.Start+sent, resultChannel, currWork.TimeoutCtx)
 			}
 		}
 	}

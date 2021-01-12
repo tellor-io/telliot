@@ -4,6 +4,7 @@
 package pow
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"math/big"
@@ -29,7 +30,7 @@ func (c *CpuMiner) Name() string {
 	return fmt.Sprintf("CPU %d", *c)
 }
 
-func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
+func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64, ctx context.Context) (string, uint64, error) {
 	baseLen := len(hash.prefix)
 	hashInput := make([]byte, len(hash.prefix))
 	copy(hashInput, hash.prefix)
@@ -38,6 +39,11 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (strin
 	compareZero := big.NewInt(0)
 
 	for i := start; i < (start + n); i++ {
+		select {
+		case <-ctx.Done():
+			return "context expired", n, nil
+		default:
+		}
 		nn := strconv.FormatUint(i, 10)
 		hashInput = hashInput[:baseLen]
 		hashInput = append(hashInput, []byte(nn)...)

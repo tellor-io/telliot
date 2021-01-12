@@ -61,7 +61,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "time of last new value retrieval")
 	}
-	err = b.db.Put(db.LastNewValueKey, []byte(hexutil.EncodeBig(timeOfLastNewValue)))
+	err = b.db.Put(db.TimeOfLastNewValueKey, []byte(hexutil.EncodeBig(timeOfLastNewValue)))
 	if err != nil {
 		return errors.Wrap(err, "ast new value put")
 	}
