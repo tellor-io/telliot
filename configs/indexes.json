@@ -157,6 +157,11 @@
         {
             "URL": "https://api.defillama.com/charts",
             "param": "$[-1:].totalLiquidityUSD"
+        },
+        {
+            "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
+            "param": "$.All.total",
+            "interval": 600
         }
     ],
     "EOS/USD": [
