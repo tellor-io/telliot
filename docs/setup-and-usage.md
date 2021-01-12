@@ -68,6 +68,7 @@ export NAME= # Put an instance name here. Something short as some properties are
 export REPO= # Your docker repository name.
 docker build . -t $REPO/telliot:main
 docker push $REPO/telliot:main
+
 sed -i "s/tellor\/telliot:master/$REPO\/telliot:main/g" .local/configs/$NAME/telliot.yml
 kubectl apply -f .local/configs/$NAME/telliot.yml
 ```

@@ -73,24 +73,48 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 
 				var name string
 				var source DataSource
-				if strings.HasPrefix(api.URL, "http") {
-					source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}}
-					u, err := url.Parse(api.URL)
-					if err != nil {
-						return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
-					}
-					name = u.Host
-				} else {
-					source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, api.URL)}
-					name = filepath.Base(api.URL)
+
+				// Create an index tracker based on the api type.
+				// Default value for the api type.
+				if api.Type == "" {
+					api.Type = httpIndexType
 				}
-				trackersPerURL[api.URL] = &IndexTracker{
+				switch api.Type {
+				case httpIndexType:
+					{
+						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}}
+						u, err := url.Parse(api.URL)
+						if err != nil {
+							return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
+						}
+						name = u.Host
+					}
+				case fileIndexType:
+					{
+						source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, api.URL)}
+						name = filepath.Base(api.URL)
+					}
+				case ethereumIndexType:
+					{
+						// Skip as there is no ethereum index type in the index file right now.
+						continue
+					}
+				default:
+					return nil, nil, errors.New("unknown index type for index object")
+				}
+				// Default value for the parser.
+				if api.Parser == "" {
+					api.Parser = jsonPathIndexParser
+				}
+				current := &IndexTracker{
 					Name:       name,
 					Identifier: api.URL,
 					Source:     source,
-					JSONPath:   api.JSONPath,
 					DB:         DB,
+					Param:      api.Param,
 				}
+
+				trackersPerURL[api.URL] = current
 			}
 			// Now we definitely have one.
 			thisOne := trackersPerURL[api.URL]
@@ -147,18 +171,37 @@ func BuildIndexTrackers(cfg *config.Config, db db.DB) ([]Tracker, error) {
 	return trackers, nil
 }
 
+// IndexType -> index type for IndexObject.
+type IndexType string
+
+const (
+	httpIndexType     IndexType = "http"
+	ethereumIndexType IndexType = "ethereum"
+	fileIndexType     IndexType = "file"
+)
+
+// IndexParser -> index format for IndexObject.
+type IndexParser string
+
+const (
+	jsonPathIndexParser IndexParser = "jsonPath"
+)
+
 // IndexObject will be used in parsing index file.
 type IndexObject struct {
-	URL      string `json:"URL"`
-	JSONPath string `json:"JSONPath"`
+	URL    string      `json:"URL"`
+	Type   IndexType   `json:"type"`
+	Parser IndexParser `json:"format"`
+	Param  string      `json:"param"`
 }
+
 type IndexTracker struct {
 	DB         db.DB
 	Name       string
 	Identifier string
 	Symbols    []string
 	Source     DataSource
-	JSONPath   string
+	Param      string
 }
 
 type DataSource interface {
@@ -220,11 +263,11 @@ func (i *IndexTracker) parsePayload(payload []byte) (vals []float64, err error) 
 
 	// Query the json payload using JSONPath expression if needed.
 	result = decodedPayload
-	if len(strings.TrimSpace(i.JSONPath)) > 0 {
+	if len(strings.TrimSpace(i.Param)) > 0 {
 		if err != nil {
 			return
 		}
-		result, err = jsonpath.Read(decodedPayload, i.JSONPath)
+		result, err = jsonpath.Read(decodedPayload, i.Param)
 		if err != nil {
 			return
 		}
