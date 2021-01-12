@@ -315,15 +315,11 @@ func (m mineCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
 	}
+	proxy, err := createProxy(cfg, DB)
+	if err != nil {
+		return errors.Wrapf(err, "initializing proxy")
+	}
 	if !cfg.EnablePoolWorker {
-		var err error
-		proxy, err := createProxy(cfg, DB)
-		if err != nil {
-			return errors.Wrapf(err, "initializing proxy")
-		}
-		if err != nil {
-			return errors.Wrapf(err, "initializing database")
-		}
 		if !cfg.RemoteMining {
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
@@ -350,7 +346,7 @@ func (m mineCmd) Run() error {
 	}
 	ch := make(chan os.Signal)
 	exitChannels = append(exitChannels, &ch)
-	miner, err := ops.CreateMiningManager(logger, ch, cfg, DB, contract, account)
+	miner, err := ops.CreateMiningManager(logger, ch, cfg, proxy, contract, account)
 	if err != nil {
 		return errors.Wrapf(err, "creating miner")
 	}
