@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/joho/godotenv"
@@ -102,6 +103,15 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 				default:
 					return nil, nil, errors.New("unknown index type for index object")
 				}
+
+				apiInterval := cfg.TrackerSleepCycle.Duration
+				if api.Interval.Duration > 0 {
+					apiInterval = api.Interval.Duration
+				}
+				if apiInterval < cfg.TrackerSleepCycle.Duration {
+					return nil, nil, errors.New("api interval can't be smaller than the global tracker cycle")
+				}
+
 				// Default value for the parser.
 				if api.Parser == "" {
 					api.Parser = jsonPathIndexParser
@@ -111,6 +121,7 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					Identifier: api.URL,
 					Source:     source,
 					DB:         DB,
+					Interval:   apiInterval,
 					Param:      api.Param,
 				}
 
@@ -189,19 +200,22 @@ const (
 
 // IndexObject will be used in parsing index file.
 type IndexObject struct {
-	URL    string      `json:"URL"`
-	Type   IndexType   `json:"type"`
-	Parser IndexParser `json:"format"`
-	Param  string      `json:"param"`
+	URL      string          `json:"URL"`
+	Type     IndexType       `json:"type"`
+	Parser   IndexParser     `json:"format"`
+	Param    string          `json:"param"`
+	Interval config.Duration `json:"interval"`
 }
 
 type IndexTracker struct {
-	DB         db.DB
-	Name       string
-	Identifier string
-	Symbols    []string
-	Source     DataSource
-	Param      string
+	DB               db.DB
+	Name             string
+	Identifier       string
+	Symbols          []string
+	Source           DataSource
+	Interval         time.Duration
+	Param            string
+	lastRunTimestamp time.Time
 }
 
 type DataSource interface {
@@ -225,6 +239,12 @@ func (j *JSONfile) Get() ([]byte, error) {
 }
 
 func (i *IndexTracker) Exec(ctx context.Context) error {
+	now := time.Now()
+	if now.Sub(i.lastRunTimestamp) < i.Interval {
+		return nil
+	}
+	i.lastRunTimestamp = now
+
 	payload, err := i.Source.Get()
 	if err != nil {
 		return err

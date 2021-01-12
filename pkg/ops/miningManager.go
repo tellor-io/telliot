@@ -207,7 +207,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			lastSubmit, err := mgr.lastSubmit()
 			if err != nil {
 				level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
-			} else if lastSubmit < mgr.cfg.MinSubmitPeriod {
+			} else if lastSubmit < mgr.cfg.MinSubmitPeriod.Duration {
 				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.MinSubmitPeriod, "lastSubmit", lastSubmit)
 				continue
 			}
