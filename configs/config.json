@@ -1,12 +1,12 @@
 {
     "contractAddress": "0xFe41Cb708CD98C5B20423433309E55b53F79134a",
     "publicAddress": "0x0000000000000000000000000000000000000000",
-    "serverHost": "localhost",
+    "serverHost": "0.0.0.0",
     "serverPort": 5000,
     "gasMax": 10,
-    "dbFile": "/tellorDB",
-    "configFolder": "/configs",
-    "envFile": "configs/.env.example",
+    "dbFile": "db",
+    "configFolder": "configs",
+    "envFile": ".env",
     "logLevel": "info",
     "Logger": {
         "config.Config": "INFO",

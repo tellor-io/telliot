@@ -34,16 +34,51 @@ docker run -v $(pwd)/local:/configs tellor/telliot:master mine
 gcloud auth login --project projectName
 gcloud container clusters get-credentials main --zone europe-west2-a --project projectName
 ```
- - Deploy the `cli` (by default deployed with the mining command)
+ - Deploy the `cli` (by default deployed to run as a miner)
 ```bash
-kubectl create secret generic telliot-env --from-env-file=.env
-kubectl apply -f https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manifests/telliot.yml
+git clone https://github.com/tellor-io/telliot
+cd telliot
+export NAME=main
+mkdir -p .local/configs/$NAME
+
+# Create the secret file.
+cp configs/.env.example .local/configs/$NAME/.env # Edit the file after the copy.
+kubectl create secret generic telliot-$NAME --from-env-file=.local/configs/$NAME/.env
+
+cp configs/config.json .local/configs/$NAME/config.json # Edit the file after the copy.
+
+# Copy the index, manual. These can be used as it without editing.
+cp configs/indexes.json .local/configs/$NAME/indexes.json
+cp configs/manualData.json .local/configs/$NAME/manualData.json
+# Add the configs.
+kubectl create configmap telliot-$NAME --from-file=.local/configs/$NAME/config.json  --from-file=.local/configs/$NAME/indexes.json --from-file=.local/configs/$NAME/manualData.json -o yaml --dry-run=client | kubectl apply -f -
+
+# Copy the deployment and create it.
+cp configs/manifests/telliot.yml .local/configs/$NAME/telliot.yml
+sed -i "s/telliot-main/telliot-$NAME/g" .local/configs/$NAME/telliot.yml
+kubectl apply -f .local/configs/$NAME/telliot.yml
 ```
+#### To run another instance.
+```bash
+export NAME= # Put an instance name here. Something short as some properties are limited by length(e.g `export NAME=PR320`).
+# Run all the other commands from initial k8s setup.
+```
+#### To run a custom docker image.
+```bash
+export REPO= # Your docker repository name.
+docker build . -t $REPO/telliot:latest
+docker push $REPO/telliot:latest
+
+sed -i "s/tellor\/telliot:master/$REPO\/telliot:latest/g" .local/configs/$NAME/telliot.yml
+kubectl apply -f .local/configs/$NAME/telliot.yml
+```
+
  - Optionally deploy the monitoring stack with Prometheus and Grafana.
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manifests/monitoring-persist.yml
-kubectl apply -f https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manifests/monitoring.yml
+kubectl apply -f configs/manifests/monitoring-persist.yml
+kubectl apply -f configs/manifests/monitoring.yml
 ```
+
 
 ### Download and Edit config.json
 
@@ -59,14 +94,8 @@ Open config.json and update the following values:
 
 ### Create .env file
 
-Most commands require some secrets and these are kept in a separate `configs/.env` so . This is a precaution so that are not accidentally exposed as part of the main configs.
-
-Copy and paste the following into your `.env` file, and edit this to match your mining address private key and Ethereum node endpoint
-
-```bash
-ETH_PRIVATE_KEY="3a10b4bc1258e8bfefb95b498fb8c0f0cd6964a811eabca87df56xxxxxxxxxxxx"
-NODE_URL="https://mainnet.infura.io/v3/xxxxxxxxxxxxx"
-```
+Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config.
+Make a copy of the `env.example` and edit with your secrets.
 
 ## mine - Become a Miner
 
