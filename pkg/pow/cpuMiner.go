@@ -41,7 +41,7 @@ func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64, ctx co
 	for i := start; i < (start + n); i++ {
 		select {
 		case <-ctx.Done():
-			return "context expired", n, nil
+			return "context expired so any nonce will work", n, nil
 		default:
 		}
 		nn := strconv.FormatUint(i, 10)

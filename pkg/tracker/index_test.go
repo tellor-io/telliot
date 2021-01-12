@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
@@ -30,7 +32,7 @@ func TestIndexTracker(t *testing.T) {
 			IndexTracker: &IndexTracker{
 				Name:       "test1",
 				Identifier: "id1",
-				JSONPath:   "$[0][4]",
+				Param:      "$[0][4]",
 				Source: TestDataSource{
 					Payload: `[[324.34,53453.534,4443.3,45.53453,53.63653]]`,
 				},
@@ -41,7 +43,7 @@ func TestIndexTracker(t *testing.T) {
 			IndexTracker: &IndexTracker{
 				Name:       "test2",
 				Identifier: "id2",
-				JSONPath:   `$["test"]["a","b"]`,
+				Param:      `$["test"]["a","b"]`,
 				Source: TestDataSource{
 					Payload: `{"test":{"a":879.54,"b":876.5}}`,
 				},
@@ -52,7 +54,7 @@ func TestIndexTracker(t *testing.T) {
 			IndexTracker: &IndexTracker{
 				Name:       "test3",
 				Identifier: "id3",
-				JSONPath:   `$[dummy][test]`,
+				Param:      `$[dummy][test]`,
 				Source: TestDataSource{
 					Payload: `{"dummy":{"test": "1321,67.3"}}`,
 				},
@@ -63,7 +65,7 @@ func TestIndexTracker(t *testing.T) {
 			IndexTracker: &IndexTracker{
 				Name:       "test4",
 				Identifier: "id4",
-				JSONPath:   "$[0][7,8]",
+				Param:      "$[0][7,8]",
 				Source: TestDataSource{
 					Payload: "[[768,68,324.34,53453.534,4443.3,45.53453,53.63653,454.534,454.837]]",
 				},
@@ -74,7 +76,7 @@ func TestIndexTracker(t *testing.T) {
 			IndexTracker: &IndexTracker{
 				Name:       "test5",
 				Identifier: "id5",
-				JSONPath:   "$[\"bitcoin-cash-sv\"][\"usd\"]", // If there is a dash in JSONPath, then we must use double quotation!
+				Param:      "$[\"bitcoin-cash-sv\"][\"usd\"]", // If there is a dash in Param, then we must use double quotation!
 				Source: TestDataSource{
 					Payload: `{"bitcoin-cash-sv":{"usd":169.55}}`,
 				},
@@ -85,7 +87,7 @@ func TestIndexTracker(t *testing.T) {
 			IndexTracker: &IndexTracker{
 				Name:       "test6",
 				Identifier: "id6",
-				JSONPath:   "$.dummy.test.usd[a,b]",
+				Param:      "$.dummy.test.usd[a,b]",
 				Source: TestDataSource{
 					Payload: `{"dummy": { "test": {"usd": {"a": 567.43,"b": 567.23}}}}`,
 				},
@@ -102,5 +104,27 @@ func TestIndexTracker(t *testing.T) {
 		}
 		testutil.Equals(t, testCase.Expected, actual)
 
+	}
+}
+
+func TestIndexParsable(t *testing.T) {
+	cfg := config.OpenTestConfig(t)
+	DB, cleanup := db.OpenTestDB(t)
+	defer t.Cleanup(cleanup)
+
+	if _, err := BuildIndexTrackers(cfg, DB); err != nil {
+		testutil.Ok(t, err)
+	}
+
+	for _, indexers := range indexes {
+		for _, indexer := range indexers {
+			t.Logf("indexer: %v\n", indexer)
+			payload, err := indexer.Source.Get()
+			testutil.Ok(t, err)
+			t.Logf("payload: %v", string(payload))
+			t.Logf("jsonpath: %v", indexer.Param)
+			_, err = indexer.parsePayload(payload)
+			testutil.Ok(t, err)
+		}
 	}
 }

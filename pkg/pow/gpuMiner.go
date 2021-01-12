@@ -157,7 +157,7 @@ func (g *GpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64, ctx co
 	for done < n {
 		select {
 		case <-ctx.Done():
-			return string("context expired"), done, nil
+			return "context expired so any nonce will work", done, nil
 		default:
 		}
 		if err := g.kernel.SetArgs(g.prefix, g.mulDivisor, g.output, start, g.Count); err != nil {
