@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"os/signal"
@@ -13,6 +14,24 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ops"
 )
+
+var GitTag string
+var GitHash string
+
+const versionMessage = `
+    The official Tellor cli tool %s (%s)
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+`
+
+type VersionCmd struct {
+}
+
+func (cmd *VersionCmd) Run() error {
+	fmt.Sprintf(versionMessage, GitTag, GitHash)
+	return nil
+}
 
 type configPath string
 type tokenCmd struct {

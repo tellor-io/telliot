@@ -140,6 +140,7 @@ var cli struct {
 	} `cmd help:"Perform commands related to disputes"`
 	Dataserver dataserverCmd `cmd help:"launch only a dataserver instance"`
 	Mine       mineCmd       `cmd help:"mine TRB and submit values"`
+	Version    VersionCmd    `cmd help:"Show the Docker version information"`
 }
 
 func main() {
