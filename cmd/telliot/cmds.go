@@ -29,7 +29,7 @@ type VersionCmd struct {
 }
 
 func (cmd *VersionCmd) Run() error {
-	fmt.Sprintf(versionMessage, GitTag, GitHash)
+	fmt.Printf(versionMessage, GitTag, GitHash)
 	return nil
 }
 
@@ -115,6 +115,11 @@ func (b *balanceCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
+	_, err = createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
 	ctx := context.Background()
 	client, contract, _, err := createTellorVariables(ctx, cfg)
 	if err != nil {
@@ -185,6 +190,11 @@ func (n newDisputeCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
+	_, err = createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
 	ctx := context.Background()
 	client, contract, account, err := createTellorVariables(ctx, cfg)
 	if err != nil {
@@ -219,6 +229,11 @@ func (v voteCmd) Run() error {
 	cfg, err := parseConfig(string(v.Config))
 	if err != nil {
 		return errors.Wrapf(err, "creating config")
+	}
+
+	_, err = createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
 	}
 
 	ctx := context.Background()
