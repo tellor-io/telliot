@@ -18,9 +18,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	uniswap "github.com/tellor-io/telliot/pkg/contracts/uniswap"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
-	uniswapcontract "github.com/tellor-io/telliot/pkg/tracker/uniswap"
 )
 
 // UniswapPriceCumulative will be used to save/load data into/from the DB, so that
@@ -156,8 +156,8 @@ func calculateTWAP(old, last *UniswapPriceCumulative) (price0 float64, err error
 
 }
 func (u *Uniswap) getCumulativePrice() (priceLast *UniswapPriceCumulative, err error) {
-	var pairContract *uniswapcontract.IUniswapV2PairCaller
-	pairContract, err = uniswapcontract.NewIUniswapV2PairCaller(common.HexToAddress(u.address), u.client)
+	var pairContract *uniswap.IUniswapV2PairCaller
+	pairContract, err = uniswap.NewIUniswapV2PairCaller(common.HexToAddress(u.address), u.client)
 	if err != nil {
 		err = errors.Wrap(err, "getting pair contract")
 		return
@@ -199,8 +199,8 @@ func (u *Uniswap) getCumulativePrice() (priceLast *UniswapPriceCumulative, err e
 	}
 
 	// Call on erc20 contracts.
-	var erc20TokenCaller *uniswapcontract.IERC20Caller
-	erc20TokenCaller, err = uniswapcontract.NewIERC20Caller(token0, u.client)
+	var erc20TokenCaller *uniswap.IERC20Caller
+	erc20TokenCaller, err = uniswap.NewIERC20Caller(token0, u.client)
 	if err != nil {
 		err = errors.Wrap(err, "getting token0 contract")
 		return
@@ -210,7 +210,7 @@ func (u *Uniswap) getCumulativePrice() (priceLast *UniswapPriceCumulative, err e
 		err = errors.Wrap(err, "getting token0 decimals")
 		return
 	}
-	erc20TokenCaller, err = uniswapcontract.NewIERC20Caller(token1, u.client)
+	erc20TokenCaller, err = uniswap.NewIERC20Caller(token1, u.client)
 	if err != nil {
 		err = errors.Wrap(err, "getting token1 contract")
 		return

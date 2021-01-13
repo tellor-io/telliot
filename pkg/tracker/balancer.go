@@ -15,9 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	balancer "github.com/tellor-io/telliot/pkg/contracts/balancer"
 	"github.com/tellor-io/telliot/pkg/rpc"
-	pool "github.com/tellor-io/telliot/pkg/tracker/balancer/balancerpool"
-	balancerToken "github.com/tellor-io/telliot/pkg/tracker/balancer/balancertoken"
 )
 
 // BalancerPair to be fetched onchain.
@@ -69,8 +68,8 @@ func (b *Balancer) Get(ctx context.Context) ([]byte, error) {
 }
 
 func (b *Balancer) getPair() (*BalancerPair, error) {
-	var poolCaller *pool.BalancerpoolCaller
-	poolCaller, err := pool.NewBalancerpoolCaller(common.HexToAddress(b.address), b.client)
+	var poolCaller *balancer.BPoolCaller
+	poolCaller, err := balancer.NewBPoolCaller(common.HexToAddress(b.address), b.client)
 	if err != nil {
 		return nil, err
 	}
@@ -82,13 +81,13 @@ func (b *Balancer) getPair() (*BalancerPair, error) {
 	pair := &BalancerPair{}
 	var token1Seen, token2Seen bool
 	for _, token := range currentTokens {
-		var tokenCaller *balancerToken.BalancertokenCaller
-		tokenCaller, err = balancerToken.NewBalancertokenCaller(token, b.client)
+		var tokenCaller *balancer.BTokenCaller
+		tokenCaller, err = balancer.NewBTokenCaller(token, b.client)
 		if err != nil {
 			return nil, err
 		}
 		var symbol string
-		var decimals *big.Int
+		var decimals uint8
 		symbol, err = tokenCaller.Symbol(&bind.CallOpts{})
 		if err != nil {
 			return nil, err
@@ -99,11 +98,11 @@ func (b *Balancer) getPair() (*BalancerPair, error) {
 		}
 		if symbol == b.token1 {
 			pair.token1Address = token
-			pair.token1Decimals = decimals.Uint64()
+			pair.token1Decimals = uint64(decimals)
 			token1Seen = true
 		} else if symbol == b.token2 {
 			pair.token2Address = token
-			pair.token2Decimals = decimals.Uint64()
+			pair.token2Decimals = uint64(decimals)
 			token2Seen = true
 		}
 	}
@@ -114,8 +113,8 @@ func (b *Balancer) getPair() (*BalancerPair, error) {
 }
 
 func (b *Balancer) getSpotPrice(pair *BalancerPair) (float64, error) {
-	var poolCaller *pool.BalancerpoolCaller
-	poolCaller, err := pool.NewBalancerpoolCaller(common.HexToAddress(b.address), b.client)
+	var poolCaller *balancer.BPoolCaller
+	poolCaller, err := balancer.NewBPoolCaller(common.HexToAddress(b.address), b.client)
 	if err != nil {
 		return 0, err
 	}
