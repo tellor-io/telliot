@@ -10,6 +10,8 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -25,11 +27,26 @@ type Runner struct {
 	readyChannel chan bool
 	logger       log.Logger
 	config       *config.Config
+	trackerErr   *prometheus.CounterVec
 }
 
 // NewRunner will create a new runner instance.
 func NewRunner(logger log.Logger, config *config.Config, db db.DB, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) (*Runner, error) {
-	return &Runner{config: config, db: db, client: client, contract: contract, account: account, readyChannel: make(chan bool, 1), logger: log.With(logger, "component", "runner")}, nil
+	return &Runner{
+		config:       config,
+		db:           db,
+		client:       client,
+		contract:     contract,
+		account:      account,
+		readyChannel: make(chan bool, 1),
+		logger:       log.With(logger, "component", "runner"),
+		trackerErr: promauto.NewCounterVec(prometheus.CounterOpts{
+			Namespace: "telliot",
+			Subsystem: "tracker",
+			Name:      "errors_total",
+			Help:      "The total number of tracker errors. Usually caused by API throtling.",
+		}, []string{"id"}),
+	}, nil
 }
 
 // Start will kick off the runner until the given exit channel selects.
@@ -85,6 +102,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 						idx := count % len(trackers)
 						err := trackers[idx].Exec(ctx)
 						if err != nil {
+							r.trackerErr.With(prometheus.Labels{"id": trackers[idx].String()}).(prometheus.Counter).Inc()
 							level.Warn(r.logger).Log("msg", "problem in tracker", "tracker", trackers[idx].String(), "err", err)
 						}
 						// Only the first trackers round execution.

@@ -47,7 +47,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 			return nil, errors.Wrap(err, "retry timeout expired, last error is wrapped")
 		}
 		//FIXME: should this be configured as fetch error sleep duration?
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 
 		//try again
 		retryFetchLog.Warn("Trying fetch again...")
