@@ -111,7 +111,6 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 							return nil, nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
 						}
 						name = fmt.Sprintf("%s(%s)", api.Type, api.URL)
-						continue
 					}
 				default:
 					return nil, nil, errors.New("unknown index type for index object")
@@ -254,7 +253,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	}
 	i.lastRunTimestamp = now
 
-	payload, err := i.Source.Get()
+	payload, err := i.Source.Get(ctx)
 	if err != nil {
 		return err
 	}
