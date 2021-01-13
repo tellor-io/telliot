@@ -114,7 +114,8 @@
         },
         {
             "URL": "https://api.cryptowat.ch/markets/coinbase-pro/btcusd/price",
-            "param": "$.result.price"
+            "param": "$.result.price",
+            "interval": 7200
         },
         {
             "URL": "https://api.kraken.com/0/public/Ticker?pair=XBTUSD",
@@ -161,7 +162,7 @@
         {
             "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
             "param": "$.All.total",
-            "interval": 600
+            "interval": 3600
         }
     ],
     "EOS/USD": [
