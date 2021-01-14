@@ -33,6 +33,11 @@ func init() {
 
 var indexes map[string][]*IndexTracker
 
+// GetIndexes returns indexes for outside package usage.
+func GetIndexes() map[string][]*IndexTracker {
+	return indexes
+}
+
 // parseIndexFile parses indexes.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
@@ -246,7 +251,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	vals, err := i.parsePayload(payload)
+	vals, err := i.ParsePayload(payload)
 	if err != nil {
 		return err
 	}
@@ -266,10 +271,10 @@ func (i *IndexTracker) String() string {
 	return fmt.Sprintf("%s on %s", strings.Join(i.Symbols, ","), i.Name)
 }
 
-// parsePayload parses the input JSON payload to a slice of float64
+// ParsePayload parses the input JSON payload to a slice of float64
 // The input JSON will get queried using JSONPath query language if
 // the JSONPath expression is not empty.
-func (i *IndexTracker) parsePayload(payload []byte) (vals []float64, err error) {
+func (i *IndexTracker) ParsePayload(payload []byte) (vals []float64, err error) {
 
 	var decodedPayload, result interface{}
 	err = json.Unmarshal(payload, &decodedPayload)
