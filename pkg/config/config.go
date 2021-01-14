@@ -55,8 +55,24 @@ type GPUConfig struct {
 	Disabled bool `json:"disabled"`
 }
 
+type DataServer struct {
+	ListenHost string
+	ListenPort uint
+}
+
+type Mine struct {
+	// Connect to this remote DB.
+	RemoteDBHost string
+	RemoteDBPort uint
+	// Exposes metrics on this host and port.
+	ListenHost string
+	ListenPort uint
+}
+
 // Config holds global config info derived from config.json.
 type Config struct {
+	Mine                         Mine
+	DataServer                   DataServer
 	ContractAddress              string                `json:"contractAddress"`
 	PublicAddress                string                `json:"publicAddress"`
 	EthClientTimeout             uint                  `json:"ethClientTimeout"`
@@ -64,8 +80,6 @@ type Config struct {
 	TrackerSleepCycle            Duration              `json:"trackerCycle"`
 	Trackers                     map[string]bool       `json:"trackers"`
 	DBFile                       string                `json:"dbFile"`
-	ServerHost                   string                `json:"serverHost"`
-	ServerPort                   uint                  `json:"serverPort"`
 	FetchTimeout                 Duration              `json:"fetchTimeout"`
 	MinConfidence                float64               `json:"minConfidence"`
 	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
@@ -98,13 +112,21 @@ const ConfigFolder = "configs"
 
 // TODO remove or refactor to not be a global config instance.
 var defaultConfig = Config{
-	GasMax:                       10,
-	GasMultiplier:                1,
-	MinConfidence:                0.2,
-	MinSubmitPeriod:              Duration{15 * time.Minute},
-	DisputeThreshold:             0.01,
-	ServerHost:                   "localhost",
-	ServerPort:                   8080,
+	GasMax:           10,
+	GasMultiplier:    1,
+	MinConfidence:    0.2,
+	MinSubmitPeriod:  Duration{15 * time.Minute},
+	DisputeThreshold: 0.01,
+	Mine: Mine{
+		ListenHost:   "localhost",
+		ListenPort:   9090,
+		RemoteDBHost: "localhost",
+		RemoteDBPort: 5000,
+	},
+	DataServer: DataServer{
+		ListenHost: "localhost",
+		ListenPort: 5000,
+	},
 	Heartbeat:                    Duration{15 * time.Second},
 	DBFile:                       "db",
 	MiningInterruptCheckInterval: Duration{15 * time.Second},

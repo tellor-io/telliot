@@ -1,14 +1,22 @@
 {
     "contractAddress": "0xFe41Cb708CD98C5B20423433309E55b53F79134a",
     "publicAddress": "0x0000000000000000000000000000000000000000",
-    "serverHost": "0.0.0.0",
-    "serverPort": 5000,
     "gasMax": 10,
     "profitThreshold": 100,
-    "dbFile": "db",
+    "dbFile": "tmp/db",
     "configFolder": "configs",
     "envFile": ".env",
     "logLevel": "info",
+    "Mine": {
+        "ListenHost": "0.0.0.0",
+        "ListenPort": 9090,
+        "RemoteDBHost": "localhost",
+        "RemoteDBPort": 5000
+    },
+    "Dataserver": {
+        "ListenHost": "0.0.0.0",
+        "ListenPort": 5000
+    },
     "Logger": {
         "config.Config": "INFO",
         "db.DB": "INFO",
