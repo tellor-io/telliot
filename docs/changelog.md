@@ -10,27 +10,39 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ## Unreleased
 
-#### Changed
-* [\#321](https://github.com/tellor-io/telliot/pull/321) Unified all configuration files. LoggingConfig and LogLevel now reside in the main config file.
-* [\#366](https://github.com/tellor-io/telliot/pull/366) Refactored the `index.json` parsing to be more flexible and allow using different parsers. With the notion of `parser` and `param` can allow combining different parsers and parsers parameters. The default is still `jsonPath`, but current users need to rename 	jsonPath` to `param` in their `index.json` file.
+### Changed
 
-#### Added
-* [\#339](https://github.com/tellor-io/telliot/pull/339) Initial support for Prometheus metrics.
-* [\#340](https://github.com/tellor-io/telliot/pull/340) Manifest files to run in k8s google cloud with Prometheus and Grafana monitoring. The team will run a public telliot miner dashboard at http://monitor.tellor.io/
-* [\#334](https://github.com/tellor-io/telliot/pull/334) DEFITVL feed as a new request ID 57. Miners would have to update the binary and `index.json` to be able to submit.
+### Added
 
-#### Fixed
+### Fixed
+
 * [\#359](https://github.com/tellor-io/telliot/pull/359) Don't resubmit when the contract returns an error - "Miner already submitted the value".
 
+## [v5.4.0](https://github.com/tellor-io/telliot/releases/tag/v5.4.0) - 2020.01.13
+
+### Changed
+* [\#321](https://github.com/tellor-io/telliot/pull/321) Unified all configuration files. LoggingConfig and LogLevel now reside in the main config file.
+* [\#366](https://github.com/tellor-io/telliot/pull/366) Refactored the `index.json` parsing to be more flexible and allow using different parsers. With the notion of `parser` and `param` can allow combining different parsers and parsers parameters. The default is still `jsonPath`, but current users need to rename `jsonPath` to `param` in their `index.json` file.
+
+### Added
+* [\#321](https://github.com/tellor-io/telliot/pull/363) `interval` field in the `indexes.json` file. This sets a custom trackerCycle for a specific \(e.g. an `interval: 600` would lead to the API being updated every hour\)
+* [\#321](https://github.com/tellor-io/telliot/pull/363) `minSubmitPeriod` field in the `config.json` file.  This sets a limit on how often telliot can send submits. The default is 15min which is what the current oracle contract allows.
+* [\#339](https://github.com/tellor-io/telliot/pull/339) Initial support for Prometheus metrics.
+* [\#340](https://github.com/tellor-io/telliot/pull/340) Manifest files to run in k8s google cloud with Prometheus and Grafana monitoring. The team will run a public telliot miner dashboard at [http://monitor.tellor.io/](http://monitor.tellor.io/)
+* [\#334](https://github.com/tellor-io/telliot/pull/334) DEFITVL feed as a new request ID 57. Miners would have to update the binary and `index.json` to be able to submit.
+
+### Fixed
+
+* [\#359](https://github.com/tellor-io/telliot/pull/359) Don't resubmit when the contract returns an error - "Miner already submitted the value".
 
 ## [v5.3.0](https://github.com/tellor-io/telliot/releases/tag/v5.3.0) - 2020.12.21
 
-#### Changed
+### Changed
 
 * [\#317](https://github.com/tellor-io/telliot/pull/317) Removed nodeURL and private key from config file
 * [\#318](https://github.com/tellor-io/telliot/pull/318) `indexes.json` file format migrated to JSONPath format.
 
-#### Added
+### Added
 
 * [\#272](https://github.com/tellor-io/telliot/pull/272) Automated Docker images on every push to master and with every tagged release.
 
@@ -42,7 +54,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ## [v5.0.0](https://github.com/tellor-io/telliot/releases/tag/v5.0.0) - 2020.11.02
 
-#### Added
+### Added
 
 * Profitability calculations which is set through the `ProfitThreshold`\(in percents\) settings in the config,
 * Docs how to contribute.

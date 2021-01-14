@@ -60,11 +60,14 @@ type MiningMgr struct {
 	contractGetter  *proxy.TellorGetters
 	cfg             *config.Config
 
-	toMineInput     chan *pow.Work
-	solutionOutput  chan *pow.Result
+	toMineInput    chan *pow.Work
+	solutionOutput chan *pow.Result
+
 	submitCount     prometheus.Counter
 	submitFailCount prometheus.Counter
 	submitProfit    *prometheus.GaugeVec
+	submitCost      *prometheus.GaugeVec
+	submitReward    *prometheus.GaugeVec
 
 	miningCtxCnl context.CancelFunc
 }
@@ -125,7 +128,23 @@ func CreateMiningManager(
 			Namespace: "telliot",
 			Subsystem: "mining",
 			Name:      "submit_profit",
-			Help:      "The submission profit in percents",
+			Help:      "The current submit profit in percents",
+		},
+			[]string{"slot"},
+		),
+		submitCost: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_cost",
+			Help:      "The current submit cost in 1e18 eth",
+		},
+			[]string{"slot"},
+		),
+		submitReward: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_reward",
+			Help:      "The current reward in 1e18 eth",
 		},
 			[]string{"slot"},
 		),
@@ -171,7 +190,6 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			if !mgr.submit(solution, ctx) {
 				mgr.solutionPending = solution
 			}
-
 		}
 	}
 }
@@ -182,7 +200,7 @@ func (mgr *MiningMgr) submit(solution *pow.Result, ctx context.Context) bool {
 	lastSubmit, err := mgr.lastMinerSubmit()
 	if err != nil {
 		level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
-	} else if lastSubmit < mgr.cfg.MinSubmitPeriod {
+	} else if lastSubmit < mgr.cfg.MinSubmitPeriod.Duration {
 		level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.MinSubmitPeriod, "lastSubmit", lastSubmit)
 		return false
 	}
@@ -193,10 +211,8 @@ func (mgr *MiningMgr) submit(solution *pow.Result, ctx context.Context) bool {
 	}
 	level.Debug(mgr.logger).Log("msg", "submitting solution", "reqIDs", fmt.Sprintf("%+v", ids))
 
-	var profitPercent int64
-	var slot int64
 	if mgr.cfg.ProfitThreshold > 0 {
-		profitPercent, slot, err = mgr.profit()
+		profitPercent, err := mgr.profit()
 		if err != nil {
 			level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)
 			return false
@@ -216,8 +232,6 @@ func (mgr *MiningMgr) submit(solution *pow.Result, ctx context.Context) bool {
 	level.Debug(mgr.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
 	mgr.saveGasUsed(ctx, tx)
 	mgr.submitCount.Inc()
-	mgr.submitProfit.With(prometheus.Labels{"slot": strconv.Itoa(int(slot))}).(prometheus.Gauge).Set(float64(profitPercent))
-
 	return true
 }
 
@@ -336,6 +350,10 @@ func (mgr *MiningMgr) currentReward() (*big.Int, error) {
 	singleMinerTip := big.NewInt(0).Div(currentTotalTips, big.NewInt(10)) // Half of the tips are burned(remain in the contract) to reduce inflation.
 	rewardWithTips := big.NewInt(0).Add(singleMinerTip, rewardTRB)
 
+	if rewardWithTips == big.NewInt(0) {
+		return big.NewInt(0), nil
+	}
+
 	return mgr.convertTRBtoETH(rewardWithTips)
 }
 
@@ -351,13 +369,12 @@ func (mgr *MiningMgr) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
 	if err != nil {
 		return nil, errors.New("decoding trb price from the db")
 	}
+	wei := big.NewInt(tellorCommon.WEI)
+	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
+	priceTRB.Mul(priceTRB, precisionUpscale)
 
-	priceTRB = priceTRB.Mul(priceTRB, big.NewInt(tellorCommon.WEI))
-	priceTRB = priceTRB.Div(priceTRB, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
-
-	// Big int can't multiple fractions so need to convert the operation into a division.
-	devider := big.NewInt(0).Div(trb, trb)
-	eth := big.NewInt(0).Div(priceTRB, devider)
+	eth := big.NewInt(0).Mul(priceTRB, trb)
+	eth.Div(eth, big.NewInt(1e18))
 	return eth, nil
 }
 
@@ -417,7 +434,7 @@ func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		if err != nil {
 			level.Error(mgr.logger).Log("msg", "saving transaction cost", "err", err)
 		}
-		level.Debug(mgr.logger).Log("msg", "saved transaction cost", "txHash", receipt.TxHash.String(), "gas", gasUsed.Int64(), "slot", slotNum.Int64())
+		level.Debug(mgr.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slotNum.Int64())
 	}(tx)
 }
 
@@ -426,22 +443,22 @@ func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 // that the caller can decide how to handle.
 // Transaction cost is zero when the manager hasn't done any transactions yet.
 // Each transaction cost is known for any siquential transactions.
-func (mgr *MiningMgr) profit() (int64, int64, error) {
+func (mgr *MiningMgr) profit() (int64, error) {
 	gasUsed, slotNum, err := mgr.gasUsed()
 	if err != nil {
-		return 0, slotNum.Int64(), errors.Wrap(err, "getting TX cost")
+		return 0, errors.Wrap(err, "getting TX cost")
 	}
 	if gasUsed.Int64() == 0 {
 		level.Debug(mgr.logger).Log("msg", "profit checking no data for gas used", "slot", slotNum)
-		return -1, slotNum.Int64(), nil
+		return -1, nil
 	}
 	gasPrice, err := mgr.ethClient.SuggestGasPrice(context.Background())
 	if err != nil {
-		return 0, slotNum.Int64(), errors.Wrap(err, "getting gas price")
+		return 0, errors.Wrap(err, "getting gas price")
 	}
 	reward, err := mgr.currentReward()
 	if err != nil {
-		return 0, slotNum.Int64(), errors.Wrap(err, "getting current rewards")
+		return 0, errors.Wrap(err, "getting current rewards")
 	}
 
 	txCost := gasPrice.Mul(gasPrice, gasUsed)
@@ -457,5 +474,9 @@ func (mgr *MiningMgr) profit() (int64, int64, error) {
 		"profitThreshold", mgr.cfg.ProfitThreshold,
 	)
 
-	return profitPercent, slotNum.Int64(), nil
+	mgr.submitProfit.With(prometheus.Labels{"slot": strconv.Itoa(int(slotNum.Int64()))}).(prometheus.Gauge).Set(float64(profitPercent))
+	mgr.submitCost.With(prometheus.Labels{"slot": strconv.Itoa(int(slotNum.Int64()))}).(prometheus.Gauge).Set(float64(txCost.Int64()))
+	mgr.submitReward.With(prometheus.Labels{"slot": strconv.Itoa(int(slotNum.Int64()))}).(prometheus.Gauge).Set(float64(reward.Int64()))
+
+	return profitPercent, nil
 }
