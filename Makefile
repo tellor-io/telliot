@@ -63,6 +63,10 @@ pkg/pow/kernelSource.go: scripts/opencl/sources/*
 generate-bindings:
 	@go run ./scripts/bindings
 
+.PHONY: generate-testdata
+generate-testdata:
+	@go run ./scripts/testdata
+
 .PHONY: build
 build: ## Build the project.
 build: check-git
