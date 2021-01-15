@@ -102,10 +102,10 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					}
 				case ethereumIndexType:
 					{
-						if api.Parser == "Uniswap" {
+						if api.Parser == uniswapIndexParser {
 							source = NewUniswap(symbol, api.URL)
 
-						} else if api.Parser == "Balancer" {
+						} else if api.Parser == balancerIndexParser {
 							source = NewBalancer(symbol, api.URL)
 						} else {
 							return nil, nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
@@ -199,18 +199,20 @@ const (
 	fileIndexType     IndexType = "file"
 )
 
-// IndexParser -> index format for IndexObject.
+// IndexParser -> index parser for IndexObject.
 type IndexParser string
 
 const (
 	jsonPathIndexParser IndexParser = "jsonPath"
+	uniswapIndexParser  IndexParser = "Uniswap"
+	balancerIndexParser IndexParser = "Balancer"
 )
 
 // IndexObject will be used in parsing index file.
 type IndexObject struct {
 	URL      string          `json:"URL"`
 	Type     IndexType       `json:"type"`
-	Parser   IndexParser     `json:"format"`
+	Parser   IndexParser     `json:"parser"`
 	Param    string          `json:"param"`
 	Interval config.Duration `json:"interval"`
 }
