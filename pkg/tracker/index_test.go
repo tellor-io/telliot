@@ -32,7 +32,7 @@ func TestIndexTracker(t *testing.T) {
 	// Load the testdata from test_indexes.json file.
 	// The testdata is genertaed using indextracker_testdata script.
 	var testdata map[string][]TestCase
-	rawJSON, err := ioutil.ReadFile(filepath.Join("../../configs", "test_indexes.json"))
+	rawJSON, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "tracker", "testdata", "test_indexes.json"))
 	testutil.Ok(t, err)
 	err = json.Unmarshal(rawJSON, &testdata)
 	testutil.Ok(t, err)
