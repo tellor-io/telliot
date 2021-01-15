@@ -12,7 +12,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ### Changed
 
-* [\#372](https://github.com/tellor-io/telliot/pull/372) Split the configs of the mine and dataserver command to avoid confusions and be more explicit. This also fixes an issue where you can't run a miner and dataserver on the same machine now that the miner also runs an HTTP server to expose metrics. With this update the config format has changed to need to update the configs. See the `configs/config.jons` for an example of the new format.
+* [\#372](https://github.com/tellor-io/telliot/pull/372) Split the configs of the mine and dataserver command to avoid confusion and be more explicit. This also fixes an issue where can't run a miner and dataserver on the same machine(now that the miner also runs an HTTP server to expose metrics). The config format has changed so users need to update their configs. See the `configs/config.jons` for an example of the new format.
 
 
 ### Added
