@@ -22,6 +22,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/yalp/jsonpath"
 )
 
@@ -102,11 +103,15 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					}
 				case ethereumIndexType:
 					{
+						address, err := util.ValidateAddress(api.URL)
+						if err != nil {
+							return nil, nil, errors.Wrap(err, "validating pair address")
+						}
 						if api.Parser == uniswapIndexParser {
-							source = NewUniswap(symbol, api.URL)
+							source = NewUniswap(symbol, address)
 
 						} else if api.Parser == balancerIndexParser {
-							source = NewBalancer(symbol, api.URL)
+							source = NewBalancer(symbol, address)
 						} else {
 							return nil, nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
 						}

@@ -89,7 +89,6 @@ type MockOptions struct {
 	BPoolContractAddress common.Address
 	BPoolCurrentTokens   []common.Address
 	BPoolSpotPrice       *big.Int
-	BTokenSymbols        map[string]string
 
 	// Uniswap related.
 	UniPairContractAddress  common.Address
@@ -100,6 +99,8 @@ type MockOptions struct {
 
 	// Decimals values for Uniswap, Balancer based on contract addresses.
 	Decimals map[string]int
+	// Token symbol map for Uniswap, Balancer based on contract addresses.
+	TokenSymbols map[string]string
 }
 
 type mockClient struct {
@@ -118,7 +119,6 @@ type mockClient struct {
 	bPoolContractAddress common.Address
 	bPoolCurrentTokens   []common.Address
 	bPoolSpotPrice       *big.Int
-	bTokenSymbols        map[string]string
 
 	// Uniswap related.
 	uniPairContractAddress  common.Address
@@ -129,8 +129,9 @@ type mockClient struct {
 
 	// Decimals values for Uniswap, Balancer based on contract addresses.
 	decimals map[string]int
-
-	abiCodec *ABICodec
+	// Token symbol map for Uniswap, Balancer based on contract addresses.
+	tokenSymbols map[string]string
+	abiCodec     *ABICodec
 }
 
 type mockError struct {
@@ -159,7 +160,7 @@ func NewMockClientWithValues(opts *MockOptions) ETHClient {
 		top50Requests: opts.Top50Requests, currentChallenge: opts.CurrentChallenge,
 		disputeStatus: opts.DisputeStatus, mockQueryMeta: opts.QueryMetadata,
 		bPoolContractAddress: opts.BPoolContractAddress, bPoolCurrentTokens: opts.BPoolCurrentTokens,
-		bPoolSpotPrice: opts.BPoolSpotPrice, bTokenSymbols: opts.BTokenSymbols,
+		bPoolSpotPrice: opts.BPoolSpotPrice, tokenSymbols: opts.TokenSymbols,
 		uniPairContractAddress: opts.UniPairContractAddress, uniReserves: opts.UniReserves,
 		uniPrice0CumulativeLast: opts.UniPrice0CumulativeLast, uniToken0: opts.UniToken0,
 		uniToken1: opts.UniToken1, decimals: opts.Decimals,
@@ -384,7 +385,7 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		}
 	case symbolFN:
 		{
-			return meth.Outputs.Pack(c.bTokenSymbols[call.To.Hex()])
+			return meth.Outputs.Pack(c.tokenSymbols[call.To.Hex()])
 		}
 	// Uniswap related.
 	case getReservesFN:

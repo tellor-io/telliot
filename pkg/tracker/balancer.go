@@ -6,8 +6,10 @@ package tracker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"math/big"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -40,10 +42,9 @@ func (b *Balancer) String() string {
 }
 
 func NewBalancer(pair, address string) *Balancer {
-	_address := strings.Split(address, ":")
 	tokens := strings.Split(pair, "/")
 	return &Balancer{
-		address: _address[1],
+		address: address,
 		token1:  tokens[0],
 		token2:  tokens[1],
 	}
@@ -96,6 +97,7 @@ func (b *Balancer) getPair() (*BalancerPair, error) {
 		if err != nil {
 			return nil, err
 		}
+		fmt.Fprintf(os.Stdout, "symbol, token1, token2: %v, %v, %v\n", symbol, b.token1, b.token2)
 		if symbol == b.token1 {
 			pair.token1Address = token
 			pair.token1Decimals = uint64(decimals)
@@ -119,7 +121,8 @@ func (b *Balancer) getSpotPrice(pair *BalancerPair) (float64, error) {
 		return 0, err
 	}
 
-	spotPrice, err := poolCaller.GetSpotPrice(&bind.CallOpts{}, pair.token1Address, pair.token2Address)
+	// Getting token1 price per token2.
+	spotPrice, err := poolCaller.GetSpotPrice(&bind.CallOpts{}, pair.token2Address, pair.token1Address)
 	if err != nil {
 		return 0, err
 	}
@@ -128,8 +131,7 @@ func (b *Balancer) getSpotPrice(pair *BalancerPair) (float64, error) {
 		return 0, err
 	}
 
-	_spotPrice := new(big.Float).Quo(big.NewFloat(0).SetInt(spotPrice), new(big.Float).SetFloat64(math.Pow10(int(decimals))))
-	price, _ := new(big.Float).Quo(_spotPrice, new(big.Float).Quo(new(big.Float).SetFloat64(math.Pow10(int(pair.token1Decimals))),
-		new(big.Float).SetFloat64(math.Pow10(int(pair.token2Decimals))))).Float64()
+	_spotPrice := big.NewFloat(0).SetInt(spotPrice)
+	price, _ := new(big.Float).Quo(_spotPrice, new(big.Float).SetFloat64(math.Pow10(int(uint64(decimals)+pair.token2Decimals-pair.token1Decimals)))).Float64()
 	return price, nil
 }

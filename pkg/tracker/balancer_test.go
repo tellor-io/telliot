@@ -10,7 +10,6 @@ package tracker
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -24,27 +23,30 @@ import (
 func TestBalancerPrice(t *testing.T) {
 	logSetup := util.SetupLogger()
 	logSetup("debug")
-	bPoolContract := "0x0000000000000000000000000000000000000001"
+	bPoolContract := eth_common.HexToAddress("0x7860E28EBFB8AE052BFE279C07AC5D94C9CD2937")
+	token1Address := eth_common.HexToAddress("0xA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48")
+	token2Address := eth_common.HexToAddress("0xD46BA6D942050D489DBD938A2C909A5D5039A161")
+	spotPrice, _ := new(big.Int).SetString("1113832303486165407237", 10)
 	opts := &rpc.MockOptions{
-		BPoolContractAddress: eth_common.HexToAddress(bPoolContract),
+		BPoolContractAddress: bPoolContract,
 		BPoolCurrentTokens: []eth_common.Address{
-			eth_common.HexToAddress("0x0000000000000000000000000000000000000002"),
-			eth_common.HexToAddress("0x0000000000000000000000000000000000000003"),
+			token1Address,
+			token2Address,
 		},
-		BPoolSpotPrice: new(big.Int).SetInt64(2000000000),
-		BTokenSymbols: map[string]string{
-			"0x0000000000000000000000000000000000000002": "T1",
-			"0x0000000000000000000000000000000000000003": "T2",
+		BPoolSpotPrice: spotPrice,
+		TokenSymbols: map[string]string{
+			token1Address.Hex(): "USDC",
+			token2Address.Hex(): "AMPL",
 		},
 		Decimals: map[string]int{
-			"0x0000000000000000000000000000000000000001": 3,
-			"0x0000000000000000000000000000000000000002": 6,
-			"0x0000000000000000000000000000000000000003": 3,
+			bPoolContract.Hex(): 18,
+			token1Address.Hex(): 6,
+			token2Address.Hex(): 9,
 		},
 	}
 	client := rpc.NewMockClientWithValues(opts)
 
-	tracker := NewBalancer("T1/T2", fmt.Sprintf("ethereum:%s", bPoolContract))
+	tracker := NewBalancer("USDC/AMPL", bPoolContract.Hex())
 	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
 	priceJSON, err := tracker.Get(ctx)
 	testutil.Ok(t, err)
@@ -52,7 +54,7 @@ func TestBalancerPrice(t *testing.T) {
 	var priceInfo []float64
 	err = json.Unmarshal(priceJSON, &priceInfo)
 	testutil.Ok(t, err)
-	testutil.Equals(t, []float64{2000.0}, priceInfo)
+	testutil.Equals(t, []float64{1.1138323034861655}, priceInfo)
 	t.Logf("AMPL/USD price on Balancer: %v\n", priceInfo)
 
 }
