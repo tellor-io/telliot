@@ -57,8 +57,6 @@ func TestUniswapPrice(t *testing.T) {
 	var priceInfo []float64
 	err = json.Unmarshal(priceJSON, &priceInfo)
 	testutil.Ok(t, err)
-	// Calculated according to this:
-	// https://uniswap.org/docs/v2/core-concepts/oracles
 	testutil.Equals(t, []float64{1345.5123168996497}, priceInfo)
 	t.Logf("AMPL/ETH price on Uniswap: %.5f\n", priceInfo[0])
 }

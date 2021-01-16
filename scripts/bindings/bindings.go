@@ -54,24 +54,24 @@ func main() {
 		log.Fatal(err)
 	}
 
-	generate(cfg.ContractAddress, filepath.Join(contractsFolder, "proxy.sol"))
+	generate(cfg.ContractAddress, filepath.Join(contractsFolder, "proxy.sol"), "v0.5.16")
 	log.Println("Generated proxy contract in:", contractsFolder)
 	time.Sleep(5 * time.Second)
 	// TODO how to detect that the proxy has changed and this needs updating.
-	generate("0x7e05e8a675e649261acc19423db34dd4826f9a98", filepath.Join(contractsFolder, "master.sol"))
+	generate("0x7e05e8a675e649261acc19423db34dd4826f9a98", filepath.Join(contractsFolder, "master.sol"), "v0.5.16")
 	log.Println("Generated master contract in:", contractsFolder)
 	time.Sleep(5 * time.Second)
 	// Generating Balancer core pool factory contract.
-	generate("0x9C84391B443ea3a48788079a5f98e2EaD55c9309", balancerContractFolder)
+	generate("0x9C84391B443ea3a48788079a5f98e2EaD55c9309", balancerContractFolder, "")
 	log.Println("Generated balancer contract in:", balancerContractFolder)
 	time.Sleep(5 * time.Second)
 	// Generating Uniswap factory contract.
-	generate("0x03E6c12eF405AC3F642B9184eDed8E1322de1a9e", filepath.Join(uinswapContractFolder, "uniswap.sol"))
+	generate("0x03E6c12eF405AC3F642B9184eDed8E1322de1a9e", filepath.Join(uinswapContractFolder, "uniswap.sol"), "")
 	log.Println("Generated balancer contract in:", uinswapContractFolder)
 
 }
 
-func generate(address string, contractFPath string) {
+func generate(address string, contractFPath string, solcVersion string) {
 	filename := filepath.Base(contractFPath)
 	pkgName := strings.TrimSuffix(filename, filepath.Ext(filename))
 	client := etherscan.New(etherscan.Rinkby, "")
@@ -83,7 +83,11 @@ func generate(address string, contractFPath string) {
 	var contractFiles = []string{contractFPath}
 	var codes map[string]Code
 	var ok bool
-	var solcVersion = strings.Split(src[0].CompilerVersion, "+")[0]
+
+	// Get solc version from etherscan if empty.
+	if solcVersion == "" {
+		solcVersion = strings.Split(src[0].CompilerVersion, "+")[0]
+	}
 	if codes, ok = isJSONString(src[0].SourceCode); ok {
 		contractFiles = []string{}
 		for fileName := range codes {

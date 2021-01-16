@@ -6,10 +6,8 @@ package tracker
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math"
 	"math/big"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -97,7 +95,6 @@ func (b *Balancer) getPair() (*BalancerPair, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(os.Stdout, "symbol, token1, token2: %v, %v, %v\n", symbol, b.token1, b.token2)
 		if symbol == b.token1 {
 			pair.token1Address = token
 			pair.token1Decimals = uint64(decimals)
