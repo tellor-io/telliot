@@ -24,7 +24,8 @@ docker run -v $(pwd)/local:/configs tellor/telliot:master mine
 
 ### Run with k8s
 
-{% hint style="info" %}tested with [google cloud](https://cloud.google.com), but should work with any k8s cluster.
+{% hint style="info" %}
+tested with [google cloud](https://cloud.google.com), but should work with any k8s cluster.
 {% endhint %}
 
  * Install [`gcloud`](https://cloud.google.com/sdk/docs/install)
@@ -62,12 +63,16 @@ cp configs/manifests/telliot.yml .local/configs/$NAME/telliot.yml
 sed -i "s/telliot-main/telliot-$NAME/g" .local/configs/$NAME/telliot.yml
 kubectl apply -f .local/configs/$NAME/telliot.yml
 ```
+
 #### To run another instance.
+
 ```bash
 export NAME= # Put an instance name here. Something short as some properties are limited by length(e.g `export NAME=PR320`).
 # Run all the other commands from initial k8s setup.
 ```
+
 #### To run a custom docker image.
+
 ```bash
 export REPO= # Your docker repository name.
 docker build . -t $REPO/telliot:latest
@@ -78,11 +83,11 @@ kubectl apply -f .local/configs/$NAME/telliot.yml
 ```
 
  * Optionally deploy the monitoring stack with Prometheus and Grafana.
+
 ```bash
 kubectl apply -f configs/manifests/monitoring-persist.yml
 kubectl apply -f configs/manifests/monitoring.yml
 ```
-
 
 ### Download and Edit config.json
 
@@ -98,8 +103,7 @@ Open config.json and update the following values:
 
 ### Create .env file
 
-Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config.
-Make a copy of the `env.example` and edit with your secrets.
+Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config. Make a copy of the `env.example` and edit with your secrets.
 
 ## mine - Become a Miner
 
