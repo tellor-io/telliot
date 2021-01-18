@@ -188,10 +188,7 @@ func BenchmarkHashFunction(b *testing.B) {
 
 var configJSON = `{
     "contractAddress": "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5",
-    "databaseURL": "http://localhost7545",
     "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
-    "serverHost": "localhost",
-    "serverPort": 5000,
     "trackerCycle": 1,
     "trackers": {},
     "dbFile": "/tellorDB",

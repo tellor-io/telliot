@@ -305,8 +305,9 @@ func mineCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 				}
 			}
 
+			level.Info(logger).Log("msg", "starting metrics server", "address", cfg.Mine.ListenHost+":"+strconv.Itoa(int(cfg.Mine.ListenPort)))
 			http.Handle("/metrics", promhttp.Handler())
-			srv, err := rest.Create(ctx, proxy, cfg.ServerHost, cfg.ServerPort)
+			srv, err := rest.Create(ctx, proxy, cfg.Mine.ListenHost, cfg.Mine.ListenPort)
 			ExitOnError(err, "creating data server instance")
 			srv.Start()
 
@@ -392,7 +393,7 @@ func dataserverCmd(logSetup func(string) log.Logger) func(*cli.Cmd) {
 
 			http.Handle("/metrics", promhttp.Handler())
 			cfg := config.GetConfig()
-			srv, err := rest.Create(ctx, proxy, cfg.ServerHost, cfg.ServerPort)
+			srv, err := rest.Create(ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
 			ExitOnError(err, "creating data server instance")
 			srv.Start()
 

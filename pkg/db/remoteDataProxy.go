@@ -78,7 +78,7 @@ func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
 		wlMap[asStr] = true
 	}
 
-	url := "http://" + cfg.ServerHost + ":" + strconv.Itoa(int(cfg.ServerPort))
+	url := "http://" + cfg.Mine.RemoteDBHost + ":" + strconv.Itoa(int(cfg.Mine.RemoteDBPort))
 	i := &remoteImpl{
 		privateKey:    privateKey,
 		publicAddress: strings.ToLower(fromAddress.Hex()),
@@ -88,7 +88,7 @@ func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
 		wlHistory:     wlLRU,
 		log:           util.NewLogger("db", "RemoteDB"),
 	}
-	i.log.Info("Created Remote data proxy connector for %s:%d\n", cfg.ServerHost, cfg.ServerPort)
+	i.log.Info("Created Remote data proxy connector for %s:%d\n", cfg.Mine.RemoteDBHost, cfg.Mine.RemoteDBPort)
 	return i, nil
 }
 

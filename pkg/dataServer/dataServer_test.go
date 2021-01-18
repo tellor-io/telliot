@@ -52,12 +52,12 @@ func TestDataServer(t *testing.T) {
 	testutil.Ok(t, err, "creating server in test")
 	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
 
-	srv, err := rest.Create(ctx, proxy, cfg.ServerHost, cfg.ServerPort)
+	srv, err := rest.Create(ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
 	testutil.Ok(t, err)
 	srv.Start()
 
 	time.Sleep(2 * time.Second)
-	resp, err := http.Get("http://" + cfg.ServerHost + ":" + strconv.Itoa(int(cfg.ServerPort)) + "/balance")
+	resp, err := http.Get("http://" + cfg.DataServer.ListenHost + ":" + strconv.Itoa(int(cfg.DataServer.ListenPort)) + "/balance")
 	testutil.Ok(t, err)
 	defer resp.Body.Close()
 	fmt.Printf("Finished: %+v", resp)
