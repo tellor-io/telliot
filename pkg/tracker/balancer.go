@@ -57,7 +57,7 @@ func (b *Balancer) Get(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting pair info from balancer pool")
 	}
-	// use balancer pool own GetSpotPrice to minimize onchain calls.
+	// Use balancer pool own GetSpotPrice to minimize onchain calls.
 	price, err := b.getSpotPrice(pair)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting price info from balancer pool")
