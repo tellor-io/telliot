@@ -96,7 +96,6 @@ type Config struct {
 	ConfigFolder                 string                `json:"configFolder"`
 	LogLevel                     string                `json:"logLevel"`
 	Logger                       map[string]string     `json:"logger"`
-	RemoteMining                 bool                  `json:"remoteMining"`
 	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 	// Minimum percent of profit when submitting a solution.
@@ -162,8 +161,7 @@ var defaultConfig = Config{
 		"pow.MiningTasker-1:":      "INFO",
 		"tracker.PSRTracker":       "INFO",
 	},
-	RemoteMining: false,
-	EnvFile:      path.Join(ConfigFolder, ".env"),
+	EnvFile: path.Join(ConfigFolder, ".env"),
 }
 
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"

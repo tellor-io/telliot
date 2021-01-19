@@ -430,7 +430,6 @@ func (m mineCmd) Run() error {
 	signal.Notify(c, os.Interrupt)
 	exitChannels := make([]*chan os.Signal, 0)
 
-	// cfg := config.GetConfig()
 	var ds *ops.DataServerOps
 	DB, err := migrateAndOpenDB(cfg)
 	if err != nil {
@@ -441,7 +440,7 @@ func (m mineCmd) Run() error {
 		return errors.Wrapf(err, "initializing proxy")
 	}
 	if !cfg.EnablePoolWorker {
-		if !cfg.RemoteMining {
+		if cfg.Mine.RemoteDBHost == "" {
 			ch := make(chan os.Signal)
 			exitChannels = append(exitChannels, &ch)
 
