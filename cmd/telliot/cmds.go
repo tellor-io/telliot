@@ -144,12 +144,80 @@ func (b *balanceCmd) Run() error {
 	return ops.Balance(ctx, client, contract.Getter, addr.addr)
 }
 
-type stakeCmd struct {
-	Config    configPath `required:"" type:"existingfile" help:"path to config file"`
-	Operation string     `arg:"" required:""`
+type depositCmd struct {
+	Config configPath `required:"" type:"existingfile" help:"path to config file"`
 }
 
-func (s *stakeCmd) Run() error {
+func (d depositCmd) Run() error {
+	cfg, err := parseConfig(string(d.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
+	return ops.Deposit(ctx, logger, client, contract, account)
+}
+
+type withdrawCmd struct {
+	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+}
+
+func (w withdrawCmd) Run() error {
+	cfg, err := parseConfig(string(w.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
+	return ops.WithdrawStake(ctx, logger, client, contract, account)
+}
+
+type requestCmd struct {
+	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+}
+
+func (r requestCmd) Run() error {
+	cfg, err := parseConfig(string(r.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
+	if err != nil {
+		return errors.Wrapf(err, "creating logger")
+	}
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
+	return ops.RequestStakingWithdraw(ctx, logger, client, contract, account)
+}
+
+type statusCmd struct {
+	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+}
+
+func (s statusCmd) Run() error {
 	cfg, err := parseConfig(string(s.Config))
 	if err != nil {
 		return errors.Wrapf(err, "creating config")
@@ -165,19 +233,7 @@ func (s *stakeCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
-
-	switch s.Operation {
-	case "deposit":
-		return ops.Deposit(ctx, logger, client, contract, account)
-	case "withdraw":
-		return ops.WithdrawStake(ctx, logger, client, contract, account)
-	case "request":
-		return ops.RequestStakingWithdraw(ctx, logger, client, contract, account)
-	case "status":
-		return ops.ShowStatus(ctx, logger, client, contract, account)
-	default:
-		return errors.New("unknown stake command")
-	}
+	return ops.ShowStatus(ctx, logger, client, contract, account)
 }
 
 type newDisputeCmd struct {

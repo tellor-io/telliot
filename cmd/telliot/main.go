@@ -132,8 +132,13 @@ var cli struct {
 	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
 	Approve  approveCmd  `cmd:"" help:"Approve tokens"`
 	Balance  balanceCmd  `cmd:"" help:"Check the balance of an address"`
-	Stake    stakeCmd    `cmd:"" help:"Perform one of the stake operations"`
-	Dispute  struct {
+	Stake    struct {
+		Deposit  depositCmd  `cmd:"" help:"deposit a stake"`
+		Request  requestCmd  `cmd:"" help:"request to withdraw stake"`
+		Withdraw withdrawCmd `cmd:"" help:"withdraw stake"`
+		Status   statusCmd   `cmd:"" help:"show stake status"`
+	} `cmd:"" help:"Perform one of the stake operations"`
+	Dispute struct {
 		New  newDisputeCmd `cmd:"" help:"start a new dispute"`
 		Vote voteCmd       `cmd:"" help:"vote on a open dispute"`
 		Show showCmd       `cmd:"" help:"show open disputes"`
