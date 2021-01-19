@@ -42,7 +42,7 @@ func TestAmpl(t *testing.T) {
 	for i := 0; i < 288; i++ {
 		for _, indexer := range indexers {
 			// Ignore on-chain trackers, as they could be tested in other test cases.
-			if strings.Contains(indexer.Identifier, "ethereum:") {
+			if indexer.Type == ethereumIndexType {
 				continue
 			}
 			if err := indexer.Exec(context.Background()); err != nil {

@@ -84,10 +84,6 @@ func generate(address string, contractFPath string, solcVersion string) {
 	var codes map[string]Code
 	var ok bool
 
-	// Get solc version from etherscan if empty.
-	if solcVersion == "" {
-		solcVersion = strings.Split(src[0].CompilerVersion, "+")[0]
-	}
 	if codes, ok = isJSONString(src[0].SourceCode); ok {
 		contractFiles = []string{}
 		for fileName := range codes {
@@ -102,20 +98,13 @@ func generate(address string, contractFPath string, solcVersion string) {
 		log.Fatal(err)
 	}
 
-	solcDir := filepath.Join("tmp", "solc")
-	if err := os.MkdirAll(solcDir, os.ModePerm); err != nil {
-		log.Fatal(err)
+	// Get solc version from etherscan if empty.
+	if solcVersion == "" {
+		solcVersion = strings.Split(src[0].CompilerVersion, "+")[0]
 	}
-	solcPath := filepath.Join(solcDir, solcVersion)
-	if _, err := os.Stat(solcPath); os.IsNotExist(err) {
-		log.Println("downloading solc")
-		err = downloadFile(solcPath, fmt.Sprintf("https://github.com/ethereum/solidity/releases/download/%s/solc-static-linux", solcVersion))
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := os.Chmod(solcPath, os.ModePerm); err != nil {
-			log.Fatal(err)
-		}
+	solcPath, err := downloadSolc(solcVersion)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	contracts, err := compiler.CompileSolidity(solcPath, contractFiles...)
@@ -184,6 +173,26 @@ func downloadFile(filepath string, url string) error {
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	return errors.Wrap(err, "writing the file")
+}
+
+// downloadSolc will download @solcVersion of the Solc compiler to tmp/solc directory.
+func downloadSolc(solcVersion string) (string, error) {
+	solcDir := filepath.Join("tmp", "solc")
+	if err := os.MkdirAll(solcDir, os.ModePerm); err != nil {
+		return "", err
+	}
+	solcPath := filepath.Join(solcDir, solcVersion)
+	if _, err := os.Stat(solcPath); os.IsNotExist(err) {
+		log.Println("downloading solc")
+		err = downloadFile(solcPath, fmt.Sprintf("https://github.com/ethereum/solidity/releases/download/%s/solc-static-linux", solcVersion))
+		if err != nil {
+			return "", err
+		}
+		if err := os.Chmod(solcPath, os.ModePerm); err != nil {
+			return "", err
+		}
+	}
+	return solcPath, nil
 }
 
 type Code struct {

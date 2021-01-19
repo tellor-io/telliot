@@ -136,6 +136,7 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					DB:         DB,
 					Interval:   api.Interval.Duration,
 					Param:      api.Param,
+					Type:       api.Type,
 				}
 
 				trackersPerURL[api.URL] = current
@@ -230,6 +231,7 @@ type IndexTracker struct {
 	Source           DataSource
 	Interval         time.Duration
 	Param            string
+	Type             IndexType
 	lastRunTimestamp time.Time
 }
 
