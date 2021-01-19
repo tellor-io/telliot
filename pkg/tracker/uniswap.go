@@ -63,7 +63,7 @@ func (u *Uniswap) getSpotPrice() (*big.Float, error) {
 		return nil, errors.Wrap(err, "getting pair contract")
 	}
 
-	// ensure that there's liquidity in the pair.
+	// Ensure that there's liquidity in the pair.
 	reserve, err := pairContract.GetReserves(&bind.CallOpts{})
 	if err != nil {
 		return nil, errors.Wrap(err, "getting reserves")
