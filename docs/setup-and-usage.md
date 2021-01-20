@@ -296,11 +296,6 @@ Edit `config1.json` to include the following:
     "requestData":1,
     "gasMultiplier": 1,
     "gasMax":10,
-    "gpuConfig":{
-      "default":{
-        "disabled": true
-      }
-    },
     "trackers": [
           "balance",
           "currentVariables",
