@@ -171,9 +171,8 @@ const NodeURLEnvName = "NODE_URL"
 func ParseConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return errors.Wrapf(err, "open config file:%v", path)
+		return errors.Wrapf(err, "opening file:%v", path)
 	}
-
 	return ParseConfigBytes(data)
 }
 

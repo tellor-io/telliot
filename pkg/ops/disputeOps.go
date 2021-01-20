@@ -33,8 +33,8 @@ import (
 func Dispute(
 	ctx context.Context,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 	requestId *big.Int,
 	timestamp *big.Int,
 	minerIndex *big.Int,
@@ -77,8 +77,8 @@ func Dispute(
 func Vote(
 	ctx context.Context,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 	disputeId *big.Int,
 	supportsDispute bool,
 ) error {
@@ -108,7 +108,7 @@ func Vote(
 func getNonceSubmissions(
 	ctx context.Context,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
+	contract *contracts.Tellor,
 	valueBlock *big.Int,
 	dispute *master.TellorDisputeNewDispute,
 ) ([]*apiOracle.PriceStamp, error) {
@@ -186,8 +186,8 @@ func List(
 	ctx context.Context,
 	logger log.Logger,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 ) error {
 	cfg := config.GetConfig()
 	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorDisputeABI))

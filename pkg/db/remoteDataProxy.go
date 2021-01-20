@@ -49,10 +49,9 @@ type remoteImpl struct {
 }
 
 // OpenRemoteDB establishes a proxy to a remote data server.
-func OpenRemoteDB(localDB DB) (DataServerProxy, error) {
+func OpenRemoteDB(cfg *config.Config, localDB DB) (DataServerProxy, error) {
 	rdbLog = util.NewLogger("db", "RemoteDBProxy")
 
-	cfg := config.GetConfig()
 	privateKey, err := crypto.HexToECDSA(os.Getenv(config.PrivateKeyEnvName))
 	if err != nil {
 		fmt.Println("Problem decoding private key", err)
