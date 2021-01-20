@@ -20,7 +20,7 @@ Removed the `RemoteMining` `-r` flag. Remote is active when specifying a `Remote
 
 ### Fixed
 
-## [v5.5.0](https://github.com/tellor-io/telliot/releases/tag/v5.5.0) * 2021.01.18
+## [v5.5.0](https://github.com/tellor-io/telliot/releases/tag/v5.5.0) - 2021.01.18
 
 ### Changed
 
