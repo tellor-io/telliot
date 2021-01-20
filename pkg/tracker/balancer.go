@@ -4,7 +4,6 @@
 package tracker
 
 import (
-	"context"
 	"encoding/json"
 	"math"
 	"math/big"
@@ -48,7 +47,7 @@ func NewBalancer(pair, address string, client rpc.ETHClient) *Balancer {
 	}
 }
 
-func (b *Balancer) Get(ctx context.Context) ([]byte, error) {
+func (b *Balancer) Get() ([]byte, error) {
 	// Getting current pair info from input pool.
 	pair, err := b.getPair()
 	if err != nil {

@@ -237,14 +237,14 @@ type IndexTracker struct {
 }
 
 type DataSource interface {
-	Get(ctx context.Context) ([]byte, error)
+	Get() ([]byte, error)
 }
 
 type JSONapi struct {
 	Request *FetchRequest
 }
 
-func (j *JSONapi) Get(ctx context.Context) ([]byte, error) {
+func (j *JSONapi) Get() ([]byte, error) {
 	return fetchWithRetries(j.Request)
 }
 
@@ -252,7 +252,7 @@ type JSONfile struct {
 	filepath string
 }
 
-func (j *JSONfile) Get(ctx context.Context) ([]byte, error) {
+func (j *JSONfile) Get() ([]byte, error) {
 	return ioutil.ReadFile(j.filepath)
 }
 
@@ -263,7 +263,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	}
 	i.lastRunTimestamp = now
 
-	payload, err := i.Source.Get(ctx)
+	payload, err := i.Source.Get()
 	if err != nil {
 		return err
 	}

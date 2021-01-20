@@ -8,7 +8,6 @@
 package tracker
 
 import (
-	"context"
 	"encoding/json"
 	"math/big"
 	"testing"
@@ -43,7 +42,7 @@ func TestBalancerPrice(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	tracker := NewBalancer("USDC/AMPL", bPoolContract.Hex(), client)
-	priceJSON, err := tracker.Get(context.Background())
+	priceJSON, err := tracker.Get()
 	testutil.Ok(t, err)
 
 	var priceInfo []float64

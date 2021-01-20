@@ -4,7 +4,6 @@
 package tracker
 
 import (
-	"context"
 	"encoding/json"
 	"math"
 	"math/big"
@@ -43,7 +42,7 @@ func NewUniswap(pair string, address string, client rpc.ETHClient) *Uniswap {
 }
 
 // Get calculates price for the provided pair.
-func (u *Uniswap) Get(ctx context.Context) ([]byte, error) {
+func (u *Uniswap) Get() ([]byte, error) {
 	// Getting price on-chain.
 	price, err := u.getSpotPrice()
 	if err != nil {

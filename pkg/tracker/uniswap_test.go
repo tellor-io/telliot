@@ -8,7 +8,6 @@
 package tracker
 
 import (
-	"context"
 	"encoding/json"
 	"math/big"
 	"testing"
@@ -46,7 +45,7 @@ func TestUniswapPrice(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	tracker := NewUniswap("ETH/AMPL", bPairContract.Hex(), client)
-	priceJSON, err := tracker.Get(context.Background())
+	priceJSON, err := tracker.Get()
 	testutil.Ok(t, err)
 
 	var priceInfo []float64
