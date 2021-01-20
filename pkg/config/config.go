@@ -120,7 +120,7 @@ var defaultConfig = Config{
 	Mine: Mine{
 		ListenHost:   "localhost",
 		ListenPort:   9090,
-		RemoteDBHost: "localhost",
+		RemoteDBHost: "",
 		RemoteDBPort: 5000,
 	},
 	DataServer: DataServer{
