@@ -16,12 +16,9 @@ import (
 	eth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestBalancerPrice(t *testing.T) {
-	logSetup := util.SetupLogger()
-	logSetup("debug")
 	bPoolContract := eth_common.HexToAddress("0x7860E28EBFB8AE052BFE279C07AC5D94C9CD2937")
 	token1Address := eth_common.HexToAddress("0xA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48")
 	token2Address := eth_common.HexToAddress("0xD46BA6D942050D489DBD938A2C909A5D5039A161")

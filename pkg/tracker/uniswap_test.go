@@ -16,12 +16,9 @@ import (
 	eth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestUniswapPrice(t *testing.T) {
-	logSetup := util.SetupLogger()
-	logSetup("debug")
 	bPairContract := eth_common.HexToAddress("0xc5be99a02c6857f9eac67bbce58df5572498f40c")
 	token1Address := eth_common.HexToAddress("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")
 	token2Address := eth_common.HexToAddress("0xd46ba6d942050d489dbd938a2c909a5d5039a161")
