@@ -27,7 +27,7 @@ func prepareTransfer(
 	ctx context.Context,
 	client rpc.ETHClient,
 	instance *proxy.TellorGetters,
-	account rpc.Account,
+	account *rpc.Account,
 	amt *big.Int,
 ) (*bind.TransactOpts, error) {
 	balance, err := instance.BalanceOf(nil, account.Address)
@@ -51,8 +51,8 @@ func Transfer(
 	ctx context.Context,
 	logger log.Logger,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 	toAddress common.Address,
 	amt *big.Int,
 ) error {
@@ -73,8 +73,8 @@ func Approve(
 	ctx context.Context,
 	logger log.Logger,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 	spender common.Address,
 	amt *big.Int,
 ) error {

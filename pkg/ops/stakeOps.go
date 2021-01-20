@@ -51,8 +51,8 @@ func Deposit(
 	ctx context.Context,
 	logger log.Logger,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 ) error {
 
 	balance, err := contract.Getter.BalanceOf(nil, account.Address)
@@ -101,8 +101,8 @@ func ShowStatus(
 	ctx context.Context,
 	logger log.Logger,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 ) error {
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {
@@ -117,8 +117,8 @@ func RequestStakingWithdraw(
 	ctx context.Context,
 	logger log.Logger,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 ) error {
 
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
@@ -148,8 +148,8 @@ func WithdrawStake(
 	ctx context.Context,
 	logger log.Logger,
 	client rpc.ETHClient,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 ) error {
 	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
 	if err != nil {

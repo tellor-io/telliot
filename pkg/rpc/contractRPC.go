@@ -52,8 +52,8 @@ func SubmitContractTxn(
 	cfg *config.Config,
 	proxy db.DataServerProxy,
 	client ETHClient,
-	tellor contracts.Tellor,
-	account Account,
+	tellor *contracts.Tellor,
+	account *Account,
 	ctxName string,
 	callback tellorCommon.TransactionGeneratorFN,
 ) (*types.Transaction, error) {

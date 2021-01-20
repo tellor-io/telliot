@@ -73,8 +73,8 @@ func CreateMiningManager(
 	exitCh chan os.Signal,
 	cfg *config.Config,
 	database db.DataServerProxy,
-	contract contracts.Tellor,
-	account rpc.Account,
+	contract *contracts.Tellor,
+	account *rpc.Account,
 ) (*MiningMgr, error) {
 
 	group, err := pow.SetupMiningGroup(cfg, exitCh)
