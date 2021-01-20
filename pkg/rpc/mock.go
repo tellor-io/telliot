@@ -90,11 +90,10 @@ type MockOptions struct {
 	BPoolSpotPrice       *big.Int
 
 	// Uniswap related.
-	UniPairContractAddress  common.Address
-	UniReserves             *CurrentReserves
-	UniPrice0CumulativeLast *big.Int
-	UniToken0               common.Address
-	UniToken1               common.Address
+	UniPairContractAddress common.Address
+	UniReserves            *CurrentReserves
+	UniToken0              common.Address
+	UniToken1              common.Address
 
 	// Decimals values for Uniswap, Balancer based on contract addresses.
 	Decimals map[string]int
@@ -120,11 +119,10 @@ type mockClient struct {
 	bPoolSpotPrice       *big.Int
 
 	// Uniswap related.
-	uniPairContractAddress  common.Address
-	uniReserves             *CurrentReserves
-	uniPrice0CumulativeLast *big.Int
-	uniToken0               common.Address
-	uniToken1               common.Address
+	uniPairContractAddress common.Address
+	uniReserves            *CurrentReserves
+	uniToken0              common.Address
+	uniToken1              common.Address
 
 	// Decimals values for Uniswap, Balancer based on contract addresses.
 	decimals map[string]int
@@ -161,9 +159,7 @@ func NewMockClientWithValues(opts *MockOptions) ETHClient {
 		bPoolContractAddress: opts.BPoolContractAddress, bPoolCurrentTokens: opts.BPoolCurrentTokens,
 		bPoolSpotPrice: opts.BPoolSpotPrice, tokenSymbols: opts.TokenSymbols,
 		uniPairContractAddress: opts.UniPairContractAddress, uniReserves: opts.UniReserves,
-		uniPrice0CumulativeLast: opts.UniPrice0CumulativeLast, uniToken0: opts.UniToken0,
-		uniToken1: opts.UniToken1, decimals: opts.Decimals,
-		abiCodec: codec}
+		uniToken0: opts.UniToken0, uniToken1: opts.UniToken1, decimals: opts.Decimals, abiCodec: codec}
 }
 
 func (c *mockClient) SetTokenBalance(bal *big.Int) {
@@ -390,10 +386,6 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	case getReservesFN:
 		{
 			return meth.Outputs.Pack(c.uniReserves.Reserve0, c.uniReserves.Reserve1, c.uniReserves.BlockTimestampLast)
-		}
-	case price0CumulativeLastFN:
-		{
-			return meth.Outputs.Pack(c.uniPrice0CumulativeLast)
 		}
 	case token0FN:
 		{
