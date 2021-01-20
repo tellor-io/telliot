@@ -14,7 +14,6 @@ import (
 	"testing"
 
 	eth_common "github.com/ethereum/go-ethereum/common"
-	"github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -46,9 +45,8 @@ func TestBalancerPrice(t *testing.T) {
 	}
 	client := rpc.NewMockClientWithValues(opts)
 
-	tracker := NewBalancer("USDC/AMPL", bPoolContract.Hex())
-	ctx := context.WithValue(context.Background(), common.ClientContextKey, client)
-	priceJSON, err := tracker.Get(ctx)
+	tracker := NewBalancer("USDC/AMPL", bPoolContract.Hex(), client)
+	priceJSON, err := tracker.Get(context.Background())
 	testutil.Ok(t, err)
 
 	var priceInfo []float64

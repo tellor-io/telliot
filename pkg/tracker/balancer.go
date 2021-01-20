@@ -14,7 +14,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	balancer "github.com/tellor-io/telliot/pkg/contracts/balancer"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -39,19 +38,17 @@ func (b *Balancer) String() string {
 	return "Balancer"
 }
 
-func NewBalancer(pair, address string) *Balancer {
+func NewBalancer(pair, address string, client rpc.ETHClient) *Balancer {
 	tokens := strings.Split(pair, "/")
 	return &Balancer{
 		address: address,
 		token1:  tokens[0],
 		token2:  tokens[1],
+		client:  client,
 	}
 }
 
 func (b *Balancer) Get(ctx context.Context) ([]byte, error) {
-	// Cast client using type assertion since context holds generic interface{}.
-	b.client = ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-
 	// Getting current pair info from input pool.
 	pair, err := b.getPair()
 	if err != nil {

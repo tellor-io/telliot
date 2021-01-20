@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	uniswap "github.com/tellor-io/telliot/pkg/contracts/uniswap"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -33,20 +32,19 @@ func (u *Uniswap) String() string {
 }
 
 // NewUniswap creates new Uniswap for provided pair and pair address.
-func NewUniswap(pair string, address string) *Uniswap {
+func NewUniswap(pair string, address string, client rpc.ETHClient) *Uniswap {
 	symbols := strings.Split(pair, "/")
 	return &Uniswap{
 		symbol0: symbols[0],
 		symbol1: symbols[1],
 		address: address,
+		client:  client,
 	}
 }
 
 // Get calculates price for the provided pair.
 func (u *Uniswap) Get(ctx context.Context) ([]byte, error) {
-	//cast client using type assertion since context holds generic interface{}
-	u.client = ctx.Value(tellorCommon.ClientContextKey).(rpc.ETHClient)
-	// getting price on-chain.
+	// Getting price on-chain.
 	price, err := u.getSpotPrice()
 	if err != nil {
 		return nil, err
