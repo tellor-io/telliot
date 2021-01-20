@@ -154,6 +154,9 @@ func (u *Uniswap) getTokenSymbol(token common.Address) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "getting token(%s) symbol", token.Hex())
 	}
+	if symbol == "WETH" {
+		symbol = "ETH"
+	}
 	return symbol, nil
 }
 

@@ -38,8 +38,7 @@ const (
 	// Balancertoken funcs.
 	symbolFN = "0x95d89b41"
 	// Uniswap pair funcs.
-	getReservesFN          = "0x0902f1ac"
-	price0CumulativeLastFN = "0x5909c0d5"
+	getReservesFN = "0x0902f1ac"
 	// Uniswap erc20 token funcs.
 	token0FN = "0x0dfe1681"
 	token1FN = "0xd21220a7"
