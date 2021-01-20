@@ -41,7 +41,7 @@ func createTracker(name string, logger log.Logger, config *config.Config, db db.
 		}
 	case "indexers":
 		{
-			return BuildIndexTrackers(config, db)
+			return BuildIndexTrackers(config, db, client)
 		}
 	case "disputeChecker":
 		return []Tracker{NewDisputeChecker(logger, config, client, contract, 0)}, nil

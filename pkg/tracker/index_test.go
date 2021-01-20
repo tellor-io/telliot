@@ -13,14 +13,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
-type TestDataSource struct {
-	Payload string
-}
-
-func (i TestDataSource) Get() ([]byte, error) {
-	return []byte(i.Payload), nil
-}
-
 type TestCase struct {
 	URL      string
 	Param    string

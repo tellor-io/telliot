@@ -22,6 +22,8 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/yalp/jsonpath"
 )
 
@@ -41,7 +43,7 @@ func GetIndexes() map[string][]*IndexTracker {
 // parseIndexFile parses indexes.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
-func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
+func parseIndexFile(cfg *config.Config, DB db.DB, client rpc.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
 	indexFilePath := filepath.Join(cfg.ConfigFolder, "indexes.json")
@@ -102,8 +104,19 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					}
 				case ethereumIndexType:
 					{
-						// Skip as there is no ethereum index type in the index file right now.
-						continue
+						address, err := util.ValidateAddress(api.URL)
+						if err != nil {
+							return nil, nil, errors.Wrap(err, "validating pair address")
+						}
+						if api.Parser == uniswapIndexParser {
+							source = NewUniswap(symbol, address, client)
+
+						} else if api.Parser == balancerIndexParser {
+							source = NewBalancer(symbol, address, client)
+						} else {
+							return nil, nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
+						}
+						name = fmt.Sprintf("%s(%s)", api.Type, api.URL)
 					}
 				default:
 					return nil, nil, errors.New("unknown index type for index object")
@@ -124,6 +137,7 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 					DB:         DB,
 					Interval:   api.Interval.Duration,
 					Param:      api.Param,
+					Type:       api.Type,
 				}
 
 				trackersPerURL[api.URL] = current
@@ -145,7 +159,7 @@ func parseIndexFile(cfg *config.Config, DB db.DB) (trackersPerURL map[string]*In
 }
 
 // BuildIndexTrackers creates and initializes a new tracker instance.
-func BuildIndexTrackers(cfg *config.Config, db db.DB) ([]Tracker, error) {
+func BuildIndexTrackers(cfg *config.Config, db db.DB, client rpc.ETHClient) ([]Tracker, error) {
 	err := apiOracle.EnsureValueOracle()
 	if err != nil {
 		return nil, err
@@ -153,7 +167,7 @@ func BuildIndexTrackers(cfg *config.Config, db db.DB) ([]Tracker, error) {
 
 	// Load trackers from the index file,
 	// and build a tracker for each unique URL, symbol
-	indexers, symbolsForAPI, err := parseIndexFile(cfg, db)
+	indexers, symbolsForAPI, err := parseIndexFile(cfg, db, client)
 	if err != nil {
 		return nil, err
 	}
@@ -192,18 +206,20 @@ const (
 	fileIndexType     IndexType = "file"
 )
 
-// IndexParser -> index format for IndexObject.
+// IndexParser -> index parser for IndexObject.
 type IndexParser string
 
 const (
 	jsonPathIndexParser IndexParser = "jsonPath"
+	uniswapIndexParser  IndexParser = "Uniswap"
+	balancerIndexParser IndexParser = "Balancer"
 )
 
 // IndexObject will be used in parsing index file.
 type IndexObject struct {
 	URL      string          `json:"URL"`
 	Type     IndexType       `json:"type"`
-	Parser   IndexParser     `json:"format"`
+	Parser   IndexParser     `json:"parser"`
 	Param    string          `json:"param"`
 	Interval config.Duration `json:"interval"`
 }
@@ -216,6 +232,7 @@ type IndexTracker struct {
 	Source           DataSource
 	Interval         time.Duration
 	Param            string
+	Type             IndexType
 	lastRunTimestamp time.Time
 }
 

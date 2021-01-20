@@ -9,8 +9,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	balancer "github.com/tellor-io/telliot/pkg/contracts/balancer"
 	"github.com/tellor-io/telliot/pkg/contracts/master"
 	"github.com/tellor-io/telliot/pkg/contracts/proxy"
+	uniswap "github.com/tellor-io/telliot/pkg/contracts/uniswap"
+
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -33,6 +36,10 @@ func BuildCodec() (*ABICodec, error) {
 		master.TellorStakeABI,
 		master.TellorTransferABI,
 		proxy.TellorGettersABI,
+		balancer.BPoolABI,
+		balancer.BTokenABI,
+		uniswap.IERC20ABI,
+		uniswap.IUniswapV2PairABI,
 	}
 
 	parsed := make([]interface{}, 0)
@@ -78,6 +85,10 @@ func AllEvents() (map[[32]byte]abi.Event, error) {
 		master.TellorStakeABI,
 		master.TellorStorageABI,
 		master.TellorTransferABI,
+		balancer.BPoolABI,
+		balancer.BTokenABI,
+		uniswap.IERC20ABI,
+		uniswap.IUniswapV2PairABI,
 	}
 
 	parsed := make([]interface{}, 0)
