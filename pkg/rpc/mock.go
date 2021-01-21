@@ -31,6 +31,17 @@ const (
 	getRequestVars  = "0xe1eee6d6"
 	didMineFN       = "0x63bb82ad"
 	getUintVarFN    = "0x612c8f7f"
+	decimalsFN      = "0x313ce567"
+	// Balancerpool funcs.
+	getCurentTokensFN = "0xcc77828d"
+	getSpotPriceFN    = "0x15e84af9"
+	// Balancertoken funcs.
+	symbolFN = "0x95d89b41"
+	// Uniswap pair funcs.
+	getReservesFN = "0x0902f1ac"
+	// Uniswap erc20 token funcs.
+	token0FN = "0x0dfe1681"
+	token1FN = "0xd21220a7"
 )
 
 var mockClientLog = util.NewLogger("rpc", "mockClient")
@@ -43,6 +54,15 @@ type CurrentChallenge struct {
 	QueryString   string
 	Granularity   *big.Int
 	Tip           *big.Int
+}
+
+// CurrentReserves holds details about the current reserves on the uniswap pair contract.
+type CurrentReserves struct {
+	// Reserve0 is the amount of Token0 liquidity in the pool.
+	Reserve0 *big.Int
+	// Reserve1 is the amount of Token1 liquidity in the pool.
+	Reserve1           *big.Int
+	BlockTimestampLast uint32
 }
 
 // MockQueryMeta is hardcoded query metadata to use for testing.
@@ -62,6 +82,22 @@ type MockOptions struct {
 	CurrentChallenge *CurrentChallenge
 	DisputeStatus    *big.Int
 	QueryMetadata    map[uint]*MockQueryMeta
+
+	// Balancer related.
+	BPoolContractAddress common.Address
+	BPoolCurrentTokens   []common.Address
+	BPoolSpotPrice       *big.Int
+
+	// Uniswap related.
+	UniPairContractAddress common.Address
+	UniReserves            *CurrentReserves
+	UniToken0              common.Address
+	UniToken1              common.Address
+
+	// Decimals values for Uniswap, Balancer based on contract addresses.
+	Decimals map[string]int
+	// Token symbol map for Uniswap, Balancer based on contract addresses.
+	TokenSymbols map[string]string
 }
 
 type mockClient struct {
@@ -73,8 +109,25 @@ type mockClient struct {
 	top50Requests    []*big.Int
 	currentChallenge *CurrentChallenge
 	disputeStatus    *big.Int
-	mockQueryMeta    map[uint]*MockQueryMeta
-	abiCodec         *ABICodec
+
+	mockQueryMeta map[uint]*MockQueryMeta
+
+	// Balancer related.
+	bPoolContractAddress common.Address
+	bPoolCurrentTokens   []common.Address
+	bPoolSpotPrice       *big.Int
+
+	// Uniswap related.
+	uniPairContractAddress common.Address
+	uniReserves            *CurrentReserves
+	uniToken0              common.Address
+	uniToken1              common.Address
+
+	// Decimals values for Uniswap, Balancer based on contract addresses.
+	decimals map[string]int
+	// Token symbol map for Uniswap, Balancer based on contract addresses.
+	tokenSymbols map[string]string
+	abiCodec     *ABICodec
 }
 
 type mockError struct {
@@ -101,7 +154,11 @@ func NewMockClientWithValues(opts *MockOptions) ETHClient {
 	return &mockClient{balance: opts.ETHBalance, miningStatus: opts.MiningStatus, nonce: opts.Nonce,
 		gasPrice: opts.GasPrice, tokenBalance: opts.TokenBalance,
 		top50Requests: opts.Top50Requests, currentChallenge: opts.CurrentChallenge,
-		disputeStatus: opts.DisputeStatus, mockQueryMeta: opts.QueryMetadata, abiCodec: codec}
+		disputeStatus: opts.DisputeStatus, mockQueryMeta: opts.QueryMetadata,
+		bPoolContractAddress: opts.BPoolContractAddress, bPoolCurrentTokens: opts.BPoolCurrentTokens,
+		bPoolSpotPrice: opts.BPoolSpotPrice, tokenSymbols: opts.TokenSymbols,
+		uniPairContractAddress: opts.UniPairContractAddress, uniReserves: opts.UniReserves,
+		uniToken0: opts.UniToken0, uniToken1: opts.UniToken1, decimals: opts.Decimals, abiCodec: codec}
 }
 
 func (c *mockClient) SetTokenBalance(bal *big.Int) {
@@ -307,9 +364,44 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 				return b.Bytes(), nil
 			*/
 		}
+	// Balancer related.
 	case getUintVarFN:
 		{
 			return meth.Outputs.Pack(big.NewInt(1))
+		}
+	case getCurentTokensFN:
+		{
+			return meth.Outputs.Pack(c.bPoolCurrentTokens)
+		}
+	case getSpotPriceFN:
+		{
+			return meth.Outputs.Pack(c.bPoolSpotPrice)
+		}
+	case symbolFN:
+		{
+			return meth.Outputs.Pack(c.tokenSymbols[call.To.Hex()])
+		}
+	// Uniswap related.
+	case getReservesFN:
+		{
+			return meth.Outputs.Pack(c.uniReserves.Reserve0, c.uniReserves.Reserve1, c.uniReserves.BlockTimestampLast)
+		}
+	case token0FN:
+		{
+			return meth.Outputs.Pack(c.uniToken0)
+		}
+	case token1FN:
+		{
+			return meth.Outputs.Pack(c.uniToken1)
+		}
+	// Handle "decimals" func for different contracts.
+	case decimalsFN:
+		outValue := c.decimals[call.To.Hex()]
+		switch meth.Outputs[0].Type.String() {
+		case "uint8":
+			return meth.Outputs.Pack(uint8(outValue))
+		default:
+			return meth.Outputs.Pack(big.NewInt(int64(outValue)))
 		}
 	}
 

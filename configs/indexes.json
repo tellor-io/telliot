@@ -29,6 +29,20 @@
             "param": "$.USD"
         }
     ],
+    "AMPL/USDC": [
+        {
+            "URL": "ethereum:0x7860e28ebfb8ae052bfe279c07ac5d94c9cd2937",
+            "type": "ethereum",
+            "parser": "Balancer"
+        }
+    ],
+    "AMPL/ETH": [
+        {
+          "URL": "ethereum:0xc5be99a02c6857f9eac67bbce58df5572498f40c",
+          "type": "ethereum",
+          "parser": "Uniswap"
+        }
+    ],
     "ATOM/USD": [
         {
             "URL": "https://api.binance.com/api/v1/klines?symbol=ATOMUSDT&interval=1d&limit=1",

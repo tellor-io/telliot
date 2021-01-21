@@ -15,8 +15,10 @@ type Ampl struct {
 
 func (a Ampl) Require(at time.Time) map[string]IndexProcessor {
 	return map[string]IndexProcessor{
-		"AMPL/USD": VolumeWeightedAPIs(TimeWeightedAvg(24*time.Hour, NoDecay)),
-		"AMPL/BTC": AmpleChained("BTC/USD"),
+		"AMPL/USD":  VolumeWeightedAPIs(TimeWeightedAvg(24*time.Hour, NoDecay)),
+		"AMPL/BTC":  AmpleChained("BTC/USD"),
+		"AMPL/ETH":  TimeWeightedAvg(24*time.Hour, NoDecay),
+		"AMPL/USDC": TimeWeightedAvg(24*time.Hour, NoDecay),
 	}
 }
 
