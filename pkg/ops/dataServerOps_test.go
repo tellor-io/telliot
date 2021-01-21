@@ -23,11 +23,12 @@ func TestDataServerOps(t *testing.T) {
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 	client := rpc.NewMockClient()
-	proxy, err := db.OpenLocalProxy(DB)
+
+	proxy, err := db.OpenLocal(cfg, DB)
 	testutil.Ok(t, err)
 
 	ctx := context.Background()
-	ops, err := CreateDataServerOps(ctx, logger, cfg, DB, &proxy, client, nil, nil, exitCh)
+	ops, err := CreateDataServerOps(ctx, logger, cfg, proxy, client, nil, nil, exitCh)
 	testutil.Ok(t, err)
 
 	testutil.Ok(t, ops.Start(ctx), "starting server")

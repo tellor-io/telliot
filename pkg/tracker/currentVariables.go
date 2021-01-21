@@ -17,7 +17,7 @@ import (
 )
 
 type CurrentVariablesTracker struct {
-	db       db.DB
+	db       db.DataServerProxy
 	contract *contracts.Tellor
 	account  *rpc.Account
 	logger   log.Logger
@@ -27,7 +27,7 @@ func (b *CurrentVariablesTracker) String() string {
 	return "CurrentVariablesTracker"
 }
 
-func NewCurrentVariablesTracker(logger log.Logger, db db.DB, contract *contracts.Tellor, account *rpc.Account) *CurrentVariablesTracker {
+func NewCurrentVariablesTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *CurrentVariablesTracker {
 	return &CurrentVariablesTracker{
 		db:       db,
 		contract: contract,

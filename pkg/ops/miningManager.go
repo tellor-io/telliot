@@ -388,7 +388,7 @@ func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		}
 
 		txID := tellorCommon.PriceTXs + slotNum.String()
-		_, err = mgr.database.Put(txID, gasUsed.Bytes())
+		err = mgr.database.Put(txID, gasUsed.Bytes())
 		if err != nil {
 			level.Error(mgr.logger).Log("msg", "saving transaction cost", "err", err)
 		}
@@ -407,7 +407,7 @@ func (mgr *MiningMgr) profit() (int64, error) {
 		return 0, errors.Wrap(err, "getting TX cost")
 	}
 	if gasUsed.Int64() == 0 {
-		level.Debug(mgr.logger).Log("msg", "profit checking no data for gas used", "slot", slotNum)
+		level.Debug(mgr.logger).Log("msg", "profit checking:no data for gas used", "slot", slotNum)
 		return -1, nil
 	}
 	gasPrice, err := mgr.ethClient.SuggestGasPrice(context.Background())

@@ -24,8 +24,10 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	DB, cleanup := db.OpenTestDB(t)
 	client := rpc.NewMockClient()
 	defer t.Cleanup(cleanup)
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
 
-	if _, err := BuildIndexTrackers(cfg, DB, client); err != nil {
+	if _, err := BuildIndexTrackers(cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}
 	contract, err := contracts.NewTellor(cfg, client)
@@ -47,8 +49,10 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	testutil.Ok(t, err)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
 	disputeChecker := NewDisputeChecker(logger, cfg, client, &contract, 500)
-	if _, err := BuildIndexTrackers(cfg, DB, client); err != nil {
+	if _, err := BuildIndexTrackers(cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}
 	ethUSDPairs := indexes["ETH/USD"]

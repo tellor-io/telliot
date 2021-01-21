@@ -23,8 +23,11 @@ func TestStringId(t *testing.T) {
 	config.OpenTestConfig(t)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
+	cfg := config.OpenTestConfig(t)
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
 	logger := util.SetupLogger("debug")
-	tracker := NewBalanceTracker(logger, DB, client, nil)
+	tracker := NewBalanceTracker(logger, proxy, client, nil)
 	res := tracker.String()
 
 	testutil.Equals(t, res, BalanceTrackerName, "didn't return expected string", BalanceTrackerName)
@@ -49,11 +52,13 @@ func TestNegativeBalance(t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
 
 	logger := util.SetupLogger("debug")
 	account, err := rpc.NewAccount(cfg)
 	testutil.Ok(t, err)
-	tracker := NewBalanceTracker(logger, DB, client, &account)
+	tracker := NewBalanceTracker(logger, proxy, client, &account)
 	err = tracker.Exec(context.Background())
 	testutil.NotOk(t, err, "should have error")
 }
@@ -66,10 +71,12 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
 	logger := util.SetupLogger("debug")
 	account, err := rpc.NewAccount(cfg)
 	testutil.Ok(t, err)
-	tracker := NewBalanceTracker(logger, DB, client, &account)
+	tracker := NewBalanceTracker(logger, proxy, client, &account)
 	err = tracker.Exec(context.Background())
 	testutil.Ok(t, err)
 	v, err := DB.Get(db.BalanceKey)

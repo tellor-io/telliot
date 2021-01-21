@@ -16,9 +16,11 @@ import (
 func TestMeanAt(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	DB, cleanup := db.OpenTestDB(t)
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
 	testClient := rpc.NewMockClient()
 	defer t.Cleanup(cleanup)
-	if _, err := BuildIndexTrackers(cfg, DB, testClient); err != nil {
+	if _, err := BuildIndexTrackers(cfg, proxy, testClient); err != nil {
 		testutil.Ok(t, err)
 	}
 	ethIndexes := indexes["ETH/USD"]

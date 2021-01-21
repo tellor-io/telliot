@@ -19,7 +19,7 @@ import (
 
 // DataServer holds refs to primary stack of utilities for data retrieval and serving.
 type DataServer struct {
-	DB           db.DB
+	DB           db.DataServerProxy
 	runner       *tracker.Runner
 	ethClient    rpc.ETHClient
 	exitCh       chan int
@@ -34,7 +34,7 @@ func CreateServer(
 	ctx context.Context,
 	logger log.Logger,
 	config *config.Config,
-	DB db.DB,
+	DB db.DataServerProxy,
 	client rpc.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,

@@ -21,7 +21,7 @@ import (
 // GasTracker is the struct that maintains the latest gasprices.
 // note the prices are actually stored in the DB.
 type GasTracker struct {
-	db     db.DB
+	db     db.DataServerProxy
 	client rpc.ETHClient
 	logger log.Logger
 }
@@ -37,7 +37,7 @@ func (b *GasTracker) String() string {
 	return "GasTracker"
 }
 
-func NewGasTracker(logger log.Logger, db db.DB, client rpc.ETHClient) *GasTracker {
+func NewGasTracker(logger log.Logger, db db.DataServerProxy, client rpc.ETHClient) *GasTracker {
 	return &GasTracker{
 		db:     db,
 		client: client,

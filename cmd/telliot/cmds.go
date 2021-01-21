@@ -6,7 +6,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/big"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -14,8 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ops"
+	"github.com/tellor-io/telliot/pkg/rest"
 )
 
 var GitTag string
@@ -357,17 +361,16 @@ func (d dataserverCmd) Run() error {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	var ds *ops.DataServerOps
 	DB, err := migrateAndOpenDB(cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
 	}
-	proxy, err := createProxy(cfg, DB)
+	proxy, err := db.OpenLocal(cfg, DB)
 	if err != nil {
-		return errors.Wrapf(err, "initializing proxy")
+		return errors.Wrapf(err, "open remote DB instance")
 	}
 	ch := make(chan os.Signal)
-	ds, err = ops.CreateDataServerOps(ctx, logger, cfg, DB, &proxy, client, contract, account, ch)
+	ds, err := ops.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, account, ch)
 	if err != nil {
 		return errors.Wrapf(err, "creating data server")
 	}
@@ -376,6 +379,13 @@ func (d dataserverCmd) Run() error {
 		return errors.Wrapf(err, "starting data server")
 	}
 	<-ds.Ready()
+
+	http.Handle("/metrics", promhttp.Handler())
+	srv, err := rest.Create(ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
+	if err != nil {
+		return errors.Wrapf(err, "creating http data server")
+	}
+	srv.Start()
 
 	// Wait for kill sig.
 	<-c
@@ -430,43 +440,78 @@ func (m mineCmd) Run() error {
 	signal.Notify(c, os.Interrupt)
 	exitChannels := make([]*chan os.Signal, 0)
 
+	http.Handle("/metrics", promhttp.Handler())
+	srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.Mine.ListenHost, cfg.Mine.ListenPort)}
+	go func() {
+		level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
+		// returns ErrServerClosed on graceful close
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("ListenAndServe(): %s", err)
+		}
+	}()
+	defer srv.Close()
+
 	var ds *ops.DataServerOps
 	DB, err := migrateAndOpenDB(cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
 	}
-	proxy, err := createProxy(cfg, DB)
-	if err != nil {
-		return errors.Wrapf(err, "initializing proxy")
-	}
-	if !cfg.EnablePoolWorker {
-		if cfg.Mine.RemoteDBHost == "" {
-			ch := make(chan os.Signal)
-			exitChannels = append(exitChannels, &ch)
 
-			ds, err = ops.CreateDataServerOps(ctx, logger, cfg, DB, &proxy, client, contract, account, ch)
-			if err != nil {
-				return errors.Wrapf(err, "creating data server")
-			}
-			// Start and wait for it to be ready.
-			if err := ds.Start(ctx); err != nil {
-				return errors.Wrapf(err, "starting data server")
-			}
-			<-ds.Ready()
-		}
+	ch1 := make(chan os.Signal)
+	exitChannels = append(exitChannels, &ch1)
+
+	var proxy db.DataServerProxy
+	if cfg.Mine.RemoteDBHost != "" {
+		proxy, err = db.OpenRemote(cfg, DB)
+	} else {
+		proxy, err = db.OpenLocal(cfg, DB)
 	}
-	// Start miner
-	v, err := DB.Get(db.DisputeStatusKey)
 	if err != nil {
-		level.Warn(logger).Log("msg", "getting dispute status. Check if staked")
+		return errors.Wrapf(err, "open remote DB instance")
+
 	}
+
+	// Not using a remote DB so need to start the trackers.
+	if cfg.Mine.RemoteDBHost == "" {
+		ds, err = ops.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, account, ch1)
+		if err != nil {
+			return errors.Wrapf(err, "creating data server")
+		}
+		// Start and wait for it to be ready.
+		if err := ds.Start(ctx); err != nil {
+			return errors.Wrapf(err, "starting data server")
+		}
+		<-ds.Ready()
+	}
+
+	var v []byte
+	for i := 0; i < 10; i++ {
+		// Start miner
+		v, err = proxy.Get(db.DisputeStatusKey)
+		if err != nil {
+			level.Warn(logger).Log("msg", "getting dispute status. Check if staked", "err", err)
+		}
+		if len(v) != 0 {
+			break
+		}
+		select {
+		case <-c: // Early exit from os.Interrupt
+			return nil
+		default:
+		}
+		time.Sleep(1 * time.Second)
+	}
+	if len(v) == 0 {
+		return errors.New("no status result after 10 attempts. this usually means no connection to the DB")
+	}
+
 	status, _ := hexutil.DecodeBig(string(v))
 	if status.Cmp(big.NewInt(1)) != 0 {
 		return errors.New("miner is not able to mine with current status")
 	}
-	ch := make(chan os.Signal)
-	exitChannels = append(exitChannels, &ch)
-	miner, err := ops.CreateMiningManager(logger, ch, cfg, proxy, contract, account)
+	ch2 := make(chan os.Signal)
+	exitChannels = append(exitChannels, &ch2)
+	miner, err := ops.CreateMiningManager(logger, ch2, cfg, proxy, contract, account)
 	if err != nil {
 		return errors.Wrapf(err, "creating miner")
 	}

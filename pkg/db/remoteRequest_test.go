@@ -22,7 +22,7 @@ func TestRemoteRequestCodec(t *testing.T) {
 
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	remote, err := OpenRemoteDB(cfg, DB)
+	remote, err := OpenRemote(cfg, DB)
 	testutil.Ok(t, err)
 
 	keys := []string{RequestIdKey, DifficultyKey}
@@ -50,7 +50,7 @@ func TestRequestReplayAttack(t *testing.T) {
 
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	remote, err := OpenRemoteDB(cfg, DB)
+	remote, err := OpenRemote(cfg, DB)
 	testutil.Ok(t, err)
 
 	keys := []string{RequestIdKey, DifficultyKey}
@@ -81,7 +81,7 @@ func TestRequestForData(t *testing.T) {
 
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	remote, err := OpenRemoteDB(cfg, DB)
+	remote, err := OpenRemote(cfg, DB)
 	testutil.Ok(t, err)
 
 	testutil.Ok(t, DB.Delete(RequestIdKey))
@@ -118,7 +118,7 @@ func TestRequestPut(t *testing.T) {
 
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	remote, err := OpenRemoteDB(cfg, DB)
+	remote, err := OpenRemote(cfg, DB)
 	testutil.Ok(t, err)
 
 	_fromAddress := cfg.PublicAddress

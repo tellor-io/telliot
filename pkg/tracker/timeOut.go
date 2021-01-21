@@ -24,7 +24,7 @@ import (
 
 type TimeOutTracker struct {
 	config   *config.Config
-	db       db.DB
+	db       db.DataServerProxy
 	contract *contracts.Tellor
 	account  *rpc.Account
 	logger   log.Logger
@@ -34,7 +34,7 @@ func (b *TimeOutTracker) String() string {
 	return "TimeOutTracker"
 }
 
-func NewTimeOutTracker(logger log.Logger, config *config.Config, db db.DB, contract *contracts.Tellor, account *rpc.Account) *TimeOutTracker {
+func NewTimeOutTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *TimeOutTracker {
 	return &TimeOutTracker{
 		config:   config,
 		db:       db,
