@@ -23,7 +23,7 @@ import (
 const DisputeTrackerName = "DisputeTracker2"
 
 type DisputeTracker struct {
-	db       db.DB
+	db       db.DataServerProxy
 	contract *contracts.Tellor
 	account  *rpc.Account
 	logger   log.Logger
@@ -34,7 +34,7 @@ func (b *DisputeTracker) String() string {
 	return DisputeTrackerName
 }
 
-func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DB, contract *contracts.Tellor, account *rpc.Account) *DisputeTracker {
+func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *DisputeTracker {
 	return &DisputeTracker{
 		config:   config,
 		db:       db,

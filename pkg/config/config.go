@@ -118,10 +118,8 @@ var defaultConfig = Config{
 	MinSubmitPeriod:  Duration{15 * time.Minute},
 	DisputeThreshold: 0.01,
 	Mine: Mine{
-		ListenHost:   "localhost",
-		ListenPort:   9090,
-		RemoteDBHost: "localhost",
-		RemoteDBPort: 5000,
+		ListenHost: "localhost",
+		ListenPort: 9090,
 	},
 	DataServer: DataServer{
 		ListenHost: "localhost",

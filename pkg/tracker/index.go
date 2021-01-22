@@ -43,7 +43,7 @@ func GetIndexes() map[string][]*IndexTracker {
 // parseIndexFile parses indexes.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
-func parseIndexFile(cfg *config.Config, DB db.DB, client rpc.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
+func parseIndexFile(cfg *config.Config, DB db.DataServerProxy, client rpc.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
 	indexFilePath := filepath.Join(cfg.ConfigFolder, "indexes.json")
@@ -159,7 +159,7 @@ func parseIndexFile(cfg *config.Config, DB db.DB, client rpc.ETHClient) (tracker
 }
 
 // BuildIndexTrackers creates and initializes a new tracker instance.
-func BuildIndexTrackers(cfg *config.Config, db db.DB, client rpc.ETHClient) ([]Tracker, error) {
+func BuildIndexTrackers(cfg *config.Config, db db.DataServerProxy, client rpc.ETHClient) ([]Tracker, error) {
 	err := apiOracle.EnsureValueOracle()
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ type IndexObject struct {
 }
 
 type IndexTracker struct {
-	DB               db.DB
+	DB               db.DataServerProxy
 	Name             string
 	Identifier       string
 	Symbols          []string

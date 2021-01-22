@@ -17,7 +17,7 @@ import (
 )
 
 type TributeTracker struct {
-	db       db.DB
+	db       db.DataServerProxy
 	contract *contracts.Tellor
 	account  *rpc.Account
 	logger   log.Logger
@@ -27,7 +27,7 @@ func (b *TributeTracker) String() string {
 	return "TributeTracker"
 }
 
-func NewTributeTracker(logger log.Logger, db db.DB, contract *contracts.Tellor, account *rpc.Account) *TributeTracker {
+func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *TributeTracker {
 	return &TributeTracker{
 		db:       db,
 		contract: contract,

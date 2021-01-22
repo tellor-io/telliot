@@ -18,7 +18,7 @@ import (
 const BalanceTrackerName = "BalanceTracker"
 
 type BalanceTracker struct {
-	db      db.DB
+	db      db.DataServerProxy
 	client  rpc.ETHClient
 	account *rpc.Account
 	logger  log.Logger
@@ -28,7 +28,7 @@ func (b *BalanceTracker) String() string {
 	return BalanceTrackerName
 }
 
-func NewBalanceTracker(logger log.Logger, db db.DB, client rpc.ETHClient, account *rpc.Account) *BalanceTracker {
+func NewBalanceTracker(logger log.Logger, db db.DataServerProxy, client rpc.ETHClient, account *rpc.Account) *BalanceTracker {
 	return &BalanceTracker{
 		db:      db,
 		client:  client,

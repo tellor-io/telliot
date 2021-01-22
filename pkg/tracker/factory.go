@@ -13,7 +13,7 @@ import (
 )
 
 // CreateTracker a tracker instance by its well-known name.
-func createTracker(name string, logger log.Logger, config *config.Config, db db.DB, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) ([]Tracker, error) {
+func createTracker(name string, logger log.Logger, config *config.Config, db db.DataServerProxy, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) ([]Tracker, error) {
 	switch name {
 	case "timeOut":
 		{

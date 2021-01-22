@@ -39,7 +39,7 @@ func TestDataServer(t *testing.T) {
 		DisputeStatus: big.NewInt(1),
 	}
 	client := rpc.NewMockClientWithValues(opts)
-	proxy, err := db.OpenLocalProxy(DB)
+	proxy, err := db.OpenLocal(cfg, DB)
 	testutil.Ok(t, err)
 
 	ctx := context.Background()
@@ -47,7 +47,7 @@ func TestDataServer(t *testing.T) {
 	testutil.Ok(t, err)
 	contract, err := contracts.NewTellor(cfg, client)
 	testutil.Ok(t, err)
-	ds, err := CreateServer(ctx, logger, cfg, DB, client, &contract, &account)
+	ds, err := CreateServer(ctx, logger, cfg, proxy, client, &contract, &account)
 	testutil.Ok(t, err, "creating server in test")
 	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
 

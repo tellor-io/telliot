@@ -51,12 +51,14 @@ func TestRunner(t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
 	contract, err := contracts.NewTellor(cfg, client)
 	testutil.Ok(t, err)
 	account, err := rpc.NewAccount(cfg)
 	testutil.Ok(t, err)
 
-	runner, _ := NewRunner(logger, cfg, DB, client, &contract, &account)
+	runner, _ := NewRunner(logger, cfg, proxy, client, &contract, &account)
 
 	runner.Ready()
 	if err := runner.Start(context.Background(), exitCh); err != nil {

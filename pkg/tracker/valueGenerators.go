@@ -67,7 +67,7 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 	return PSRs[requestID].ValueAt(values, at), minConfidence
 }
 
-func UpdatePSRs(ctx context.Context, DB db.DB, updatedSymbols []string) error {
+func UpdatePSRs(ctx context.Context, DB db.DataServerProxy, updatedSymbols []string) error {
 	now := clck.Now()
 	// Generate a set of all affected PSRs.
 	var toUpdate []int

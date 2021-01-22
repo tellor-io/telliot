@@ -27,10 +27,13 @@ func TestAmpl(t *testing.T) {
 	testClient := rpc.NewMockClient()
 	defer t.Cleanup(cleanup)
 
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
+
 	mock := clock.NewMock()
 	clck = mock
 	mock.Set(time.Now())
-	if _, err := BuildIndexTrackers(cfg, DB, testClient); err != nil {
+	if _, err := BuildIndexTrackers(cfg, proxy, testClient); err != nil {
 		testutil.Ok(t, err)
 	}
 	amplTrackers := indexes["AMPL/USD"]

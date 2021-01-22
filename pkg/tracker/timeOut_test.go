@@ -16,9 +16,11 @@ func TestTimeOutString(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
+	proxy, err := db.OpenLocal(cfg, DB)
+	testutil.Ok(t, err)
 	logger := util.SetupLogger("debug")
 
-	tracker := NewTimeOutTracker(logger, cfg, DB, nil, nil)
+	tracker := NewTimeOutTracker(logger, cfg, proxy, nil, nil)
 	res := tracker.String()
 
 	testutil.Assert(t, res == "TimeOutTracker", "should return 'TimeOutTracker' string")
