@@ -104,9 +104,15 @@ func parseIndexFile(cfg *config.Config, DB db.DataServerProxy, client rpc.ETHCli
 					}
 				case ethereumIndexType:
 					{
-						address, err := util.ValidateAddress(api.URL)
+						// Getting current network id from geth node.
+						networkID, err := client.NetworkID(context.Background())
 						if err != nil {
-							return nil, nil, errors.Wrap(err, "validating pair address")
+							return nil, nil, err
+						}
+						// Validate and pick an ethereum address for current network id.
+						address, err := util.GetAddressForNetwork(api.URL, networkID.Int64())
+						if err != nil {
+							return nil, nil, errors.Wrap(err, "getting address for network id")
 						}
 						if api.Parser == uniswapIndexParser {
 							source = NewUniswap(symbol, address, client)
