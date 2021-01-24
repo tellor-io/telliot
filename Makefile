@@ -114,7 +114,6 @@ lint: go-lint shell-lint
 # to debug big allocations during linting.
 .PHONY: go-lint
 go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT)
-go-lint: 
 	$(call require_clean_work_tree,'detected not clean master before running lint, previous job changed something?')
 	@echo ">> verifying modules being imported"
 	@echo ">> linting all of the Go files GOGC=${GOGC}"
