@@ -44,17 +44,6 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	}
 }
 
-type GPUConfig struct {
-	// GroupSize defines the number of threads in a workgroup.
-	GroupSize int `json:"groupSize"`
-	// Groups defines total number of threads.
-	Groups int `json:"groups"`
-	// Count defines the number of iterations within a thread.
-	Count uint32 `json:"count"`
-
-	Disabled bool `json:"disabled"`
-}
-
 type DataServer struct {
 	ListenHost string
 	ListenPort uint
@@ -73,31 +62,30 @@ type Mine struct {
 type Config struct {
 	Mine                         Mine
 	DataServer                   DataServer
-	ContractAddress              string                `json:"contractAddress"`
-	PublicAddress                string                `json:"publicAddress"`
-	EthClientTimeout             uint                  `json:"ethClientTimeout"`
-	MinSubmitPeriod              Duration              `json:"minSubmitPeriod"`
-	TrackerSleepCycle            Duration              `json:"trackerCycle"`
-	Trackers                     map[string]bool       `json:"trackers"`
-	DBFile                       string                `json:"dbFile"`
-	FetchTimeout                 Duration              `json:"fetchTimeout"`
-	MinConfidence                float64               `json:"minConfidence"`
-	MiningInterruptCheckInterval Duration              `json:"miningInterruptCheckInterval"`
-	GasMultiplier                float32               `json:"gasMultiplier"`
-	GasMax                       uint                  `json:"gasMax"`
-	NumProcessors                int                   `json:"numProcessors"`
-	Heartbeat                    Duration              `json:"heartbeat"`
-	ServerWhitelist              []string              `json:"serverWhitelist"`
-	GPUConfig                    map[string]*GPUConfig `json:"gpuConfig"`
-	EnablePoolWorker             bool                  `json:"enablePoolWorker"`
-	Worker                       string                `json:"worker"`
-	Password                     string                `json:"password"`
-	PoolURL                      string                `json:"poolURL"`
-	ConfigFolder                 string                `json:"configFolder"`
-	LogLevel                     string                `json:"logLevel"`
-	Logger                       map[string]string     `json:"logger"`
-	DisputeTimeDelta             Duration              `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
-	DisputeThreshold             float64               `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
+	ContractAddress              string            `json:"contractAddress"`
+	PublicAddress                string            `json:"publicAddress"`
+	EthClientTimeout             uint              `json:"ethClientTimeout"`
+	MinSubmitPeriod              Duration          `json:"minSubmitPeriod"`
+	TrackerSleepCycle            Duration          `json:"trackerCycle"`
+	Trackers                     map[string]bool   `json:"trackers"`
+	DBFile                       string            `json:"dbFile"`
+	FetchTimeout                 Duration          `json:"fetchTimeout"`
+	MinConfidence                float64           `json:"minConfidence"`
+	MiningInterruptCheckInterval Duration          `json:"miningInterruptCheckInterval"`
+	GasMultiplier                float32           `json:"gasMultiplier"`
+	GasMax                       uint              `json:"gasMax"`
+	NumProcessors                int               `json:"numProcessors"`
+	Heartbeat                    Duration          `json:"heartbeat"`
+	ServerWhitelist              []string          `json:"serverWhitelist"`
+	EnablePoolWorker             bool              `json:"enablePoolWorker"`
+	Worker                       string            `json:"worker"`
+	Password                     string            `json:"password"`
+	PoolURL                      string            `json:"poolURL"`
+	ConfigFolder                 string            `json:"configFolder"`
+	LogLevel                     string            `json:"logLevel"`
+	Logger                       map[string]string `json:"logger"`
+	DisputeTimeDelta             Duration          `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
+	DisputeThreshold             float64           `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
 	// Minimum percent of profit when submitting a solution.
 	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
 	// a ProfitThreshold of 200% or more will wait until the reward is increased or
@@ -234,21 +222,6 @@ func validateConfig(cfg *Config) error {
 
 		if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
 			return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
-		}
-	}
-
-	for name, gpuConfig := range cfg.GPUConfig {
-		if gpuConfig.Disabled {
-			continue
-		}
-		if gpuConfig.Count == 0 {
-			return errors.Errorf("requires config  'count' > 0 on gpu '%s'", name)
-		}
-		if gpuConfig.GroupSize == 0 {
-			return errors.Errorf("requires config 'groupSize' > 0 on gpu '%s'", name)
-		}
-		if gpuConfig.Groups == 0 {
-			return errors.Errorf("requires config 'groups' > 0 on gpu '%s'", name)
 		}
 	}
 
