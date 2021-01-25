@@ -42,7 +42,7 @@ func (cmd *VersionCmd) Run() error {
 
 type configPath string
 type tokenCmd struct {
-	Config  configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config  configPath `type:"existingfile" help:"path to config file"`
 	Address string     `arg:""`
 	Amount  string     `arg:""`
 }
@@ -112,7 +112,7 @@ func (c *approveCmd) Run() error {
 }
 
 type balanceCmd struct {
-	Config  configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config  configPath `type:"existingfile" help:"path to config file"`
 	Address string     `arg:"" optional:""`
 }
 
@@ -149,7 +149,7 @@ func (b *balanceCmd) Run() error {
 }
 
 type depositCmd struct {
-	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
 func (d depositCmd) Run() error {
@@ -172,7 +172,7 @@ func (d depositCmd) Run() error {
 }
 
 type withdrawCmd struct {
-	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
 func (w withdrawCmd) Run() error {
@@ -195,7 +195,7 @@ func (w withdrawCmd) Run() error {
 }
 
 type requestCmd struct {
-	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
 func (r requestCmd) Run() error {
@@ -218,7 +218,7 @@ func (r requestCmd) Run() error {
 }
 
 type statusCmd struct {
-	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
 func (s statusCmd) Run() error {
@@ -241,10 +241,10 @@ func (s statusCmd) Run() error {
 }
 
 type newDisputeCmd struct {
-	Config     configPath `required:"" type:"existingfile" help:"path to config file"`
-	requestId  string     `arg:"" required:"" help:"the request id to dispute it"`
-	timestamp  string     `arg:"" required:"" help:"the submitted timestamp to dispute"`
-	minerIndex string     `arg:"" required:"" help:"the miner index to dispute"`
+	Config     configPath `type:"existingfile" help:"path to config file"`
+	requestId  string     `arg:""  help:"the request id to dispute it"`
+	timestamp  string     `arg:""  help:"the submitted timestamp to dispute"`
+	minerIndex string     `arg:""  help:"the miner index to dispute"`
 }
 
 func (n newDisputeCmd) Run() error {
@@ -283,9 +283,9 @@ func (n newDisputeCmd) Run() error {
 }
 
 type voteCmd struct {
-	Config    configPath `required:"" type:"existingfile" help:"path to config file"`
-	disputeId string     `arg:"" required:"" help:"the dispute id"`
-	support   bool       `arg:"" required:"" help:"true or false"`
+	Config    configPath `type:"existingfile" help:"path to config file"`
+	disputeId string     `arg:""  help:"the dispute id"`
+	support   bool       `arg:""  help:"true or false"`
 }
 
 func (v voteCmd) Run() error {
@@ -314,7 +314,7 @@ func (v voteCmd) Run() error {
 }
 
 type showCmd struct {
-	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
 func (s showCmd) Run() error {
@@ -337,7 +337,7 @@ func (s showCmd) Run() error {
 }
 
 type dataserverCmd struct {
-	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
 func (d dataserverCmd) Run() error {
@@ -416,7 +416,7 @@ func (d dataserverCmd) Run() error {
 }
 
 type mineCmd struct {
-	Config configPath `required:"" type:"existingfile" help:"path to config file"`
+	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
 func (m mineCmd) Run() error {

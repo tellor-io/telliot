@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/alecthomas/kong"
@@ -20,6 +21,9 @@ import (
 )
 
 func parseConfig(path string) (*config.Config, error) {
+	if path == "" {
+		path = filepath.Join(config.ConfigFolder, "config.json")
+	}
 	err := config.ParseConfig(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing config")
