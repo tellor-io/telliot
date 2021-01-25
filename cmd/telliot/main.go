@@ -36,7 +36,7 @@ func createLogger(logConfig map[string]string, level string) (log.Logger, error)
 	return logger, nil
 }
 
-func createTellorVariables(ctx context.Context, cfg *config.Config) (rpc.ETHClient, *contracts.Tellor, *rpc.Account, error) {
+func createTellorVariables(ctx context.Context, cfg *config.Config) (contracts.ETHClient, *contracts.Tellor, *rpc.Account, error) {
 
 	if !cfg.EnablePoolWorker {
 
@@ -46,7 +46,7 @@ func createTellorVariables(ctx context.Context, cfg *config.Config) (rpc.ETHClie
 			return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
 		}
 
-		contract, err := contracts.NewTellor(cfg, client)
+		contract, err := contracts.NewTellor(client)
 		if err != nil {
 			return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
 		}

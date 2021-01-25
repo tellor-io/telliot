@@ -49,7 +49,7 @@ type MiningMgr struct {
 	exitCh          chan os.Signal
 	logger          log.Logger
 	Running         bool
-	ethClient       rpc.ETHClient
+	ethClient       contracts.ETHClient
 	group           *pow.MiningGroup
 	tasker          WorkSource
 	solHandler      SolutionSink
@@ -86,8 +86,7 @@ func CreateMiningManager(
 	if err != nil {
 		return nil, errors.Wrap(err, "creating client")
 	}
-	contractAddress := common.HexToAddress(cfg.ContractAddress)
-	getter, err := proxy.NewTellorGetters(contractAddress, client)
+	getter, err := contracts.NewTellorGetters(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting addresses")
 	}

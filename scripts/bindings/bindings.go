@@ -22,6 +22,7 @@ import (
 	"github.com/nanmu42/etherscan-api"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 )
 
 func main() {
@@ -54,7 +55,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	generate(cfg.ContractAddress, filepath.Join(contractsFolder, "proxy.sol"), "v0.5.16")
+	generate(contracts.TellorRinkebyAddress, filepath.Join(contractsFolder, "proxy.sol"), "v0.5.16")
 	log.Println("Generated proxy contract in:", contractsFolder)
 	time.Sleep(5 * time.Second)
 	// TODO how to detect that the proxy has changed and this needs updating.

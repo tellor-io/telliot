@@ -53,7 +53,7 @@ func TestRunner(t *testing.T) {
 	defer t.Cleanup(cleanup)
 	proxy, err := db.OpenLocal(cfg, DB)
 	testutil.Ok(t, err)
-	contract, err := contracts.NewTellor(cfg, client)
+	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
 	account, err := rpc.NewAccount(cfg)
 	testutil.Ok(t, err)

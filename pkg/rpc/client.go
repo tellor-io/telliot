@@ -17,44 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/util"
 )
-
-// ETHClient is the main abstraction interface for client operations.
-type ETHClient interface {
-
-	// Close the client.
-	Close()
-
-	// CodeAt returns the code of the given account. This is needed to differentiate
-	// between contract internal errors and the local chain being out of sync.
-	CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
-
-	// TransactionReceipt implements the geth backend DeployBackend interface.
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
-
-	// ContractCall executes an Ethereum contract call with the specified data as the
-	// input.
-	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
-	NonceAt(ctx context.Context, address common.Address) (uint64, error)
-	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
-
-	// PendingCodeAt returns the code of the given account in the pending state.
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-
-	//PendingNonceAt gets the given address's nonce for submitting transactions
-	PendingNonceAt(ctx context.Context, address common.Address) (uint64, error)
-	EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error)
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-
-	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
-	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
-	BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error)
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
-	IsSyncing(ctx context.Context) (bool, error)
-	NetworkID(ctx context.Context) (*big.Int, error)
-	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
-}
 
 // clientInstance is the concrete implementation of the ETHClient.
 type clientInstance struct {
@@ -72,7 +37,7 @@ var (
 )
 
 // NewClient creates a new client instance.
-func NewClient(url string) (ETHClient, error) {
+func NewClient(url string) (contracts.ETHClient, error) {
 	cfg := config.GetConfig()
 	timeout := time.Duration(cfg.EthClientTimeout) * time.Second
 	client, err := ethclient.Dial(url)

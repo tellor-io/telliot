@@ -31,7 +31,7 @@ func TestTributeBalance(t *testing.T) {
 	proxy, err := db.OpenLocal(cfg, DB)
 	testutil.Ok(t, err)
 	logger := util.SetupLogger("debug")
-	contract, err := contracts.NewTellor(cfg, client)
+	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
 	account, err := rpc.NewAccount(cfg)
 	testutil.Ok(t, err)

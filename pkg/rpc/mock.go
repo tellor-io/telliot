@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/master"
 	"github.com/tellor-io/telliot/pkg/util"
 
@@ -140,12 +141,12 @@ func (e *mockError) Error() string {
 }
 
 // NewMockClient returns instance of mock client.
-func NewMockClient() ETHClient {
+func NewMockClient() contracts.ETHClient {
 	return &mockClient{}
 }
 
 // NewMockClientWithValues creates a mock client with default values to return for calls.
-func NewMockClientWithValues(opts *MockOptions) ETHClient {
+func NewMockClientWithValues(opts *MockOptions) contracts.ETHClient {
 	codec, err := BuildCodec()
 	if err != nil {
 		panic(err)

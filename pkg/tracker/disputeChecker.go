@@ -22,12 +22,11 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/master"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 type disputeChecker struct {
 	config           *config.Config
-	client           rpc.ETHClient
+	client           contracts.ETHClient
 	contract         *contracts.Tellor
 	lastCheckedBlock uint64
 	logger           log.Logger
@@ -96,7 +95,7 @@ func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Ti
 func NewDisputeChecker(
 	logger log.Logger,
 	config *config.Config,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	lastCheckedBlock uint64,
 ) *disputeChecker {

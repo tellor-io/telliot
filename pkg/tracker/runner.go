@@ -21,7 +21,7 @@ import (
 // Runner will execute all configured trackers.
 type Runner struct {
 	db           db.DataServerProxy
-	client       rpc.ETHClient
+	client       contracts.ETHClient
 	contract     *contracts.Tellor
 	account      *rpc.Account
 	readyChannel chan bool
@@ -31,7 +31,7 @@ type Runner struct {
 }
 
 // NewRunner will create a new runner instance.
-func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client rpc.ETHClient, contract *contracts.Tellor, account *rpc.Account) (*Runner, error) {
+func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.Tellor, account *rpc.Account) (*Runner, error) {
 	return &Runner{
 		config:       config,
 		db:           db,

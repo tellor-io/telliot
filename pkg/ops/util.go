@@ -9,12 +9,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 func PrepareEthTransaction(
 	ctx context.Context,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	account *rpc.Account,
 ) (*bind.TransactOpts, error) {
 
