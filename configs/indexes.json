@@ -38,9 +38,9 @@
     ],
     "AMPL/ETH": [
         {
-          "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x7e62a502232f1feB77Adf8b8ca023cc9fB133418",
-          "type": "ethereum",
-          "parser": "Uniswap"
+            "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x7e62a502232f1feB77Adf8b8ca023cc9fB133418",
+            "type": "ethereum",
+            "parser": "Uniswap"
         }
     ],
     "ATOM/USD": [
@@ -166,6 +166,17 @@
         {
             "URL": "https://api.binance.com/api/v1/klines?symbol=DASHBNB&interval=1d&limit=1",
             "param": "$[0][4]"
+        }
+    ],
+    "DEFIMCAP": [
+        {
+            "URL": "https://api.coingecko.com/api/v3/global/decentralized_finance_defi",
+            "param": "$.data.defi_market_cap"
+        },
+        {
+            "URL": "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest?CMC_PRO_API_KEY=${CMC_KEY}",
+            "param": "$.data.defi_market_cap",
+            "interval": 260
         }
     ],
     "DEFITVL": [
