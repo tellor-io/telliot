@@ -34,7 +34,6 @@ Telliot commands and config file options are as the following:
 
 #### Config file options:
 
-* `contractAddress` \(required\) - address of TellorContract
 * `databaseURL` \(required\) - where you are reading from for the server database \(if hosted\)
 * `publicAddress` \(required\) - public address for your miner \(note, no 0x\)
 * `ethClientTimeout` \(required\) - timeout for making requests from your node

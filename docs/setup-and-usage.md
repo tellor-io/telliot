@@ -284,7 +284,6 @@ Edit `config1.json` to include the following:
 ```bash
 {
     "publicAddress": "0xE037EC8EC9ec423826750853899394dE7F024fee",
-    "contractAddress": "0x7DdC408C0Cd13D3543156AE2bc5772C56E91AA0f",
     "databaseURL":"http://localhost7545",
     "serverWhitelist": [
                 "0xE037EC8EC9ec423826750853899394dE7F024fee",
