@@ -18,7 +18,7 @@ import (
 // TxnSubmitter just concrete type for txn submitter.
 type TxnSubmitter struct {
 	cfg      *config.Config
-	client   rpc.ETHClient
+	client   contracts.ETHClient
 	contract *contracts.Tellor
 	account  *rpc.Account
 	logger   log.Logger
@@ -28,7 +28,7 @@ type TxnSubmitter struct {
 func NewSubmitter(
 	logger log.Logger,
 	cfg *config.Config,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	tellor *contracts.Tellor,
 	account *rpc.Account) TxnSubmitter {
 	return TxnSubmitter{

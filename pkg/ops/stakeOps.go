@@ -50,7 +50,7 @@ func printStakeStatus(bigStatus *big.Int, started *big.Int) {
 func Deposit(
 	ctx context.Context,
 	logger log.Logger,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) error {
@@ -100,7 +100,7 @@ func Deposit(
 func ShowStatus(
 	ctx context.Context,
 	logger log.Logger,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) error {
@@ -116,7 +116,7 @@ func ShowStatus(
 func RequestStakingWithdraw(
 	ctx context.Context,
 	logger log.Logger,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) error {
@@ -147,7 +147,7 @@ func RequestStakingWithdraw(
 func WithdrawStake(
 	ctx context.Context,
 	logger log.Logger,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) error {

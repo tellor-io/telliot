@@ -34,7 +34,7 @@ func CreateDataServerOps(
 	logger log.Logger,
 	config *config.Config,
 	DB db.DataServerProxy,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
 	exitCh chan os.Signal,

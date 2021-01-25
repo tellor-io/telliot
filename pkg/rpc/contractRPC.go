@@ -51,7 +51,7 @@ func SubmitContractTxn(
 	logger log.Logger,
 	cfg *config.Config,
 	proxy db.DataServerProxy,
-	client ETHClient,
+	client contracts.ETHClient,
 	tellor *contracts.Tellor,
 	account *Account,
 	ctxName string,

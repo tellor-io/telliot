@@ -14,8 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/tellor-io/telliot/pkg/contracts"
 	uniswap "github.com/tellor-io/telliot/pkg/contracts/uniswap"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 // Uniswap implements DataSource interface.
@@ -23,7 +23,7 @@ type Uniswap struct {
 	symbol0 string
 	symbol1 string
 	address string
-	client  rpc.ETHClient
+	client  contracts.ETHClient
 }
 
 func (u *Uniswap) String() string {
@@ -31,7 +31,7 @@ func (u *Uniswap) String() string {
 }
 
 // NewUniswap creates new Uniswap for provided pair and pair address.
-func NewUniswap(pair string, address string, client rpc.ETHClient) *Uniswap {
+func NewUniswap(pair string, address string, client contracts.ETHClient) *Uniswap {
 	symbols := strings.Split(pair, "/")
 	return &Uniswap{
 		symbol0: symbols[0],
