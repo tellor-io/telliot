@@ -143,15 +143,8 @@ func CreateMiningManager(
 			[]string{"slot"},
 		),
 	}
-
-	if cfg.EnablePoolWorker {
-		pool := pow.CreatePool(cfg, group)
-		mng.tasker = pool
-		mng.solHandler = pool
-	} else {
-		mng.tasker = pow.CreateTasker(cfg, database)
-		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, database)
-	}
+	mng.tasker = pow.CreateTasker(cfg, database)
+	mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, database)
 	return mng, nil
 }
 
@@ -233,29 +226,25 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 // or re-sends a current pending solution to the submitter when the challenge hasn't changes.
 func (mgr *MiningMgr) newWork() {
 	go func() {
-		if mgr.cfg.EnablePoolWorker {
-			mgr.tasker.GetWork(mgr.toMineInput)
+		// instantSubmit means 15 mins have passed so
+		// the difficulty now is zero and any solution/nonce will work so
+		// can just submit without sending to the miner.
+		work, instantSubmit := mgr.tasker.GetWork(nil)
+		if instantSubmit {
+			mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
 		} else {
-			// instantSubmit means 15 mins have passed so
-			// the difficulty now is zero and any solution/nonce will work so
-			// can just submit without sending to the miner.
-			work, instantSubmit := mgr.tasker.GetWork(nil)
-			if instantSubmit {
-				mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
-			} else {
-				// It sends even nil work to indicate that no new challenge is available.
-				if work == nil {
-					mgr.solutionOutput <- nil
-					return
-				}
-
-				var ids []int64
-				for _, id := range work.Challenge.RequestIDs {
-					ids = append(ids, id.Int64())
-				}
-				level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
-				mgr.toMineInput <- work
+			// It sends even nil work to indicate that no new challenge is available.
+			if work == nil {
+				mgr.solutionOutput <- nil
+				return
 			}
+
+			var ids []int64
+			for _, id := range work.Challenge.RequestIDs {
+				ids = append(ids, id.Int64())
+			}
+			level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
+			mgr.toMineInput <- work
 		}
 	}()
 }
