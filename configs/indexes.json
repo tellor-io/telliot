@@ -176,7 +176,7 @@
         {
             "URL": "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest?CMC_PRO_API_KEY=${CMC_KEY}",
             "param": "$.data.defi_market_cap",
-            "interval": 500
+            "interval": 1800
         }
     ],
     "DEFITVL": [
