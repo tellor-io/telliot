@@ -55,7 +55,6 @@ spec:
             secretKeyRef:
               name: telliot-main
               key: VIXEOD_KEY
-                      - name: VIXEOD_KEY
         - name: CMC_KEY
           valueFrom:
             secretKeyRef:
