@@ -53,11 +53,11 @@ On-chain index trackers fetch data using smart contract calls on the Ethereum bl
     ]
 ```
 
- 
+
 
 Uniswap and Balancer each have their `DataSource` that fetches tracker info using on-chain calls.
 
-`BalancerGetter` is a `DataSource` that fetches tracker info from a [Balancer pool](https://docs.balancer.finance/getting-started/faq#balancer-pools). Balancer pools are liquidity pools for pair of ERC20 tokens and they could resist on both Ethereum mainnet and its testnets. 
+`BalancerGetter` is a `DataSource` that fetches tracker info from a [Balancer pool](https://docs.balancer.finance/getting-started/faq#balancer-pools). Balancer pools are liquidity pools for pair of ERC20 tokens and they could resist on both Ethereum mainnet and its testnets.
 
 Sometimes there is no deployed testnet Balancer pool to use in the On-chain index tracker. [here](https://docs.balancer.finance/guides/testing-on-kovan) are some steps to deploy a Balancer pool on the Koven testnet and add some liquidity to it. for a Rinkeby deployment, the step could be a bit different and required to deploy required ERC20 tokens beforehand. [here](https://github.com/hhio618/simple-erc20-example) is a simple javascript project that could be used to deploy an ERC20 token on the Rinkeby testnet. also, [here](https://docs.balancer.finance/smart-contracts/addresses) are addresses of Balancer smart contracts on different Ethereum networks. \(Note: please make sure that use enough gas when using the Seth client in the above-mentioned Balancer guide!\)
 
@@ -83,7 +83,7 @@ This required to deploy some ERC20 token beforehand and will create a Uniswap V2
 
 
 
-#### 
+####
 
 
 

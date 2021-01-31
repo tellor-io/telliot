@@ -11,10 +11,8 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ## Unreleased
 
 * [\#240](https://github.com/tellor-io/telliot/issues/240) Replaced the cli package to allow for command specific flags and configuration. Now all flags should be passed last. Example:
-
-  Instead of: `./telliot --config="config.json" stake deposit`, it becomes:`./telliot stake deposit --config="config.json"`
-
-  Removed the `RemoteMining` `-r` flag. Remote is active when specifying a `RemoteDBHost` for the `Mine` command. See the `configs/config.json` for an example.
+Instead of: `./telliot --config="config.json" stake deposit`, it becomes:`./telliot stake deposit --config="config.json"`
+Removed the `RemoteMining` `-r` flag. Remote is active when specifying a `RemoteDBHost` for the `Mine` command. See the `configs/config.json` for an example.
 
 ### Changed
 
@@ -26,7 +24,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ### Changed
 
-* [\#372](https://github.com/tellor-io/telliot/pull/372) Split the configs of the mine and dataserver command to avoid confusion and be more explicit. This also fixes an issue where can't run a miner and dataserver on the same machine\(now that the miner also runs an HTTP server to expose metrics\). The config format has changed so users need to update their configs. See the `configs/config.json` for an example of the new format.
+* [\#372](https://github.com/tellor-io/telliot/pull/372) Split the configs of the mine and dataserver command to avoid confusion and be more explicit. This also fixes an issue where can't run a miner and dataserver on the same machine(now that the miner also runs an HTTP server to expose metrics). The config format has changed so users need to update their configs. See the `configs/config.json` for an example of the new format.
 * [\#374](https://github.com/tellor-io/telliot/pull/374) Changed DEFITVL from median to mean as it has only 2 API endpoints and with mean the calcs return more accurate results.
 
 ### Added
@@ -71,4 +69,3 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 * Profitability calculations which is set through the `ProfitThreshold`\(in percents\) settings in the config,
 * Docs how to contribute.
-
