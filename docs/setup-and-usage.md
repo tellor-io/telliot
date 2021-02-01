@@ -181,29 +181,6 @@ The following example shows request ID 4, inputting a value of 9000 with a 1,000
 telliot --config=./configs/config.json mine
 ```
 
-### Bonus section - connecting to a Pool
-
-There are mining pools available for mining TRB without staking any tokens. The pool server operator stakes the tokens for you, and you receive rewards roughly proportional to your hashrate as a fraction of the pool's hashrate.
-
-{% hint style="info" %}
-Each pool has different fees and instructions for hooking up. Be sure to read your pool's documentation. Feel free to reach out to the community if you need help with mining pools.
-{% endhint %}
-
-Add the following lines to your config file:
-
-```bash
-"enablePoolWorker": true,
-"poolURL": "<poolURL>",
-```
-
-Where the poolURL is the link to your pool. \(e.g. [http://tellorpool.org](http://tellorpool.org) \)
-
-You can change the job duration if needed. This is the time in seconds to grab information from the pool. The default time is 15 seconds.
-
-```bash
-"poolJobDuration":10
-```
-
 ## deposit - Deposit or withdraw a stake
 
 {% hint style="info" %}
