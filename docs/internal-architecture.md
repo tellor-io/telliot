@@ -78,14 +78,3 @@ function addLiquidity(
 ```
 
 This required to deploy some ERC20 token beforehand and will create a Uniswap V2 pair if already not exists for the provided pair. there is a factory method that could be used to get the pair address [here](https://uniswap.org/docs/v2/smart-contracts/factory/#getpair).
-
-
-
-
-
-####
-
-
-
-
-
