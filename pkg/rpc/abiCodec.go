@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	balancer "github.com/tellor-io/telliot/pkg/contracts/balancer"
-	"github.com/tellor-io/telliot/pkg/contracts/master"
-	"github.com/tellor-io/telliot/pkg/contracts/proxy"
+	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
+	proxy "github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
 	uniswap "github.com/tellor-io/telliot/pkg/contracts/uniswap"
 
 	"github.com/tellor-io/telliot/pkg/util"

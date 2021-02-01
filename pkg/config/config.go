@@ -16,6 +16,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	TellorMainnetAddress = "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5"
+	TellorRinkebyAddress = "0xFe41Cb708CD98C5B20423433309E55b53F79134a"
+)
+
 // Unfortunate hack to enable json parsing of human readable time strings
 // see https://github.com/golang/go/issues/10275
 // code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations.
