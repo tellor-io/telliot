@@ -32,7 +32,7 @@ import (
 )
 
 type WorkSource interface {
-	GetWork(toMine chan *pow.Work) (*pow.Work, bool)
+	GetWork() (*pow.Work, bool)
 }
 
 type SolutionSink interface {
@@ -229,7 +229,7 @@ func (mgr *MiningMgr) newWork() {
 		// instantSubmit means 15 mins have passed so
 		// the difficulty now is zero and any solution/nonce will work so
 		// can just submit without sending to the miner.
-		work, instantSubmit := mgr.tasker.GetWork(nil)
+		work, instantSubmit := mgr.tasker.GetWork()
 		if instantSubmit {
 			mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
 		} else {
