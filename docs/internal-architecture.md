@@ -6,9 +6,7 @@ description: Internal architecture of the project.
 
 ## Trackers
 
-A tracker is  a process that gets data from an HTTP API or a Blockchain smart contract.
-
-Trackers take placed in the `pkg/tracker` package of the Telliot repository. index tracker is a special type of tracker that creates trackers from an `indexes.json` file.
+A tracker is a process that gets data from an HTTP API or a Blockchain smart contract.
 
 The structure of this `indexes.json` file is as follow:
 
@@ -37,7 +35,7 @@ There is three types of index trackers: `http`, `ethereum`, `file`.
 
 ### HTTP trackers
 
-If not set the default type of an index tracker is `http` type. also, the default parser for an index tracker is a `jsonpath` parser that parses data from a JSON payload. also, `param` is an additional parameter for the parser. for the `jsonpath` parser, it is the jsonpath param on how to parse the output.  see [here](http://goessner.net/articles/JsonPath/) for more info
+If not set the default type of an index tracker is `http` type. also, the default parser for an index tracker is a `jsonpath` parser that parses data from a JSON payload. also, `param` is an additional parameter for the parser. for the `jsonpath` parser, it is the jsonpath param on how to parse the output. see [here](http://goessner.net/articles/JsonPath/) for more info
 
 ### On-chain trackers
 
@@ -104,7 +102,6 @@ Wait for confirmations. after that bind tokens using the `bind` method. for exam
 amount=$(seth --to-uint256 $(seth --to-wei 1000000 ether))
 weight=$(seth --to-uint256 $(seth --to-wei 5 ether))
 seth send $BPOOL "bind(address, uint256, uint256)" $TOKEN1 $amount $weight
-
 ```
 
 Let's confirm that all the tokens were added by using some query method:
