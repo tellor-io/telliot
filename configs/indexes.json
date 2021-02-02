@@ -168,6 +168,17 @@
             "param": "$[0][4]"
         }
     ],
+    "DEFIMCAP": [
+        {
+            "URL": "https://api.coingecko.com/api/v3/global/decentralized_finance_defi",
+            "param": "$.data.defi_market_cap"
+        },
+        {
+            "URL": "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest?CMC_PRO_API_KEY=${CMC_KEY}",
+            "param": "$.data.defi_market_cap",
+            "interval": 1800
+        }
+    ],
     "DEFITVL": [
         {
             "URL": "https://api.defillama.com/charts",
