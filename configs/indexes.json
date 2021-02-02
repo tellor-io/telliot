@@ -31,14 +31,14 @@
     ],
     "AMPL/USDC": [
         {
-            "URL": "Mainnet:0x7860e28ebfb8ae052bfe279c07ac5d94c9cd2937,Rinkeby:0xfa820b86095d98edc56fbcdbacfc80b9a9f998b4",
-            "type": "ethereum",
-            "parser": "Balancer"
+          "URL": "Mainnet:0x7860e28ebfb8ae052bfe279c07ac5d94c9cd2937,Rinkeby:0x7Ce90580beC5Fc55b1Cb51926151E00cF1544C80",
+          "type": "ethereum",
+          "parser": "Balancer"
         }
     ],
     "AMPL/ETH": [
         {
-          "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x7e62a502232f1feB77Adf8b8ca023cc9fB133418",
+          "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x6dFd19363709f6245a7e7A74eA66e5c59dF9360F",
           "type": "ethereum",
           "parser": "Uniswap"
         }

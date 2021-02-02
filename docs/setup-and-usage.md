@@ -9,7 +9,8 @@ description: Here are the nuts and bolts for usinng the CLI
 The CLI is provided as a pre-built binary with every release and also as a docker image.
 
 ### Run manually
- Download and run the [latest release](https://github.com/tellor-io/telliot/releases/latest)
+
+Download and run the [latest release](https://github.com/tellor-io/telliot/releases/latest)
 
 ```bash
 wget https://github.com/tellor-io/telliot/releases/latest/download/telliot
@@ -28,17 +29,17 @@ docker run -v $(pwd)/local:/configs tellor/telliot:master mine
 tested with [google cloud](https://cloud.google.com), but should work with any k8s cluster.
 {% endhint %}
 
- * Install [`gcloud`](https://cloud.google.com/sdk/docs/install)
- * Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl)
- * Create a k8s cluster with a single node
- * Login to the cluster
+* Install [`gcloud`](https://cloud.google.com/sdk/docs/install)
+* Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl)
+* Create a k8s cluster with a single node
+* Login to the cluster
 
 ```bash
 gcloud auth login --project projectName
 gcloud container clusters get-credentials main --zone europe-west2-a --project projectName
 ```
 
- * Deploy the `cli` \(by default deployed to run as a miner\)
+* Deploy the `cli` \(by default deployed to run as a miner\)
 
 ```bash
 git clone https://github.com/tellor-io/telliot
@@ -86,7 +87,7 @@ sed -i "s/tellor\/telliot:master/$REPO\/telliot:latest/g" .local/configs/$NAME/t
 kubectl apply -f .local/configs/$NAME/telliot.yml
 ```
 
- * Optionally deploy the monitoring stack with Prometheus and Grafana.
+* Optionally deploy the monitoring stack with Prometheus and Grafana.
 
 ```bash
 kubectl apply -f configs/manifests/monitoring-persist.yml

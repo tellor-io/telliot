@@ -53,7 +53,6 @@ Telliot commands and config file options are as the following:
 * `disputeThreshold` - percentage of acceptable range outside min/max for dispute checking - default
 * `psrFolder` - folder location holding your psr.json file, default working directory
 
-
 ### LogConfig file options
 
 The logging.config file consists of two fields: \* component \* level
