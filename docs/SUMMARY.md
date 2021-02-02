@@ -9,5 +9,6 @@
 * [Contributing](contributing.md)
 * [Coding style guide](coding-style-guide.md)
 * [Release process](release-process.md)
+* [Internal architecture](internal-architecture.md)
 * [Changelog](changelog.md)
 

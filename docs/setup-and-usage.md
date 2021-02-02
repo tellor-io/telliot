@@ -9,7 +9,8 @@ description: Here are the nuts and bolts for usinng the CLI
 The CLI is provided as a pre-built binary with every release and also as a docker image.
 
 ### Run manually
- Download and run the [latest release](https://github.com/tellor-io/telliot/releases/latest)
+
+Download and run the [latest release](https://github.com/tellor-io/telliot/releases/latest)
 
 ```bash
 wget https://github.com/tellor-io/telliot/releases/latest/download/telliot
@@ -28,17 +29,17 @@ docker run -v $(pwd)/local:/configs tellor/telliot:master mine
 tested with [google cloud](https://cloud.google.com), but should work with any k8s cluster.
 {% endhint %}
 
- * Install [`gcloud`](https://cloud.google.com/sdk/docs/install)
- * Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl)
- * Create a k8s cluster with a single node
- * Login to the cluster
+* Install [`gcloud`](https://cloud.google.com/sdk/docs/install)
+* Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl)
+* Create a k8s cluster with a single node
+* Login to the cluster
 
 ```bash
 gcloud auth login --project projectName
 gcloud container clusters get-credentials main --zone europe-west2-a --project projectName
 ```
 
- * Deploy the `cli` \(by default deployed to run as a miner\)
+* Deploy the `cli` \(by default deployed to run as a miner\)
 
 ```bash
 git clone https://github.com/tellor-io/telliot
@@ -86,7 +87,7 @@ sed -i "s/tellor\/telliot:master/$REPO\/telliot:latest/g" .local/configs/$NAME/t
 kubectl apply -f .local/configs/$NAME/telliot.yml
 ```
 
- * Optionally deploy the monitoring stack with Prometheus and Grafana.
+* Optionally deploy the monitoring stack with Prometheus and Grafana.
 
 ```bash
 kubectl apply -f configs/manifests/monitoring-persist.yml
@@ -179,29 +180,6 @@ The following example shows request ID 4, inputting a value of 9000 with a 1,000
 
 ```bash
 telliot --config=./configs/config.json mine
-```
-
-### Bonus section - connecting to a Pool
-
-There are mining pools available for mining TRB without staking any tokens. The pool server operator stakes the tokens for you, and you receive rewards roughly proportional to your hashrate as a fraction of the pool's hashrate.
-
-{% hint style="info" %}
-Each pool has different fees and instructions for hooking up. Be sure to read your pool's documentation. Feel free to reach out to the community if you need help with mining pools.
-{% endhint %}
-
-Add the following lines to your config file:
-
-```bash
-"enablePoolWorker": true,
-"poolURL": "<poolURL>",
-```
-
-Where the poolURL is the link to your pool. \(e.g. [http://tellorpool.org](http://tellorpool.org) \)
-
-You can change the job duration if needed. This is the time in seconds to grab information from the pool. The default time is 15 seconds.
-
-```bash
-"poolJobDuration":10
 ```
 
 ## deposit - Deposit or withdraw a stake
