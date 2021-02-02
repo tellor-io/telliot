@@ -30,7 +30,7 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	if _, err := BuildIndexTrackers(cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}
-	contract, err := contracts.NewTellor(cfg, client)
+	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
 	ctx := context.Background()
 	ethUSDPairs := indexes["ETH/USD"]
@@ -45,7 +45,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	logger := util.SetupLogger("debug")
 	client := rpc.NewMockClient()
-	contract, err := contracts.NewTellor(cfg, client)
+	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)

@@ -13,8 +13,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	balancer "github.com/tellor-io/telliot/pkg/contracts/balancer"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 // BalancerPair to be fetched onchain.
@@ -30,14 +30,14 @@ type Balancer struct {
 	address string
 	token1  string
 	token2  string
-	client  rpc.ETHClient
+	client  contracts.ETHClient
 }
 
 func (b *Balancer) String() string {
 	return "Balancer"
 }
 
-func NewBalancer(pair, address string, client rpc.ETHClient) *Balancer {
+func NewBalancer(pair, address string, client contracts.ETHClient) *Balancer {
 	tokens := strings.Split(pair, "/")
 	return &Balancer{
 		address: address,

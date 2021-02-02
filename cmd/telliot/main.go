@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/alecthomas/kong"
@@ -20,6 +21,9 @@ import (
 )
 
 func parseConfig(path string) (*config.Config, error) {
+	if path == "" {
+		path = filepath.Join(config.ConfigFolder, "config.json")
+	}
 	err := config.ParseConfig(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing config")
@@ -36,39 +40,34 @@ func createLogger(logConfig map[string]string, level string) (log.Logger, error)
 	return logger, nil
 }
 
-func createTellorVariables(ctx context.Context, cfg *config.Config) (rpc.ETHClient, *contracts.Tellor, *rpc.Account, error) {
+func createTellorVariables(ctx context.Context, cfg *config.Config) (contracts.ETHClient, *contracts.Tellor, *rpc.Account, error) {
 
-	if !cfg.EnablePoolWorker {
-
-		// Create an rpc client
-		client, err := rpc.NewClient(os.Getenv(config.NodeURLEnvName))
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
-		}
-
-		contract, err := contracts.NewTellor(cfg, client)
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
-		}
-
-		account, err := rpc.NewAccount(cfg)
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "getting private key to ECDSA")
-		}
-
-		// Issue #55, halt if client is still syncing with Ethereum network
-		s, err := client.IsSyncing(ctx)
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
-		}
-		if s {
-			return nil, nil, nil, errors.New("ethereum node is still syncing with the network")
-		}
-
-		return client, &contract, &account, nil
+	// Create an rpc client
+	client, err := rpc.NewClient(os.Getenv(config.NodeURLEnvName))
+	if err != nil {
+		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
-	// Not sure why we need this case.
-	return nil, nil, nil, nil
+
+	contract, err := contracts.NewTellor(client)
+	if err != nil {
+		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
+	}
+
+	account, err := rpc.NewAccount(cfg)
+	if err != nil {
+		return nil, nil, nil, errors.Wrap(err, "getting private key to ECDSA")
+	}
+
+	// Issue #55, halt if client is still syncing with Ethereum network
+	s, err := client.IsSyncing(ctx)
+	if err != nil {
+		return nil, nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
+	}
+	if s {
+		return nil, nil, nil, errors.New("ethereum node is still syncing with the network")
+	}
+
+	return client, &contract, &account, nil
 }
 
 // migrateAndOpenDB migrates the tx costs and deletes the db.

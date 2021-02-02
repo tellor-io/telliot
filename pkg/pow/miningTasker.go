@@ -58,7 +58,7 @@ func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 	}
 }
 
-func (mt *MiningTasker) GetWork(chan *Work) (*Work, bool) {
+func (mt *MiningTasker) GetWork() (*Work, bool) {
 	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
 	keys := []string{
 		db.DifficultyKey,

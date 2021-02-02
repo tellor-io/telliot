@@ -62,7 +62,6 @@ type Mine struct {
 type Config struct {
 	Mine                         Mine
 	DataServer                   DataServer
-	ContractAddress              string            `json:"contractAddress"`
 	PublicAddress                string            `json:"publicAddress"`
 	EthClientTimeout             uint              `json:"ethClientTimeout"`
 	MinSubmitPeriod              Duration          `json:"minSubmitPeriod"`
@@ -77,7 +76,6 @@ type Config struct {
 	NumProcessors                int               `json:"numProcessors"`
 	Heartbeat                    Duration          `json:"heartbeat"`
 	ServerWhitelist              []string          `json:"serverWhitelist"`
-	EnablePoolWorker             bool              `json:"enablePoolWorker"`
 	Worker                       string            `json:"worker"`
 	Password                     string            `json:"password"`
 	PoolURL                      string            `json:"poolURL"`
@@ -200,29 +198,12 @@ func validateConfig(cfg *Config) error {
 	if os.Getenv(NodeURLEnvName) == "" {
 		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
 	}
-	if cfg.EnablePoolWorker {
-		if len(cfg.Worker) == 0 {
-			return errors.Errorf("worker name required for pool")
-		}
-		if len(cfg.Password) == 0 {
-			return errors.Errorf("password name required for pool")
-		}
-	} else {
-		b, err = hex.DecodeString(os.Getenv(PrivateKeyEnvName))
-		if err != nil || len(b) != 32 {
-			return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", os.Getenv(PrivateKeyEnvName))
-		}
-		if len(cfg.ContractAddress) != 42 {
-			return errors.Errorf("expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
-		}
-		b, err = hex.DecodeString(cfg.ContractAddress[2:])
-		if err != nil || len(b) != 20 {
-			return errors.Wrapf(err, "expecting 40 hex character contract address, got \"%s\"", cfg.ContractAddress)
-		}
-
-		if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
-			return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
-		}
+	b, err = hex.DecodeString(os.Getenv(PrivateKeyEnvName))
+	if err != nil || len(b) != 32 {
+		return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", os.Getenv(PrivateKeyEnvName))
+	}
+	if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
+		return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
 	}
 
 	return nil

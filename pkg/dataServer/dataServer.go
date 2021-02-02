@@ -21,7 +21,7 @@ import (
 type DataServer struct {
 	DB           db.DataServerProxy
 	runner       *tracker.Runner
-	ethClient    rpc.ETHClient
+	ethClient    contracts.ETHClient
 	exitCh       chan int
 	runnerExitCh chan int
 	Stopped      bool
@@ -35,7 +35,7 @@ func CreateServer(
 	logger log.Logger,
 	config *config.Config,
 	DB db.DataServerProxy,
-	client rpc.ETHClient,
+	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) (*DataServer, error) {
