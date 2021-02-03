@@ -3,7 +3,7 @@ module github.com/tellor-io/telliot
 go 1.12
 
 require (
-	github.com/alecthomas/kong v0.2.11
+	github.com/alecthomas/kong v0.2.12
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190712234253-ed1100a1c015 // indirect
 	github.com/benbjohnson/clock v1.1.0
