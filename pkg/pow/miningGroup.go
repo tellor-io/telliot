@@ -207,7 +207,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 
 	// Mine until a null challenge is received.
 	// Each time a hasher finishes a chunk, give it a new one to work on.
-	// Always waits for all miners to finish their chunks before returning (thread safety with OpenCL)
+	// Always waits for all miners to finish their chunks before returning.
 	// EXCEPT in the case of an error, but then the app is almost certainly just quitting anyways!
 	shouldRun := true
 	for shouldRun || (len(idleWorkers) < len(g.Backends)) {
