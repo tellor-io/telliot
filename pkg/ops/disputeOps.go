@@ -21,7 +21,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/master"
+	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 	"github.com/tellor-io/telliot/pkg/util"

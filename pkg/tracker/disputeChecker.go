@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/master"
+	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 )
 
 type disputeChecker struct {

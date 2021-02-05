@@ -8,8 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/contracts/master"
-	"github.com/tellor-io/telliot/pkg/contracts/proxy"
+	"github.com/tellor-io/telliot/pkg/config"
+	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
+	proxy "github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
 )
 
 type Tellor struct {
@@ -54,11 +55,6 @@ type ETHClient interface {
 	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
 }
 
-const (
-	TellorMainnetAddress = "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5"
-	TellorRinkebyAddress = "0xFe41Cb708CD98C5B20423433309E55b53F79134a"
-)
-
 // Get hard-coded Tellor contract address per network id.
 func getContractAddress(client ETHClient) (string, error) {
 	networkID, err := client.NetworkID(context.Background())
@@ -67,9 +63,9 @@ func getContractAddress(client ETHClient) (string, error) {
 	}
 	switch networkID.Int64() {
 	case 1:
-		return TellorMainnetAddress, nil
+		return config.TellorMainnetAddress, nil
 	case 4:
-		return TellorRinkebyAddress, nil
+		return config.TellorRinkebyAddress, nil
 	default:
 		return "", errors.New("contract address for current network id not found")
 	}
