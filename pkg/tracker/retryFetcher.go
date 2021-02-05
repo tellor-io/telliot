@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // Client utilized for all HTTP requests.
@@ -19,8 +20,6 @@ func init() {
 	client = http.Client{}
 }
 
-var retryFetchLog = util.NewLogger("tracker", "FetchWithRetries")
-
 // FetchRequest holds info for a request.
 // TODO: add mock fetch.
 type FetchRequest struct {
@@ -28,12 +27,16 @@ type FetchRequest struct {
 	timeout  time.Duration
 }
 
-func fetchWithRetries(req *FetchRequest) ([]byte, error) {
-	return _recFetch(req, clck.Now().Add(req.timeout))
+func fetchWithRetries(logger log.Logger, req *FetchRequest) ([]byte, error) {
+	return _recFetch(logger, req, clck.Now().Add(req.timeout))
 }
 
-func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
-	retryFetchLog.Debug("Fetch request will expire at: %v (timeout: %v)", expiration, req.timeout)
+func _recFetch(logger log.Logger, req *FetchRequest, expiration time.Time) ([]byte, error) {
+	level.Debug(logger).Log(
+		"msg", "fetch request will expire",
+		"at", expiration,
+		"timeout", req.timeout,
+	)
 
 	now := clck.Now()
 	client.Timeout = expiration.Sub(now)
@@ -41,7 +44,11 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 	r, err := client.Get(req.queryURL)
 	if err != nil {
 		//log local non-timeout errors for now
-		retryFetchLog.Warn("Problem fetching data from: %s. %v", req.queryURL, err)
+		level.Warn(logger).Log(
+			"msg", "fetching data",
+			"from", req.queryURL,
+			"err", err,
+		)
 		now := clck.Now()
 		if now.After(expiration) {
 			return nil, errors.Wrap(err, "retry timeout expired, last error is wrapped")
@@ -50,8 +57,8 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		time.Sleep(1000 * time.Millisecond)
 
 		//try again
-		retryFetchLog.Warn("Trying fetch again...")
-		return _recFetch(req, expiration)
+		level.Warn(logger).Log("msg", "trying fetch again")
+		return _recFetch(logger, req, expiration)
 	}
 
 	data, err := ioutil.ReadAll(r.Body)
@@ -61,7 +68,12 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 	}
 
 	if r.StatusCode < 200 || r.StatusCode > 299 {
-		retryFetchLog.Warn("Response from fetching  %s. Response code: %d, payload: %s", req.queryURL, r.StatusCode, data)
+		level.Warn(logger).Log(
+			"msg", "response from fetching",
+			"queryURL", req.queryURL,
+			"statusCode", r.StatusCode,
+			"payload", data,
+		)
 		//log local non-timeout errors for now
 		// this is a duplicated error that is unlikely to be triggered since expiration is updated above
 		now := clck.Now()
@@ -72,7 +84,7 @@ func _recFetch(req *FetchRequest, expiration time.Time) ([]byte, error) {
 		time.Sleep(500 * time.Millisecond)
 
 		//try again
-		return _recFetch(req, expiration)
+		return _recFetch(logger, req, expiration)
 	}
 	return data, nil
 }

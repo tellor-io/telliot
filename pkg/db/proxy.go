@@ -5,7 +5,6 @@ package db
 
 import (
 	"crypto/ecdsa"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -15,9 +14,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -49,8 +51,6 @@ type DataServerProxy interface {
 // how long a signed request is good for before reject it. Semi-protection against replays.
 const _validityThreshold = 2 //seconds
 
-var rdbLog *util.Logger
-
 /***************************************************************************************
 ** NOTE: This component is used to proxy data requests from approved miner processes. Miner
 ** public addresses are whitelisted and a small history of requests is retained to mitigate
@@ -69,28 +69,30 @@ type remoteImpl struct {
 	localDB       DB
 	whitelist     map[string]bool
 	postURL       string
-	log           *util.Logger
+	logger        log.Logger
 	wlHistory     map[string]*lru.ARCCache
 	isRemote      bool
 	rwLock        sync.RWMutex
 }
 
-func OpenRemote(cfg *config.Config, localDB DB) (DataServerProxy, error) {
-	return open(cfg, localDB, true)
+func OpenRemote(logger log.Logger, cfg *config.Config, localDB DB) (DataServerProxy, error) {
+	return open(logger, cfg, localDB, true)
 }
 
-func OpenLocal(cfg *config.Config, localDB DB) (DataServerProxy, error) {
-	return open(cfg, localDB, false)
+func OpenLocal(logger log.Logger, cfg *config.Config, localDB DB) (DataServerProxy, error) {
+	return open(logger, cfg, localDB, false)
 }
 
 // OpenRemoteDB establishes a proxy to a remote data server.
-func open(cfg *config.Config, localDB DB, isRemote bool) (DataServerProxy, error) {
-	rdbLog = util.NewLogger("db", "RemoteDBProxy")
+func open(logger log.Logger, cfg *config.Config, localDB DB, isRemote bool) (DataServerProxy, error) {
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
 
 	privateKey, err := crypto.HexToECDSA(os.Getenv(config.PrivateKeyEnvName))
 	if err != nil {
-		fmt.Println("Problem decoding private key", err)
-		return nil, err
+		return nil, errors.Wrap(err, "decoding private key")
 	}
 	//get address from config
 	_fromAddress := cfg.PublicAddress
@@ -120,10 +122,14 @@ func open(cfg *config.Config, localDB DB, isRemote bool) (DataServerProxy, error
 		postURL:       url,
 		whitelist:     wlMap,
 		wlHistory:     wlLRU,
-		log:           util.NewLogger("db", "RemoteDB"),
+		logger:        log.With(logger, "component", ComponentName),
 		isRemote:      isRemote,
 	}
-	i.log.Info("Created Remote data proxy connector for %s:%d\n", cfg.Mine.RemoteDBHost, cfg.Mine.RemoteDBPort)
+	level.Info(i.logger).Log(
+		"msg", "created remote data proxy connector",
+		"host", cfg.Mine.RemoteDBHost,
+		"port", cfg.Mine.RemoteDBPort,
+	)
 	return i, nil
 }
 
@@ -140,14 +146,13 @@ func (i *remoteImpl) hasAddressPrefix(key string) bool {
 }
 
 func (i *remoteImpl) IncomingRequest(data []byte) ([]byte, error) {
-	req, err := decodeRequest(data, i)
+	req, err := decodeRequest(i.logger, data, i)
 	if err != nil {
-		rdbLog.Error("Problem decoding incoming request: %v", err)
-		return errorResponse(err.Error())
+		return errorResponse("decoding incoming request")
 	}
 
 	if req == nil {
-		return errorResponse("Could not decode request!")
+		return errorResponse("decode request!")
 	}
 
 	if req.dbKeys == nil {
@@ -189,21 +194,21 @@ func (i *remoteImpl) IncomingRequest(data []byte) ([]byte, error) {
 		defer i.rwLock.RUnlock()
 	}
 
-	i.log.Info("Getting remote request for keys: %v", req.dbKeys)
+	level.Info(i.logger).Log("msg", "getting remote request for keys", req.dbKeys)
 
 	outMap := map[string][]byte{}
 	for _, k := range req.dbKeys {
 		if req.dbValues == nil && !isKnownKey(k) {
 			return errorResponse("Invalid lookup key: " + k)
 		}
-		rdbLog.Debug("Looking up local DB key: %v", k)
+		level.Debug(i.logger).Log("looking up for local DB key", "key", k)
 		bts, err := i.localDB.Get(k)
 
 		if err != nil {
 			return errorResponse(err.Error())
 		}
 		if bts != nil {
-			rdbLog.Debug("Result to %d bytes of content", len(bts))
+			level.Debug(i.logger).Log("msg", "get bytes of result", "bytes", len(bts))
 			outMap[k] = bts
 		}
 	}
@@ -243,20 +248,24 @@ func (i *remoteImpl) BatchGet(keys []string) (map[string][]byte, error) {
 				outMap[k] = bts
 			}
 		}
-		i.log.Debug("Requested keys: %v, resulting output:%v", keys, outMap)
+		level.Debug(i.logger).Log(
+			"msg", "requested keys result in output",
+			"keys", keys,
+			"outMap", outMap,
+		)
 		return outMap, nil
 	}
-	req, err := createRequest(keys, nil, i)
+	req, err := createRequest(i.logger, keys, nil, i)
 	if err != nil {
 		return nil, err
 	}
-	data, err := encodeRequest(req)
+	data, err := encodeRequest(i.logger, req)
 	if err != nil {
 		return nil, err
 	}
 	httpReq := &util.HTTPFetchRequest{Method: util.POST, QueryURL: i.postURL, Payload: data, Timeout: time.Duration(10 * time.Second)}
 
-	respData, err := util.HTTPWithRetries(httpReq)
+	respData, err := util.HTTPWithRetries(i.logger, httpReq)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving data after retries")
 	}
@@ -294,11 +303,11 @@ func (i *remoteImpl) BatchPut(keys []string, values [][]byte) error {
 			dbKeys[idx] = k
 		}
 	}
-	req, err := createRequest(dbKeys, values, i)
+	req, err := createRequest(i.logger, dbKeys, values, i)
 	if err != nil {
 		return err
 	}
-	data, err := encodeRequest(req)
+	data, err := encodeRequest(i.logger, req)
 	if err != nil {
 		return err
 	}
@@ -308,7 +317,7 @@ func (i *remoteImpl) BatchPut(keys []string, values [][]byte) error {
 		Payload:  data,
 		Timeout:  time.Duration(10 * time.Second),
 	}
-	respData, err := util.HTTPWithRetries(httpReq)
+	respData, err := util.HTTPWithRetries(i.logger, httpReq)
 	if err != nil {
 		//return nil, err
 		return errors.Wrap(err, "put data after retries")
@@ -334,9 +343,13 @@ func (i *remoteImpl) Verify(hash []byte, timestamp int64, sig []byte) error {
 	}
 	addr := crypto.PubkeyToAddress(*pubKey)
 	ashex := strings.ToLower(addr.Hex())
-	rdbLog.Debug("Verifying signature from %v request against whitelist: %v", ashex, i.whitelist[ashex])
+	level.Debug(i.logger).Log(
+		"msg", "verifying signature against whitelist",
+		"address", ashex,
+		"whitlisted", i.whitelist[ashex],
+	)
 	if !i.whitelist[ashex] {
-		rdbLog.Warn("Unauthorized miner detected with address: %v", ashex)
+		level.Warn(i.logger).Log("msg", "unauthorized miner detected", "address", ashex)
 		return errors.Errorf("Unauthorized")
 	}
 
@@ -345,17 +358,33 @@ func (i *remoteImpl) Verify(hash []byte, timestamp int64, sig []byte) error {
 		return errors.Errorf("No history found for address")
 	}
 	if cache.Contains(timestamp) {
-		rdbLog.Debug("Miner %v already made request at %v", ashex, timestamp)
+		level.Debug(i.logger).Log(
+			"msg", "miner already made request",
+			"miner", ashex,
+			"timestamp", timestamp,
+		)
 		expr := time.Unix(timestamp+_validityThreshold, 0)
 		now := time.Now()
 		if now.After(expr) {
-			rdbLog.Warn("Request time %v expired (%v)", time.Unix(timestamp, 0), now)
+			level.Warn(i.logger).Log(
+				"msg", "request time expired",
+				"timestamp", time.Unix(timestamp, 0),
+				"now", now,
+			)
 			return errors.Errorf("Request expired")
 		}
-		rdbLog.Debug("Time of last request: %v compared to %v", expr, now)
+		level.Debug(i.logger).Log(
+			"msg", "time of last request",
+			"comparing", expr,
+			"to", now,
+		)
 
 	} else {
-		rdbLog.Debug("Never seen miner before: %v at time %v", ashex, timestamp)
+		level.Debug(i.logger).Log(
+			"msg", "never seen miner before",
+			"address", ashex,
+			"timestamp", timestamp,
+		)
 	}
 	cache.Add(timestamp, true)
 	return nil

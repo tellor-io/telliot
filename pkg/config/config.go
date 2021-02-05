@@ -81,12 +81,10 @@ type Config struct {
 	NumProcessors                int               `json:"numProcessors"`
 	Heartbeat                    Duration          `json:"heartbeat"`
 	ServerWhitelist              []string          `json:"serverWhitelist"`
-	EnablePoolWorker             bool              `json:"enablePoolWorker"`
 	Worker                       string            `json:"worker"`
 	Password                     string            `json:"password"`
 	PoolURL                      string            `json:"poolURL"`
 	ConfigFolder                 string            `json:"configFolder"`
-	LogLevel                     string            `json:"logLevel"`
 	Logger                       map[string]string `json:"logger"`
 	DisputeTimeDelta             Duration          `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64           `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
@@ -136,20 +134,15 @@ var defaultConfig = Config{
 		"disputeChecker":   false,
 	},
 	ConfigFolder: ConfigFolder,
-	LogLevel:     "info",
 	Logger: map[string]string{
-		"config.Config":            "INFO",
-		"db.DB":                    "INFO",
-		"rpc.client":               "INFO",
-		"rpc.ABICodec":             "INFO",
-		"rpc.mockClient":           "INFO",
-		"tracker.Top50Tracker":     "INFO",
-		"tracker.FetchDataTracker": "INFO",
-		"pow.MiningWorker-0:":      "INFO",
-		"pow.MiningWorker-1:":      "INFO",
-		"pow.MiningTasker-0:":      "INFO",
-		"pow.MiningTasker-1:":      "INFO",
-		"tracker.PSRTracker":       "INFO",
+		"db":         "info",
+		"rpc":        "info",
+		"dataServer": "info",
+		"tracker":    "info",
+		"pow:":       "info",
+		"ops":        "info",
+		"rest":       "info",
+		"apiOracle":  "info",
 	},
 	EnvFile: path.Join(ConfigFolder, ".env"),
 }
@@ -204,21 +197,12 @@ func validateConfig(cfg *Config) error {
 	if os.Getenv(NodeURLEnvName) == "" {
 		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
 	}
-	if cfg.EnablePoolWorker {
-		if len(cfg.Worker) == 0 {
-			return errors.Errorf("worker name required for pool")
-		}
-		if len(cfg.Password) == 0 {
-			return errors.Errorf("password name required for pool")
-		}
-	} else {
-		b, err = hex.DecodeString(os.Getenv(PrivateKeyEnvName))
-		if err != nil || len(b) != 32 {
-			return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", os.Getenv(PrivateKeyEnvName))
-		}
-		if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
-			return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
-		}
+	b, err = hex.DecodeString(os.Getenv(PrivateKeyEnvName))
+	if err != nil || len(b) != 32 {
+		return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", os.Getenv(PrivateKeyEnvName))
+	}
+	if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
+		return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
 	}
 
 	return nil

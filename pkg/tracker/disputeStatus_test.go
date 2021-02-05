@@ -14,18 +14,18 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestDisputeString(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	tracker := NewDisputeTracker(logger, cfg, proxy, nil, nil)
 	res := tracker.String()
 	testutil.Assert(t, res == DisputeTrackerName, "didn't return expected string", DisputeTrackerName)
@@ -40,9 +40,9 @@ func TestDisputeStatus(t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
 	account, err := rpc.NewAccount(cfg)
@@ -67,9 +67,9 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
 	account, err := rpc.NewAccount(cfg)

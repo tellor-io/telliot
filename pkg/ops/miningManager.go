@@ -26,13 +26,14 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	proxy "github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/pow"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
 type WorkSource interface {
-	GetWork(toMine chan *pow.Work) (*pow.Work, bool)
+	GetWork() (*pow.Work, bool)
 }
 
 type SolutionSink interface {
@@ -77,12 +78,12 @@ func CreateMiningManager(
 	account *rpc.Account,
 ) (*MiningMgr, error) {
 
-	group, err := pow.SetupMiningGroup(cfg, exitCh)
+	group, err := pow.SetupMiningGroup(logger, cfg, exitCh)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup miners")
 	}
 
-	client, err := rpc.NewClient(os.Getenv(config.NodeURLEnvName))
+	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
 	if err != nil {
 		return nil, errors.Wrap(err, "creating client")
 	}
@@ -91,10 +92,16 @@ func CreateMiningManager(
 		return nil, errors.Wrap(err, "getting addresses")
 	}
 
+	//ops logging
+	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
+
 	submitter := NewSubmitter(logger, cfg, client, contract, account)
 	mng := &MiningMgr{
 		exitCh:          exitCh,
-		logger:          logger,
+		logger:          log.With(logger, "component", ComponentName),
 		Running:         false,
 		group:           group,
 		tasker:          nil,
@@ -144,14 +151,8 @@ func CreateMiningManager(
 		),
 	}
 
-	if cfg.EnablePoolWorker {
-		pool := pow.CreatePool(cfg, group)
-		mng.tasker = pool
-		mng.solHandler = pool
-	} else {
-		mng.tasker = pow.CreateTasker(cfg, database)
-		mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, database)
-	}
+	mng.tasker = pow.CreateTasker(logger, cfg, database)
+	mng.solHandler = pow.CreateSolutionHandler(cfg, logger, submitter, database)
 	return mng, nil
 }
 
@@ -233,29 +234,25 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 // or re-sends a current pending solution to the submitter when the challenge hasn't changes.
 func (mgr *MiningMgr) newWork() {
 	go func() {
-		if mgr.cfg.EnablePoolWorker {
-			mgr.tasker.GetWork(mgr.toMineInput)
+		// instantSubmit means 15 mins have passed so
+		// the difficulty now is zero and any solution/nonce will work so
+		// can just submit without sending to the miner.
+		work, instantSubmit := mgr.tasker.GetWork()
+		if instantSubmit {
+			mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
 		} else {
-			// instantSubmit means 15 mins have passed so
-			// the difficulty now is zero and any solution/nonce will work so
-			// can just submit without sending to the miner.
-			work, instantSubmit := mgr.tasker.GetWork(nil)
-			if instantSubmit {
-				mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
-			} else {
-				// It sends even nil work to indicate that no new challenge is available.
-				if work == nil {
-					mgr.solutionOutput <- nil
-					return
-				}
-
-				var ids []int64
-				for _, id := range work.Challenge.RequestIDs {
-					ids = append(ids, id.Int64())
-				}
-				level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
-				mgr.toMineInput <- work
+			// It sends even nil work to indicate that no new challenge is available.
+			if work == nil {
+				mgr.solutionOutput <- nil
+				return
 			}
+
+			var ids []int64
+			for _, id := range work.Challenge.RequestIDs {
+				ids = append(ids, id.Int64())
+			}
+			level.Debug(mgr.logger).Log("msg", "sending new chalenge for mining", "reqIDs", fmt.Sprintf("%+v", ids))
+			mgr.toMineInput <- work
 		}
 	}()
 }

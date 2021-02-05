@@ -26,7 +26,6 @@ package rest
 // 	srv.Start()
 // 	defer func() {
 // 		if err := srv.Stop(); err != nil {
-// 			fmt.Println("error stoping the server", err)
 // 		}
 // 	}()
 

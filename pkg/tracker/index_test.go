@@ -34,7 +34,7 @@ func TestIndexTracker(t *testing.T) {
 		for _, testCase := range indexers {
 			actual, err := (&IndexTracker{Param: testCase.Param}).ParsePayload([]byte(testCase.Payload))
 			if err != nil {
-				testutil.Ok(t, fmt.Errorf("failed to parse payload(URL: %v): %v", testCase.URL, err))
+				testutil.Ok(t, fmt.Errorf("parse payload(URL: %v): %v", testCase.URL, err))
 			}
 			testutil.Equals(t, testCase.Expected, actual)
 		}

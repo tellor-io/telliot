@@ -15,8 +15,11 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
+
+const ComponentName = "tracker"
 
 // Runner will execute all configured trackers.
 type Runner struct {
@@ -32,6 +35,10 @@ type Runner struct {
 
 // NewRunner will create a new runner instance.
 func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.Tellor, account *rpc.Account) (*Runner, error) {
+	logger, err := logging.ApplyFilter(*config, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
 	return &Runner{
 		config:       config,
 		db:           db,
@@ -39,7 +46,7 @@ func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, 
 		contract:     contract,
 		account:      account,
 		readyChannel: make(chan bool, 1),
-		logger:       log.With(logger, "component", "runner"),
+		logger:       log.With(logger, "component", ComponentName),
 		trackerErr: promauto.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "telliot",
 			Subsystem: "tracker",
@@ -56,7 +63,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	for name, activated := range trackerNames {
 		if activated {
 			level.Info(r.logger).Log("msg", "starting tracker", "name", name)
-			t, err := createTracker(name, r.logger, r.config, r.db, r.client, r.contract, r.account)
+			t, err := createTracker(r.logger, name, r.config, r.db, r.client, r.contract, r.account)
 			if err != nil {
 				return errors.Wrapf(err, "creating tracker. Name: %s", name)
 			}
@@ -103,7 +110,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 						err := trackers[idx].Exec(ctx)
 						if err != nil {
 							r.trackerErr.With(prometheus.Labels{"id": trackers[idx].String()}).(prometheus.Counter).Inc()
-							level.Warn(r.logger).Log("msg", "problem in tracker", "tracker", trackers[idx].String(), "err", err)
+							level.Warn(r.logger).Log("msg", "tracker exec", "tracker", trackers[idx].String(), "err", err)
 						}
 						// Only the first trackers round execution.
 						if count < len(trackers) {

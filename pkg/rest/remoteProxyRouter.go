@@ -9,19 +9,29 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/logging"
 )
 
 // RemoteProxyRouter handles incoming http requests.
 type RemoteProxyRouter struct {
 	dataProxy db.DataServerProxy
-	log       *util.Logger
+	logger    log.Logger
 }
 
 // CreateRemoteProxy creates a remote proxy instance.
-func CreateRemoteProxy(ctx context.Context, proxy db.DataServerProxy) (*RemoteProxyRouter, error) {
-	return &RemoteProxyRouter{dataProxy: proxy, log: util.NewLogger("rest", "RemoteProxyRouter")}, nil
+func CreateRemoteProxy(logger log.Logger, cfg *config.Config, ctx context.Context, proxy db.DataServerProxy) (*RemoteProxyRouter, error) {
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, err
+	}
+	return &RemoteProxyRouter{
+		dataProxy: proxy,
+		logger:    log.With(logger, "component", ComponentName),
+	}, nil
 }
 
 // Default http handler callback which will route to appropriate handler internally.
@@ -34,30 +44,30 @@ func (r *RemoteProxyRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	w.Header().Add("Content-Type", "application/octet-stream")
 
 	if e := recover(); e != nil {
-		fmt.Printf("Problem with proxied data request: %v\n", e)
+		level.Info(r.logger).Log("msg", "proxied data request", "err", e)
 		fmt.Fprintf(w, "Cannot serve request")
 		return
 	}
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		r.log.Error("Problem reading request data:%v", err)
-		fmt.Fprint(w, "Could not read request data")
+		level.Error(r.logger).Log("msg", "reading request", "err", err)
+		fmt.Fprint(w, "read request data")
 		return
 	}
-	r.log.Info("Getting request with %d bytes of data", len(data))
+	level.Info(r.logger).Log("msg", "getting request", "bytes", len(data))
 	outData, err := r.dataProxy.IncomingRequest(data)
 
 	if err != nil {
-		r.log.Error("Problem handling incoming request data:%v", err)
-		fmt.Fprint(w, "Could not handle request")
+		level.Error(r.logger).Log("msg", "handling incoming request", "err", err)
+		fmt.Fprint(w, "handle request")
 		return
 	}
-	r.log.Info("Produced result with %d bytes of data", len(outData))
+	level.Info(r.logger).Log("msg", "produced result", "bytes", len(outData))
 	w.WriteHeader(200)
 	_, err = w.Write(outData)
 	if err != nil {
-		r.log.Error("couldn't write the response:%v", err)
-		fmt.Fprint(w, "couldn't write the response")
+		level.Error(r.logger).Log("msg", "write response", "err", err)
+		http.Error(w, "write the response", 500)
 		return
 	}
 }

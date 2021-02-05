@@ -6,13 +6,13 @@ package tracker
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -41,7 +41,7 @@ func NewGasTracker(logger log.Logger, db db.DataServerProxy, client contracts.ET
 	return &GasTracker{
 		db:     db,
 		client: client,
-		logger: log.With(logger, "component", "gas tracker"),
+		logger: log.With(logger, "component", ComponentName),
 	}
 
 }
@@ -49,8 +49,7 @@ func NewGasTracker(logger log.Logger, db db.DataServerProxy, client contracts.ET
 func (b *GasTracker) Exec(ctx context.Context) error {
 	netID, err := b.client.NetworkID(ctx)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		return errors.Wrap(err, "get network id")
 	}
 
 	var gasPrice *big.Int
@@ -58,11 +57,11 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 	if big.NewInt(1).Cmp(netID) == 0 {
 		url := "https://ethgasstation.info/json/ethgasAPI.json"
 		req := &FetchRequest{queryURL: url, timeout: time.Duration(15 * time.Second)}
-		payload, err := fetchWithRetries(req)
+		payload, err := fetchWithRetries(b.logger, req)
 		if err != nil {
 			gasPrice, err = b.client.SuggestGasPrice(ctx)
 			if err != nil {
-				level.Warn(b.logger).Log("msg", "couldn't get suggested gas price", "err", err)
+				level.Warn(b.logger).Log("msg", "get suggested gas price", "err", err)
 			}
 		} else {
 			gpModel := GasPriceModel{}

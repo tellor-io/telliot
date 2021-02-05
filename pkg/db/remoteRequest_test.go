@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
@@ -20,22 +21,24 @@ func TestRemoteRequestCodec(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
+	logger := logging.NewLogger()
+
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	remote, err := OpenRemote(cfg, DB)
+	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
 	keys := []string{RequestIdKey, DifficultyKey}
-	req, err := createRequest(keys, nil, remote.(*remoteImpl))
+	req, err := createRequest(logger, keys, nil, remote.(*remoteImpl))
 	testutil.Ok(t, err)
 
 	testutil.Assert(t, req.timestamp > 0, "Expected a timestamp to get applied to request")
 	testutil.Assert(t, req.sig != nil, "Expected a signature to be attached to request")
 	testutil.Assert(t, req.dbKeys != nil && len(req.dbKeys) > 0, "Expected request to have dbKeys")
 
-	encoded, err := encodeRequest(req)
+	encoded, err := encodeRequest(logger, req)
 	testutil.Ok(t, err)
-	decReq, err := decodeRequest(encoded, remote.(*remoteImpl))
+	decReq, err := decodeRequest(logger, encoded, remote.(*remoteImpl))
 	testutil.Ok(t, err)
 
 	testutil.Assert(t, reflect.DeepEqual(decReq.sig, req.sig), "Signatures did not match after codec")
@@ -48,29 +51,31 @@ func TestRequestReplayAttack(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
+	logger := logging.NewLogger()
+
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	remote, err := OpenRemote(cfg, DB)
+	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
 	keys := []string{RequestIdKey, DifficultyKey}
-	req, err := createRequest(keys, nil, remote.(*remoteImpl))
+	req, err := createRequest(logger, keys, nil, remote.(*remoteImpl))
 	testutil.Ok(t, err)
 
 	testutil.Assert(t, req.timestamp > 0, "Expected a timestamp to get applied to request")
 	testutil.Assert(t, req.sig != nil, "Expected a signature to be attached to request")
 	testutil.Assert(t, req.dbKeys != nil && len(req.dbKeys) > 0, "Expected request to have dbKeys")
 
-	encoded, err := encodeRequest(req)
+	encoded, err := encodeRequest(logger, req)
 	testutil.Ok(t, err)
 
-	_, err = decodeRequest(encoded, remote.(*remoteImpl))
+	_, err = decodeRequest(logger, encoded, remote.(*remoteImpl))
 	testutil.Ok(t, err)
 
 	// That simulated a call that was decoded. Now we'll wait for timeout on request.
 	time.Sleep((_validityThreshold * 1500) * time.Millisecond)
 
-	_, err = decodeRequest(encoded, remote.(*remoteImpl))
+	_, err = decodeRequest(logger, encoded, remote.(*remoteImpl))
 
 	testutil.NotOk(t, err, "expected failure when decoding request as a replay after expiration period")
 }
@@ -79,9 +84,11 @@ func TestRequestForData(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
+	logger := logging.NewLogger()
+
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	remote, err := OpenRemote(cfg, DB)
+	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
 	testutil.Ok(t, DB.Delete(RequestIdKey))
@@ -90,10 +97,10 @@ func TestRequestForData(t *testing.T) {
 	testutil.Ok(t, DB.Put(DifficultyKey, []byte("2")))
 
 	keys := []string{RequestIdKey, DifficultyKey}
-	req, err := createRequest(keys, nil, remote.(*remoteImpl))
+	req, err := createRequest(logger, keys, nil, remote.(*remoteImpl))
 	testutil.Ok(t, err)
 
-	encoded, err := encodeRequest(req)
+	encoded, err := encodeRequest(logger, req)
 
 	testutil.Ok(t, err)
 	data, err := remote.IncomingRequest(encoded)
@@ -116,9 +123,11 @@ func TestRequestPut(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
+	logger := logging.NewLogger()
+
 	DB, cleanup := OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	remote, err := OpenRemote(cfg, DB)
+	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
 	_fromAddress := cfg.PublicAddress
@@ -129,12 +138,12 @@ func TestRequestPut(t *testing.T) {
 	dbKey := pubKey + "-" + CurrentChallengeKey
 	vals := make([][]byte, 1)
 	vals[0] = []byte("TEST_CHALLENGE")
-	req, err := createRequest([]string{dbKey}, vals, remote.(*remoteImpl))
+	req, err := createRequest(logger, []string{dbKey}, vals, remote.(*remoteImpl))
 	testutil.Ok(t, err)
 
 	testutil.Ok(t, DB.Put(dbKey, vals[0]))
 
-	bts, err := encodeRequest(req)
+	bts, err := encodeRequest(logger, req)
 	testutil.Ok(t, err)
 
 	_, err = remote.IncomingRequest(bts)

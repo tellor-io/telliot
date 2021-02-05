@@ -45,14 +45,17 @@ type ValueCheckResult struct {
 }
 
 // CheckValueAtTime queries for the details regarding the disputed value.
-func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Time) *ValueCheckResult {
+func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Time) (*ValueCheckResult, error) {
 
 	// check the value in 5 places, spread over cfg.DisputeTimeDelta.Duration.
 	var datapoints []float64
 	var times []time.Time
 	for i := 0; i < 5; i++ {
 		t := at.Add((time.Duration(i) - 2) * cfg.DisputeTimeDelta.Duration / 5)
-		fval, confidence := PSRValueForTime(int(reqID), t)
+		fval, confidence, err := PSRValueForTime(int(reqID), t)
+		if err != nil {
+			return nil, err
+		}
 		if confidence > 0.8 {
 			datapoints = append(datapoints, fval)
 			times = append(times, t)
@@ -60,7 +63,7 @@ func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Ti
 	}
 
 	if len(datapoints) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	min := math.MaxFloat64
@@ -89,7 +92,7 @@ func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Ti
 		WithinRange: withinRange,
 		Datapoints:  datapoints,
 		Times:       times,
-	}
+	}, nil
 }
 
 func NewDisputeChecker(
@@ -104,7 +107,7 @@ func NewDisputeChecker(
 		contract:         contract,
 		config:           config,
 		lastCheckedBlock: lastCheckedBlock,
-		logger:           log.With(logger, "component", "dispute checker"),
+		logger:           log.With(logger, "component", ComponentName),
 	}
 }
 
@@ -162,8 +165,10 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 			blockTimes[l.BlockNumber] = blockTime
 		}
 		for i, reqID := range nonceSubmit.RequestId {
-			result := CheckValueAtTime(c.config, nonceSubmit.RequestId[i].Uint64(), nonceSubmit.Value[i], blockTime)
-			if result == nil {
+			result, err := CheckValueAtTime(c.config, nonceSubmit.RequestId[i].Uint64(), nonceSubmit.Value[i], blockTime)
+			if err != nil {
+				return err
+			} else if result == nil {
 				level.Warn(c.logger).Log("msg", "no value data", "reqid", reqID, "blockTime", blockTime)
 				continue
 			}

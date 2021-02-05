@@ -23,7 +23,7 @@ data:
       relabel_configs:
       - action: keep
         source_labels: [__meta_kubernetes_service_label_app]
-        regex: telliot|prometheus|geth-exporter
+        regex: telliot.*|prometheus|export.*
       - action: replace
         source_labels: [__meta_kubernetes_service_label_app]
         target_label: job
@@ -32,12 +32,13 @@ data:
 
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: prometheus
   labels:
     app: prometheus
 spec:
+  serviceName: prometheus
   replicas: 1
   selector:
     matchLabels:
@@ -51,11 +52,10 @@ spec:
       securityContext:
         runAsUser: 0
       containers:
-      - image: quay.io/prometheus/prometheus:v2.23.0
+      - image: prom/prometheus:v2.24.0
         args:
         - "--config.file=/etc/prometheus/config/prometheus.yaml"
         - "--storage.tsdb.path=/data"
-        - "--storage.tsdb.no-lockfile"
         - "--storage.tsdb.retention.size=40GB" 
         - "--web.enable-lifecycle" 
         name: prometheus
@@ -121,12 +121,13 @@ data:
       editable: true
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: grafana
   labels:
     app: grafana
 spec:
+  serviceName: grafana
   replicas: 1
   selector:
     matchLabels:

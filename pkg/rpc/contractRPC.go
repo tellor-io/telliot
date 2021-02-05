@@ -160,7 +160,7 @@ func SubmitContractTxn(
 		time.Sleep(15 * time.Second)
 	}
 
-	return nil, errors.Wrapf(finalError, "could not submit txn after 5 attempts ctx:%v", ctxName)
+	return nil, errors.Wrapf(finalError, "submit txn after 5 attempts ctx:%v", ctxName)
 }
 
 func getInt(data []byte) *big.Int {

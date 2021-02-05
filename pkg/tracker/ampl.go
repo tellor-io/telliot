@@ -36,7 +36,7 @@ func (s *Ampl) Granularity() int64 {
 
 // compute the average ampl price over a 24 hour period using a chained price feed.
 func AmpleChained(chainedPair string) IndexProcessor {
-	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
+	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
 
 		eod := clck.Now().UTC()
 		d := 24 * time.Hour
@@ -57,12 +57,19 @@ func AmpleChained(chainedPair string) IndexProcessor {
 
 		for i := 0; i < 144; i++ {
 			thisTime := eod.Add(time.Duration(-i) * interval)
-			chainedPrice, confidence := MedianAt(indexes[chainedPair], thisTime)
+			chainedPrice, confidence, err := MedianAt(indexes[chainedPair], thisTime)
+			if err != nil {
+				return apiOracle.PriceInfo{}, 0, nil
+			}
 			if confidence < 0.01 {
 				//we don't have an accurate estimate of the intermediary price, so we can't convert the AMPL price to USD
 				continue
 			}
-			avg, confidence := apiFn(apis, thisTime)
+			avg, confidence, err := apiFn(apis, thisTime)
+			if err != nil {
+				return apiOracle.PriceInfo{}, 0, nil
+			}
+
 			if confidence < 0.01 {
 				//our estimate of AMPL/intermediary is not good enough right now
 				continue
@@ -77,10 +84,10 @@ func AmpleChained(chainedPair string) IndexProcessor {
 		result.Price = sum / float64(numVals)
 		result.Volume = maxVolume
 		if sum > 0 {
-			return result, float64(numVals) / 144.0
+			return result, float64(numVals) / 144.0, nil
 
 		} else {
-			return result, 0
+			return result, 0, nil
 		}
 	}
 }

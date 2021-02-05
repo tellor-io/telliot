@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 )
-
-var httpFetchLog = NewLogger("util", "HTTPFetchWithRetries")
 
 const (
 	// GET is a GET request type.
@@ -30,12 +30,16 @@ type HTTPFetchRequest struct {
 }
 
 // HTTPWithRetries will keep trying the given request until non-error result or timeout.
-func HTTPWithRetries(req *HTTPFetchRequest) ([]byte, error) {
-	return _recReq(req, time.Now().Add(req.Timeout))
+func HTTPWithRetries(logger log.Logger, req *HTTPFetchRequest) ([]byte, error) {
+	return _recReq(logger, req, time.Now().Add(req.Timeout))
 }
 
-func _recReq(req *HTTPFetchRequest, expiration time.Time) ([]byte, error) {
-	httpFetchLog.Debug("Fetch request will expire at: %v (timeout: %v)", expiration, req.Timeout)
+func _recReq(logger log.Logger, req *HTTPFetchRequest, expiration time.Time) ([]byte, error) {
+	level.Debug(logger).Log(
+		"msg", "fetch request will expire",
+		"expiration", expiration,
+		"timeout", req.Timeout,
+	)
 	var r *http.Response
 	var err error
 	if req.Method == GET {
@@ -45,24 +49,32 @@ func _recReq(req *HTTPFetchRequest, expiration time.Time) ([]byte, error) {
 	}
 	if err != nil {
 		// Log local non-timeout errors for now.
-		httpFetchLog.Warn("Problem fetching data from: %s. %v", req.QueryURL, err)
+		level.Warn(logger).Log(
+			"msg", "fetching data",
+			"queryURL", req.QueryURL,
+			"err", err,
+		)
 		now := time.Now()
 		if now.After(expiration) {
-			httpFetchLog.Error("Timeout expired, not retrying query and passing error up")
-			return nil, err
+			return nil, errors.Wrap(err, "timeout expired, not retrying query and passing error up")
 		}
 		// FIXME: should this be configured as fetch error sleep duration?
 		time.Sleep(500 * time.Millisecond)
 
 		// Try again.
-		httpFetchLog.Warn("Trying fetch again...")
-		return _recReq(req, expiration)
+		level.Warn(logger).Log("msg", "trying to fetch again")
+		return _recReq(logger, req, expiration)
 	}
 
 	data, _ := ioutil.ReadAll(r.Body)
 
 	if r.StatusCode < 200 || r.StatusCode > 299 {
-		httpFetchLog.Warn("Response from fetching  %s. Response code: %d, payload: %s", req.QueryURL, r.StatusCode, data)
+		level.Warn(logger).Log(
+			"msg", "response from fetching",
+			"queryURL", req.QueryURL,
+			"statusCode", r.StatusCode,
+			"payload", data,
+		)
 		// Log local non-timeout errors for now.
 		now := time.Now()
 		if now.After(expiration) {
@@ -72,7 +84,7 @@ func _recReq(req *HTTPFetchRequest, expiration time.Time) ([]byte, error) {
 		time.Sleep(500 * time.Millisecond)
 
 		// Try again.
-		return _recReq(req, expiration)
+		return _recReq(logger, req, expiration)
 	}
 	return data, nil
 }

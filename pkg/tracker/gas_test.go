@@ -10,20 +10,20 @@ import (
 
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestETHGasStation(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	opts := &rpc.MockOptions{ETHBalance: big.NewInt(300000), Nonce: 1, GasPrice: big.NewInt(7000000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 	tracker := NewGasTracker(logger, proxy, client)
 	err = tracker.Exec(context.Background())

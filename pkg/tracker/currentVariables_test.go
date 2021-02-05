@@ -32,7 +32,6 @@ package tracker
 // 	t.Cleanup(cleanup)
 // 	tracker := New_CurrentVariablesTracker(util.SetupLogger("debug"))
 
-// 	fmt.Println("Working to Line 41")
 // 	err := tracker.Exec(ctx)
 // 	if err != nil {
 // 		testutil.Ok(t, err)
@@ -42,7 +41,6 @@ package tracker
 // 	if err != nil {
 // 		testutil.Ok(t, err)
 // 	}
-// 	fmt.Println("Working to Line 51", v)
 // 	b, err := hexutil.DecodeBig(string(v))
 // 	if err != nil {
 // 		testutil.Ok(t, err)

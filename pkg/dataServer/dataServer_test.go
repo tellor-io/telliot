@@ -5,7 +5,6 @@ package dataServer
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"net/http"
@@ -13,19 +12,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rest"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestDataServer(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	exitCh := make(chan int)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 
@@ -39,7 +39,7 @@ func TestDataServer(t *testing.T) {
 		DisputeStatus: big.NewInt(1),
 	}
 	client := rpc.NewMockClientWithValues(opts)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 
 	ctx := context.Background()
@@ -51,7 +51,7 @@ func TestDataServer(t *testing.T) {
 	testutil.Ok(t, err, "creating server in test")
 	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
 
-	srv, err := rest.Create(ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
+	srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
 	testutil.Ok(t, err)
 	srv.Start()
 
@@ -59,7 +59,7 @@ func TestDataServer(t *testing.T) {
 	resp, err := http.Get("http://" + cfg.DataServer.ListenHost + ":" + strconv.Itoa(int(cfg.DataServer.ListenPort)) + "/balance")
 	testutil.Ok(t, err)
 	defer resp.Body.Close()
-	fmt.Printf("Finished: %+v", resp)
+	level.Info(logger).Log("response finished", "resp", resp)
 	exitCh <- 1
 	time.Sleep(1 * time.Second)
 	testutil.Assert(t, ds.Stopped, "Did not stop server")

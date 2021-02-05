@@ -4,12 +4,17 @@
 package db
 
 import (
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/logging"
 )
+
+const ComponentName = "db"
 
 const (
 
@@ -32,12 +37,12 @@ type DB interface {
 }
 
 type impl struct {
-	db  *leveldb.DB
-	log *util.Logger
+	db     *leveldb.DB
+	logger log.Logger
 }
 
 // Open the database using the given DB file as its data store.
-func Open(file string) (DB, error) {
+func Open(logger log.Logger, cfg *config.Config, file string) (DB, error) {
 	// Open the db and recover any potential corruptions.
 	db, err := leveldb.OpenFile(file, &opt.Options{
 		OpenFilesCacheCapacity: minHandles,
@@ -52,13 +57,18 @@ func Open(file string) (DB, error) {
 		return nil, err
 	}
 
-	i := &impl{db: db, log: util.NewLogger("db", "DB")}
-	i.log.Info("Created DB at path: %s\n", file)
+	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	i := &impl{db: db, logger: log.With(logger, "component", ComponentName)}
+	level.Info(i.logger).Log("msg", "created DB", "at", file)
 	return i, nil
 }
 
 func (i *impl) Close() error {
-	i.log.Info("Closing DB...")
+	level.Info(i.logger).Log("msg", "closing db")
 	return i.db.Close()
 }
 
@@ -67,20 +77,27 @@ func (i *impl) Has(key string) (bool, error) {
 }
 
 func (i *impl) Put(key string, value []byte) error {
-	i.log.Debug("Adding DB entry: %s with %d bytes of data", key, len(value))
+	level.Debug(i.logger).Log(
+		"msg", "adding DB entry",
+		"key", key,
+		"bytes", len(value),
+	)
 	return i.db.Put([]byte(key), value, nil)
 }
 
 func (i *impl) Get(key string) ([]byte, error) {
 	b, e := i.db.Get([]byte(key), nil)
 	if e == errors.ErrNotFound {
-		i.log.Debug("Did not find value for key: %s", key)
+		level.Debug(i.logger).Log(
+			"msg", "did not find value",
+			"key", key,
+		)
 		return nil, nil
 	}
 	return b, e
 }
 
 func (i *impl) Delete(key string) error {
-	i.log.Debug("Deleting key: %s", key)
+	level.Debug(i.logger).Log("msg", "deleting key", "key", key)
 	return i.db.Delete([]byte(key), nil)
 }
