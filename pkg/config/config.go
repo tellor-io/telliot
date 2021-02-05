@@ -130,14 +130,14 @@ var defaultConfig = Config{
 	},
 	ConfigFolder: ConfigFolder,
 	Logger: map[string]string{
-		"db": "info",
-        "rpc": "info",
-        "dataServer": "info",
-        "tracker": "info",
-        "pow:": "info",
-        "ops": "info",
-        "rest": "info",
-        "apiOracle": "info"
+		"db":         "info",
+		"rpc":        "info",
+		"dataServer": "info",
+		"tracker":    "info",
+		"pow:":       "info",
+		"ops":        "info",
+		"rest":       "info",
+		"apiOracle":  "info",
 	},
 	EnvFile: path.Join(ConfigFolder, ".env"),
 }

@@ -158,15 +158,28 @@ func NewMockClientWithValues(opts *MockOptions) contracts.ETHClient {
 
 	logger := logging.NewLogger()
 	level.Info(logger).Log("msg", "check mining status", "status", opts.MiningStatus)
-	return &mockClient{balance: opts.ETHBalance, miningStatus: opts.MiningStatus, nonce: opts.Nonce,
-		gasPrice: opts.GasPrice, tokenBalance: opts.TokenBalance,
-		top50Requests: opts.Top50Requests, currentChallenge: opts.CurrentChallenge,
-		disputeStatus: opts.DisputeStatus, mockQueryMeta: opts.QueryMetadata,
-		bPoolContractAddress: opts.BPoolContractAddress, bPoolCurrentTokens: opts.BPoolCurrentTokens,
-		bPoolSpotPrice: opts.BPoolSpotPrice, tokenSymbols: opts.TokenSymbols,
-		uniPairContractAddress: opts.UniPairContractAddress, uniReserves: opts.UniReserves,
-		uniToken0: opts.UniToken0, uniToken1: opts.UniToken1, decimals: opts.Decimals, abiCodec: codec,
-		logger: log.With(logger, "component", ComponentName)}
+	return &mockClient{
+		balance:                opts.ETHBalance,
+		miningStatus:           opts.MiningStatus,
+		nonce:                  opts.Nonce,
+		gasPrice:               opts.GasPrice,
+		tokenBalance:           opts.TokenBalance,
+		top50Requests:          opts.Top50Requests,
+		currentChallenge:       opts.CurrentChallenge,
+		disputeStatus:          opts.DisputeStatus,
+		mockQueryMeta:          opts.QueryMetadata,
+		bPoolContractAddress:   opts.BPoolContractAddress,
+		bPoolCurrentTokens:     opts.BPoolCurrentTokens,
+		bPoolSpotPrice:         opts.BPoolSpotPrice,
+		tokenSymbols:           opts.TokenSymbols,
+		uniPairContractAddress: opts.UniPairContractAddress,
+		uniReserves:            opts.UniReserves,
+		uniToken0:              opts.UniToken0,
+		uniToken1:              opts.UniToken1,
+		decimals:               opts.Decimals,
+		abiCodec:               codec,
+		logger:                 log.With(logger, "component", ComponentName),
+	}
 }
 
 func (c *mockClient) SetTokenBalance(bal *big.Int) {
@@ -192,7 +205,8 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	fn := hexutil.Encode(call.Data[0:4])
 	meth := c.abiCodec.methods[fn]
 	if meth == nil {
-		return []byte{}, errors.Errorf("unknown function signatureL%v", fn)
+		return []byte{}, errors.Errorf("unknown function signature:%v", fn)
+	}
 
 	switch fn {
 	case balanceAtFN:

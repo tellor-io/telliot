@@ -97,7 +97,7 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 
 	today := time.Now()
 	tm := time.Unix(l.Int64(), 0)
-	level.Debug(mt.logger).Log("msg", "this long since last value", "time", today.Sub(tm))
+	level.Debug(mt.logger).Log("msg", "since last value", "time", today.Sub(tm))
 	if today.Sub(tm) >= time.Duration(15)*time.Minute {
 		instantSubmit = true
 	}
