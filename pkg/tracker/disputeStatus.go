@@ -40,7 +40,7 @@ func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DataServe
 		db:       db,
 		contract: contract,
 		account:  account,
-		logger:   log.With(logger, "component", "dispute tracker"),
+		logger:   log.With(logger, "component", ComponentName),
 	}
 }
 

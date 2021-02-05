@@ -5,7 +5,6 @@ package ops
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -22,15 +21,15 @@ import (
  * This is the operational deposit component. Its purpose is to deposit Tellor Tokens so you can mine
  */
 
-func printStakeStatus(bigStatus *big.Int, started *big.Int) {
+func printStakeStatus(logger log.Logger, bigStatus *big.Int, started *big.Int) {
 	// 0-not Staked, 1=Staked, 2=LockedForWithdraw 3= OnDispute
 	status := bigStatus.Uint64()
 	stakeTime := time.Unix(started.Int64(), 0)
 	switch status {
 	case 0:
-		fmt.Printf("Not currently staked\n")
+		level.Info(logger).Log("msg", "not currently staked")
 	case 1:
-		fmt.Printf("Staked in good standing since %s\n", stakeTime.UTC())
+		level.Info(logger).Log("msg", "staked in good standing since", "UTC", stakeTime.UTC())
 	case 2:
 		startedRound := started.Int64()
 		startedRound = ((startedRound + 86399) / 86400) * 86400
@@ -38,12 +37,12 @@ func printStakeStatus(bigStatus *big.Int, started *big.Int) {
 		timePassed := time.Since(target)
 		delta := timePassed - (time.Hour * 24 * 7)
 		if delta > 0 {
-			fmt.Printf("Stake has been eligbile to withdraw for %s\n", delta)
+			level.Info(logger).Log("msg", "stake has been eligbile to withdraw for", "delta", delta)
 		} else {
-			fmt.Printf("Stake will be eligible to withdraw in %s\n", -delta)
+			level.Info(logger).Log("msg", "stake will be eligible to withdraw in", "delta", -delta)
 		}
 	case 3:
-		fmt.Printf("Stake is currently under dispute")
+		level.Info(logger).Log("msg", "stake is currently under dispute")
 	}
 }
 
@@ -66,7 +65,7 @@ func Deposit(
 	}
 
 	if status.Uint64() != 0 && status.Uint64() != 2 {
-		printStakeStatus(status, startTime)
+		printStakeStatus(logger, status, startTime)
 		return nil
 	}
 
@@ -109,7 +108,7 @@ func ShowStatus(
 		return errors.Wrap(err, "get stake status")
 	}
 
-	printStakeStatus(status, startTime)
+	printStakeStatus(logger, status, startTime)
 	return nil
 }
 
@@ -126,7 +125,7 @@ func RequestStakingWithdraw(
 		return errors.Wrap(err, "get stake status")
 	}
 	if status.Uint64() != 1 {
-		printStakeStatus(status, startTime)
+		printStakeStatus(logger, status, startTime)
 		return nil
 	}
 
@@ -156,9 +155,8 @@ func WithdrawStake(
 		return errors.Wrap(err, "get stake status")
 	}
 	if status.Uint64() != 2 {
-
-		fmt.Printf("Can't withdraw")
-		printStakeStatus(status, startTime)
+		level.Info(logger).Log("msg", "can't withdraw")
+		printStakeStatus(logger, status, startTime)
 		return nil
 	}
 

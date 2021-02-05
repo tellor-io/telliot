@@ -80,7 +80,6 @@ type Config struct {
 	Password                     string            `json:"password"`
 	PoolURL                      string            `json:"poolURL"`
 	ConfigFolder                 string            `json:"configFolder"`
-	LogLevel                     string            `json:"logLevel"`
 	Logger                       map[string]string `json:"logger"`
 	DisputeTimeDelta             Duration          `json:"disputeTimeDelta"` // Ignore data further than this away from the value we are checking.
 	DisputeThreshold             float64           `json:"disputeThreshold"` // Maximum allowed relative difference between observed and submitted value.
@@ -130,20 +129,15 @@ var defaultConfig = Config{
 		"disputeChecker":   false,
 	},
 	ConfigFolder: ConfigFolder,
-	LogLevel:     "info",
 	Logger: map[string]string{
-		"config.Config":            "INFO",
-		"db.DB":                    "INFO",
-		"rpc.client":               "INFO",
-		"rpc.ABICodec":             "INFO",
-		"rpc.mockClient":           "INFO",
-		"tracker.Top50Tracker":     "INFO",
-		"tracker.FetchDataTracker": "INFO",
-		"pow.MiningWorker-0:":      "INFO",
-		"pow.MiningWorker-1:":      "INFO",
-		"pow.MiningTasker-0:":      "INFO",
-		"pow.MiningTasker-1:":      "INFO",
-		"tracker.PSRTracker":       "INFO",
+		"db": "info",
+        "rpc": "info",
+        "dataServer": "info",
+        "tracker": "info",
+        "pow:": "info",
+        "ops": "info",
+        "rest": "info",
+        "apiOracle": "info"
 	},
 	EnvFile: path.Join(ConfigFolder, ".env"),
 }

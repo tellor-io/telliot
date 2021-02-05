@@ -17,7 +17,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func parseConfig(path string) (*config.Config, error) {
@@ -31,19 +30,10 @@ func parseConfig(path string) (*config.Config, error) {
 	return config.GetConfig(), nil
 }
 
-func createLogger(logConfig map[string]string, level string) (log.Logger, error) {
-	err := util.SetupLoggingConfig(logConfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "parsing log config")
-	}
-	logger := util.SetupLogger(level)
-	return logger, nil
-}
-
-func createTellorVariables(ctx context.Context, cfg *config.Config) (contracts.ETHClient, *contracts.Tellor, *rpc.Account, error) {
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.Tellor, *rpc.Account, error) {
 
 	// Create an rpc client
-	client, err := rpc.NewClient(os.Getenv(config.NodeURLEnvName))
+	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
@@ -74,9 +64,9 @@ func createTellorVariables(ctx context.Context, cfg *config.Config) (contracts.E
 // The DB is always deleted because the price avarages calculations
 // is not calculated properly between restarts.
 // TODO don't do this and just improve the price calculations.
-func migrateAndOpenDB(cfg *config.Config) (db.DB, error) {
+func migrateAndOpenDB(logger log.Logger, cfg *config.Config) (db.DB, error) {
 	// Create a db instance
-	DB, err := db.Open(cfg.DBFile)
+	DB, err := db.Open(logger, cfg, cfg.DBFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening DB instance")
 	}
@@ -94,7 +84,7 @@ func migrateAndOpenDB(cfg *config.Config) (db.DB, error) {
 	}
 	os.RemoveAll(cfg.DBFile)
 
-	DB, err = db.Open(cfg.DBFile)
+	DB, err = db.Open(logger, cfg, cfg.DBFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening DB instance")
 	}

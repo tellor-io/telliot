@@ -10,12 +10,16 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/dataServer"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
+
+const ComponentName = "ops"
 
 // DataServerOps is the driver for data server.
 // It is the operational database component. Its purpose is to monitor/track various
@@ -44,7 +48,19 @@ func CreateDataServerOps(
 		return nil, err
 	}
 	done := make(chan int)
-	ops := &DataServerOps{exitCh: exitCh, server: ds, logger: log.With(logger, "component", "ops"), done: done, Running: false}
+
+	logger, err = logging.ApplyFilter(*config, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
+
+	ops := &DataServerOps{
+		exitCh:  exitCh,
+		server:  ds,
+		logger:  log.With(logger, "component", ComponentName),
+		done:    done,
+		Running: false,
+	}
 
 	return ops, nil
 }

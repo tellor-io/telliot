@@ -32,7 +32,7 @@ func NewCurrentVariablesTracker(logger log.Logger, db db.DataServerProxy, contra
 		db:       db,
 		contract: contract,
 		account:  account,
-		logger:   log.With(logger, "component", "CurrentVariablesTracker"),
+		logger:   log.With(logger, "component", ComponentName),
 	}
 }
 

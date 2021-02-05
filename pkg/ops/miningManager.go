@@ -26,6 +26,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/proxy"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/pow"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
@@ -77,12 +78,12 @@ func CreateMiningManager(
 	account *rpc.Account,
 ) (*MiningMgr, error) {
 
-	group, err := pow.SetupMiningGroup(cfg, exitCh)
+	group, err := pow.SetupMiningGroup(logger, cfg, exitCh)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup miners")
 	}
 
-	client, err := rpc.NewClient(os.Getenv(config.NodeURLEnvName))
+	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
 	if err != nil {
 		return nil, errors.Wrap(err, "creating client")
 	}
@@ -91,10 +92,16 @@ func CreateMiningManager(
 		return nil, errors.Wrap(err, "getting addresses")
 	}
 
+	//ops logging
+	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
+
 	submitter := NewSubmitter(logger, cfg, client, contract, account)
 	mng := &MiningMgr{
 		exitCh:          exitCh,
-		logger:          logger,
+		logger:          log.With(logger, "component", ComponentName),
 		Running:         false,
 		group:           group,
 		tasker:          nil,
@@ -143,8 +150,9 @@ func CreateMiningManager(
 			[]string{"slot"},
 		),
 	}
-	mng.tasker = pow.CreateTasker(cfg, database)
-	mng.solHandler = pow.CreateSolutionHandler(cfg, submitter, database)
+
+	mng.tasker = pow.CreateTasker(logger, cfg, database)
+	mng.solHandler = pow.CreateSolutionHandler(cfg, logger, submitter, database)
 	return mng, nil
 }
 

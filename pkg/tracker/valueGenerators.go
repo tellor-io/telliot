@@ -18,7 +18,7 @@ import (
 )
 
 // IndexProcessor consolidates the recorded API values to a single value.
-type IndexProcessor func([]*IndexTracker, time.Time) (apiOracle.PriceInfo, float64)
+type IndexProcessor func([]*IndexTracker, time.Time) (apiOracle.PriceInfo, float64, error)
 
 type ValueGenerator interface {
 	// Require reports what a PSR requires to produce a value.
@@ -47,16 +47,19 @@ func InitPSRs() error {
 	return nil
 }
 
-func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
+func PSRValueForTime(requestID int, at time.Time) (float64, float64, error) {
 	// Get the requirements.
 	reqs := PSRs[requestID].Require(at)
 	values := make(map[string]apiOracle.PriceInfo)
 	minConfidence := math.MaxFloat64
 
 	for symbol, fn := range reqs {
-		val, confidence := fn(indexes[symbol], at)
+		val, confidence, err := fn(indexes[symbol], at)
+		if err != nil {
+			return 0, 0, err
+		}
 		if confidence == 0 {
-			return 0, 0
+			return 0, 0, nil
 		}
 		if confidence < minConfidence {
 			minConfidence = confidence
@@ -64,7 +67,7 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64) {
 		values[symbol] = val
 	}
 
-	return PSRs[requestID].ValueAt(values, at), minConfidence
+	return PSRs[requestID].ValueAt(values, at), minConfidence, nil
 }
 
 func UpdatePSRs(ctx context.Context, DB db.DataServerProxy, updatedSymbols []string) error {
@@ -84,7 +87,11 @@ func UpdatePSRs(ctx context.Context, DB db.DataServerProxy, updatedSymbols []str
 
 	// Update all affected PSRs.
 	for _, requestID := range toUpdate {
-		amt, conf := PSRValueForTime(requestID, now)
+		amt, conf, err := PSRValueForTime(requestID, now)
+		if err != nil {
+			return err
+		}
+
 		cfg := config.GetConfig()
 		if conf < cfg.MinConfidence || math.IsNaN(amt) {
 			// Confidence in this signal is too low to use.
@@ -98,7 +105,7 @@ func UpdatePSRs(ctx context.Context, DB db.DataServerProxy, updatedSymbols []str
 		bigVal.Int(bigInt)
 		// Encode it and store to DB.
 		enc := hexutil.EncodeBig(bigInt)
-		err := DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
+		err = DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
 		if err != nil {
 			return err
 		}

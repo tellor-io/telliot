@@ -13,9 +13,12 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 )
+
+const ComponentName = "dataServer"
 
 // DataServer holds refs to primary stack of utilities for data retrieval and serving.
 type DataServer struct {
@@ -43,6 +46,11 @@ func CreateServer(
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating data server tracker runner instance")
 	}
+
+	logger, err = logging.ApplyFilter(*config, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
 	// Make sure channel buffer size 1 since there is no guarantee that anyone
 	// Would be listening to the channel
 	ready := make(chan bool, 1)
@@ -54,7 +62,7 @@ func CreateServer(
 		Stopped:      true,
 		runnerExitCh: nil,
 		readyChannel: ready,
-		logger:       log.With(logger, "component", "data server")}, nil
+		logger:       log.With(logger, "component", ComponentName)}, nil
 
 }
 

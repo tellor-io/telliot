@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 // RequestSigner handles signing an outgoing request. It's just an abstraction
@@ -47,78 +47,67 @@ type requestPayload struct {
 	sig []byte
 }
 
-var rrlog *util.Logger = util.NewLogger("db", "RemoteRequest")
-
 // Create an outgoing request for the given keys.
-func createRequest(dbKeys []string, values [][]byte, signer RequestSigner) (*requestPayload, error) {
+func createRequest(logger log.Logger, dbKeys []string, values [][]byte, signer RequestSigner) (*requestPayload, error) {
 
-	//rrlog = util.NewLogger("db", "RemoteRequest")
 	t := time.Now().Unix()
 	buf := new(bytes.Buffer)
-	rrlog.Debug("encoding initial keys and timestamp")
-	err := encodeKeysValuesAndTime(buf, dbKeys, values, t)
+	level.Debug(logger).Log("msg", "encoding initial keys and timestamp")
+	err := encodeKeysValuesAndTime(logger, buf, dbKeys, values, t)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debug("Generating request hash...")
+	level.Debug(logger).Log("msg", "generating request hash")
 	hash := crypto.Keccak256(buf.Bytes())
-	log.Debug("Signing hash")
+	level.Debug(logger).Log("msg", "signing hash")
 	sig, err := signer.Sign(hash)
 
 	if err != nil {
-		log.Error("signature failed", err.Error())
-		return nil, err
+		return nil, errors.Wrap(err, "signing hash")
 	}
 	if sig == nil {
-		log.Error("signature was not generated")
-		return nil, errors.Errorf("Could not generate a signature for  hash: %v", hash)
+		return nil, errors.Errorf("generate a signature for hash: %v", hash)
 	}
 	return &requestPayload{dbKeys: dbKeys, dbValues: values, timestamp: t, sig: sig}, nil
 }
 
 // Since we use keys and time for sig hashing, we have a specific function for
 // encoding just those parts.
-func encodeKeysValuesAndTime(buf *bytes.Buffer, dbKeys []string, values [][]byte, timestamp int64) error {
+func encodeKeysValuesAndTime(logger log.Logger, buf *bytes.Buffer, dbKeys []string, values [][]byte, timestamp int64) error {
 
-	rrlog.Debug("Encoding timestamp")
+	level.Debug(logger).Log("msg", "encoding timestamp")
 	if err := encode(buf, timestamp); err != nil {
 		return err
 	}
 	if dbKeys == nil {
-		rrlog.Error("no keys to encode")
-		return errors.Errorf("No keys to encode")
+		return errors.Errorf("no keys to encode")
 	}
 
-	rrlog.Debug("Encoding dbKeys")
+	level.Debug(logger).Log("msg", "encoding dbKeys")
 	if err := encode(buf, uint32(len(dbKeys))); err != nil {
-		rrlog.Error("problem encoding dbKeys", err.Error())
-		return err
+		return errors.Wrap(err, "encoding dbKeys")
 	}
 	for _, k := range dbKeys {
-		rrlog.Debug("Encoding key", k)
+		level.Debug(logger).Log("msg", "encoding key", k)
 		if err := encodeString(buf, k); err != nil {
-			rrlog.Error("problem encoding key", err.Error())
-			return err
+			return errors.Wrap(err, "encoding key")
 		}
 	}
 
 	if values != nil {
 		if err := encode(buf, uint32(len(values))); err != nil {
-			rrlog.Error("problem encoding values length", err.Error())
-			return err
+			return errors.Wrap(err, "encoding values length")
 		}
 		for _, v := range values {
 			if err := encodeBytes(buf, v); err != nil {
-				rrlog.Error("problem encoding value bytes", err.Error())
-				return err
+				return errors.Wrap(err, "encoding value bytes")
 			}
 		}
 
 	} else {
 		if err := encode(buf, uint32(0)); err != nil {
-			rrlog.Error("could not encode zero value", err.Error())
-			return err
+			return errors.Wrap(err, "encode zero value")
 		}
 	}
 
@@ -159,7 +148,7 @@ func decodeKeysValuesAndTime(buf io.Reader) ([]string, [][]byte, int64, error) {
 }
 
 // Encode the given request for transport over the wire.
-func encodeRequest(r *requestPayload) ([]byte, error) {
+func encodeRequest(logger log.Logger, r *requestPayload) ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	if r.dbKeys == nil || len(r.dbKeys) == 0 {
@@ -169,18 +158,16 @@ func encodeRequest(r *requestPayload) ([]byte, error) {
 		return nil, errors.Errorf("Cannot encode a request without a signature attached")
 	}
 
-	//capture keys and timestamp
-	rrlog.Debug("Encoding keys and time...")
-	if err := encodeKeysValuesAndTime(buf, r.dbKeys, r.dbValues, r.timestamp); err != nil {
-		rrlog.Error("Problem encoding keys and time", err)
-		return nil, err
+	// Capture keys and timestamp.
+	level.Debug(logger).Log("msg", "encoding keys and time")
+	if err := encodeKeysValuesAndTime(logger, buf, r.dbKeys, r.dbValues, r.timestamp); err != nil {
+		return nil, errors.Wrap(err, "encoding keys and time")
 	}
 
-	//then if there is a sig, encode it
-	rrlog.Debug("Encoding signature...")
+	// Then if there is a sig, encode it.
+	level.Debug(logger).Log("msg", "encoding signature")
 	if err := encodeBytes(buf, r.sig); err != nil {
-		rrlog.Error("Problem encoding signature", err)
-		return nil, err
+		return nil, errors.Wrap(err, "encoding signature")
 	}
 
 	return buf.Bytes(), nil
@@ -188,7 +175,7 @@ func encodeRequest(r *requestPayload) ([]byte, error) {
 
 // Decode a request from the given bytes. The signer is used to validate keys
 // and whitelisted miners.
-func decodeRequest(data []byte, validator RequestValidator) (*requestPayload, error) {
+func decodeRequest(logger log.Logger, data []byte, validator RequestValidator) (*requestPayload, error) {
 	buf := bytes.NewReader(data)
 	keys, vals, time, err := decodeKeysValuesAndTime(buf)
 	if err != nil {
@@ -202,7 +189,7 @@ func decodeRequest(data []byte, validator RequestValidator) (*requestPayload, er
 		return nil, err
 	}
 	hBuf := new(bytes.Buffer)
-	if err := encodeKeysValuesAndTime(hBuf, keys, vals, time); err != nil {
+	if err := encodeKeysValuesAndTime(logger, hBuf, keys, vals, time); err != nil {
 		return nil, err
 	}
 	hash := crypto.Keccak256(hBuf.Bytes())

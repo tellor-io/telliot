@@ -34,7 +34,7 @@ func NewBalanceTracker(logger log.Logger, db db.DataServerProxy, client contract
 		db:      db,
 		client:  client,
 		account: account,
-		logger:  log.With(logger, "component", "balance tracker"),
+		logger:  log.With(logger, "component", ComponentName),
 	}
 }
 

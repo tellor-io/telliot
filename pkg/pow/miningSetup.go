@@ -4,17 +4,24 @@
 package pow
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 )
 
-func SetupMiningGroup(cfg *config.Config, exitCh chan os.Signal) (*MiningGroup, error) {
+func SetupMiningGroup(logger log.Logger, cfg *config.Config, exitCh chan os.Signal) (*MiningGroup, error) {
 	var hashers []Hasher
-	fmt.Printf("Starting CPU mining, using %d threads\n", cfg.NumProcessors)
+	level.Info(logger).Log("msg", "starting CPU mining", "threads", cfg.NumProcessors)
 	for i := 0; i < cfg.NumProcessors; i++ {
 		hashers = append(hashers, NewCpuMiner(int64(i)))
 	}
-	return NewMiningGroup(hashers, exitCh), nil
+	miningGrp, err := NewMiningGroup(logger, cfg, hashers, exitCh)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating new mining group")
+	}
+
+	return miningGrp, nil
 }

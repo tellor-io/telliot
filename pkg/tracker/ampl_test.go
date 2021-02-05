@@ -15,6 +15,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -27,13 +28,15 @@ func TestAmpl(t *testing.T) {
 	testClient := rpc.NewMockClient()
 	defer t.Cleanup(cleanup)
 
-	proxy, err := db.OpenLocal(cfg, DB)
+	logger := logging.NewLogger()
+
+	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 
 	mock := clock.NewMock()
 	clck = mock
 	mock.Set(time.Now())
-	if _, err := BuildIndexTrackers(cfg, proxy, testClient); err != nil {
+	if _, err := BuildIndexTrackers(logger, cfg, proxy, testClient); err != nil {
 		testutil.Ok(t, err)
 	}
 	amplTrackers := indexes["AMPL/USD"]

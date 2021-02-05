@@ -11,12 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/logging"
 )
 
-var logger = util.NewLogger("apiOracle", "valueOracle")
+const ComponentName = "apiOracle"
 
 // maps symbol to a time window of values.
 var valueHistory map[string]*Window
@@ -56,7 +58,7 @@ func SetRequestValue(id string, at time.Time, info PriceInfo) {
 	valueHistoryMutex.Unlock()
 }
 
-func writeOutHistory() {
+func writeOutHistory(logger log.Logger) {
 	valueHistoryMutex.Lock()
 	for _, v := range valueHistory {
 		v.Trim()
@@ -67,7 +69,7 @@ func writeOutHistory() {
 	// this function is single threaded, but we need mutex to access multithreaded history.
 	valueHistoryMutex.Unlock()
 	if err != nil {
-		logger.Error("failed to marshal PSR values: %s", err.Error())
+		level.Error(logger).Log("msg", "marshal PSR values", "err", err)
 		return
 	}
 
@@ -76,18 +78,22 @@ func writeOutHistory() {
 	psrSavedDataTmp := psrSavedData + ".tmp"
 	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
 	if err != nil {
-		logger.Error("failed to write out PSR values to %s: %s", psrSavedDataTmp, err.Error())
+		level.Error(logger).Log(
+			"msg", "write out PSR values",
+			"psrSavedDataTmp", psrSavedDataTmp,
+			"err", err,
+		)
 		return
 	}
 	// Rename tmp file to old file (should be atomic on most modern OS)
 	err = os.Rename(psrSavedDataTmp, psrSavedData)
 	if err != nil {
-		logger.Error("failed move new PSR save onto old: %s", err.Error())
+		level.Error(logger).Log("msg", "move new PSR save onto old", "err", err)
 		return
 	}
 }
 
-func EnsureValueOracle() error {
+func EnsureValueOracle(logger log.Logger, cfg *config.Config) error {
 	if valueHistory != nil {
 		return nil
 	}
@@ -100,11 +106,15 @@ func EnsureValueOracle() error {
 		return nil
 	}
 
-	cfg := config.GetConfig()
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return errors.Wrap(err, "creating filter logger")
+	}
+	logger = log.With(logger, "component", ComponentName)
 
 	historyPath := filepath.Join(cfg.ConfigFolder, "saved.json")
 
-	_, err := os.Stat(historyPath)
+	_, err = os.Stat(historyPath)
 	exists := true
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -121,7 +131,7 @@ func EnsureValueOracle() error {
 		}
 		err = json.Unmarshal(byteValue, &valueHistory)
 		if err != nil {
-			return errors.Errorf("failed to unmarshal saved")
+			return errors.Errorf("unmarshal saved values")
 		}
 	} else {
 		valueHistory = make(map[string]*Window)
@@ -130,7 +140,7 @@ func EnsureValueOracle() error {
 	go func() {
 		for {
 			time.Sleep(2 * time.Minute)
-			writeOutHistory()
+			writeOutHistory(logger)
 		}
 	}()
 	return nil

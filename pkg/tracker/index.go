@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/go-kit/kit/log"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
@@ -43,7 +44,7 @@ func GetIndexes() map[string][]*IndexTracker {
 // parseIndexFile parses indexes.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
-func parseIndexFile(cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
+func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
 	indexFilePath := filepath.Join(cfg.ConfigFolder, "indexes.json")
@@ -90,7 +91,7 @@ func parseIndexFile(cfg *config.Config, DB db.DataServerProxy, client contracts.
 				switch api.Type {
 				case httpIndexType:
 					{
-						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}}
+						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}, logger}
 						u, err := url.Parse(api.URL)
 						if err != nil {
 							return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
@@ -165,15 +166,15 @@ func parseIndexFile(cfg *config.Config, DB db.DataServerProxy, client contracts.
 }
 
 // BuildIndexTrackers creates and initializes a new tracker instance.
-func BuildIndexTrackers(cfg *config.Config, db db.DataServerProxy, client contracts.ETHClient) ([]Tracker, error) {
-	err := apiOracle.EnsureValueOracle()
+func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerProxy, client contracts.ETHClient) ([]Tracker, error) {
+	err := apiOracle.EnsureValueOracle(logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load trackers from the index file,
 	// and build a tracker for each unique URL, symbol
-	indexers, symbolsForAPI, err := parseIndexFile(cfg, db, client)
+	indexers, symbolsForAPI, err := parseIndexFile(logger, cfg, db, client)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +198,7 @@ func BuildIndexTrackers(cfg *config.Config, db db.DataServerProxy, client contra
 	// Start the PSR system that will feed from these indexes.
 	err = InitPSRs()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize PSRs")
+		return nil, errors.Wrap(err, "initialize PSRs")
 	}
 
 	return trackers, nil
@@ -248,10 +249,11 @@ type DataSource interface {
 
 type JSONapi struct {
 	Request *FetchRequest
+	logger  log.Logger
 }
 
 func (j *JSONapi) Get() ([]byte, error) {
-	return fetchWithRetries(j.Request)
+	return fetchWithRetries(j.logger, j.Request)
 }
 
 type JSONfile struct {

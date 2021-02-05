@@ -13,9 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestStringId(t *testing.T) {
@@ -24,9 +24,9 @@ func TestStringId(t *testing.T) {
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 	cfg := config.OpenTestConfig(t)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	tracker := NewBalanceTracker(logger, proxy, client, nil)
 	res := tracker.String()
 
@@ -52,10 +52,10 @@ func TestNegativeBalance(t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
 
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	account, err := rpc.NewAccount(cfg)
 	testutil.Ok(t, err)
 	tracker := NewBalanceTracker(logger, proxy, client, &account)
@@ -71,9 +71,9 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	account, err := rpc.NewAccount(cfg)
 	testutil.Ok(t, err)
 	tracker := NewBalanceTracker(logger, proxy, client, &account)

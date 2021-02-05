@@ -14,13 +14,15 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestTributeBalance(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
+	logger := logging.NewLogger()
+
 	startBal := big.NewInt(456000)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: startBal, Top50Requests: []*big.Int{}}
@@ -28,9 +30,8 @@ func TestTributeBalance(t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
-	logger := util.SetupLogger("debug")
 	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
 	account, err := rpc.NewAccount(cfg)

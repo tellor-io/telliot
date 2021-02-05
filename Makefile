@@ -116,6 +116,8 @@ lint: go-lint shell-lint
 go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT)
 	$(call require_clean_work_tree,'detected not clean master before running lint, previous job changed something?')
 	@echo ">> verifying modules being imported"
+	@$(FAILLINT) -paths "errors=github.com/pkg/errors" ./...
+	@$(FAILLINT) -paths "fmt.{Print,Printf,Println,Sprint}" -ignore-tests ./...
 	@echo ">> linting all of the Go files GOGC=${GOGC}"
 	@$(GOLANGCI_LINT) run
 	@echo ">> ensuring Copyright headers"

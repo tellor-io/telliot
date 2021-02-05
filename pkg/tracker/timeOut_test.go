@@ -8,17 +8,17 @@ import (
 
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestTimeOutString(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
+	logger := logging.NewLogger()
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
-	logger := util.SetupLogger("debug")
 
 	tracker := NewTimeOutTracker(logger, cfg, proxy, nil, nil)
 	res := tracker.String()

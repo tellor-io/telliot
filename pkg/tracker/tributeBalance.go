@@ -32,7 +32,7 @@ func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contr
 		db:       db,
 		contract: contract,
 		account:  account,
-		logger:   log.With(logger, "component", "tribute tracker"),
+		logger:   log.With(logger, "component", ComponentName),
 	}
 }
 

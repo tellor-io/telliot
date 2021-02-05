@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
@@ -32,6 +33,7 @@ import (
 
 func Dispute(
 	ctx context.Context,
+	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
@@ -70,12 +72,13 @@ func Dispute(
 	if err != nil {
 		return errors.Wrap(err, "send dispute txn")
 	}
-	fmt.Printf("dispute started with txn: %s\n", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "dispute started", "txn", tx.Hash().Hex())
 	return nil
 }
 
 func Vote(
 	ctx context.Context,
+	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
@@ -88,7 +91,7 @@ func Vote(
 		return errors.Wrapf(err, "check if you've already voted")
 	}
 	if voted {
-		fmt.Printf("You have already voted on this dispute\n")
+		level.Info(logger).Log("msg", "you have already voted on this dispute")
 		return nil
 	}
 
@@ -101,7 +104,7 @@ func Vote(
 		return errors.Wrapf(err, "submit vote transaction")
 	}
 
-	fmt.Printf("Vote submitted with transaction %s\n", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "vote submitted with transaction", "tx", tx.Hash().Hex())
 	return nil
 }
 
@@ -218,8 +221,7 @@ func List(
 		return errors.Wrap(err, "filter eth logs")
 	}
 
-	fmt.Printf("There are currently %d open disputes\n", len(logs))
-	fmt.Printf("-------------------------------------\n")
+	level.Info(logger).Log("msg", "get currently open disputes", "open", len(logs))
 	for _, rawDispute := range logs {
 		dispute := master.TellorDisputeNewDispute{}
 		err := bar.UnpackLog(&dispute, "NewDispute", rawDispute)
@@ -246,13 +248,15 @@ func List(
 			descString = "in progress"
 		}
 
-		fmt.Printf("Dispute %s (%s):\n", dispute.DisputeId.String(), descString)
-		fmt.Printf("    Accused Party: %s\n", reportedAddr.Hex())
-		fmt.Printf("    Disputed by: %s\n", reportingMiner.Hex())
-		fmt.Printf("    Created on:  %s\n", createdTime.Format("3:04 PM January 02, 2006 MST"))
-		fmt.Printf("    Fee: %s TRB\n", util.FormatERC20Balance(uintVars[8]))
-		fmt.Printf("    \n")
-		fmt.Printf("    Value disputed for requestID %d:\n", dispute.RequestId.Uint64())
+		level.Info(logger).Log(
+			"msg", "dispute occurred",
+			"disputeId", dispute.DisputeId.String(),
+			"reportedAddr", reportedAddr.Hex(),
+			"reportingMiner", reportingMiner.Hex(),
+			"createdTime", createdTime.Format("3:04 PM January 02, 2006 MST"),
+			"fee", util.FormatERC20Balance(uintVars[8]),
+			"requestId", dispute.RequestId.Uint64(),
+		)
 
 		allSubmitted, err := getNonceSubmissions(ctx, client, contract, uintVars[5], &dispute)
 		if err != nil {
@@ -268,9 +272,13 @@ func List(
 				pointerStr = " <--disputed"
 			}
 
-			fmt.Printf("      %s @ %s%s\n", valStr, sub.Created.Format("3:04:05 PM"), pointerStr)
+			level.Debug(logger).Log(
+				"msg", "sub created",
+				"valStr", valStr,
+				"created", sub.Created.Format("3:04:05 PM"),
+				"pointerStr", pointerStr,
+			)
 		}
-		fmt.Printf("    \n")
 
 		tmp := new(big.Float)
 		tmp.SetInt(currTally)
@@ -279,22 +287,38 @@ func List(
 		currQuorum, _ := tmp.Float64()
 		currTallyFloat += currQuorum
 		currTallyRatio := currTallyFloat / 2 * currQuorum
-		fmt.Printf("    Currently %.0f%% of %s TRB support this dispute (%s votes)\n", currTallyRatio*100, util.FormatERC20Balance(uintVars[7]), uintVars[4])
 
-		result := tracker.CheckValueAtTime(cfg, dispute.RequestId.Uint64(), uintVars[2], disputedValTime)
-		if result == nil || len(result.Datapoints) < 0 {
-			fmt.Printf("      No data available for recommendation\n")
+		level.Info(logger).Log(
+			"msg", "current TRB support for this dispute",
+			"currTallyRatio", fmt.Sprintf("%0.f%%", currTallyRatio*100),
+			"TRB", util.FormatERC20Balance(uintVars[7]),
+			"votes", uintVars[4],
+		)
+
+		result, err := tracker.CheckValueAtTime(cfg, dispute.RequestId.Uint64(), uintVars[2], disputedValTime)
+		if err != nil {
+			return err
+		} else if result == nil || len(result.Datapoints) < 0 {
+			level.Info(logger).Log("msg", "no data available for recommendation")
 			continue
 		}
-		fmt.Printf("      Recommendation:\n")
-		fmt.Printf("      Vote %t\n", !result.WithinRange)
-		fmt.Printf("      Submitted value %s, expected range %.0f to %0.f\n", uintVars[2].String(), result.Low, result.High)
+		level.Info(logger).Log(
+			"msg", "got recommendation",
+			"vote", !result.WithinRange,
+			"subValue", uintVars[2].String(),
+			"range", fmt.Sprintf("%.0f to %0.f", result.Low, result.High),
+		)
+
 		numToShow := 3
 		if numToShow > len(result.Datapoints) {
 			numToShow = len(result.Datapoints)
 		}
-		fmt.Printf("      Based on %d locally saved datapoints within %.0f minutes (showing closest %d)\n",
-			len(result.Datapoints), cfg.DisputeTimeDelta.Duration.Minutes(), numToShow)
+		level.Info(logger).Log(
+			"msg", "recommedation based on",
+			"datapoints", len(result.Datapoints),
+			"deltaMinutes", cfg.DisputeTimeDelta.Duration.Minutes(),
+			"closest", numToShow,
+		)
 		minTotalDelta := time.Duration(math.MaxInt64)
 		index := 0
 		for i := 0; i < len(result.Datapoints)-numToShow; i++ {
@@ -314,15 +338,20 @@ func List(
 		for i := 0; i < numToShow; i++ {
 			dp := result.Datapoints[index+i]
 			t := result.Times[index+i]
-			fmt.Printf("        %f, ", dp)
+			level.Info(logger).Log("msg", "check datapoint", "dp", dp)
 			delta := disputedValTime.Sub(t)
 			if delta > 0 {
-				fmt.Printf("%.0fs before\n", delta.Seconds())
+				level.Info(logger).Log(
+					"msg", "check delta before",
+					"seconds", fmt.Sprintf("%.0f", delta.Seconds()),
+				)
 			} else {
-				fmt.Printf("%.0fs after\n", (-delta).Seconds())
+				level.Info(logger).Log(
+					"msg", "check delta after",
+					"seconds", fmt.Sprintf("%.0f", (-delta).Seconds()),
+				)
 			}
 		}
-		fmt.Printf("\n")
 	}
 
 	return nil
