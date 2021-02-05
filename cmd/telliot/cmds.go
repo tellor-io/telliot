@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/rest"
 )
@@ -36,6 +37,7 @@ type VersionCmd struct {
 }
 
 func (cmd *VersionCmd) Run() error {
+	//lint:ignore faillint it should print to console
 	fmt.Printf(versionMessage, GitTag, GitHash)
 	return nil
 }
@@ -55,13 +57,10 @@ func (c *transferCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -87,13 +86,10 @@ func (c *approveCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -122,13 +118,10 @@ func (b *balanceCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	_, err = createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, _, err := createTellorVariables(ctx, cfg)
+	client, contract, _, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -145,7 +138,7 @@ func (b *balanceCmd) Run() error {
 			return errors.Wrapf(err, "parsing argument")
 		}
 	}
-	return ops.Balance(ctx, client, contract.Getter, addr.addr)
+	return ops.Balance(ctx, logger, client, contract.Getter, addr.addr)
 }
 
 type depositCmd struct {
@@ -158,13 +151,10 @@ func (d depositCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -181,13 +171,10 @@ func (w withdrawCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -204,13 +191,10 @@ func (r requestCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -227,13 +211,10 @@ func (s statusCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -253,13 +234,10 @@ func (n newDisputeCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	_, err = createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -279,7 +257,7 @@ func (n newDisputeCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing argument")
 	}
-	return ops.Dispute(ctx, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
+	return ops.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
 }
 
 type voteCmd struct {
@@ -294,13 +272,10 @@ func (v voteCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	_, err = createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -310,7 +285,7 @@ func (v voteCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing argument")
 	}
-	return ops.Vote(ctx, client, contract, account, disputeID.Int, v.support)
+	return ops.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
 }
 
 type showCmd struct {
@@ -323,13 +298,10 @@ func (s showCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -346,13 +318,10 @@ func (d dataserverCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -361,11 +330,11 @@ func (d dataserverCmd) Run() error {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	DB, err := migrateAndOpenDB(cfg)
+	DB, err := migrateAndOpenDB(logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
 	}
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logger, cfg, DB)
 	if err != nil {
 		return errors.Wrapf(err, "open remote DB instance")
 	}
@@ -381,7 +350,7 @@ func (d dataserverCmd) Run() error {
 	<-ds.Ready()
 
 	http.Handle("/metrics", promhttp.Handler())
-	srv, err := rest.Create(ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
+	srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
 	if err != nil {
 		return errors.Wrapf(err, "creating http data server")
 	}
@@ -425,13 +394,10 @@ func (m mineCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 
-	logger, err := createLogger(cfg.Logger, cfg.LogLevel)
-	if err != nil {
-		return errors.Wrapf(err, "creating logger")
-	}
+	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, cfg)
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -452,7 +418,7 @@ func (m mineCmd) Run() error {
 	defer srv.Close()
 
 	var ds *ops.DataServerOps
-	DB, err := migrateAndOpenDB(cfg)
+	DB, err := migrateAndOpenDB(logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
 	}
@@ -462,9 +428,9 @@ func (m mineCmd) Run() error {
 
 	var proxy db.DataServerProxy
 	if cfg.Mine.RemoteDBHost != "" {
-		proxy, err = db.OpenRemote(cfg, DB)
+		proxy, err = db.OpenRemote(logger, cfg, DB)
 	} else {
-		proxy, err = db.OpenLocal(cfg, DB)
+		proxy, err = db.OpenLocal(logger, cfg, DB)
 	}
 	if err != nil {
 		return errors.Wrapf(err, "open remote DB instance")

@@ -17,9 +17,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const (
@@ -43,18 +44,18 @@ const (
  */
 
 type MiningTasker struct {
-	log           *util.Logger
+	logger        log.Logger
 	proxy         db.DataServerProxy
 	pubKey        string
 	currChallenge *MiningChallenge
 }
 
-func CreateTasker(cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
+func CreateTasker(logger log.Logger, cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
 
 	return &MiningTasker{
 		proxy:  proxy,
 		pubKey: "0x" + cfg.PublicAddress,
-		log:    util.NewLogger("pow", "MiningTasker"),
+		logger: log.With(logger, "component", ComponentName),
 	}
 }
 
@@ -76,11 +77,11 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
-		mt.log.Error("Could not get data from data proxy, cannot continue at all")
+		level.Error(mt.logger).Log("msg", "get data from data proxy, cannot continue at all")
 		return nil, false
 	}
 
-	mt.log.Debug("Received data:%v", m)
+	level.Debug(mt.logger).Log("msg", "received data", "data", m)
 
 	if mt.checkDispute(m[dispKey]) == statusWaitNext {
 		return nil, false
@@ -96,7 +97,7 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 
 	today := time.Now()
 	tm := time.Unix(l.Int64(), 0)
-	mt.log.Debug("this long since last value:%v ", today.Sub(tm))
+	level.Debug(mt.logger).Log("msg", "since last value", "time", today.Sub(tm))
 	if today.Sub(tm) >= time.Duration(15)*time.Minute {
 		instantSubmit = true
 	}
@@ -135,7 +136,10 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
 		m2, err := mt.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			mt.log.Info("Could not retrieve pricing data for current request id:%v", err)
+			level.Info(mt.logger).Log(
+				"msg", "retrieve pricing data for current request id",
+				"err ", err,
+			)
 			//return nil, false
 		}
 		val := m2[valKey]
@@ -153,10 +157,13 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 			_id := strconv.FormatUint(reqIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
-				mt.log.Info("Pricing data not available for request %d", reqIDs[i].Uint64())
+				level.Info(mt.logger).Log(
+					"msg", "pricing data not available for request",
+					"request", reqIDs[i].Uint64(),
+				)
 				return nil, false
 			}
-			mt.log.Info("USING MANUALLY ENTERED VALUE!!!! USE CAUTION")
+			level.Info(mt.logger).Log("msg", "USING MANUALLY ENTERED VALUE!!!! USE CAUTION")
 		}
 	}
 
@@ -178,16 +185,16 @@ func (mt *MiningTasker) checkDispute(disp []byte) int {
 	disputed, stat := mt.getInt(disp)
 	if stat == statusWaitNext || stat == statusFailure {
 		if stat == statusWaitNext {
-			mt.log.Info("no dispute results from data server, waiting for next cycle")
+			level.Info(mt.logger).Log("msg", "no dispute results from data server, waiting for next cycle")
 		}
 		return stat
 	}
 
 	if disputed.Cmp(big.NewInt(1)) != 0 {
-		mt.log.Error("miner is in dispute, cannot continue")
+		level.Error(mt.logger).Log("msg", "miner is in dispute, cannot continue")
 		return statusFailure
 	}
-	mt.log.Debug("miner is not in dispute, continuing")
+	level.Debug(mt.logger).Log("msg", "miner is not in dispute, continuing")
 	return statusSuccess
 }
 
@@ -198,7 +205,7 @@ func (mt *MiningTasker) getInt(data []byte) (*big.Int, int) {
 
 	val, err := hexutil.DecodeBig(string(data))
 	if err != nil {
-		mt.log.Error("decoding int:%v", err)
+		level.Error(mt.logger).Log("msg", "decoding int", "err", err)
 		return nil, statusFailure
 	}
 	return val, statusSuccess

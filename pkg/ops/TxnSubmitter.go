@@ -36,7 +36,7 @@ func NewSubmitter(
 		client:   client,
 		contract: tellor,
 		account:  account,
-		logger:   log.With(logger, "component", "submitter"),
+		logger:   log.With(logger, "component", ComponentName),
 	}
 }
 

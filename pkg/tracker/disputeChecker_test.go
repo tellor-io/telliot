@@ -13,21 +13,21 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestDisputeCheckerInRange(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	DB, cleanup := db.OpenTestDB(t)
 	client := rpc.NewMockClient()
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
 
-	if _, err := BuildIndexTrackers(cfg, proxy, client); err != nil {
+	if _, err := BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}
 	contract, err := contracts.NewTellor(client)
@@ -43,16 +43,16 @@ func TestDisputeCheckerInRange(t *testing.T) {
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	client := rpc.NewMockClient()
 	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
 	disputeChecker := NewDisputeChecker(logger, cfg, client, &contract, 500)
-	if _, err := BuildIndexTrackers(cfg, proxy, client); err != nil {
+	if _, err := BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}
 	ethUSDPairs := indexes["ETH/USD"]

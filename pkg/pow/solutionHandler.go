@@ -15,12 +15,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/tracker"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 /**
@@ -30,7 +31,7 @@ import (
  */
 
 type SolutionHandler struct {
-	log              *util.Logger
+	logger           log.Logger
 	proxy            db.DataServerProxy
 	currentChallenge *MiningChallenge
 	currentNonce     string
@@ -38,12 +39,12 @@ type SolutionHandler struct {
 	submitter        tellorCommon.TransactionSubmitter
 }
 
-func CreateSolutionHandler(cfg *config.Config, submitter tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) *SolutionHandler {
+func CreateSolutionHandler(cfg *config.Config, logger log.Logger, submitter tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) *SolutionHandler {
 
 	return &SolutionHandler{
 		proxy:     proxy,
 		submitter: submitter,
-		log:       util.NewLogger("pow", "SolutionHandler"),
+		logger:    log.With(logger, "component", ComponentName),
 	}
 }
 
@@ -57,7 +58,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[i].Uint64())
 		m, err := s.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not retrieve pricing data for current request id")
+			return nil, errors.Wrapf(err, "retrieve pricing data for current request id")
 		}
 		val := m[valKey]
 		var value *big.Int
@@ -75,16 +76,19 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 			_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
-				return nil, errors.Errorf("could not retrieve pricing data for current request id")
+				return nil, errors.Errorf("retrieve pricing data for current request id")
 			}
 			value = big.NewInt(int64(val))
 		} else {
 			value, err = hexutil.DecodeBig(string(val))
 			if err != nil {
 				if challenge.RequestIDs[i].Uint64() > tracker.MaxPSRID() {
-					s.log.Error("problem decoding price value prior to submitting solution: %v\n", err)
+					level.Error(s.logger).Log(
+						"msg", "decoding price value prior to submitt ing solution",
+						"err", err,
+					)
 					if len(val) == 0 {
-						s.log.Error("0 value being submitted")
+						level.Error(s.logger).Log("msg", "0 value being submitted")
 						s.currentValues[i] = big.NewInt(0)
 					}
 					continue

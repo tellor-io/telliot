@@ -4,11 +4,11 @@
 package tracker
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 )
@@ -96,7 +96,7 @@ func NoDecay(x float64) (float64, float64) {
 }
 
 func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, float64)) IndexProcessor {
-	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
+	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
 		cfg := config.GetConfig()
 		sum := 0.0
 		weightSum := 0.0
@@ -134,25 +134,26 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 		result.Volume = maxVolume
 		// if math.Min(weightSum/targetWeight, 1.0) < .5{
 		// 	values,_ := apiOracle.GetNearestTwoRequestValue(apis[0].Identifier, at)
-		// 	fmt.Println("not enough data for time series, series starts : ", values.Created)
 		// }
-		//fmt.Println("Time Weighted: ", result)
-		return result, math.Min(weightSum/targetWeight, 1.0)
+		return result, math.Min(weightSum/targetWeight, 1.0), nil
 	}
 }
 
 func VolumeWeightedAPIs(processor IndexProcessor) IndexProcessor {
-	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
+	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
 		var results []apiOracle.PriceInfo
 		totalConfidence := 0.0
 		for _, api := range apis {
-			value, confidence := processor([]*IndexTracker{api}, at)
+			value, confidence, err := processor([]*IndexTracker{api}, at)
+			if err != nil {
+				return apiOracle.PriceInfo{}, 0, err
+			}
 			if confidence > 0 {
 				results = append(results, value)
 				totalConfidence += confidence
 			}
 		}
-		return VolumeWeightedAvg(results), totalConfidence / float64(len(results))
+		return VolumeWeightedAvg(results), totalConfidence / float64(len(results)), nil
 	}
 }
 
@@ -170,27 +171,25 @@ func getLatest(apis []*IndexTracker, at time.Time) ([]apiOracle.PriceInfo, float
 	return values, totalConf / float64(len(apis))
 }
 
-func MedianAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
+func MedianAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
 	values, confidence := getLatest(apis, at)
 	if confidence == 0 {
-		return apiOracle.PriceInfo{}, 0
+		return apiOracle.PriceInfo{}, 0, nil
 	}
-	return Median(values), confidence
+	return Median(values), confidence, nil
 }
 
-func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
+func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
 	vals, confidence := getLatest(apis, at)
 	if confidence == 0 {
-		return apiOracle.PriceInfo{}, 0
+		return apiOracle.PriceInfo{}, 0, nil
 	}
 	for _, val := range vals {
 		if int64(val.Volume) < clck.Now().Unix() {
-			fmt.Println("Pulled Timestamp: ", val.Volume)
-			fmt.Println("Warning: Manual Data Entry is expired, please update")
-			return apiOracle.PriceInfo{}, 0
+			return apiOracle.PriceInfo{}, 0, errors.New("manual data entry expired, please update")
 		}
 	}
-	return Median(vals), confidence
+	return Median(vals), confidence, nil
 }
 
 func MaxPSRID() uint64 {
@@ -203,7 +202,7 @@ func MaxPSRID() uint64 {
 	return uint64(maxID)
 }
 
-func MedianAtEOD(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
+func MedianAtEOD(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
 	now := clck.Now().UTC()
 	d := 24 * time.Hour
 	eod := now.Truncate(d)
@@ -222,12 +221,12 @@ func Median(values []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	return result
 }
 
-func MeanAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64) {
+func MeanAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
 	values, confidence := getLatest(apis, at)
 	if confidence == 0 {
-		return apiOracle.PriceInfo{}, 0
+		return apiOracle.PriceInfo{}, 0, nil
 	}
-	return Mean(values), confidence
+	return Mean(values), confidence, nil
 }
 
 func Mean(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {

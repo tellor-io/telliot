@@ -23,6 +23,5 @@ package tracker
 //	for _, pair := range c.chain {
 //		val *= vals[pair]
 //	}
-//	fmt.Println("Ample Chained Price ", val*c.granularity)
 //	return val * c.granularity
 //}

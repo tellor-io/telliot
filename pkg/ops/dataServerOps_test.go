@@ -11,20 +11,20 @@ import (
 
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestDataServerOps(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	exitCh := make(chan os.Signal)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 	client := rpc.NewMockClient()
 
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 
 	ctx := context.Background()

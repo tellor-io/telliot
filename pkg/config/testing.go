@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/phayes/freeport"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var mainConfig = `
@@ -19,9 +18,6 @@ var mainConfig = `
     "trackerCycle": 1,
     "trackers": {},
     "dbFile": "/tellorDB",
-    "packageLogLevel": {
-        "db.DB": "ERROR"
-    },
     "requestTips": 1,
     "configFolder": "` + filepath.Join("..", "..", "configs") + `",
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
@@ -35,7 +31,7 @@ func OpenTestConfig(t *testing.T) *Config {
 	defer os.Remove(mainConfigFile.Name())
 
 	if _, err = mainConfigFile.Write([]byte(mainConfig)); err != nil {
-		t.Fatal("Failed to write the main config file", err)
+		t.Fatal("write the main config file", err)
 	}
 	if err := mainConfigFile.Close(); err != nil {
 		t.Fatal(err)
@@ -46,10 +42,6 @@ func OpenTestConfig(t *testing.T) *Config {
 	}
 
 	cfg := GetConfig()
-	err = util.SetupLoggingConfig(cfg.Logger)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	port, err := freeport.GetFreePort()
 	if err != nil {

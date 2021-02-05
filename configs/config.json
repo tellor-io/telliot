@@ -5,7 +5,6 @@
     "dbFile": "tmp/db",
     "configFolder": "configs",
     "envFile": ".env",
-    "logLevel": "info",
     "Mine": {
         "ListenHost": "0.0.0.0",
         "ListenPort": 9090,
@@ -17,17 +16,13 @@
         "ListenPort": 5000
     },
     "Logger": {
-        "config.Config": "INFO",
-        "db.DB": "INFO",
-        "rpc.client": "INFO",
-        "rpc.ABICodec": "INFO",
-        "rpc.mockClient": "INFO",
-        "tracker.Top50Tracker": "INFO",
-        "tracker.FetchDataTracker": "INFO",
-        "pow.MiningWorker-0:": "INFO",
-        "pow.MiningWorker-1:": "INFO",
-        "pow.MiningTasker-0:": "INFO",
-        "pow.MiningTasker-1:": "INFO",
-        "tracker.PSRTracker": "INFO"
+        "db": "info",
+        "rpc": "info",
+        "dataServer": "info",
+        "tracker": "info",
+        "pow:": "info",
+        "ops": "info",
+        "rest": "info",
+        "apiOracle": "info"
     }
 }

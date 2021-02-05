@@ -5,23 +5,23 @@ package tracker
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 func TestRunner(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	logger := util.SetupLogger("debug")
+	logger := logging.NewLogger()
 
 	exitCh := make(chan int)
 
@@ -51,7 +51,7 @@ func TestRunner(t *testing.T) {
 
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(cfg, DB)
+	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 	contract, err := contracts.NewTellor(client)
 	testutil.Ok(t, err)
@@ -64,7 +64,7 @@ func TestRunner(t *testing.T) {
 	if err := runner.Start(context.Background(), exitCh); err != nil {
 		testutil.Ok(t, err)
 	}
-	fmt.Println("runner done")
+	level.Info(logger).Log("msg", "runner done")
 	time.Sleep(2 * time.Second)
 	close(exitCh)
 	time.Sleep(1 * time.Second)
