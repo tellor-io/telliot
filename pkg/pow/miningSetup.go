@@ -4,7 +4,7 @@
 package pow
 
 import (
-	"os"
+	"context"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -14,16 +14,15 @@ import (
 
 const NumProcessors = 1
 
-func SetupMiningGroup(logger log.Logger, cfg *config.Config, exitCh chan os.Signal) (*MiningGroup, error) {
+func SetupMiningGroup(ctx context.Context, close context.CancelFunc, logger log.Logger, cfg *config.Config) (*MiningGroup, error) {
 	var hashers []Hasher
 	level.Info(logger).Log("msg", "starting CPU mining", "threads", NumProcessors)
 	for i := 0; i < NumProcessors; i++ {
 		hashers = append(hashers, NewCpuMiner(int64(i)))
 	}
-	miningGrp, err := NewMiningGroup(logger, cfg, hashers, exitCh)
+	miningGrp, err := NewMiningGroup(logger, cfg, hashers, ctx, close)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating new mining group")
 	}
-
 	return miningGrp, nil
 }

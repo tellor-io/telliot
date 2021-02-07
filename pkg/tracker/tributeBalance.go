@@ -27,7 +27,20 @@ func (b *TributeTracker) String() string {
 	return "TributeTracker"
 }
 
-func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *TributeTracker {
+func NewTributeTrackers(logger log.Logger, db db.DataServerProxy, contract *contracts.Tellor, accounts []*rpc.Account) []Tracker {
+	trackers := make([]Tracker, len(accounts))
+	for i, account := range accounts {
+		trackers[i] = &TributeTracker{
+			db:       db,
+			contract: contract,
+			account:  account,
+			logger:   log.With(logger, "component", "tribute tracker"),
+		}
+	}
+	return trackers
+}
+
+func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *TributeTracker {
 	return &TributeTracker{
 		db:       db,
 		contract: contract,
@@ -52,5 +65,5 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 	level.Info(b.logger).Log("msg", "TRB balance", "amount", balanceH)
 
 	enc := hexutil.EncodeBig(balance)
-	return b.db.Put(db.TributeBalanceKey, []byte(enc))
+	return b.db.Put(db.TributeBalancePrefix+b.account.Address.String(), []byte(enc))
 }

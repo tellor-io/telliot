@@ -39,10 +39,10 @@ func CreateServer(
 	config *config.Config,
 	DB db.DataServerProxy,
 	client contracts.ETHClient,
-	contract *contracts.ITellor,
-	account *rpc.Account,
+	contract *contracts.Tellor,
+	accounts []*rpc.Account,
 ) (*DataServer, error) {
-	run, err := tracker.NewRunner(logger, config, DB, client, contract, account)
+	run, err := tracker.NewRunner(logger, config, DB, client, contract, accounts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating data server tracker runner instance")
 	}
@@ -81,7 +81,7 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 		level.Info(ds.logger).Log("msg", "runner signaled it is ready")
 		ds.readyChannel <- true
 		level.Info(ds.logger).Log("msg", "dataServer ready for use")
-		<-ds.exitCh
+		<-ctx.Done()
 		level.Info(ds.logger).Log("msg", "dataServer received signal to stop")
 		if err := ds.stop(); err != nil {
 			level.Info(ds.logger).Log("msg", "stopping the data server", "err", err)

@@ -29,6 +29,20 @@ func (b *BalanceTracker) String() string {
 	return BalanceTrackerName
 }
 
+func NewBalanceTrackers(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, accounts []*rpc.Account) []Tracker {
+	balanceTrackers := make([]Tracker, len(accounts))
+	for i, account := range accounts {
+		balanceTrackers[i] = &BalanceTracker{
+			db:      db,
+			client:  client,
+			account: account,
+			logger:  log.With(logger, "component", "balance tracker"),
+		}
+	}
+	return balanceTrackers
+
+}
+
 func NewBalanceTracker(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, account *rpc.Account) *BalanceTracker {
 	return &BalanceTracker{
 		db:      db,
@@ -58,5 +72,5 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	level.Info(b.logger).Log("msg", "ETH balance", "amount", balanceH)
 
 	enc := hexutil.EncodeBig(balance)
-	return b.db.Put(db.BalanceKey, []byte(enc))
+	return b.db.Put(db.BalancePrefix+b.account.Address.String(), []byte(enc))
 }

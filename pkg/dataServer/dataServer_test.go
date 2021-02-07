@@ -43,11 +43,11 @@ func TestDataServer(t *testing.T) {
 	testutil.Ok(t, err)
 
 	ctx := context.Background()
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	ds, err := CreateServer(ctx, logger, cfg, proxy, client, contract, &account)
+	ds, err := CreateServer(ctx, logger, cfg, proxy, client, &contract, accounts)
 	testutil.Ok(t, err, "creating server in test")
 	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
 

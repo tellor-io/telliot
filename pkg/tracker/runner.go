@@ -25,8 +25,8 @@ const ComponentName = "tracker"
 type Runner struct {
 	db           db.DataServerProxy
 	client       contracts.ETHClient
-	contract     *contracts.ITellor
-	account      *rpc.Account
+	contract     *contracts.Tellor
+	accounts     []*rpc.Account
 	readyChannel chan bool
 	logger       log.Logger
 	config       *config.Config
@@ -34,7 +34,7 @@ type Runner struct {
 }
 
 // NewRunner will create a new runner instance.
-func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, account *rpc.Account) (*Runner, error) {
+func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.Tellor, accounts []*rpc.Account) (*Runner, error) {
 	logger, err := logging.ApplyFilter(*config, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
@@ -44,7 +44,7 @@ func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, 
 		db:           db,
 		client:       client,
 		contract:     contract,
-		account:      account,
+		accounts:     accounts,
 		readyChannel: make(chan bool, 1),
 		logger:       log.With(logger, "component", ComponentName),
 		trackerErr: promauto.NewCounterVec(prometheus.CounterOpts{
@@ -62,7 +62,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 	for name, activated := range r.config.Trackers.Names {
 		if activated {
 			level.Info(r.logger).Log("msg", "starting tracker", "name", name)
-			t, err := createTracker(r.logger, name, r.config, r.db, r.client, r.contract, r.account)
+			t, err := createTracker(name, r.logger, r.config, r.db, r.client, r.contract, r.accounts)
 			if err != nil {
 				return errors.Wrapf(err, "creating tracker. Name: %s", name)
 			}

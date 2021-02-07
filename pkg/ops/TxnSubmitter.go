@@ -44,3 +44,8 @@ func NewSubmitter(
 func (s TxnSubmitter) Submit(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
 	return rpc.SubmitContractTxn(ctx, s.logger, s.cfg, proxy, s.client, s.contract, s.account, ctxName, callback)
 }
+
+// PublicKey returns the public key of the account.
+func (s TxnSubmitter) PublicKey() string {
+	return s.account.Address.String()
+}

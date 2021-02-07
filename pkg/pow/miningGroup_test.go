@@ -4,11 +4,12 @@
 package pow
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	"fmt"
 	"math/big"
-	"os"
 	"testing"
 	"time"
 
@@ -50,9 +51,8 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	cfg := config.OpenTestConfig(t)
-	exitCh := make(chan os.Signal)
-
-	group, err := NewMiningGroup(logging.NewLogger(), cfg, []Hasher{impl}, exitCh)
+	ctx, close := context.WithCancel(context.Background())
+	group, err := NewMiningGroup(logging.NewLogger(), cfg, []Hasher{impl}, ctx, close)
 	if err != nil {
 		testutil.Ok(t, errors.Wrap(err, "creating new mining group"))
 	}
@@ -113,8 +113,8 @@ func TestMulti(t *testing.T) {
 	}
 
 	fmt.Printf("Using %d hashers\n", len(hashers))
-	exitCh := make(chan os.Signal)
-	group, err := NewMiningGroup(logging.NewLogger(), cfg, hashers, exitCh)
+	ctx, close := context.WithCancel(context.Background())
+	group, err := NewMiningGroup(logging.NewLogger(), cfg, hashers, ctx, close)
 	if err != nil {
 		testutil.NotOk(t, errors.Wrap(err, "creating new mining group"))
 	}

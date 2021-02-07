@@ -45,16 +45,19 @@ func TestDisputeStatus(t *testing.T) {
 	logger := logging.NewLogger()
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
-	tracker := NewDisputeTracker(logger, cfg, proxy, contract, &account)
-	testutil.Ok(t, tracker.Exec(context.Background()))
-	v, err := proxy.Get(db.DisputeStatusKey)
-	testutil.Ok(t, err)
-	b, err := hexutil.DecodeBig(string(v))
-	testutil.Ok(t, err)
-	t.Logf("Dispute Status stored: %v\n", string(v))
-	testutil.Equals(t, b.Cmp(big.NewInt(1)), 0, "dispute status from client did not match what should have been stored in DB. %s != %s", b, "one")
+	for _, account := range accounts {
+		tracker := NewDisputeTracker(logger, cfg, proxy, &contract, account)
+		testutil.Ok(t, tracker.Exec(context.Background()))
+		v, err := proxy.Get(db.DisputeStatusPrefix + account.Address.String())
+		testutil.Ok(t, err)
+		b, err := hexutil.DecodeBig(string(v))
+		testutil.Ok(t, err)
+		t.Logf("Dispute Status stored: %v\n", string(v))
+		testutil.Equals(t, b.Cmp(big.NewInt(1)), 0, "dispute status from client did not match what should have been stored in DB. %s != %s", b, "one")
+
+	}
 	proxy.Close()
 }
 
@@ -72,16 +75,19 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 	logger := logging.NewLogger()
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
-	tracker := NewDisputeTracker(logger, cfg, proxy, contract, &account)
-	testutil.Ok(t, tracker.Exec(context.Background()))
-	v, err := proxy.Get(db.DisputeStatusKey)
-	testutil.Ok(t, err)
-	b, err := hexutil.DecodeBig(string(v))
-	testutil.Ok(t, err)
-	t.Logf("Dispute Status stored: %v\n", string(v))
-	if b.Cmp(big.NewInt(1)) != 0 {
-		testutil.Ok(t, errors.Errorf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one"))
+	for _, account := range accounts {
+		tracker := NewDisputeTracker(logger, cfg, proxy, &contract, account)
+		testutil.Ok(t, tracker.Exec(context.Background()))
+		v, err := proxy.Get(db.DisputeStatusPrefix + account.Address.String())
+		testutil.Ok(t, err)
+		b, err := hexutil.DecodeBig(string(v))
+		testutil.Ok(t, err)
+		t.Logf("Dispute Status stored: %v\n", string(v))
+		if b.Cmp(big.NewInt(1)) != 0 {
+			testutil.Ok(t, errors.Errorf("Dispute Status from client did not match what should have been stored in DB. %s != %s", b, "one"))
+		}
 	}
+
 }

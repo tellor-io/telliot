@@ -5,7 +5,6 @@ package ops
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -25,7 +24,8 @@ const ComponentName = "ops"
 // It is the operational database component. Its purpose is to monitor/track various
 // values and cache those values in a local data store for faster retrieval from a miner.
 type DataServerOps struct {
-	exitCh  chan os.Signal
+	ctx     context.Context
+	close   context.CancelFunc
 	done    chan int
 	server  *dataServer.DataServer
 	logger  log.Logger
@@ -39,23 +39,25 @@ func CreateDataServerOps(
 	config *config.Config,
 	DB db.DataServerProxy,
 	client contracts.ETHClient,
-	contract *contracts.ITellor,
-	account *rpc.Account,
-	exitCh chan os.Signal,
+	contract *contracts.Tellor,
+	accounts []*rpc.Account,
 ) (*DataServerOps, error) {
-	ds, err := dataServer.CreateServer(ctx, logger, config, DB, client, contract, account)
+	ctx, close := context.WithCancel(ctx)
+	ds, err := dataServer.CreateServer(ctx, logger, config, DB, client, contract, accounts)
 	if err != nil {
+		close()
 		return nil, err
 	}
 	done := make(chan int)
-
 	logger, err = logging.ApplyFilter(*config, ComponentName, logger)
 	if err != nil {
+		close()
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 
 	ops := &DataServerOps{
-		exitCh:  exitCh,
+		ctx:     ctx,
+		close:   close,
 		server:  ds,
 		logger:  log.With(logger, "component", ComponentName),
 		done:    done,
@@ -66,30 +68,11 @@ func CreateDataServerOps(
 }
 
 // Start the data server.
-func (ops *DataServerOps) Start(ctx context.Context) error {
-	if err := ops.server.Start(ctx, ops.done); err != nil {
+func (ops *DataServerOps) Start() error {
+	if err := ops.server.Start(ops.ctx, ops.done); err != nil {
 		return err
 	}
 	ops.Running = true
-	go func() {
-		<-ops.exitCh
-		level.Info(ops.logger).Log("msg", "shutting down data server...")
-		ops.done <- 1
-		cnt := 0
-		for {
-			time.Sleep(500 * time.Millisecond)
-			cnt++
-			if ops.server.Stopped {
-				break
-			}
-			if cnt > 60 {
-				level.Warn(ops.logger).Log("msg", "expected data server to stop by now, Giving up...")
-				return
-			}
-		}
-		ops.Running = false
-		level.Info(ops.logger).Log("msg", "data server shutdown complete")
-	}()
 	return nil
 }
 
@@ -97,4 +80,25 @@ func (ops *DataServerOps) Start(ctx context.Context) error {
 // should be ready to use its initial output.
 func (ops *DataServerOps) Ready() chan bool {
 	return ops.server.Ready()
+}
+
+// Stop will take care of stopping the dataserver component.
+func (ops *DataServerOps) Stop() {
+	level.Info(ops.logger).Log("msg", "shutting down data server...")
+	ops.close()
+	ops.done <- 1
+	cnt := 0
+	for {
+		time.Sleep(500 * time.Millisecond)
+		cnt++
+		if ops.server.Stopped {
+			break
+		}
+		if cnt > 60 {
+			level.Warn(ops.logger).Log("msg", "expected data server to stop by now, Giving up...")
+			return
+		}
+	}
+	ops.Running = false
+	level.Info(ops.logger).Log("msg", "data server shutdown complete")
 }

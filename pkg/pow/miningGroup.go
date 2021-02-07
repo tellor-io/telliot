@@ -4,10 +4,10 @@
 package pow
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"math/big"
-	"os"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -71,21 +71,22 @@ const rateInitialGuess = 100e3
 type MiningGroup struct {
 	Backends    []*Backend
 	LastPrinted time.Time
-	exitCh      chan os.Signal
+	ctx         context.Context
+	close       context.CancelFunc
 	logger      log.Logger
 	cfg         *config.Config
 }
 
-func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, exitCh chan os.Signal) (*MiningGroup, error) {
+func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, ctx context.Context, close context.CancelFunc) (*MiningGroup, error) {
 
 	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
-
 	group := &MiningGroup{
 		Backends: make([]*Backend, len(hashers)),
-		exitCh:   exitCh,
+		ctx:      ctx,
+		close:    close,
 		logger:   log.With(filterLog, "component", ComponentName),
 		cfg:      cfg,
 	}
@@ -254,7 +255,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		case result := <-resultChannel:
 			if result.err != nil {
 				level.Error(g.logger).Log("msg", "hasher failed", "err", result.err)
-				g.exitCh <- os.Interrupt
+				g.close()
 			}
 			idleWorkers <- result.backend
 

@@ -55,10 +55,10 @@ func TestRunner(t *testing.T) {
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
 
-	runner, _ := NewRunner(logger, cfg, proxy, client, contract, &account)
+	runner, _ := NewRunner(logger, cfg, proxy, client, &contract, accounts)
 
 	runner.Ready()
 	if err := runner.Start(context.Background(), exitCh); err != nil {

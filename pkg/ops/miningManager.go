@@ -45,7 +45,8 @@ type SolutionSink interface {
 // Transaction cost for submitting in each slot might be different so because of this
 // the manager needs to complete few transaction to gather the tx cost for each slot.
 type MiningMgr struct {
-	exitCh           chan os.Signal
+	ctx              context.Context
+	close            context.CancelFunc
 	logger           log.Logger
 	Running          bool
 	ethClient        contracts.ETHClient
@@ -56,6 +57,7 @@ type MiningMgr struct {
 	database         db.DataServerProxy
 	contractInstance *contracts.ITellor
 	cfg              *config.Config
+	account          *rpc.Account
 
 	toMineInput     chan *pow.Work
 	solutionOutput  chan *pow.Result
@@ -69,14 +71,16 @@ type MiningMgr struct {
 // CreateMiningManager is the MiningMgr constructor.
 func CreateMiningManager(
 	logger log.Logger,
-	exitCh chan os.Signal,
+	ctx context.Context,
 	cfg *config.Config,
 	database db.DataServerProxy,
 	contract *contracts.ITellor,
 	account *rpc.Account,
+	tasker *pow.MiningTasker,
+	solutionHandler *pow.SolutionHandler,
 ) (*MiningMgr, error) {
-
-	group, err := pow.SetupMiningGroup(logger, cfg, exitCh)
+	ctx, close := context.WithCancel(ctx)
+	group, err := pow.SetupMiningGroup(ctx, close, logger, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup miners")
 	}
@@ -85,76 +89,74 @@ func CreateMiningManager(
 	if err != nil {
 		return nil, errors.Wrap(err, "creating client")
 	}
-	contractInstance, err := contracts.NewITellor(client)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting addresses")
-	}
 
 	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
-
-	submitter := NewSubmitter(logger, cfg, client, contract, account)
 	mng := &MiningMgr{
-		exitCh:           exitCh,
+		ctx:              ctx,
+		close:            close,
 		logger:           log.With(logger, "component", ComponentName),
 		Running:          false,
 		group:            group,
-		tasker:           nil,
+		tasker:           tasker,
 		solutionPending:  nil,
-		solHandler:       nil,
-		contractInstance: contractInstance,
+		solHandler:       solutionHandler,
+		contractInstance: contract,
 		cfg:              cfg,
+		account:          account,
 		database:         database,
 		ethClient:        client,
 		toMineInput:      make(chan *pow.Work),
 		solutionOutput:   make(chan *pow.Result),
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "telliot",
-			Subsystem: "mining",
-			Name:      "submit_total",
-			Help:      "The total number of submitted solutions",
+			Namespace:   "telliot",
+			Subsystem:   "mining",
+			Name:        "submit_total",
+			ConstLabels: prometheus.Labels{"address": account.Address.String()},
+			Help:        "The total number of submitted solutions",
 		}),
 		submitFailCount: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "telliot",
-			Subsystem: "mining",
-			Name:      "submit_fails_total",
-			Help:      "The total number of failed submission",
+			Namespace:   "telliot",
+			Subsystem:   "mining",
+			Name:        "submit_fails_total",
+			ConstLabels: prometheus.Labels{"address": account.Address.String()},
+			Help:        "The total number of failed submission",
 		}),
 		submitProfit: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "telliot",
-			Subsystem: "mining",
-			Name:      "submit_profit",
-			Help:      "The current submit profit in percents",
+			Namespace:   "telliot",
+			Subsystem:   "mining",
+			Name:        "submit_profit",
+			ConstLabels: prometheus.Labels{"address": account.Address.String()},
+			Help:        "The current submit profit in percents",
 		},
 			[]string{"slot"},
 		),
 		submitCost: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "telliot",
-			Subsystem: "mining",
-			Name:      "submit_cost",
-			Help:      "The current submit cost in 1e18 eth",
+			Namespace:   "telliot",
+			Subsystem:   "mining",
+			Name:        "submit_cost",
+			ConstLabels: prometheus.Labels{"address": account.Address.String()},
+			Help:        "The current submit cost in 1e18 eth",
 		},
 			[]string{"slot"},
 		),
 		submitReward: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "telliot",
-			Subsystem: "mining",
-			Name:      "submit_reward",
-			Help:      "The current reward in 1e18 eth",
+			Namespace:   "telliot",
+			Subsystem:   "mining",
+			Name:        "submit_reward",
+			ConstLabels: prometheus.Labels{"address": account.Address.String()},
+			Help:        "The current reward in 1e18 eth",
 		},
 			[]string{"slot"},
 		),
 	}
-
-	mng.tasker = pow.CreateTasker(logger, cfg, mng.contractInstance, database)
-	mng.solHandler = pow.CreateSolutionHandler(cfg, logger, submitter, database)
 	return mng, nil
 }
 
 // Start will start the mining run loop.
-func (mgr *MiningMgr) Start(ctx context.Context) {
+func (mgr *MiningMgr) Start() error {
 	mgr.Running = true
 	ticker := time.NewTicker(mgr.cfg.Mine.MiningInterruptCheckInterval.Duration)
 
@@ -164,9 +166,9 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 	for {
 		select {
 		// Boss wants us to quit for the day.
-		case <-mgr.exitCh:
+		case <-mgr.ctx.Done():
 			mgr.Running = false
-			return
+			return errors.New("miner manager has been stopped")
 		// Found a solution.
 		case solution := <-mgr.solutionOutput:
 			// There is no new challenge so resend any pending solution.
@@ -206,14 +208,14 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
 				continue
 			}
-			tx, err := mgr.solHandler.Submit(ctx, solution)
+			tx, err := mgr.solHandler.Submit(mgr.ctx, solution)
 			if err != nil {
 				level.Error(mgr.logger).Log("msg", "submiting a solution", "err", err)
 				mgr.submitFailCount.Inc()
 				continue
 			}
 			level.Debug(mgr.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
-			mgr.saveGasUsed(ctx, tx)
+			mgr.saveGasUsed(mgr.ctx, tx)
 			mgr.submitCount.Inc()
 
 			// A solution has been submitted so the
@@ -255,7 +257,7 @@ func (mgr *MiningMgr) newWork() {
 }
 
 func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
-	address := "000000000000000000000000" + mgr.cfg.PublicAddress[2:]
+	address := "000000000000000000000000" + mgr.account.Address.Hex()
 	decoded, err := hex.DecodeString(address)
 	if err != nil {
 		return 0, errors.Wrapf(err, "decoding address")
@@ -433,4 +435,23 @@ func (mgr *MiningMgr) profit() (int64, error) {
 	mgr.submitReward.With(prometheus.Labels{"slot": strconv.Itoa(int(slotNum.Int64()))}).(prometheus.Gauge).Set(float64(reward.Int64()))
 
 	return profitPercent, nil
+}
+
+// Stop will take care of stopping the dataserver component.
+func (mgr *MiningMgr) Stop() {
+	level.Info(mgr.logger).Log("msg", "shutting down data server...", "account", mgr.account.Address.String())
+	mgr.close()
+	cnt := 0
+	for {
+		time.Sleep(500 * time.Millisecond)
+		cnt++
+		if !mgr.Running {
+			break
+		}
+		if cnt > 60 {
+			level.Warn(mgr.logger).Log("msg", "expected miner to stop by now, Giving up...")
+			return
+		}
+	}
+	level.Info(mgr.logger).Log("msg", "miner shutdown complete", "account", mgr.account.Address.String())
 }

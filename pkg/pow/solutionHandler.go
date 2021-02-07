@@ -31,21 +31,20 @@ import (
 
 type SolutionHandler struct {
 	logger           log.Logger
+	cfg              *config.Config
 	proxy            db.DataServerProxy
 	currentChallenge *MiningChallenge
 	currentNonce     string
 	currentValues    [5]*big.Int
-	submitter        tellorCommon.TransactionSubmitter
-	cfg              *config.Config
+	submitters       []tellorCommon.TransactionSubmitter
 }
 
-func CreateSolutionHandler(cfg *config.Config, logger log.Logger, submitter tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) *SolutionHandler {
-
+func CreateSolutionHandler(cfg *config.Config, logger log.Logger, submitters []tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) *SolutionHandler {
 	return &SolutionHandler{
-		proxy:     proxy,
-		submitter: submitter,
-		logger:    log.With(logger, "component", ComponentName),
-		cfg:       cfg,
+		proxy:      proxy,
+		submitters: submitters,
+		cfg:        cfg,
+		logger:     log.With(logger, "component", ComponentName),
 	}
 }
 
@@ -97,11 +96,17 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 		}
 		s.currentValues[i] = value
 	}
-	tx, err := s.submitter.Submit(ctx, s.proxy, "submitSolution", s.submit)
-	if err != nil {
-		return nil, errors.Wrap(err, "submitting solution txn")
+
+	// Try to submit by any submitter.
+	for _, submitter := range s.submitters {
+		tx, err := submitter.Submit(ctx, s.proxy, "submitSolution", s.submit)
+		if err == nil {
+			return tx, nil
+		} else {
+			level.Error(s.logger).Log("msg", "submit solution", "pubkey", submitter.PublicKey())
+		}
 	}
-	return tx, nil
+	return nil, errors.New("submitting solution txn by any account")
 }
 
 func (s *SolutionHandler) submit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {

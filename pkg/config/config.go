@@ -150,7 +150,7 @@ var defaultConfig = Config{
 	EnvFile: "configs/.env",
 }
 
-const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
+const PrivateKeysEnvName = "ETH_PRIVATE_KEYS"
 const NodeURLEnvName = "NODE_URL"
 
 func ParseConfig(path string) (*Config, error) {

@@ -45,11 +45,11 @@ spec:
             secretKeyRef:
               name: telliot-main
               key: NODE_URL
-        - name: ETH_PRIVATE_KEY
+        - name: ETH_PRIVATE_KEYS
           valueFrom:
             secretKeyRef:
               name: telliot-main
-              key: ETH_PRIVATE_KEY
+              key: ETH_PRIVATE_KEYS
         - name: VIXEOD_KEY
           valueFrom:
             secretKeyRef:

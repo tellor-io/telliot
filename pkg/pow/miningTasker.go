@@ -47,18 +47,17 @@ const (
 type MiningTasker struct {
 	logger                        log.Logger
 	proxy                         db.DataServerProxy
-	pubKey                        string
+	account                       *rpc.Account
 	currChallenge                 *MiningChallenge
 	cfg                           *config.Config
 	contractInstance              *contracts.ITellor
 	instantSubmitSentForThisBlock bool
 }
 
-func CreateTasker(logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor, proxy db.DataServerProxy) *MiningTasker {
-
+func CreateTasker(logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor, proxy db.DataServerProxy, account *rpc.Account) *MiningTasker {
 	return &MiningTasker{
 		proxy:            proxy,
-		pubKey:           cfg.PublicAddress,
+		account:          account,
 		logger:           log.With(logger, "component", ComponentName),
 		cfg:              cfg,
 		contractInstance: contractInstance,
@@ -66,7 +65,7 @@ func CreateTasker(logger log.Logger, cfg *config.Config, contractInstance *contr
 }
 
 func (mt *MiningTasker) GetWork() (*Work, bool) {
-	dispKey := mt.pubKey + "-" + db.DisputeStatusKey
+	dispKey := db.DisputeStatusPrefix + mt.account.Address.String()
 	keys := []string{
 		db.DifficultyKey,
 		db.CurrentChallengeKey,
@@ -211,7 +210,7 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 	)
 
 	mt.currChallenge = newChallenge
-	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey, Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
+	return &Work{Challenge: newChallenge, PublicAddr: mt.account.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {
