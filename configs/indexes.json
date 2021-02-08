@@ -26,21 +26,22 @@
         },
         {
             "URL": "https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD",
-            "param": "$.USD"
+            "param": "$.USD",
+            "interval": 600
         }
     ],
     "AMPL/USDC": [
         {
-          "URL": "Mainnet:0x7860e28ebfb8ae052bfe279c07ac5d94c9cd2937,Rinkeby:0x7Ce90580beC5Fc55b1Cb51926151E00cF1544C80",
-          "type": "ethereum",
-          "parser": "Balancer"
+            "URL": "Mainnet:0x7860e28ebfb8ae052bfe279c07ac5d94c9cd2937,Rinkeby:0x7Ce90580beC5Fc55b1Cb51926151E00cF1544C80",
+            "type": "ethereum",
+            "parser": "Balancer"
         }
     ],
     "AMPL/ETH": [
         {
-          "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x6dFd19363709f6245a7e7A74eA66e5c59dF9360F",
-          "type": "ethereum",
-          "parser": "Uniswap"
+            "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x6dFd19363709f6245a7e7A74eA66e5c59dF9360F",
+            "type": "ethereum",
+            "parser": "Uniswap"
         }
     ],
     "ATOM/USD": [
@@ -329,7 +330,8 @@
         },
         {
             "URL": "https://min-api.cryptocompare.com/data/price?fsym=OGN&tsyms=USD",
-            "param": "$.USD"
+            "param": "$.USD",
+            "interval": 600
         },
         {
             "URL": "https://api.binance.com/api/v1/klines?symbol=OGNUSDT&interval=1d&limit=1",
@@ -422,7 +424,8 @@
         },
         {
             "URL": "https://min-api.cryptocompare.com/data/price?fsym=WAVES&tsyms=USD",
-            "param": "$.USD"
+            "param": "$.USD",
+            "interval": 600
         },
         {
             "URL": "https://api.binance.com/api/v1/klines?symbol=WAVESUSDT&interval=1d&limit=1",

@@ -10,15 +10,26 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ## Unreleased
 
-* [\#240](https://github.com/tellor-io/telliot/issues/240) Replaced the cli package to allow for command specific flags and configuration. Now all flags should be passed last. Example:
-
-  Instead of: `./telliot --config="config.json" stake deposit`, it becomes:`./telliot stake deposit --config="config.json"`
-
-  Removed the `RemoteMining` `-r` flag. Remote is active when specifying a `RemoteDBHost` for the `Mine` command. See the `configs/config.json` for an example.
+## [v5.6.0](https://github.com/tellor-io/telliot/releases/tag/v5.6.0) - 2021.02.08
 
 ### Changed
+* [\#240](https://github.com/tellor-io/telliot/issues/240) Replaced the cli package to allow for command specific flags and configuration. Now all flags should be passed last. Example:
+  Instead of: `./telliot --config="config.json" stake deposit`, it becomes:`./telliot stake deposit --config="config.json"`
+  Removed the `RemoteMining` `-r` flag. Remote is active when specifying a `RemoteDBHost` for the `Mine` command. See the `configs/config.json` for an example.
+
+* [\#378](https://github.com/tellor-io/telliot/pull/378) Removed GPU mining, as it weren't being used.
+
+* [\#390](https://github.com/tellor-io/telliot/pull/390) Removed the feature to connect using Stratum Pool, as it weren't being used.
+
+* [\#386](https://github.com/tellor-io/telliot/pull/386) Removed the need to provide the tellor contract address in the config file
+
+* [\#386](https://github.com/tellor-io/telliot/pull/386) Removed the logLevel flag. Now all logging setup is in the config file. See the example at `configs/config.json`.
 
 ### Added
+* Added onchain trackers for Uniswap and Balancer.[\#347](https://github.com/tellor-io/telliot/pull/347)
+
+* Added a new psr for Defi Market cap, for id 58. Miners will need to create a free api key in CoinMarketCap pro to be able to read the apis.[\#385](https://github.com/tellor-io/telliot/pull/385)
+
 
 ### Fixed
 
@@ -71,4 +82,3 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 * Profitability calculations which is set through the `ProfitThreshold`\(in percents\) settings in the config,
 * Docs how to contribute.
-
