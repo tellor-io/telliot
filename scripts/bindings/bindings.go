@@ -4,14 +4,11 @@
 package main
 
 import (
-	"io"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/nanmu42/etherscan-api"
-	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/bindings"
 	"github.com/tellor-io/telliot/pkg/config"
 )
@@ -62,19 +59,5 @@ func downloadAndGenerate(addr, downlContractsFolder, pkgFolder, name string) {
 func ExitOnErr(err error, msg string) {
 	if err != nil {
 		log.Fatalf("execution error:%+v msg:%+v", err, msg)
-		return errors.Wrap(err, "creating destination file")
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return errors.Wrap(err, "writing the file")
-}
-
-// downloadSolc will download @solcVersion of the Solc compiler to tmp/solc directory.
-func downloadSolc(solcVersion string) (string, error) {
-	solcDir := filepath.Join("temp", "solc")
-	if err := os.MkdirAll(solcDir, os.ModePerm); err != nil {
-		return "", err
 	}
 }

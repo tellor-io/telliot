@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/tellor-io/telliot/pkg/contracts/oldTellor"
 )
 
 func DeployOldTellor(transactor *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *bind.BoundContract, error) {
@@ -47,6 +48,10 @@ func DeployOldTellor(transactor *bind.TransactOpts, backend bind.ContractBackend
 		"OldTellorStake":    oldTellorStake,
 		"OldTellorLibrary":  oldTellorLibrary,
 	})
+}
+
+func addRequestIds(tellor *oldTellor.OldTellor) error {
+
 }
 
 func getBinAndAbi(contractName string) (string, string, error) {
