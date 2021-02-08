@@ -21,11 +21,15 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 * [\#390](https://github.com/tellor-io/telliot/pull/390) Removed the feature to connect using Stratum Pool, as it weren't being used.
 
-* Added a new psr for Defi Market cap, for id 58. Miners will need to create a free api key in CoinMarketCap pro to be able to read the apis.[\#385](https://github.com/tellor-io/telliot/pull/385)
-
 * [\#386](https://github.com/tellor-io/telliot/pull/386) Removed the need to provide the tellor contract address in the config file
 
+* [\#386](https://github.com/tellor-io/telliot/pull/386) Removed the logLevel flag. Now all logging configuration is set at `configs/config.json`.
+
 ### Added
+* Added onchain trackers for Uniswap and Balancer.[\#347](https://github.com/tellor-io/telliot/pull/347)
+
+* Added a new psr for Defi Market cap, for id 58. Miners will need to create a free api key in CoinMarketCap pro to be able to read the apis.[\#385](https://github.com/tellor-io/telliot/pull/385)
+
 
 ### Fixed
 
