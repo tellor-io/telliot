@@ -21,31 +21,31 @@ func DeployOldTellor(transactor *bind.TransactOpts, backend bind.ContractBackend
 	// Deploy Tellor Dispute
 	oldTellorBinDispute, oldTellorABIDispute, err := getBinAndAbi("OldTellorDispute")
 	oldTellorDispute, err := DeployContractWithLibs(transactor, backend, oldTellorABIDispute, oldTellorBinDispute, map[string]common.Address{
-		"oldTellorTransfer": oldTellorTransfer,
+		"OldTellorTransfer": oldTellorTransfer,
 	})
 
 	// Deploy Tellor Stake
 	oldTellorBinStake, oldTellorABIStake, err := getBinAndAbi("OldTellorStake")
 	oldTellorStake, err := DeployContractWithLibs(transactor, backend, oldTellorABIStake, oldTellorBinStake, map[string]common.Address{
-		"oldTellorTransfer": oldTellorTransfer,
-		"oldTellorDispute":  oldTellorDispute,
+		"OldTellorTransfer": oldTellorTransfer,
+		"OldTellorDispute":  oldTellorDispute,
 	})
 
 	// Deploy Tellor Library
 	oldTellorBinLibrary, oldTellorABILibrary, err := getBinAndAbi("OldTellorLibrary")
 	oldTellorLibrary, err := DeployContractWithLibs(transactor, backend, oldTellorABILibrary, oldTellorBinLibrary, map[string]common.Address{
-		"oldTellorTransfer": oldTellorTransfer,
-		"oldTellorDispute":  oldTellorDispute,
-		"oldTellorStake":    oldTellorStake,
+		"OldTellorTransfer": oldTellorTransfer,
+		"OldTellorDispute":  oldTellorDispute,
+		"OldTellorStake":    oldTellorStake,
 	})
 
 	// Deploy Old Tellor
 	oldTellorBin, oldTellorABI, err := getBinAndAbi("OldTellor")
 	return DeployContractWithLinks(transactor, backend, oldTellorABI, oldTellorBin, map[string]common.Address{
-		"oldTellorTransfer": oldTellorTransfer,
-		"oldTellorDispute":  oldTellorDispute,
-		"oldTellorStake":    oldTellorStake,
-		"oldTellorLibrary":  oldTellorLibrary,
+		"OldTellorTransfer": oldTellorTransfer,
+		"OldTellorDispute":  oldTellorDispute,
+		"OldTellorStake":    oldTellorStake,
+		"OldTellorLibrary":  oldTellorLibrary,
 	})
 }
 

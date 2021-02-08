@@ -28,6 +28,7 @@ func TestMain(m *testing.M) {
 
 func TestSubmission(t *testing.T) {
 
+	initialMiner := common.HexToAddress("e010aC6e0248790e08F42d5F697160DEDf97E024")
 	backend, transactor, _ := getbackendBackend(t)
 	// Deploy a token contract on the simulated blockchain
 	_, tx1, _, err := contracts.DeployOldTellor(transactor, backend)
@@ -38,7 +39,7 @@ func TestSubmission(t *testing.T) {
 	testutil.Ok(t, err)
 	fmt.Println(addr)
 
-	masterAdd, tx2, _, err := proxy.DeployTellorMaster(transactor, backend, addr)
+	masterAdd, tx2, master, err := proxy.DeployTellorMaster(transactor, backend, addr)
 	testutil.Ok(t, err)
 	backend.Commit()
 
@@ -46,22 +47,27 @@ func TestSubmission(t *testing.T) {
 	testutil.Ok(t, err)
 	backend.Commit()
 
-	tellor1, err := oldTellor.NewOldTellorTransactor(masterAdd, backend)
+	tellor, err := oldTellor.NewOldTellor(masterAdd, backend)
 	testutil.Ok(t, err)
-	_, err = tellor1.Approve(transactor, addr, big.NewInt(1))
-	testutil.Ok(t, err)
+	backend.Commit()
 
-	tx, err := tellor1.Transfer(transactor, addr, big.NewInt(100))
+	// _, err = tellor.RequestStakingWithdraw(transactor)
+	// testutil.Ok(t, err)
+
+	tx, err := tellor.RequestData(transactor, "data", "sym", big.NewInt(10), big.NewInt(0))
 	testutil.Ok(t, err)
 	println(tx)
-	// t.Fatal()
-	// a, b, c, d, e, f, err := tellor1.GetCurrentVariables(nil)
+	// a, b, c, d, e, f, err := master.GetCurrentVariables(nil)
 	// testutil.Ok(t, err)
-	// 	fmt.Println(a, b, c, d, e, f)
+	// fmt.Println(a, b, c, d, e, f)
+	t.Fatal()
+	fmt.Println(master)
+	fmt.Println(tellor)
+	fmt.Println(initialMiner)
 }
 
 func getbackendBackend(t *testing.T) (*backends.SimulatedBackend, *bind.TransactOpts, common.Address) {
-	sk, err := crypto.GenerateKey()
+	sk, err := crypto.HexToECDSA("3a10b4bc1258e8bfefb95b498fb8c0f0cd6964a811eabca87df5630bcacd7216")
 	testutil.Ok(t, err)
 	faucetAddr := crypto.PubkeyToAddress(sk.PublicKey)
 	addr := map[common.Address]core.GenesisAccount{
