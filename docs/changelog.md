@@ -23,7 +23,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 * [\#386](https://github.com/tellor-io/telliot/pull/386) Removed the need to provide the tellor contract address in the config file
 
-* [\#386](https://github.com/tellor-io/telliot/pull/386) Removed the logLevel flag. Now all logging configuration is set at `configs/config.json`.
+* [\#386](https://github.com/tellor-io/telliot/pull/386) Removed the logLevel flag. Now all logging setup is in the config file. See the example at `configs/config.json`.
 
 ### Added
 * Added onchain trackers for Uniswap and Balancer.[\#347](https://github.com/tellor-io/telliot/pull/347)
@@ -82,4 +82,3 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 * Profitability calculations which is set through the `ProfitThreshold`\(in percents\) settings in the config,
 * Docs how to contribute.
-
