@@ -17,7 +17,9 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
   Instead of: `./telliot --config="config.json" stake deposit`, it becomes:`./telliot stake deposit --config="config.json"`
   Removed the `RemoteMining` `-r` flag. Remote is active when specifying a `RemoteDBHost` for the `Mine` command. See the `configs/config.json` for an example.
 
-* Removed the features of GPU mining connection to Stratum Pool, as neither were being used.[\#378](https://github.com/tellor-io/telliot/pull/378),[\#39-](https://github.com/tellor-io/telliot/pull/390) and [\#397](https://github.com/tellor-io/telliot/pull/397)
+* [\#378](https://github.com/tellor-io/telliot/pull/378) Removed GPU mining, as it weren't being used.
+
+* [\#390](https://github.com/tellor-io/telliot/pull/390) Removed the connection to Stratum Pool, as it weren't being used.
 
 * Added a new psr for Defi Market cap, for id 58. Miners will need to create a free api key in CoinMarketCap pro to be able to read the apis.[\#385](https://github.com/tellor-io/telliot/pull/385)
 
