@@ -78,12 +78,26 @@ func DeployContractWithLibs(
 	return address, err
 }
 
-func GetbackendBackend() (*backends.SimulatedBackend, *bind.TransactOpts, error) {
-	sk, err := crypto.GenerateKey()
-	if err != nil {
-		return nil, nil, err
+func GetbackendBackend() (*backends.SimulatedBackend, []*bind.TransactOpts, error) {
+	initialKeys := []string{
+		"0x3a10b4bc1258e8bfefb95b498fb8c0f0cd6964a811eabca87df5630bcacd7216", "0xd32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed", "0xd13dc98a245bd29193d5b41203a1d3a4ae564257d60e00d6f68d120ef6b796c5", "0x4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe", "0x78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14", "0x4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16", "0x42ef6879f87950460bc162070839a42690ad76200e2460e30e944f69026a7f0b", "0xfa991490959b6cf3c31115271c8ee63070dd57b6078582a6b8b5be97ca9a8061", "0x37ed7b1172f31891e6fb38a361c72768954031f46c3e4018f9f8578ea2b6804c", "0x8b73fa2c839ccea66e8eddf0aa95f6bc4c6aaa11e2fa126c1d9334985b0e7666",
 	}
-	faucetAddr := crypto.PubkeyToAddress(sk.PublicKey)
+	adds := map[common.Address]core.GenesisAccount{}
+	transactors := []*bind.TransactOpts{}
+	for _, sk := range initialKeys {
+		s, err := crypto.HexToECDSA(sk)
+		if err != nil {
+			return nil, nil, err
+		}
+		address := crypto.PubkeyToAddress(s.PublicKey)
+		adds[address] = core.GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
+		transactor, err := bind.NewKeyedTransactorWithChainID(s, big.NewInt(1337))
+		if err != nil {
+			return nil, nil, err
+		}
+		transactors = append(transactors, transactor)
+	}
+
 	addr := map[common.Address]core.GenesisAccount{
 		common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
 		common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
@@ -93,12 +107,11 @@ func GetbackendBackend() (*backends.SimulatedBackend, *bind.TransactOpts, error)
 		common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
 		common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
 		common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
-		faucetAddr:                       {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
+	}
+	for k, c := range adds {
+		addr[k] = c
 	}
 	alloc := core.GenesisAlloc(addr)
-	transactor, err := bind.NewKeyedTransactorWithChainID(sk, big.NewInt(1337))
-	if err != nil {
-		return nil, nil, err
-	}
-	return backends.NewSimulatedBackend(alloc, 80000000), transactor, nil
+
+	return backends.NewSimulatedBackend(alloc, 80000000), transactors, nil
 }

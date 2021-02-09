@@ -1,1 +1,0 @@
-[{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"_newTellor","type":"address"}],"name":"NewTellorAddress","type":"event"}]

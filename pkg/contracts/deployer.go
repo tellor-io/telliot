@@ -1,17 +1,70 @@
 package contracts
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/tellor-io/telliot/pkg/contracts/oldTellor"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
 )
 
-func DeployOldTellor(transactor *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *bind.BoundContract, error) {
+func GetTellorCore() error {
+	backend, transactors, err := GetbackendBackend()
+	if err != nil {
+		return nil
+	}
+
+	// initialMiner := common.HexToAddress("e010aC6e0248790e08F42d5F697160DEDf97E024")
+	// fmt.Println(initialMiner)
+
+	// Deploy oldTellor
+	addr, tx, _, err := deployOldTellor(transactors[0], backend)
+
+	// Deploy proxyMaster
+	addr, err = bind.WaitDeployed(context.Background(), backend, tx)
+	fmt.Println(addr)
+	backend.Commit()
+
+	masterAdd, _, _, err := tellorProxy.DeployTellorMaster(transactors[0], backend, addr)
+	if err != nil {
+		return nil
+	}
+	backend.Commit()
+
+	tellor, err := oldTellor.NewOldTellor(masterAdd, backend)
+	if err != nil {
+		return nil
+	}
+	backend.Commit()
+
+	// Add Request Ids
+	for i := 0; i < 52; i++ {
+		x := "USD" + string(i)
+		api := "api"
+		_, err := tellor.RequestData(transactors[0], api, x, big.NewInt(1000), big.NewInt(int64(52-i)))
+		if err != nil {
+			return nil
+		}
+	}
+
+	//need 5 initial miners to mine 1st block
+	for i := 1; i < 5; i++ {
+		_, err := tellor.SubmitMiningSolution(transactors[i], "nonce", big.NewInt(1), big.NewInt(1200))
+		if err != nil {
+			return nil
+		}
+	}
+	backend.Commit()
+	return nil
+}
+
+func deployOldTellor(transactor *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *bind.BoundContract, error) {
 	// Deploy Tellor Transfer
 	oldTellorTransferBin, oldTellorTransferABI, err := getBinAndAbi("OldTellorTransfer")
 	oldTellorTransfer, err := DeployContractWithLibs(transactor, backend, oldTellorTransferABI, oldTellorTransferBin, map[string]common.Address{})
@@ -50,17 +103,13 @@ func DeployOldTellor(transactor *bind.TransactOpts, backend bind.ContractBackend
 	})
 }
 
-func addRequestIds(tellor *oldTellor.OldTellor) error {
-
-}
-
 func getBinAndAbi(contractName string) (string, string, error) {
 	println(os.Getwd())
-	b, err := ioutil.ReadFile("../contracts/abigenBindings/bin/" + contractName + ".bin")
+	b, err := ioutil.ReadFile("../contracts/oldTellor/bin/" + contractName + ".bin")
 	if err != nil {
 		fmt.Print(err)
 		return "", "", nil
 	}
-	abi, err := ioutil.ReadFile("../contracts/abigenBindings/abi/" + contractName + ".abi")
+	abi, err := ioutil.ReadFile("../contracts/oldTellor/abi/" + contractName + ".abi")
 	return string(b), string(abi), nil
 }
