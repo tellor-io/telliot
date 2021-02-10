@@ -1,7 +1,6 @@
 package contracts
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -11,68 +10,79 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/tellor-io/telliot/pkg/contracts/oldTellor"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
 )
 
 func GetTellorCore() error {
 	backend, transactors, err := GetbackendBackend()
 	if err != nil {
-		return nil
+		return err
 	}
 
-	// initialMiner := common.HexToAddress("e010aC6e0248790e08F42d5F697160DEDf97E024")
-	// fmt.Println(initialMiner)
+	initialMiner := common.HexToAddress("e010aC6e0248790e08F42d5F697160DEDf97E024")
+	fmt.Println(initialMiner)
 
 	// Deploy oldTellor
-	addr, tx, _, err := deployOldTellor(transactors[0], backend)
+	add, _, _, err := deployOldTellor(transactors[0], backend)
 	if err != nil {
-		return nil
+		return err
 	}
 	// Deploy proxyMaster
-	addr, err = bind.WaitDeployed(context.Background(), backend, tx)
-	fmt.Println(addr)
-	backend.Commit()
-
-	masterAdd, _, proxy, err := tellorProxy.DeployTellorMaster(transactors[0], backend, addr)
+	masterAdd, _, proxy, err := tellorProxy.DeployTellorMaster(transactors[0], backend, add)
 	if err != nil {
-		return nil
+		return err
 	}
 	backend.Commit()
-
+	fmt.Println(masterAdd)
+	fmt.Println(proxy)
 	tellor, err := oldTellor.NewOldTellor(masterAdd, backend)
 	if err != nil {
-		return nil
+		return err
 	}
-	backend.Commit()
 
-	// Add Request Ids
+	bal, err := proxy.BalanceOf(nil, initialMiner)
+	if err != nil {
+		return err
+	}
+	fmt.Println(bal)
+
+	bal2, err := tellor.AddTip(transactors[0], big.NewInt(0), big.NewInt(30))
+	if err != nil {
+		return err
+	}
+	fmt.Println(bal2)
+
+	// // Add Request Ids
 	for i := 0; i < 52; i++ {
+		fmt.Println(i)
 		x := "USD" + fmt.Sprint(i)
 		api := "api"
 		_, err := tellor.RequestData(transactors[0], api, x, big.NewInt(1000), big.NewInt(int64(52-i)))
 		if err != nil {
-			return nil
+			return err
 		}
+		backend.Commit()
 	}
 
-	//need 5 initial miners to mine 1st block
-	for i := 1; i < 5; i++ {
-		_, err := tellor.SubmitMiningSolution(transactors[i], "nonce", big.NewInt(1), big.NewInt(1200))
-		if err != nil {
-			return nil
-		}
-	}
-	backend.Commit()
+	// //need 5 initial miners to mine 1st block
+	// for i := 1; i < 5; i++ {
+	// 	_, err := tellor.SubmitMiningSolution(transactors[i], "nonce", big.NewInt(1), big.NewInt(1200))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+	// backend.Commit()
 
-	// Deploy most recent tellor
-	addv26, tx, _, err := tellorMaster.DeployTellor(transactors[0], backend)
-	if err != nil {
-		return nil
-	}
+	// // Deploy most recent tellor
+	// addv26, tx, _, err := tellorMaster.DeployTellor(transactors[0], backend)
+	// if err != nil {
+	// 	return err
+	// }
 
-	proxy.UpdateTellor(addv26)
+	// _, err = proxy.ChangeTellorContract(transactors[0], addv26)
 
+	// backend.Commit()
+	// fmt.Println("fafaf")
 	return nil
 }
 
