@@ -36,12 +36,10 @@ func OpenTestConfig(t *testing.T) *Config {
 	if err := mainConfigFile.Close(); err != nil {
 		t.Fatal(err)
 	}
-	err = ParseConfig(mainConfigFile.Name())
+	cfg, err := ParseConfig(mainConfigFile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	cfg := GetConfig()
 
 	port, err := freeport.GetFreePort()
 	if err != nil {
@@ -49,7 +47,7 @@ func OpenTestConfig(t *testing.T) *Config {
 	}
 	cfg.Mine.ListenPort = uint(port)
 	// Don't need any trackers for the tests.
-	cfg.Trackers = make(map[string]bool)
+	cfg.Trackers = Trackers{}
 
 	return cfg
 }

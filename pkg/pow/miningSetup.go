@@ -12,10 +12,12 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 )
 
+const NumProcessors = 1
+
 func SetupMiningGroup(logger log.Logger, cfg *config.Config, exitCh chan os.Signal) (*MiningGroup, error) {
 	var hashers []Hasher
-	level.Info(logger).Log("msg", "starting CPU mining", "threads", cfg.NumProcessors)
-	for i := 0; i < cfg.NumProcessors; i++ {
+	level.Info(logger).Log("msg", "starting CPU mining", "threads", NumProcessors)
+	for i := 0; i < NumProcessors; i++ {
 		hashers = append(hashers, NewCpuMiner(int64(i)))
 	}
 	miningGrp, err := NewMiningGroup(logger, cfg, hashers, exitCh)

@@ -92,8 +92,11 @@ func UpdatePSRs(ctx context.Context, DB db.DataServerProxy, updatedSymbols []str
 			return err
 		}
 
-		cfg := config.GetConfig()
-		if conf < cfg.MinConfidence || math.IsNaN(amt) {
+		cfg, err := config.ParseConfig("")
+		if err != nil {
+			return errors.Wrapf(err, "parsing config")
+		}
+		if conf < cfg.Trackers.MinConfidence || math.IsNaN(amt) {
 			// Confidence in this signal is too low to use.
 			continue
 		}

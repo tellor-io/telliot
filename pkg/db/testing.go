@@ -19,7 +19,12 @@ func OpenTestDB(t *testing.T) (DB, func()) {
 	tmpdir, err := ioutil.TempDir("", "test")
 	testutil.Ok(t, err)
 
-	db, err := Open(logging.NewLogger(), config.GetConfig(), tmpdir)
+	cfg, err := config.ParseConfig("")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := Open(logging.NewLogger(), cfg, tmpdir)
 	testutil.Ok(t, err)
 
 	cleanup := func() {

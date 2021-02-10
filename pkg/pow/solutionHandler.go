@@ -63,9 +63,11 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 		val := m[valKey]
 		var value *big.Int
 		if len(val) == 0 {
-			cfg := config.GetConfig()
-			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
-			jsonFile, err := os.Open(indexPath)
+			cfg, err := config.ParseConfig("")
+			if err != nil {
+				return nil, errors.Wrapf(err, "parsing config")
+			}
+			jsonFile, err := os.Open(cfg.ManualDataFile)
 			if err != nil {
 				return nil, errors.Wrapf(err, "manualData read Error")
 			}

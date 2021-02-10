@@ -97,7 +97,11 @@ func NoDecay(x float64) (float64, float64) {
 
 func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, float64)) IndexProcessor {
 	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
-		cfg := config.GetConfig()
+		cfg, err := config.ParseConfig("")
+		if err != nil {
+			return apiOracle.PriceInfo{}, 0, errors.Wrapf(err, "parsing config")
+
+		}
 		sum := 0.0
 		weightSum := 0.0
 		numVals := 0
@@ -120,7 +124,7 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 			}
 		}
 		// Number of APIs * rate * interval.
-		maxWeight := float64(len(apis)) * (1 / cfg.TrackerSleepCycle.Duration.Seconds()) * interval.Seconds()
+		maxWeight := float64(len(apis)) * (1 / cfg.Trackers.SleepCycle.Duration.Seconds()) * interval.Seconds()
 		// Average weight is the integral of the weight fn over [0,1].
 		_, avgWeight := weightFn(0)
 		targetWeight := maxWeight * avgWeight

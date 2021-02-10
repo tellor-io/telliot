@@ -73,8 +73,7 @@ func writeOutHistory(logger log.Logger) {
 		return
 	}
 
-	cfg := config.GetConfig()
-	psrSavedData := filepath.Join(cfg.ConfigFolder, "saved.json")
+	psrSavedData := filepath.Join("configs", "saved.json")
 	psrSavedDataTmp := psrSavedData + ".tmp"
 	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
 	if err != nil {
@@ -112,7 +111,7 @@ func EnsureValueOracle(logger log.Logger, cfg *config.Config) error {
 	}
 	logger = log.With(logger, "component", ComponentName)
 
-	historyPath := filepath.Join(cfg.ConfigFolder, "saved.json")
+	historyPath := filepath.Join("configs", "saved.json")
 
 	_, err = os.Stat(historyPath)
 	exists := true

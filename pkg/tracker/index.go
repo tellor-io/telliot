@@ -47,10 +47,9 @@ func GetIndexes() map[string][]*IndexTracker {
 func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
-	indexFilePath := filepath.Join(cfg.ConfigFolder, "indexes.json")
-	byteValue, err := ioutil.ReadFile(indexFilePath)
+	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "read index file @ %s", indexFilePath)
+		return nil, nil, errors.Wrapf(err, "read index file @ %s", cfg.ApiFile)
 	}
 	// Parse to json.
 	baseIndexes := make(map[string][]IndexObject)
@@ -91,7 +90,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 				switch api.Type {
 				case httpIndexType:
 					{
-						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}, logger}
+						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.Trackers.FetchTimeout.Duration}, logger}
 						u, err := url.Parse(api.URL)
 						if err != nil {
 							return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
@@ -100,7 +99,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 					}
 				case fileIndexType:
 					{
-						source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, api.URL)}
+						source = &JSONfile{filepath: filepath.Join("configs", api.URL)}
 						name = filepath.Base(api.URL)
 					}
 				case ethereumIndexType:
@@ -129,7 +128,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 					return nil, nil, errors.New("unknown index type for index object")
 				}
 
-				if api.Interval.Duration > 0 && (api.Interval.Duration < cfg.TrackerSleepCycle.Duration) {
+				if api.Interval.Duration > 0 && (api.Interval.Duration < cfg.Trackers.SleepCycle.Duration) {
 					return nil, nil, errors.New("api interval can't be smaller than the global tracker cycle")
 				}
 

@@ -47,11 +47,11 @@ type ValueCheckResult struct {
 // CheckValueAtTime queries for the details regarding the disputed value.
 func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Time) (*ValueCheckResult, error) {
 
-	// check the value in 5 places, spread over cfg.DisputeTimeDelta.Duration.
+	// check the value in 5 places, spread over cfg.Trackers.DisputeTimeDelta.Duration.
 	var datapoints []float64
 	var times []time.Time
 	for i := 0; i < 5; i++ {
-		t := at.Add((time.Duration(i) - 2) * cfg.DisputeTimeDelta.Duration / 5)
+		t := at.Add((time.Duration(i) - 2) * cfg.Trackers.DisputeTimeDelta.Duration / 5)
 		fval, confidence, err := PSRValueForTime(int(reqID), t)
 		if err != nil {
 			return nil, err
@@ -77,8 +77,8 @@ func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Ti
 			min = dp
 		}
 	}
-	min *= 1 - cfg.DisputeThreshold
-	max *= 1 + cfg.DisputeThreshold
+	min *= 1 - cfg.Trackers.DisputeThreshold
+	max *= 1 + cfg.Trackers.DisputeThreshold
 
 	bigF := new(big.Float)
 	bigF.SetInt(val)

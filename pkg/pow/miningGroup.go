@@ -201,7 +201,7 @@ func (b *Backend) dispatchWork(hash *HashSettings, start uint64, resultCh chan *
 	return n
 }
 
-func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
+func (g *MiningGroup) Mine(input chan *Work, output chan *Result) error {
 	sent := uint64(0)
 	recv := uint64(0)
 	timeStarted := time.Now()
@@ -217,8 +217,11 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		//dispatch work
 		idleWorkers <- b
 	}
-	cfg := config.GetConfig()
-	nextHeartbeat := cfg.Heartbeat.Duration
+	cfg, err := config.ParseConfig("")
+	if err != nil {
+		return errors.Wrapf(err, "parsing config")
+	}
+	nextHeartbeat := cfg.Mine.Heartbeat.Duration
 
 	var currHashSettings *HashSettings
 	var currWork *Work
@@ -232,7 +235,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		elapsed := time.Since(timeStarted)
 		if elapsed > nextHeartbeat {
 			g.PrintHashRateSummary()
-			nextHeartbeat = elapsed + cfg.Heartbeat.Duration
+			nextHeartbeat = elapsed + cfg.Mine.Heartbeat.Duration
 		}
 		select {
 		// Read in a new work block.
@@ -295,4 +298,6 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 	}
 	// Send a nil value to signal that it is done.
 	output <- nil
+
+	return nil
 }

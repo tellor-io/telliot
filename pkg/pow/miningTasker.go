@@ -144,9 +144,15 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		}
 		val := m2[valKey]
 		if len(val) == 0 {
-			cfg := config.GetConfig()
-			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
-			jsonFile, err := os.Open(indexPath)
+			cfg, err := config.ParseConfig("")
+			if err != nil {
+				level.Error(mt.logger).Log(
+					"msg", "parsing config",
+					"err ", err,
+				)
+				return nil, false
+			}
+			jsonFile, err := os.Open(cfg.ManualDataFile)
 			if err != nil {
 				return nil, false
 			}

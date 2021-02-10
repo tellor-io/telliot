@@ -34,7 +34,12 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "parse mock config: %v\n", err)
 		os.Exit(-1)
 	}
-	if err := apiOracle.EnsureValueOracle(logging.NewLogger(), config.GetConfig()); err != nil {
+	cfg, err := config.ParseConfig("")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parse config %v\n", err)
+		os.Exit(-1)
+	}
+	if err := apiOracle.EnsureValueOracle(logging.NewLogger(), cfg); err != nil {
 		log.Fatal(err)
 	}
 
