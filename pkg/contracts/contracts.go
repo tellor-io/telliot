@@ -9,13 +9,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
-	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
-	proxy "github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 )
 
 type Tellor struct {
-	Getter  *proxy.TellorGetters
-	Caller  *master.Tellor
+	Getter  *tellorMaster.TellorGetters
+	Caller  *tellorCurrent.Tellor
 	Address common.Address
 }
 
@@ -77,11 +77,11 @@ func NewTellor(client ETHClient) (Tellor, error) {
 		return Tellor{}, errors.Wrap(err, "getting tellor contract address")
 	}
 	contractAddress := common.HexToAddress(_contractAddress)
-	contractTellorInstance, err := master.NewTellor(contractAddress, client)
+	contractTellorInstance, err := tellorCurrent.NewTellor(contractAddress, client)
 	if err != nil {
 		return Tellor{}, errors.Wrap(err, "creating telllor caller")
 	}
-	contractGetterInstance, err := proxy.NewTellorGetters(contractAddress, client)
+	contractGetterInstance, err := tellorMaster.NewTellorGetters(contractAddress, client)
 	if err != nil {
 		return Tellor{}, errors.Wrap(err, "creating telllor getter")
 	}
@@ -89,13 +89,13 @@ func NewTellor(client ETHClient) (Tellor, error) {
 	return Tellor{Address: contractAddress, Getter: contractGetterInstance, Caller: contractTellorInstance}, nil
 }
 
-func NewTellorGetters(client ETHClient) (*proxy.TellorGetters, error) {
+func NewTellorGetters(client ETHClient) (*tellorMaster.TellorGetters, error) {
 	_contractAddress, err := getContractAddress(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting tellor contract address")
 	}
 	contractAddress := common.HexToAddress(_contractAddress)
-	contractGetterInstance, err := proxy.NewTellorGetters(contractAddress, client)
+	contractGetterInstance, err := tellorMaster.NewTellorGetters(contractAddress, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating telllor getter")
 	}

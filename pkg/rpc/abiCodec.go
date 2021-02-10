@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	balancer "github.com/tellor-io/telliot/pkg/contracts/balancer"
-	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
-	proxy "github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	uniswap "github.com/tellor-io/telliot/pkg/contracts/uniswap"
 
 	"github.com/go-kit/kit/log"
@@ -29,12 +29,12 @@ type ABICodec struct {
 // used for mock encoding/decoding parameters but could also be used for manual RPC operations that do not rely on geth's contract impl.
 func BuildCodec(logger log.Logger) (*ABICodec, error) {
 	all := []string{
-		master.TellorDisputeABI,
-		master.TellorLibraryABI,
-		master.TellorGettersLibraryABI,
-		master.TellorStakeABI,
-		master.TellorTransferABI,
-		proxy.TellorGettersABI,
+		tellorCurrent.TellorDisputeABI,
+		tellorCurrent.TellorLibraryABI,
+		tellorCurrent.TellorGettersLibraryABI,
+		tellorCurrent.TellorStakeABI,
+		tellorCurrent.TellorTransferABI,
+		tellorMaster.TellorGettersABI,
 		balancer.BPoolABI,
 		balancer.BTokenABI,
 		uniswap.IERC20ABI,
@@ -78,13 +78,13 @@ func BuildCodec(logger log.Logger) (*ABICodec, error) {
 // AllEventsthis lets you quickly find the type of each event. It is helpful for debugging.
 func AllEvents() (map[[32]byte]abi.Event, error) {
 	all := []string{
-		master.TellorABI,
-		master.TellorDisputeABI,
-		master.TellorGettersLibraryABI,
-		master.TellorLibraryABI,
-		master.TellorStakeABI,
-		master.TellorStorageABI,
-		master.TellorTransferABI,
+		tellorCurrent.TellorABI,
+		tellorCurrent.TellorDisputeABI,
+		tellorCurrent.TellorGettersLibraryABI,
+		tellorCurrent.TellorLibraryABI,
+		tellorCurrent.TellorStakeABI,
+		tellorCurrent.TellorStorageABI,
+		tellorCurrent.TellorTransferABI,
 		balancer.BPoolABI,
 		balancer.BTokenABI,
 		uniswap.IERC20ABI,

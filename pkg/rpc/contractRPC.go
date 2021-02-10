@@ -20,8 +20,8 @@ import (
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
-	proxy "github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/db"
 )
 
@@ -30,8 +30,8 @@ type contractWrapper struct {
 	options     *bind.TransactOpts
 	fromAddress common.Address
 
-	*master.Tellor
-	*proxy.TellorGetters
+	*tellorCurrent.Tellor
+	*tellorMaster.TellorGetters
 }
 
 func (c contractWrapper) AddTip(requestID *big.Int, amount *big.Int) (*types.Transaction, error) {
