@@ -16,7 +16,7 @@
         "ListenHost": "0.0.0.0",
         "ListenPort": 5000
     },
-	"trackers":{},
+	"Trackers":{},
     "Logger": {
         "db": "info",
         "rpc": "info",
