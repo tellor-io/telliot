@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"

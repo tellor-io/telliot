@@ -12,7 +12,6 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
