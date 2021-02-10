@@ -73,6 +73,7 @@ type MiningGroup struct {
 	LastPrinted time.Time
 	exitCh      chan os.Signal
 	logger      log.Logger
+	cfg         *config.Config
 }
 
 func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, exitCh chan os.Signal) (*MiningGroup, error) {
@@ -86,6 +87,7 @@ func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, exi
 		Backends: make([]*Backend, len(hashers)),
 		exitCh:   exitCh,
 		logger:   log.With(filterLog, "component", ComponentName),
+		cfg:      cfg,
 	}
 	for i, hasher := range hashers {
 		//start with a small estimate for hash rate, much faster to increase the gusses rather than decrease
@@ -201,7 +203,7 @@ func (b *Backend) dispatchWork(hash *HashSettings, start uint64, resultCh chan *
 	return n
 }
 
-func (g *MiningGroup) Mine(input chan *Work, output chan *Result) error {
+func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 	sent := uint64(0)
 	recv := uint64(0)
 	timeStarted := time.Now()
@@ -217,11 +219,8 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) error {
 		//dispatch work
 		idleWorkers <- b
 	}
-	cfg, err := config.ParseConfig("")
-	if err != nil {
-		return errors.Wrapf(err, "parsing config")
-	}
-	nextHeartbeat := cfg.Mine.Heartbeat.Duration
+
+	nextHeartbeat := g.cfg.Mine.Heartbeat.Duration
 
 	var currHashSettings *HashSettings
 	var currWork *Work
@@ -235,7 +234,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) error {
 		elapsed := time.Since(timeStarted)
 		if elapsed > nextHeartbeat {
 			g.PrintHashRateSummary()
-			nextHeartbeat = elapsed + cfg.Mine.Heartbeat.Duration
+			nextHeartbeat = elapsed + g.cfg.Mine.Heartbeat.Duration
 		}
 		select {
 		// Read in a new work block.
@@ -298,6 +297,4 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) error {
 	}
 	// Send a nil value to signal that it is done.
 	output <- nil
-
-	return nil
 }
