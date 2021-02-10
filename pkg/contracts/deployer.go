@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/tellor-io/telliot/pkg/contracts/oldTellor"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
 )
 
@@ -25,13 +26,15 @@ func GetTellorCore() error {
 
 	// Deploy oldTellor
 	addr, tx, _, err := deployOldTellor(transactors[0], backend)
-
+	if err != nil {
+		return nil
+	}
 	// Deploy proxyMaster
 	addr, err = bind.WaitDeployed(context.Background(), backend, tx)
 	fmt.Println(addr)
 	backend.Commit()
 
-	masterAdd, _, _, err := tellorProxy.DeployTellorMaster(transactors[0], backend, addr)
+	masterAdd, _, proxy, err := tellorProxy.DeployTellorMaster(transactors[0], backend, addr)
 	if err != nil {
 		return nil
 	}
@@ -45,7 +48,7 @@ func GetTellorCore() error {
 
 	// Add Request Ids
 	for i := 0; i < 52; i++ {
-		x := "USD" + string(i)
+		x := "USD" + fmt.Sprint(i)
 		api := "api"
 		_, err := tellor.RequestData(transactors[0], api, x, big.NewInt(1000), big.NewInt(int64(52-i)))
 		if err != nil {
@@ -61,6 +64,15 @@ func GetTellorCore() error {
 		}
 	}
 	backend.Commit()
+
+	// Deploy most recent tellor
+	addv26, tx, _, err := tellorMaster.DeployTellor(transactors[0], backend)
+	if err != nil {
+		return nil
+	}
+
+	proxy.UpdateTellor(addv26)
+
 	return nil
 }
 
