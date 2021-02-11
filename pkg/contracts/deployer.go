@@ -3,13 +3,11 @@ package contracts
 import (
 	"fmt"
 	"io/ioutil"
-	"math/big"
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/tellor-io/telliot/pkg/contracts/oldTellor"
+	"github.com/tellor-io/telliot/pkg/contracts/ITellor"
 	"github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
 )
 
@@ -23,46 +21,49 @@ func GetTellorCore() error {
 	fmt.Println(initialMiner)
 
 	// Deploy oldTellor
-	add, _, _, err := deployOldTellor(transactors[0], backend)
-	if err != nil {
-		return err
-	}
-	// Deploy proxyMaster
-	masterAdd, _, proxy, err := tellorProxy.DeployTellorMaster(transactors[0], backend, add)
+	oldTellorAddress, _, proxyAddress, _, err := deployOldTellorAndMaster(transactors[0], backend)
 	if err != nil {
 		return err
 	}
 	backend.Commit()
-	fmt.Println(masterAdd)
-	fmt.Println(proxy)
-	tellor, err := oldTellor.NewOldTellor(masterAdd, backend)
+	fmt.Println(oldTellorAddress)
+	fmt.Println(proxyAddress)
+
+	tellor, err := ITellor.NewITellor(proxyAddress, backend)
+	if err != nil {
+		return err
+	}
+	backend.Commit()
+
+	proxy, err := tellorProxy.NewTellorMaster(proxyAddress, backend)
 	if err != nil {
 		return err
 	}
 
-	bal, err := proxy.BalanceOf(nil, initialMiner)
+	bal, err := proxy.TotalSupply(nil)
 	if err != nil {
 		return err
 	}
+	fmt.Println("bal")
 	fmt.Println(bal)
-
-	bal2, err := tellor.AddTip(transactors[0], big.NewInt(0), big.NewInt(30))
+	backend.Commit()
+	bal2, err := tellor.Decimals(nil)
 	if err != nil {
 		return err
 	}
 	fmt.Println(bal2)
-
+	fmt.Println("bal2")
 	// // Add Request Ids
-	for i := 0; i < 52; i++ {
-		fmt.Println(i)
-		x := "USD" + fmt.Sprint(i)
-		api := "api"
-		_, err := tellor.RequestData(transactors[0], api, x, big.NewInt(1000), big.NewInt(int64(52-i)))
-		if err != nil {
-			return err
-		}
-		backend.Commit()
-	}
+	// for i := 0; i < 52; i++ {
+	// 	fmt.Println(i)
+	// 	x := "USD" + fmt.Sprint(i)
+	// 	api := "api"
+	// 	_, err := tellor.RequestData(transactors[0], api, x, big.NewInt(1000), big.NewInt(int64(52-i)))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	backend.Commit()
+	// }
 
 	// //need 5 initial miners to mine 1st block
 	// for i := 1; i < 5; i++ {
@@ -86,27 +87,39 @@ func GetTellorCore() error {
 	return nil
 }
 
-func deployOldTellor(transactor *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *bind.BoundContract, error) {
+func deployOldTellorAndMaster(transactor *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *bind.BoundContract, common.Address, *bind.BoundContract, error) {
 	// Deploy Tellor Transfer
+
+	fmt.Println("Transfer")
 	oldTellorTransferBin, oldTellorTransferABI, err := getBinAndAbi("OldTellorTransfer")
 	oldTellorTransfer, err := DeployContractWithLibs(transactor, backend, oldTellorTransferABI, oldTellorTransferBin, map[string]common.Address{})
 	if err != nil {
-
+		return common.Address{}, nil, common.Address{}, nil, err
 	}
-
+	fmt.Println(oldTellorTransfer)
+	fmt.Println("Dispute")
 	// Deploy Tellor Dispute
-	oldTellorBinDispute, oldTellorABIDispute, err := getBinAndAbi("OldTellorDispute")
-	oldTellorDispute, err := DeployContractWithLibs(transactor, backend, oldTellorABIDispute, oldTellorBinDispute, map[string]common.Address{
+	oldTellorDisputeBin, oldTellorDisputeABI, err := getBinAndAbi("OldTellorDispute")
+	oldTellorDispute, err := DeployContractWithLibs(transactor, backend, oldTellorDisputeABI, oldTellorDisputeBin, map[string]common.Address{
 		"OldTellorTransfer": oldTellorTransfer,
 	})
+	if err != nil {
+		return common.Address{}, nil, common.Address{}, nil, err
+	}
+	fmt.Println(oldTellorDispute)
 
+	fmt.Println("Stake")
 	// Deploy Tellor Stake
 	oldTellorBinStake, oldTellorABIStake, err := getBinAndAbi("OldTellorStake")
 	oldTellorStake, err := DeployContractWithLibs(transactor, backend, oldTellorABIStake, oldTellorBinStake, map[string]common.Address{
 		"OldTellorTransfer": oldTellorTransfer,
 		"OldTellorDispute":  oldTellorDispute,
 	})
+	if err != nil {
+		return common.Address{}, nil, common.Address{}, nil, err
+	}
 
+	fmt.Println("Library")
 	// Deploy Tellor Library
 	oldTellorBinLibrary, oldTellorABILibrary, err := getBinAndAbi("OldTellorLibrary")
 	oldTellorLibrary, err := DeployContractWithLibs(transactor, backend, oldTellorABILibrary, oldTellorBinLibrary, map[string]common.Address{
@@ -114,15 +127,44 @@ func deployOldTellor(transactor *bind.TransactOpts, backend bind.ContractBackend
 		"OldTellorDispute":  oldTellorDispute,
 		"OldTellorStake":    oldTellorStake,
 	})
+	if err != nil {
+		return common.Address{}, nil, common.Address{}, nil, err
+	}
 
+	fmt.Println("Getter lib")
+	// Deploy OldTellorGetterLibraries
+	oldTellorGettersLibraryBin, oldTellorGettersLibraryABI, err := getBinAndAbi("OldTellorGettersLibrary")
+	oldTellorGettersLibrary, err := DeployContractWithLibs(transactor, backend, oldTellorGettersLibraryABI, oldTellorGettersLibraryBin, nil)
+	if err != nil {
+		return common.Address{}, nil, common.Address{}, nil, err
+	}
+
+	fmt.Println("Old Tellor")
 	// Deploy Old Tellor
 	oldTellorBin, oldTellorABI, err := getBinAndAbi("OldTellor")
-	return DeployContractWithLinks(transactor, backend, oldTellorABI, oldTellorBin, map[string]common.Address{
+	oldTellorAddress, _, oldTellor, err := DeployContractWithLinks(transactor, backend, oldTellorABI, oldTellorBin, map[string]common.Address{
 		"OldTellorTransfer": oldTellorTransfer,
 		"OldTellorDispute":  oldTellorDispute,
 		"OldTellorStake":    oldTellorStake,
 		"OldTellorLibrary":  oldTellorLibrary,
 	})
+	if err != nil {
+		return common.Address{}, nil, common.Address{}, nil, err
+	}
+
+	fmt.Println("Master")
+	// Deploy Old Tellor Master
+	oldTellorMasterBin, oldTellorMasterABI, err := getBinAndAbi("OldTellorMaster")
+	masterAddress, _, oldTellorMaster, err := DeployContractWithLinks(transactor, backend, oldTellorMasterABI, oldTellorMasterBin, map[string]common.Address{
+		"OldTellorTransfer":       oldTellorTransfer,
+		"OldTellorStake":          oldTellorStake,
+		"OldTellorGettersLibrary": oldTellorGettersLibrary,
+	}, oldTellorAddress)
+	if err != nil {
+		return common.Address{}, nil, common.Address{}, nil, err
+	}
+
+	return oldTellorAddress, oldTellor, masterAddress, oldTellorMaster, nil
 }
 
 func getBinAndAbi(contractName string) (string, string, error) {

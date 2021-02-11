@@ -70,6 +70,7 @@ func DeployContractWithLibs(
 	if err != nil {
 		return common.Address{}, err
 	}
+	fmt.Println(parsed)
 
 	address, _, _, err := bind.DeployContract(opts, parsed, common.FromHex(bin), backend, params...)
 	if err != nil {

@@ -34,6 +34,10 @@ func main() {
 	// Bindings for uniswap.
 	downloadAndGenerate("0x03E6c12eF405AC3F642B9184eDed8E1322de1a9e", downlContractsFolder, pkgFolder, "uniswap")
 	time.Sleep(5 * time.Second)
+
+	// Bindings for uniswap.
+	downloadAndGenerate("0xAf96A11a622f78399b5a12503D429750525273Bd", downlContractsFolder, pkgFolder, "oldTellor")
+	time.Sleep(5 * time.Second)
 }
 
 func downloadAndGenerate(addr, downlContractsFolder, pkgFolder, name string) {
