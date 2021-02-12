@@ -54,12 +54,12 @@ kubectl create secret generic telliot-$NAME --from-env-file=.local/configs/$NAME
 cp configs/config.json .local/configs/$NAME/config.json # Edit the file after the copy.
 
 # Copy the index, manual. These can be used as it without editing.
-cp configs/indexes.json .local/configs/$NAME/indexes.json
+cp configs/api.json .local/configs/$NAME/api.json
 cp configs/manualData.json .local/configs/$NAME/manualData.json
 # Add the configs.
 kubectl create configmap telliot-$NAME \
   --from-file=.local/configs/$NAME/config.json \
-  --from-file=.local/configs/$NAME/indexes.json \
+  --from-file=.local/configs/$NAME/api.json \
   --from-file=.local/configs/$NAME/manualData.json \
   -o yaml --dry-run=client | kubectl apply -f -
 
@@ -152,7 +152,7 @@ The guide that follows assumes that you have access to a suitable machine runnin
 Run the following commands:
 
 ```bash
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/indexes.json
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/api.json
 ```
 
 ### Download and Edit the Manual Data Entry File

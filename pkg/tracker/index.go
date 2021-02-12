@@ -41,10 +41,10 @@ func GetIndexes() map[string][]*IndexTracker {
 	return indexes
 }
 
-// parseIndexFile parses indexes.json file and returns a *IndexTracker,
+// parseApiFile parses api.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
-func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
+func parseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
 	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
@@ -174,7 +174,7 @@ func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerP
 
 	// Load trackers from the index file,
 	// and build a tracker for each unique URL, symbol
-	indexers, symbolsForAPI, err := parseIndexFile(logger, cfg, db, client)
+	indexers, symbolsForAPI, err := parseApiFile(logger, cfg, db, client)
 	if err != nil {
 		return nil, err
 	}

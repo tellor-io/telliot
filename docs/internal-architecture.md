@@ -8,7 +8,7 @@ description: Internal architecture of the project.
 
 A tracker is a process that gets data from an HTTP API or a Blockchain smart contract.
 
-The structure of this `indexes.json` file is as follow:
+The structure of this `api.json` file is as follow:
 
 ```javascript
 {
