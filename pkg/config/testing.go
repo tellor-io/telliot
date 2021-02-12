@@ -16,7 +16,9 @@ var mainConfig = `
 {
     "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
     "dbFile": "/tellorDB",
-    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
+    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `",
+    "apiFile": "` + filepath.Join("..", "..", "configs", "api.json") + `",
+    "manualDataFile": "` + filepath.Join("..", "..", "configs", "manualData.json") + `"
 }`
 
 func OpenTestConfig(t *testing.T) *Config {
