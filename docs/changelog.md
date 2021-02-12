@@ -53,7 +53,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ### Added
 
-* [\#321](https://github.com/tellor-io/telliot/pull/363) `interval` field in the `api.json` file. This sets a custom trackerCycle for a specific \(e.g. an `interval: 600` would lead to the API being updated every hour\)
+* [\#321](https://github.com/tellor-io/telliot/pull/363) `interval` field in the `indexes.json` file. This sets a custom trackerCycle for a specific \(e.g. an `interval: 600` would lead to the API being updated every hour\)
 * [\#321](https://github.com/tellor-io/telliot/pull/363) `minSubmitPeriod` field in the `config.json` file. This sets a limit on how often telliot can send submits. The default is 15min which is what the current oracle contract allows.
 * [\#339](https://github.com/tellor-io/telliot/pull/339) Initial support for Prometheus metrics.
 * [\#340](https://github.com/tellor-io/telliot/pull/340) Manifest files to run in k8s google cloud with Prometheus and Grafana monitoring. The team will run a public telliot miner dashboard at [http://monitor.tellor.io/](http://monitor.tellor.io/)
