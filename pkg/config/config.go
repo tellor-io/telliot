@@ -107,6 +107,7 @@ type Config struct {
 	ServerWhitelist  []string          `json:"serverWhitelist"`
 	ApiFile          string            `json:"apiFile"`
 	ManualDataFile   string            `json:"manualDataFile"`
+	HistoryFile      string            `json:"historyFile"`
 	Logger           map[string]string `json:"logger"`
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
@@ -148,6 +149,7 @@ var defaultConfig = Config{
 	},
 	ApiFile:        "configs/api.json",
 	ManualDataFile: "configs/manualData.json",
+	HistoryFile:    "configs/saved.json",
 	Logger: map[string]string{
 		"db":         "info",
 		"rpc":        "info",
