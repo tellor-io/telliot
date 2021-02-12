@@ -4,7 +4,6 @@
 package config
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"io"
 	"os"
