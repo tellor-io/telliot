@@ -47,7 +47,8 @@ func GetIndexes() map[string][]*IndexTracker {
 func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
-	byteValue, err := ioutil.ReadFile(filepath.Join("..", "..", cfg.ApiFile))
+	//byteValue, err := ioutil.ReadFile(filepath.Join("..", "..", cfg.ApiFile))
+	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "read index file @ %s", cfg.ApiFile)
 	}
