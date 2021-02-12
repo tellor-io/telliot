@@ -271,19 +271,16 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 		return nil
 	}
 	i.lastRunTimestamp = now
-	fmt.Println("H2")
 
 	payload, err := i.Source.Get()
 	if err != nil {
 		return err
 	}
-	fmt.Println("H3")
 
 	vals, err := i.ParsePayload(payload)
 	if err != nil {
 		return err
 	}
-	fmt.Println("H4")
 
 	volume := 0.0
 	if len(vals) >= 2 {
@@ -292,7 +289,6 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 
 	//save the value into our local data window (set 0 volume for now)
 	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price: vals[0], Volume: volume})
-	fmt.Println("H5")
 	//update all the values that depend on these symbols
 	return UpdatePSRs(ctx, i.cfg, i.DB, i.Symbols)
 }
