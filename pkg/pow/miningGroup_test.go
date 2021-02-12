@@ -174,7 +174,6 @@ func BenchmarkHashFunction(b *testing.B) {
 
 var configJSON = `{
     "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
-    "trackerCycle": 1,
     "trackers": {},
     "dbFile": "/tellorDB",
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
