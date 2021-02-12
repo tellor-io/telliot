@@ -16,13 +16,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-/*
-*    use strict Json parsing to fail on invalid fields (use the Parse func below)
-
-*    fail if a required field has an empty value.
-
- */
-
 const (
 	TellorMainnetAddress = "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5"
 	TellorRinkebyAddress = "0xFe41Cb708CD98C5B20423433309E55b53F79134a"
@@ -51,10 +44,23 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 		}
 		d.Duration = dur
 		return nil
+	case map[string]interface{}:
+		//NOTE
+		//not sure if this is gonna be an issue
+		//idk how to properly check if its string or float
+		d.Duration = time.Duration(value["Duration"].(float64))
+		return nil
 	default:
 		return errors.Errorf("invalid duration")
 	}
 }
+
+/*
+func (d *Duration) MarshalJSON(v interface{}) ([]byte,error){
+
+	return b, nil
+}
+*/
 
 type DataServer struct {
 	ListenHost string
@@ -103,7 +109,8 @@ type Config struct {
 	ManualDataFile   string            `json:"manualDataFile"`
 	Logger           map[string]string `json:"logger"`
 	// EnvFile location that include all private details like private key etc.
-	EnvFile string `json:"envFile"`
+	EnvFile      string `json:"envFile"`
+	ConfigFolder string `json:"configFolder"`
 }
 
 // TODO remove or refactor to not be a global config instance.
@@ -113,9 +120,9 @@ var defaultConfig = Config{
 	Mine: Mine{
 		ListenHost:                   "localhost",
 		ListenPort:                   9090,
-		MinSubmitPeriod:              Duration{15 * time.Minute},
 		Heartbeat:                    Duration{15 * time.Second},
 		MiningInterruptCheckInterval: Duration{15 * time.Second},
+		MinSubmitPeriod:              Duration{15 * time.Minute},
 	},
 	DataServer: DataServer{
 		ListenHost: "localhost",
@@ -125,10 +132,10 @@ var defaultConfig = Config{
 	EthClientTimeout: 3000,
 	Trackers: Trackers{
 		SleepCycle:       Duration{30 * time.Second},
-		DisputeThreshold: 0.01,
-		DisputeTimeDelta: Duration{5 * time.Minute},
-		MinConfidence:    0.2,
 		FetchTimeout:     Duration{30 * time.Second},
+		MinConfidence:    0.2,
+		DisputeTimeDelta: Duration{5 * time.Minute},
+		DisputeThreshold: 0.01,
 		Names: map[string]bool{
 			"timeOut":          true,
 			"balance":          true,
