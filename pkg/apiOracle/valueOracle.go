@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
