@@ -99,7 +99,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 					}
 				case fileIndexType:
 					{
-						source = &JSONfile{filepath: filepath.Join("configs", api.URL)}
+						source = &JSONfile{filepath: api.URL}
 						name = filepath.Base(api.URL)
 					}
 				case ethereumIndexType:
@@ -144,6 +144,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 					Interval:   api.Interval.Duration,
 					Param:      api.Param,
 					Type:       api.Type,
+					cfg:        cfg,
 				}
 
 				trackersPerURL[api.URL] = current
@@ -240,6 +241,7 @@ type IndexTracker struct {
 	Param            string
 	Type             IndexType
 	lastRunTimestamp time.Time
+	cfg              *config.Config
 }
 
 type DataSource interface {
@@ -269,16 +271,19 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 		return nil
 	}
 	i.lastRunTimestamp = now
+	fmt.Println("H2")
 
 	payload, err := i.Source.Get()
 	if err != nil {
 		return err
 	}
+	fmt.Println("H3")
 
 	vals, err := i.ParsePayload(payload)
 	if err != nil {
 		return err
 	}
+	fmt.Println("H4")
 
 	volume := 0.0
 	if len(vals) >= 2 {
@@ -287,8 +292,9 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 
 	//save the value into our local data window (set 0 volume for now)
 	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price: vals[0], Volume: volume})
+	fmt.Println("H5")
 	//update all the values that depend on these symbols
-	return UpdatePSRs(ctx, i.DB, i.Symbols)
+	return UpdatePSRs(ctx, i.cfg, i.DB, i.Symbols)
 }
 
 func (i *IndexTracker) String() string {
