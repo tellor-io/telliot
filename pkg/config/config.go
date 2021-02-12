@@ -248,5 +248,11 @@ func ParseConfig(path string) (*Config, error) {
 		}
 
 	}
+
+	err = godotenv.Load(cfg.EnvFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "loading env vars from env file")
+	}
+
 	return cfg, nil
 }
