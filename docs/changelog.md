@@ -64,7 +64,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ### Changed
 
 * [\#317](https://github.com/tellor-io/telliot/pull/317) Removed nodeURL and private key from config file
-* [\#318](https://github.com/tellor-io/telliot/pull/318) `api.json` file format migrated to JSONPath format.
+* [\#318](https://github.com/tellor-io/telliot/pull/318) `indexes.json` file format migrated to JSONPath format.
 
 ### Added
 
