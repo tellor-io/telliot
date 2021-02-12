@@ -222,7 +222,11 @@ func ParseConfig(path string) (*Config, error) {
 	cfg := &Config{}
 	// DeepCopy the default config into the final.
 	{
-		b, _ := json.Marshal(defaultConfig)
+		b, err := json.Marshal(defaultConfig)
+		if err != nil {
+			return nil, errors.Wrap(err, "marshal default config")
+		}
+
 		if err := json.Unmarshal(b, cfg); err != nil {
 			return nil, errors.Wrap(err, "copy default config")
 		}
