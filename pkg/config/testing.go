@@ -15,10 +15,7 @@ import (
 var mainConfig = `
 {
     "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
-    "trackerCycle": 1,
-    "trackers": {},
     "dbFile": "/tellorDB",
-    "requestTips": 1,
     "configFolder": "` + filepath.Join("..", "..", "configs") + `",
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
 }`
@@ -47,7 +44,7 @@ func OpenTestConfig(t *testing.T) *Config {
 	}
 	cfg.Mine.ListenPort = uint(port)
 	// Don't need any trackers for the tests.
-	cfg.Trackers = Trackers{}
+	cfg.Trackers.Names = make(map[string]bool)
 
 	return cfg
 }
