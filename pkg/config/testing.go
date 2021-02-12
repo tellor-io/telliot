@@ -16,7 +16,6 @@ var mainConfig = `
 {
     "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
     "dbFile": "/tellorDB",
-    "configFolder": "` + filepath.Join("..", "..", "configs") + `",
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
 }`
 

@@ -109,8 +109,7 @@ type Config struct {
 	ManualDataFile   string            `json:"manualDataFile"`
 	Logger           map[string]string `json:"logger"`
 	// EnvFile location that include all private details like private key etc.
-	EnvFile      string `json:"envFile"`
-	ConfigFolder string `json:"configFolder"`
+	EnvFile string `json:"envFile"`
 }
 
 // TODO remove or refactor to not be a global config instance.
