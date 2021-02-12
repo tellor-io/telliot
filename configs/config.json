@@ -9,8 +9,7 @@
         "ListenHost": "0.0.0.0",
         "ListenPort": 9090,
         "RemoteDBHost": "localhost",
-        "RemoteDBPort": 5000,
-		"profitThreshold": 100
+        "RemoteDBPort": 5000
     },
     "Dataserver": {
         "ListenHost": "0.0.0.0",
