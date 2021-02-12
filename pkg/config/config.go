@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -28,6 +27,10 @@ type Duration struct {
 	time.Duration
 }
 
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + d.String() + "\""), nil
+}
+
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	var v interface{}
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -44,23 +47,10 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 		}
 		d.Duration = dur
 		return nil
-	case map[string]interface{}:
-		//NOTE
-		//not sure if this is gonna be an issue
-		//idk how to properly check if its string or float
-		d.Duration = time.Duration(value["Duration"].(float64))
-		return nil
 	default:
 		return errors.Errorf("invalid duration")
 	}
 }
-
-/*
-func (d *Duration) MarshalJSON(v interface{}) ([]byte,error){
-
-	return b, nil
-}
-*/
 
 type DataServer struct {
 	ListenHost string
