@@ -18,7 +18,7 @@ import (
 )
 
 // IndexProcessor consolidates the recorded API values to a single value.
-type IndexProcessor func([]*IndexTracker, time.Time) (apiOracle.PriceInfo, float64, error)
+type IndexProcessor func([]*IndexTracker, time.Time, float64) (apiOracle.PriceInfo, float64, error)
 
 type ValueGenerator interface {
 	// Require reports what a PSR requires to produce a value.
@@ -47,14 +47,14 @@ func InitPSRs() error {
 	return nil
 }
 
-func PSRValueForTime(requestID int, at time.Time) (float64, float64, error) {
+func PSRValueForTime(requestID int, at time.Time, trackersInterval float64) (float64, float64, error) {
 	// Get the requirements.
 	reqs := PSRs[requestID].Require(at)
 	values := make(map[string]apiOracle.PriceInfo)
 	minConfidence := math.MaxFloat64
 
 	for symbol, fn := range reqs {
-		val, confidence, err := fn(indexes[symbol], at)
+		val, confidence, err := fn(indexes[symbol], at, trackersInterval)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -67,10 +67,10 @@ func PSRValueForTime(requestID int, at time.Time) (float64, float64, error) {
 		values[symbol] = val
 	}
 
-	return PSRs[requestID].ValueAt(values, at), minConfidence, nil
+	return PSRs[requestID].ValueAt(values, at), trackersInterval, nil
 }
 
-func UpdatePSRs(ctx context.Context, DB db.DataServerProxy, updatedSymbols []string) error {
+func UpdatePSRs(ctx context.Context, cfg *config.Config, DB db.DataServerProxy, updatedSymbols []string) error {
 	now := clck.Now()
 	// Generate a set of all affected PSRs.
 	var toUpdate []int
@@ -87,15 +87,11 @@ func UpdatePSRs(ctx context.Context, DB db.DataServerProxy, updatedSymbols []str
 
 	// Update all affected PSRs.
 	for _, requestID := range toUpdate {
-		amt, conf, err := PSRValueForTime(requestID, now)
+		amt, conf, err := PSRValueForTime(requestID, now, cfg.Trackers.SleepCycle.Seconds())
 		if err != nil {
 			return err
 		}
 
-		cfg, err := config.ParseConfig("")
-		if err != nil {
-			return errors.Wrapf(err, "parsing config")
-		}
 		if conf < cfg.Trackers.MinConfidence || math.IsNaN(amt) {
 			// Confidence in this signal is too low to use.
 			continue

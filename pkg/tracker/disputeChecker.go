@@ -52,7 +52,7 @@ func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Ti
 	var times []time.Time
 	for i := 0; i < 5; i++ {
 		t := at.Add((time.Duration(i) - 2) * cfg.Trackers.DisputeTimeDelta.Duration / 5)
-		fval, confidence, err := PSRValueForTime(int(reqID), t)
+		fval, confidence, err := PSRValueForTime(int(reqID), t, cfg.Trackers.MinConfidence)
 		if err != nil {
 			return nil, err
 		}
