@@ -156,25 +156,6 @@ var defaultConfig = Config{
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 const NodeURLEnvName = "NODE_URL"
 
-func validateConfig(cfg *Config) error {
-	b, err := hex.DecodeString(cfg.PublicAddress)
-	if err != nil || len(b) != 20 {
-		return errors.Wrapf(err, "expecting 40 hex character public address, got \"%s\"", cfg.PublicAddress)
-	}
-	if os.Getenv(NodeURLEnvName) == "" {
-		return errors.Errorf("missing nodeURL environment variable '%v'", NodeURLEnvName)
-	}
-	b, err = hex.DecodeString(os.Getenv(PrivateKeyEnvName))
-	if err != nil || len(b) != 32 {
-		return errors.Wrapf(err, "expecting 64 hex character private key, got \"%s\"", os.Getenv(PrivateKeyEnvName))
-	}
-	if cfg.GasMultiplier < 0 || cfg.GasMultiplier > 20 {
-		return errors.Errorf("gas multiplier out of range [0, 20] %f", cfg.GasMultiplier)
-	}
-
-	return nil
-}
-
 func ParseConfig(path string) (*Config, error) {
 	if path == "" {
 		path = filepath.Join("configs", "config.json")
