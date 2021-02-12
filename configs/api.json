@@ -394,7 +394,7 @@
     ],
     "USPCE": [
         {
-            "URL": "manualData.json",
+            "URL": "configs/manualData.json",
             "param": "$.USPCE[VALUE,DATE]",
             "type": "file"
         }

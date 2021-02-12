@@ -30,7 +30,7 @@ Telliot commands and config file options are as the following:
 
 * `NODE_URL` \(required\) - node URL \(e.g [https://mainnet.infura.io/bbbb](https://mainnet.infura.io/bbbb) or [https://localhost:8545](https://localhost:8545) if own node\)
 * `ETH_PRIVATE_KEY` \(required\) - privateKey for your address
-* `$PSR$_KEY` - API key for getting a specific indexes.json api \(required if you use authenticated API's\)
+* `$PSR$_KEY` - API key for getting a specific api.json api \(required if you use authenticated API's\)
 
 #### Config file options:
 

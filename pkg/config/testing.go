@@ -15,12 +15,10 @@ import (
 var mainConfig = `
 {
     "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
-    "trackerCycle": 1,
-    "trackers": {},
     "dbFile": "/tellorDB",
-    "requestTips": 1,
-    "configFolder": "` + filepath.Join("..", "..", "configs") + `",
-    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
+    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `",
+    "apiFile": "` + filepath.Join("..", "..", "configs", "api.json") + `",
+    "manualDataFile": "` + filepath.Join("..", "..", "configs", "manualData.json") + `"
 }`
 
 func OpenTestConfig(t *testing.T) *Config {
@@ -36,12 +34,10 @@ func OpenTestConfig(t *testing.T) *Config {
 	if err := mainConfigFile.Close(); err != nil {
 		t.Fatal(err)
 	}
-	err = ParseConfig(mainConfigFile.Name())
+	cfg, err := ParseConfig(mainConfigFile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	cfg := GetConfig()
 
 	port, err := freeport.GetFreePort()
 	if err != nil {
@@ -49,7 +45,7 @@ func OpenTestConfig(t *testing.T) *Config {
 	}
 	cfg.Mine.ListenPort = uint(port)
 	// Don't need any trackers for the tests.
-	cfg.Trackers = make(map[string]bool)
+	cfg.Trackers.Names = make(map[string]bool)
 
 	return cfg
 }

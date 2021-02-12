@@ -21,13 +21,13 @@ import (
 
 func parseConfig(path string) (*config.Config, error) {
 	if path == "" {
-		path = filepath.Join(config.ConfigFolder, "config.json")
+		path = filepath.Join("configs", "config.json")
 	}
-	err := config.ParseConfig(path)
+	cfg, err := config.ParseConfig(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing config")
 	}
-	return config.GetConfig(), nil
+	return cfg, nil
 }
 
 func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.Tellor, *rpc.Account, error) {

@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
-	"github.com/tellor-io/telliot/pkg/config"
 )
 
 const RequestID_TRB_ETH int = 43
@@ -96,8 +95,7 @@ func NoDecay(x float64) (float64, float64) {
 }
 
 func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, float64)) IndexProcessor {
-	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
-		cfg := config.GetConfig()
+	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
 		sum := 0.0
 		weightSum := 0.0
 		numVals := 0
@@ -120,7 +118,7 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 			}
 		}
 		// Number of APIs * rate * interval.
-		maxWeight := float64(len(apis)) * (1 / cfg.TrackerSleepCycle.Duration.Seconds()) * interval.Seconds()
+		maxWeight := float64(len(apis)) * (1 / trackersInterval) * interval.Seconds()
 		// Average weight is the integral of the weight fn over [0,1].
 		_, avgWeight := weightFn(0)
 		targetWeight := maxWeight * avgWeight
@@ -140,11 +138,11 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 }
 
 func VolumeWeightedAPIs(processor IndexProcessor) IndexProcessor {
-	return func(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
+	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
 		var results []apiOracle.PriceInfo
 		totalConfidence := 0.0
 		for _, api := range apis {
-			value, confidence, err := processor([]*IndexTracker{api}, at)
+			value, confidence, err := processor([]*IndexTracker{api}, at, trackersInterval)
 			if err != nil {
 				return apiOracle.PriceInfo{}, 0, err
 			}
@@ -171,7 +169,7 @@ func getLatest(apis []*IndexTracker, at time.Time) ([]apiOracle.PriceInfo, float
 	return values, totalConf / float64(len(apis))
 }
 
-func MedianAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
+func MedianAt(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
 	values, confidence := getLatest(apis, at)
 	if confidence == 0 {
 		return apiOracle.PriceInfo{}, 0, nil
@@ -179,7 +177,7 @@ func MedianAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64,
 	return Median(values), confidence, nil
 }
 
-func ManualEntry(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
+func ManualEntry(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
 	vals, confidence := getLatest(apis, at)
 	if confidence == 0 {
 		return apiOracle.PriceInfo{}, 0, nil
@@ -202,11 +200,11 @@ func MaxPSRID() uint64 {
 	return uint64(maxID)
 }
 
-func MedianAtEOD(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
+func MedianAtEOD(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
 	now := clck.Now().UTC()
 	d := 24 * time.Hour
 	eod := now.Truncate(d)
-	return MedianAt(apis, eod)
+	return MedianAt(apis, eod, trackersInterval)
 }
 
 func Median(values []apiOracle.PriceInfo) apiOracle.PriceInfo {
@@ -221,7 +219,7 @@ func Median(values []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	return result
 }
 
-func MeanAt(apis []*IndexTracker, at time.Time) (apiOracle.PriceInfo, float64, error) {
+func MeanAt(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
 	values, confidence := getLatest(apis, at)
 	if confidence == 0 {
 		return apiOracle.PriceInfo{}, 0, nil

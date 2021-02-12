@@ -159,7 +159,7 @@ func CreateMiningManager(
 // Start will start the mining run loop.
 func (mgr *MiningMgr) Start(ctx context.Context) {
 	mgr.Running = true
-	ticker := time.NewTicker(mgr.cfg.MiningInterruptCheckInterval.Duration)
+	ticker := time.NewTicker(mgr.cfg.Mine.MiningInterruptCheckInterval.Duration)
 
 	// Start the mining group.
 	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)
@@ -191,12 +191,12 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			mgr.solutionPending = solution
 
 			profitPercent, err := mgr.profit() // Call it regardless of whether we use it to set the metrics.
-			if mgr.cfg.ProfitThreshold > 0 {
+			if mgr.cfg.Mine.ProfitThreshold > 0 {
 				if err != nil {
 					level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)
 					continue
 				}
-				if profitPercent != -1 && profitPercent < int64(mgr.cfg.ProfitThreshold) {
+				if profitPercent != -1 && profitPercent < int64(mgr.cfg.Mine.ProfitThreshold) {
 					level.Debug(mgr.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
 					continue
 				}
@@ -205,8 +205,8 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			lastSubmit, err := mgr.lastSubmit()
 			if err != nil {
 				level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
-			} else if lastSubmit < mgr.cfg.MinSubmitPeriod.Duration {
-				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.MinSubmitPeriod, "lastSubmit", lastSubmit)
+			} else if lastSubmit < mgr.cfg.Mine.MinSubmitPeriod.Duration {
+				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
 				continue
 			}
 			tx, err := mgr.solHandler.Submit(ctx, solution)
@@ -425,7 +425,7 @@ func (mgr *MiningMgr) profit() (int64, error) {
 		"slot", slotNum,
 		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
 		"profitMargin", profitPercent,
-		"profitThreshold", mgr.cfg.ProfitThreshold,
+		"profitThreshold", mgr.cfg.Mine.ProfitThreshold,
 	)
 
 	mgr.submitProfit.With(prometheus.Labels{"slot": strconv.Itoa(int(slotNum.Int64()))}).(prometheus.Gauge).Set(float64(profitPercent))

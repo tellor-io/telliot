@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -170,23 +169,4 @@ func BenchmarkHashFunction(b *testing.B) {
 		_, err := hashFn(bytes)
 		testutil.Ok(b, err)
 	}
-}
-
-var configJSON = `{
-    "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
-    "trackerCycle": 1,
-    "trackers": {},
-    "dbFile": "/tellorDB",
-    "requestTips": 1,
-    "configFolder": "` + filepath.Join("..", "..", "configs") + `",
-    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
-}`
-
-func TestMain(m *testing.M) {
-	err := config.ParseConfigBytes([]byte(configJSON))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "parse mock config: %v\n", err)
-		os.Exit(-1)
-	}
-	os.Exit(m.Run())
 }

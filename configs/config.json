@@ -1,9 +1,9 @@
 {
     "publicAddress": "0x0000000000000000000000000000000000000000",
     "gasMax": 10,
-    "profitThreshold": 100,
     "dbFile": "tmp/db",
-    "configFolder": "configs",
+    "apiFile": "configs/api.json",
+    "manualDataFile": "configs/manualData.json",
     "envFile": ".env",
     "Mine": {
         "ListenHost": "0.0.0.0",
