@@ -20,7 +20,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
 	"github.com/tellor-io/telliot/pkg/logging"
 )
 
@@ -462,12 +462,12 @@ func (c *mockClient) BalanceAt(ctx context.Context, address common.Address, bloc
 func (c *mockClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
 	var logs []types.Log
 
-	tokenAbi, _ := abi.JSON(strings.NewReader(master.TellorLibraryABI))
+	tokenAbi, _ := abi.JSON(strings.NewReader(tellorCurrent.TellorLibraryABI))
 	ev, ok := tokenAbi.Events["NonceSubmitted"]
 	if !ok {
 		return logs, errors.New("NonceSubmitted event not foind in the ABI")
 	}
-	event := master.TellorLibraryNonceSubmitted{
+	event := tellorCurrent.TellorLibraryNonceSubmitted{
 		Miner:            common.Address{0},
 		Nonce:            "0",
 		RequestId:        [5]*big.Int{big.NewInt(1), big.NewInt(1), big.NewInt(1), big.NewInt(1), big.NewInt(1)},

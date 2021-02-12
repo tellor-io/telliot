@@ -19,12 +19,12 @@ func main() {
 	downlContractsFolder := filepath.Join("scripts", "bindings", "contracts")
 	pkgFolder := filepath.Join("pkg", "contracts")
 
-	// Bindings for the oracle proxy.
-	downloadAndGenerate(config.TellorRinkebyAddress, downlContractsFolder, pkgFolder, "tellorProxy")
+	// Bindings for the oracle master.
+	downloadAndGenerate(config.TellorRinkebyAddress, downlContractsFolder, pkgFolder, "tellorMaster")
 	time.Sleep(5 * time.Second)
 
-	// Bindings for the oracle master.
-	downloadAndGenerate("0x7e05e8a675e649261acc19423db34dd4826f9a98", downlContractsFolder, pkgFolder, "tellorMaster")
+	// Bindings for the oracle tellorCurrent.
+	downloadAndGenerate("0x7e05e8a675e649261acc19423db34dd4826f9a98", downlContractsFolder, pkgFolder, "tellorCurrent")
 	time.Sleep(5 * time.Second)
 
 	// Bindings for balancer.

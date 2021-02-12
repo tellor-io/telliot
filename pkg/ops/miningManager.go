@@ -24,7 +24,7 @@ import (
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	proxy "github.com/tellor-io/telliot/pkg/contracts/tellorProxy"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/pow"
@@ -56,7 +56,7 @@ type MiningMgr struct {
 	solHandler      SolutionSink
 	solutionPending *pow.Result
 	database        db.DataServerProxy
-	contractGetter  *proxy.TellorGetters
+	contractGetter  *tellorMaster.TellorGetters
 	cfg             *config.Config
 
 	toMineInput     chan *pow.Work

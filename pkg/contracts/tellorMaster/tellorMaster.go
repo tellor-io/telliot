@@ -30,7 +30,7 @@ var (
 const SafeMathABI = "[]"
 
 // SafeMathBin is the compiled bytecode used for deploying new contracts.
-var SafeMathBin = "0x60556023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a723158209747a98602f8286460da12262da7c546ad82d47dbf1eeca31978c91272222e1164736f6c63430005100032"
+var SafeMathBin = "0x604c6023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea165627a7a72305820bcafb6ed0aecb55603905c5c22826ec345c95285daa9511d2acc86179290b1ae0029"
 
 // DeploySafeMath deploys a new Ethereum contract, binding an instance of SafeMath to it.
 func DeploySafeMath(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *SafeMath, error) {
@@ -188,782 +188,20 @@ func (_SafeMath *SafeMathTransactorRaw) Transact(opts *bind.TransactOpts, method
 	return _SafeMath.Contract.contract.Transact(opts, method, params...)
 }
 
-// TellorABI is the input ABI used to generate the binding from.
-const TellorABI = "[{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_tip\",\"type\":\"uint256\"}],\"name\":\"addTip\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_timestamp\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_minerIndex\",\"type\":\"uint256\"}],\"name\":\"beginDispute\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"claimOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"depositStake\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getNewCurrentVariables\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"_challenge\",\"type\":\"bytes32\"},{\"internalType\":\"uint256[5]\",\"name\":\"_requestIds\",\"type\":\"uint256[5]\"},{\"internalType\":\"uint256\",\"name\":\"_difficutly\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_tip\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getNewVariablesOnDeck\",\"outputs\":[{\"internalType\":\"uint256[5]\",\"name\":\"idsOnDeck\",\"type\":\"uint256[5]\"},{\"internalType\":\"uint256[5]\",\"name\":\"tipsOnDeck\",\"type\":\"uint256[5]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getTopRequestIDs\",\"outputs\":[{\"internalType\":\"uint256[5]\",\"name\":\"_requestIds\",\"type\":\"uint256[5]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_propNewTellorAddress\",\"type\":\"address\"}],\"name\":\"proposeFork\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"addresspayable\",\"name\":\"_pendingOwner\",\"type\":\"address\"}],\"name\":\"proposeOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"requestStakingWithdraw\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"string\",\"name\":\"_nonce\",\"type\":\"string\"},{\"internalType\":\"uint256[5]\",\"name\":\"_requestId\",\"type\":\"uint256[5]\"},{\"internalType\":\"uint256[5]\",\"name\":\"_value\",\"type\":\"uint256[5]\"}],\"name\":\"submitMiningSolution\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_disputeId\",\"type\":\"uint256\"}],\"name\":\"tallyVotes\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_disputeId\",\"type\":\"uint256\"}],\"name\":\"unlockDisputeFee\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_disputeId\",\"type\":\"uint256\"}],\"name\":\"updateTellor\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_disputeId\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"_supportsDispute\",\"type\":\"bool\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"withdrawStake\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
-
-// TellorFuncSigs maps the 4-byte function signature to its string representation.
-var TellorFuncSigs = map[string]string{
-	"752d49a1": "addTip(uint256,uint256)",
-	"095ea7b3": "approve(address,uint256)",
-	"8581af19": "beginDispute(uint256,uint256,uint256)",
-	"4e71e0c8": "claimOwnership()",
-	"313ce567": "decimals()",
-	"0d2d76a2": "depositStake()",
-	"4049f198": "getNewCurrentVariables()",
-	"9a7077ab": "getNewVariablesOnDeck()",
-	"fe1cd15d": "getTopRequestIDs()",
-	"06fdde03": "name()",
-	"26b7d9f6": "proposeFork(address)",
-	"710bf322": "proposeOwnership(address)",
-	"28449c3a": "requestStakingWithdraw()",
-	"4350283e": "submitMiningSolution(string,uint256[5],uint256[5])",
-	"95d89b41": "symbol()",
-	"4d318b0e": "tallyVotes(uint256)",
-	"a9059cbb": "transfer(address,uint256)",
-	"23b872dd": "transferFrom(address,address,uint256)",
-	"9a01ca13": "unlockDisputeFee(uint256)",
-	"f458ab98": "updateTellor(uint256)",
-	"c9d27afe": "vote(uint256,bool)",
-	"bed9d861": "withdrawStake()",
-}
-
-// TellorBin is the compiled bytecode used for deploying new contracts.
-var TellorBin = "0x608060405234801561001057600080fd5b506110dd806100206000396000f3fe608060405234801561001057600080fd5b50600436106101425760003560e01c8063710bf322116100b85780639a7077ab1161007c5780639a7077ab14610415578063a9059cbb14610481578063bed9d861146104ad578063c9d27afe146104b5578063f458ab98146104da578063fe1cd15d146104f757610142565b8063710bf3221461037e578063752d49a1146103a45780638581af19146103c757806395d89b41146103f05780639a01ca13146103f857610142565b806328449c3a1161010a57806328449c3a1461026a578063313ce567146102725780634049f198146102905780634350283e146102e55780634d318b0e146103595780634e71e0c81461037657610142565b806306fdde0314610147578063095ea7b3146101c45780630d2d76a21461020457806323b872dd1461020e57806326b7d9f614610244575b600080fd5b61014f610537565b6040805160208082528351818301528351919283929083019185019080838360005b83811015610189578181015183820152602001610171565b50505050905090810190601f1680156101b65780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6101f0600480360360408110156101da57600080fd5b506001600160a01b038135169060200135610560565b604080519115158252519081900360200190f35b61020c6105fd565b005b6101f06004803603606081101561022457600080fd5b506001600160a01b03813581169160208101359091169060400135610667565b61020c6004803603602081101561025a57600080fd5b50356001600160a01b031661070d565b61020c610787565b61027a6107d7565b6040805160ff9092168252519081900360200190f35b6102986107dc565b604051848152602081018460a080838360005b838110156102c35781810151838201526020016102ab565b5050505090500183815260200182815260200194505050505060405180910390f35b61020c60048036036101608110156102fc57600080fd5b81019060208101813564010000000081111561031757600080fd5b82018360208201111561032957600080fd5b8035906020019184600183028401116401000000008311171561034b57600080fd5b919350915060a08101610801565b61020c6004803603602081101561036f57600080fd5b50356108db565b61020c610932565b61020c6004803603602081101561039457600080fd5b50356001600160a01b0316610982565b61020c600480360360408110156103ba57600080fd5b50803590602001356109e1565b61020c600480360360608110156103dd57600080fd5b5080359060208101359060400135610a5b565b61014f610add565b61020c6004803603602081101561040e57600080fd5b5035610afa565b61041d610b51565b604051808360a080838360005b8381101561044257818101518382015260200161042a565b5050505090500182600560200280838360005b8381101561046d578181015183820152602001610455565b505050509050019250505060405180910390f35b6101f06004803603604081101561049757600080fd5b506001600160a01b038135169060200135610b73565b61020c610bdd565b61020c600480360360408110156104cb57600080fd5b50803590602001351515610c2d565b61020c600480360360208110156104f057600080fd5b5035610c8c565b6104ff610ce3565b604051808260a080838360005b8381101561052457818101518382015260200161050c565b5050505090500191505060405180910390f35b60408051808201909152600f81526e54656c6c6f7220547269627574657360881b602082015290565b60408051634286e61960e11b81526000600482018190526001600160a01b038516602483015260448201849052915173__$2718d1e96458860b323e2267f4056bb1be$__9163850dcc32916064808301926020929190829003018186803b1580156105ca57600080fd5b505af41580156105de573d6000803e3d6000fd5b505050506040513d60208110156105f457600080fd5b50519392505050565b6040805163410516b360e11b8152600060048201819052915173__$1becb5b1f96e7eaaad954eccce9f50deb1$__9263820a2d669260248082019391829003018186803b15801561064d57600080fd5b505af4158015610661573d6000803e3d6000fd5b50505050565b6040805163ca50189960e01b81526000600482018190526001600160a01b0380871660248401528516604483015260648201849052915173__$2718d1e96458860b323e2267f4056bb1be$__9163ca501899916084808301926020929190829003018186803b1580156106d957600080fd5b505af41580156106ed573d6000803e3d6000fd5b505050506040513d602081101561070357600080fd5b5051949350505050565b6040805163694bf49f60e01b81526000600482018190526001600160a01b0384166024830152915173__$541ca5f99b9f01aa12a867587622feef24$__9263694bf49f9260448082019391829003018186803b15801561076c57600080fd5b505af4158015610780573d6000803e3d6000fd5b5050505050565b60408051633273d79360e21b8152600060048201819052915173__$1becb5b1f96e7eaaad954eccce9f50deb1$__9263c9cf5e4c9260248082019391829003018186803b15801561064d57600080fd5b601290565b60006107e661108a565b6000806107f36000610cfa565b935093509350935090919293565b600073__$6228942e3099dcc55eb4ec11e01ec63144$__63a4bc40679091868686866040518663ffffffff1660e01b8152600401808681526020018060200184600560200280828437600083820152601f01601f191690910190508360a080828437600083820152601f01601f191690910183810383528681526020019050868680828437600081840152601f19601f820116905080830192505050965050505050505060006040518083038186803b1580156108bd57600080fd5b505af41580156108d1573d6000803e3d6000fd5b5050505050505050565b6040805163def6fac760e01b815260006004820181905260248201849052915173__$541ca5f99b9f01aa12a867587622feef24$__9263def6fac79260448082019391829003018186803b15801561076c57600080fd5b6040805163314691ff60e01b8152600060048201819052915173__$6228942e3099dcc55eb4ec11e01ec63144$__9263314691ff9260248082019391829003018186803b15801561064d57600080fd5b6040805163291f8b7360e01b81526000600482018190526001600160a01b0384166024830152915173__$6228942e3099dcc55eb4ec11e01ec63144$__9263291f8b739260448082019391829003018186803b15801561076c57600080fd5b604080516302e8f21b60e01b81526000600482018190526024820185905260448201849052915173__$6228942e3099dcc55eb4ec11e01ec63144$__926302e8f21b9260648082019391829003018186803b158015610a3f57600080fd5b505af4158015610a53573d6000803e3d6000fd5b505050505050565b6040805163ca9a4ea560e01b8152600060048201819052602482018690526044820185905260648201849052915173__$541ca5f99b9f01aa12a867587622feef24$__9263ca9a4ea59260848082019391829003018186803b158015610ac057600080fd5b505af4158015610ad4573d6000803e3d6000fd5b50505050505050565b6040805180820190915260038152622a292160e91b602082015290565b60408051634bfafcb960e11b815260006004820181905260248201849052915173__$541ca5f99b9f01aa12a867587622feef24$__926397f5f9729260448082019391829003018186803b15801561076c57600080fd5b610b5961108a565b610b6161108a565b610b6b6000610da9565b915091509091565b6040805163c84b96f560e01b81526000600482018190526001600160a01b038516602483015260448201849052915173__$2718d1e96458860b323e2267f4056bb1be$__9163c84b96f5916064808301926020929190829003018186803b1580156105ca57600080fd5b604080516344bacc4b60e01b8152600060048201819052915173__$1becb5b1f96e7eaaad954eccce9f50deb1$__926344bacc4b9260248082019391829003018186803b15801561064d57600080fd5b604080516316d0383760e11b8152600060048201819052602482018590528315156044830152915173__$541ca5f99b9f01aa12a867587622feef24$__92632da0706e9260648082019391829003018186803b158015610a3f57600080fd5b604080516322048ecf60e01b815260006004820181905260248201849052915173__$541ca5f99b9f01aa12a867587622feef24$__926322048ecf9260448082019391829003018186803b15801561076c57600080fd5b610ceb61108a565b610cf56000610e49565b905090565b6000610d0461108a565b600080805b6005811015610d3f57856035018160058110610d2157fe5b6002020154848260058110610d3257fe5b6020020152600101610d09565b505083546040805169646966666963756c747960b01b8152815190819003600a01812060009081528288016020818152848320546f63757272656e74546f74616c5469707360801b8552855194859003601001909420835252919091205491945091509193509193565b610db161108a565b610db961108a565b610dc283610e49565b915060005b6005811015610e4357836048016000848360058110610de257fe5b6020020151815260200190815260200160002060040160006040518080670746f74616c5469760c41b81525060080190506040518091039020815260200190815260200160002054828260058110610e3657fe5b6020020152600101610dc7565b50915091565b610e5161108a565b610e5961108a565b610e6161108a565b60408051610660810191829052610e9a91600187019060339082845b815481526020019060010190808311610e7d575050505050610f36565b909250905060005b6005811015610f2e57828160058110610eb757fe5b602002015115610efd57846043016000838360058110610ed357fe5b6020020151815260200190815260200160002054848260058110610ef357fe5b6020020152610f26565b846035018160040360058110610f0f57fe5b6002020154848260058110610f2057fe5b60200201525b600101610ea2565b505050919050565b610f3e61108a565b610f4661108a565b60208301516000805b6005811015610fc957858160010160338110610f6757fe5b6020020151858260058110610f7857fe5b602002015260018101848260058110610f8d57fe5b602002015282858260058110610f9f57fe5b60200201511015610fc157848160058110610fb657fe5b602002015192508091505b600101610f4f565b5060065b60338110156110825782868260338110610fe357fe5b6020020151111561107a57858160338110610ffa57fe5b602002015185836005811061100b57fe5b60200201528084836005811061101d57fe5b602002015285816033811061102e57fe5b6020020151925060005b6005811015611078578386826005811061104e57fe5b602002015110156110705785816005811061106557fe5b602002015193508092505b600101611038565b505b600101610fcd565b505050915091565b6040518060a00160405280600590602082028038833950919291505056fea265627a7a7231582008164c963e2caf301db8b1f33a3e9e08a464924fce5c8370e500f3eaa39b696064736f6c63430005100032"
-
-// DeployTellor deploys a new Ethereum contract, binding an instance of Tellor to it.
-func DeployTellor(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *Tellor, error) {
-	parsed, err := abi.JSON(strings.NewReader(TellorABI))
-	if err != nil {
-		return common.Address{}, nil, nil, err
-	}
-
-	tellorStakeAddr, _, _, _ := DeployTellorStake(auth, backend)
-	TellorBin = strings.Replace(TellorBin, "__$1becb5b1f96e7eaaad954eccce9f50deb1$__", tellorStakeAddr.String()[2:], -1)
-
-	tellorTransferAddr, _, _, _ := DeployTellorTransfer(auth, backend)
-	TellorBin = strings.Replace(TellorBin, "__$2718d1e96458860b323e2267f4056bb1be$__", tellorTransferAddr.String()[2:], -1)
-
-	tellorDisputeAddr, _, _, _ := DeployTellorDispute(auth, backend)
-	TellorBin = strings.Replace(TellorBin, "__$541ca5f99b9f01aa12a867587622feef24$__", tellorDisputeAddr.String()[2:], -1)
-
-	tellorLibraryAddr, _, _, _ := DeployTellorLibrary(auth, backend)
-	TellorBin = strings.Replace(TellorBin, "__$6228942e3099dcc55eb4ec11e01ec63144$__", tellorLibraryAddr.String()[2:], -1)
-
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(TellorBin), backend)
-	if err != nil {
-		return common.Address{}, nil, nil, err
-	}
-	return address, tx, &Tellor{TellorCaller: TellorCaller{contract: contract}, TellorTransactor: TellorTransactor{contract: contract}, TellorFilterer: TellorFilterer{contract: contract}}, nil
-}
-
-// Tellor is an auto generated Go binding around an Ethereum contract.
-type Tellor struct {
-	TellorCaller     // Read-only binding to the contract
-	TellorTransactor // Write-only binding to the contract
-	TellorFilterer   // Log filterer for contract events
-}
-
-// TellorCaller is an auto generated read-only Go binding around an Ethereum contract.
-type TellorCaller struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// TellorTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type TellorTransactor struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// TellorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type TellorFilterer struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// TellorSession is an auto generated Go binding around an Ethereum contract,
-// with pre-set call and transact options.
-type TellorSession struct {
-	Contract     *Tellor           // Generic contract binding to set the session for
-	CallOpts     bind.CallOpts     // Call options to use throughout this session
-	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
-}
-
-// TellorCallerSession is an auto generated read-only Go binding around an Ethereum contract,
-// with pre-set call options.
-type TellorCallerSession struct {
-	Contract *TellorCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts // Call options to use throughout this session
-}
-
-// TellorTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
-// with pre-set transact options.
-type TellorTransactorSession struct {
-	Contract     *TellorTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
-}
-
-// TellorRaw is an auto generated low-level Go binding around an Ethereum contract.
-type TellorRaw struct {
-	Contract *Tellor // Generic contract binding to access the raw methods on
-}
-
-// TellorCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type TellorCallerRaw struct {
-	Contract *TellorCaller // Generic read-only contract binding to access the raw methods on
-}
-
-// TellorTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type TellorTransactorRaw struct {
-	Contract *TellorTransactor // Generic write-only contract binding to access the raw methods on
-}
-
-// NewTellor creates a new instance of Tellor, bound to a specific deployed contract.
-func NewTellor(address common.Address, backend bind.ContractBackend) (*Tellor, error) {
-	contract, err := bindTellor(address, backend, backend, backend)
-	if err != nil {
-		return nil, err
-	}
-	return &Tellor{TellorCaller: TellorCaller{contract: contract}, TellorTransactor: TellorTransactor{contract: contract}, TellorFilterer: TellorFilterer{contract: contract}}, nil
-}
-
-// NewTellorCaller creates a new read-only instance of Tellor, bound to a specific deployed contract.
-func NewTellorCaller(address common.Address, caller bind.ContractCaller) (*TellorCaller, error) {
-	contract, err := bindTellor(address, caller, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &TellorCaller{contract: contract}, nil
-}
-
-// NewTellorTransactor creates a new write-only instance of Tellor, bound to a specific deployed contract.
-func NewTellorTransactor(address common.Address, transactor bind.ContractTransactor) (*TellorTransactor, error) {
-	contract, err := bindTellor(address, nil, transactor, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &TellorTransactor{contract: contract}, nil
-}
-
-// NewTellorFilterer creates a new log filterer instance of Tellor, bound to a specific deployed contract.
-func NewTellorFilterer(address common.Address, filterer bind.ContractFilterer) (*TellorFilterer, error) {
-	contract, err := bindTellor(address, nil, nil, filterer)
-	if err != nil {
-		return nil, err
-	}
-	return &TellorFilterer{contract: contract}, nil
-}
-
-// bindTellor binds a generic wrapper to an already deployed contract.
-func bindTellor(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(TellorABI))
-	if err != nil {
-		return nil, err
-	}
-	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
-}
-
-// Call invokes the (constant) contract method with params as input values and
-// sets the output to result. The result type might be a single field for simple
-// returns, a slice of interfaces for anonymous returns and a struct for named
-// returns.
-func (_Tellor *TellorRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _Tellor.Contract.TellorCaller.contract.Call(opts, result, method, params...)
-}
-
-// Transfer initiates a plain transaction to move funds to the contract, calling
-// its default method if one is available.
-func (_Tellor *TellorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Tellor.Contract.TellorTransactor.contract.Transfer(opts)
-}
-
-// Transact invokes the (paid) contract method with params as input values.
-func (_Tellor *TellorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Tellor.Contract.TellorTransactor.contract.Transact(opts, method, params...)
-}
-
-// Call invokes the (constant) contract method with params as input values and
-// sets the output to result. The result type might be a single field for simple
-// returns, a slice of interfaces for anonymous returns and a struct for named
-// returns.
-func (_Tellor *TellorCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _Tellor.Contract.contract.Call(opts, result, method, params...)
-}
-
-// Transfer initiates a plain transaction to move funds to the contract, calling
-// its default method if one is available.
-func (_Tellor *TellorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Tellor.Contract.contract.Transfer(opts)
-}
-
-// Transact invokes the (paid) contract method with params as input values.
-func (_Tellor *TellorTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Tellor.Contract.contract.Transact(opts, method, params...)
-}
-
-// Decimals is a free data retrieval call binding the contract method 0x313ce567.
-//
-// Solidity: function decimals() pure returns(uint8)
-func (_Tellor *TellorCaller) Decimals(opts *bind.CallOpts) (uint8, error) {
-	var out []interface{}
-	err := _Tellor.contract.Call(opts, &out, "decimals")
-
-	if err != nil {
-		return *new(uint8), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
-
-	return out0, err
-
-}
-
-// Decimals is a free data retrieval call binding the contract method 0x313ce567.
-//
-// Solidity: function decimals() pure returns(uint8)
-func (_Tellor *TellorSession) Decimals() (uint8, error) {
-	return _Tellor.Contract.Decimals(&_Tellor.CallOpts)
-}
-
-// Decimals is a free data retrieval call binding the contract method 0x313ce567.
-//
-// Solidity: function decimals() pure returns(uint8)
-func (_Tellor *TellorCallerSession) Decimals() (uint8, error) {
-	return _Tellor.Contract.Decimals(&_Tellor.CallOpts)
-}
-
-// GetNewCurrentVariables is a free data retrieval call binding the contract method 0x4049f198.
-//
-// Solidity: function getNewCurrentVariables() view returns(bytes32 _challenge, uint256[5] _requestIds, uint256 _difficutly, uint256 _tip)
-func (_Tellor *TellorCaller) GetNewCurrentVariables(opts *bind.CallOpts) (struct {
-	Challenge  [32]byte
-	RequestIds [5]*big.Int
-	Difficutly *big.Int
-	Tip        *big.Int
-}, error) {
-	var out []interface{}
-	err := _Tellor.contract.Call(opts, &out, "getNewCurrentVariables")
-
-	outstruct := new(struct {
-		Challenge  [32]byte
-		RequestIds [5]*big.Int
-		Difficutly *big.Int
-		Tip        *big.Int
-	})
-	if err != nil {
-		return *outstruct, err
-	}
-
-	outstruct.Challenge = out[0].([32]byte)
-	outstruct.RequestIds = out[1].([5]*big.Int)
-	outstruct.Difficutly = out[2].(*big.Int)
-	outstruct.Tip = out[3].(*big.Int)
-
-	return *outstruct, err
-
-}
-
-// GetNewCurrentVariables is a free data retrieval call binding the contract method 0x4049f198.
-//
-// Solidity: function getNewCurrentVariables() view returns(bytes32 _challenge, uint256[5] _requestIds, uint256 _difficutly, uint256 _tip)
-func (_Tellor *TellorSession) GetNewCurrentVariables() (struct {
-	Challenge  [32]byte
-	RequestIds [5]*big.Int
-	Difficutly *big.Int
-	Tip        *big.Int
-}, error) {
-	return _Tellor.Contract.GetNewCurrentVariables(&_Tellor.CallOpts)
-}
-
-// GetNewCurrentVariables is a free data retrieval call binding the contract method 0x4049f198.
-//
-// Solidity: function getNewCurrentVariables() view returns(bytes32 _challenge, uint256[5] _requestIds, uint256 _difficutly, uint256 _tip)
-func (_Tellor *TellorCallerSession) GetNewCurrentVariables() (struct {
-	Challenge  [32]byte
-	RequestIds [5]*big.Int
-	Difficutly *big.Int
-	Tip        *big.Int
-}, error) {
-	return _Tellor.Contract.GetNewCurrentVariables(&_Tellor.CallOpts)
-}
-
-// GetNewVariablesOnDeck is a free data retrieval call binding the contract method 0x9a7077ab.
-//
-// Solidity: function getNewVariablesOnDeck() view returns(uint256[5] idsOnDeck, uint256[5] tipsOnDeck)
-func (_Tellor *TellorCaller) GetNewVariablesOnDeck(opts *bind.CallOpts) (struct {
-	IdsOnDeck  [5]*big.Int
-	TipsOnDeck [5]*big.Int
-}, error) {
-	var out []interface{}
-	err := _Tellor.contract.Call(opts, &out, "getNewVariablesOnDeck")
-
-	outstruct := new(struct {
-		IdsOnDeck  [5]*big.Int
-		TipsOnDeck [5]*big.Int
-	})
-	if err != nil {
-		return *outstruct, err
-	}
-
-	outstruct.IdsOnDeck = out[0].([5]*big.Int)
-	outstruct.TipsOnDeck = out[1].([5]*big.Int)
-
-	return *outstruct, err
-
-}
-
-// GetNewVariablesOnDeck is a free data retrieval call binding the contract method 0x9a7077ab.
-//
-// Solidity: function getNewVariablesOnDeck() view returns(uint256[5] idsOnDeck, uint256[5] tipsOnDeck)
-func (_Tellor *TellorSession) GetNewVariablesOnDeck() (struct {
-	IdsOnDeck  [5]*big.Int
-	TipsOnDeck [5]*big.Int
-}, error) {
-	return _Tellor.Contract.GetNewVariablesOnDeck(&_Tellor.CallOpts)
-}
-
-// GetNewVariablesOnDeck is a free data retrieval call binding the contract method 0x9a7077ab.
-//
-// Solidity: function getNewVariablesOnDeck() view returns(uint256[5] idsOnDeck, uint256[5] tipsOnDeck)
-func (_Tellor *TellorCallerSession) GetNewVariablesOnDeck() (struct {
-	IdsOnDeck  [5]*big.Int
-	TipsOnDeck [5]*big.Int
-}, error) {
-	return _Tellor.Contract.GetNewVariablesOnDeck(&_Tellor.CallOpts)
-}
-
-// GetTopRequestIDs is a free data retrieval call binding the contract method 0xfe1cd15d.
-//
-// Solidity: function getTopRequestIDs() view returns(uint256[5] _requestIds)
-func (_Tellor *TellorCaller) GetTopRequestIDs(opts *bind.CallOpts) ([5]*big.Int, error) {
-	var out []interface{}
-	err := _Tellor.contract.Call(opts, &out, "getTopRequestIDs")
-
-	if err != nil {
-		return *new([5]*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([5]*big.Int)).(*[5]*big.Int)
-
-	return out0, err
-
-}
-
-// GetTopRequestIDs is a free data retrieval call binding the contract method 0xfe1cd15d.
-//
-// Solidity: function getTopRequestIDs() view returns(uint256[5] _requestIds)
-func (_Tellor *TellorSession) GetTopRequestIDs() ([5]*big.Int, error) {
-	return _Tellor.Contract.GetTopRequestIDs(&_Tellor.CallOpts)
-}
-
-// GetTopRequestIDs is a free data retrieval call binding the contract method 0xfe1cd15d.
-//
-// Solidity: function getTopRequestIDs() view returns(uint256[5] _requestIds)
-func (_Tellor *TellorCallerSession) GetTopRequestIDs() ([5]*big.Int, error) {
-	return _Tellor.Contract.GetTopRequestIDs(&_Tellor.CallOpts)
-}
-
-// Name is a free data retrieval call binding the contract method 0x06fdde03.
-//
-// Solidity: function name() pure returns(string)
-func (_Tellor *TellorCaller) Name(opts *bind.CallOpts) (string, error) {
-	var out []interface{}
-	err := _Tellor.contract.Call(opts, &out, "name")
-
-	if err != nil {
-		return *new(string), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(string)).(*string)
-
-	return out0, err
-
-}
-
-// Name is a free data retrieval call binding the contract method 0x06fdde03.
-//
-// Solidity: function name() pure returns(string)
-func (_Tellor *TellorSession) Name() (string, error) {
-	return _Tellor.Contract.Name(&_Tellor.CallOpts)
-}
-
-// Name is a free data retrieval call binding the contract method 0x06fdde03.
-//
-// Solidity: function name() pure returns(string)
-func (_Tellor *TellorCallerSession) Name() (string, error) {
-	return _Tellor.Contract.Name(&_Tellor.CallOpts)
-}
-
-// Symbol is a free data retrieval call binding the contract method 0x95d89b41.
-//
-// Solidity: function symbol() pure returns(string)
-func (_Tellor *TellorCaller) Symbol(opts *bind.CallOpts) (string, error) {
-	var out []interface{}
-	err := _Tellor.contract.Call(opts, &out, "symbol")
-
-	if err != nil {
-		return *new(string), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(string)).(*string)
-
-	return out0, err
-
-}
-
-// Symbol is a free data retrieval call binding the contract method 0x95d89b41.
-//
-// Solidity: function symbol() pure returns(string)
-func (_Tellor *TellorSession) Symbol() (string, error) {
-	return _Tellor.Contract.Symbol(&_Tellor.CallOpts)
-}
-
-// Symbol is a free data retrieval call binding the contract method 0x95d89b41.
-//
-// Solidity: function symbol() pure returns(string)
-func (_Tellor *TellorCallerSession) Symbol() (string, error) {
-	return _Tellor.Contract.Symbol(&_Tellor.CallOpts)
-}
-
-// AddTip is a paid mutator transaction binding the contract method 0x752d49a1.
-//
-// Solidity: function addTip(uint256 _requestId, uint256 _tip) returns()
-func (_Tellor *TellorTransactor) AddTip(opts *bind.TransactOpts, _requestId *big.Int, _tip *big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "addTip", _requestId, _tip)
-}
-
-// AddTip is a paid mutator transaction binding the contract method 0x752d49a1.
-//
-// Solidity: function addTip(uint256 _requestId, uint256 _tip) returns()
-func (_Tellor *TellorSession) AddTip(_requestId *big.Int, _tip *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.AddTip(&_Tellor.TransactOpts, _requestId, _tip)
-}
-
-// AddTip is a paid mutator transaction binding the contract method 0x752d49a1.
-//
-// Solidity: function addTip(uint256 _requestId, uint256 _tip) returns()
-func (_Tellor *TellorTransactorSession) AddTip(_requestId *big.Int, _tip *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.AddTip(&_Tellor.TransactOpts, _requestId, _tip)
-}
-
-// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
-//
-// Solidity: function approve(address _spender, uint256 _amount) returns(bool)
-func (_Tellor *TellorTransactor) Approve(opts *bind.TransactOpts, _spender common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "approve", _spender, _amount)
-}
-
-// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
-//
-// Solidity: function approve(address _spender, uint256 _amount) returns(bool)
-func (_Tellor *TellorSession) Approve(_spender common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.Approve(&_Tellor.TransactOpts, _spender, _amount)
-}
-
-// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
-//
-// Solidity: function approve(address _spender, uint256 _amount) returns(bool)
-func (_Tellor *TellorTransactorSession) Approve(_spender common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.Approve(&_Tellor.TransactOpts, _spender, _amount)
-}
-
-// BeginDispute is a paid mutator transaction binding the contract method 0x8581af19.
-//
-// Solidity: function beginDispute(uint256 _requestId, uint256 _timestamp, uint256 _minerIndex) returns()
-func (_Tellor *TellorTransactor) BeginDispute(opts *bind.TransactOpts, _requestId *big.Int, _timestamp *big.Int, _minerIndex *big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "beginDispute", _requestId, _timestamp, _minerIndex)
-}
-
-// BeginDispute is a paid mutator transaction binding the contract method 0x8581af19.
-//
-// Solidity: function beginDispute(uint256 _requestId, uint256 _timestamp, uint256 _minerIndex) returns()
-func (_Tellor *TellorSession) BeginDispute(_requestId *big.Int, _timestamp *big.Int, _minerIndex *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.BeginDispute(&_Tellor.TransactOpts, _requestId, _timestamp, _minerIndex)
-}
-
-// BeginDispute is a paid mutator transaction binding the contract method 0x8581af19.
-//
-// Solidity: function beginDispute(uint256 _requestId, uint256 _timestamp, uint256 _minerIndex) returns()
-func (_Tellor *TellorTransactorSession) BeginDispute(_requestId *big.Int, _timestamp *big.Int, _minerIndex *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.BeginDispute(&_Tellor.TransactOpts, _requestId, _timestamp, _minerIndex)
-}
-
-// ClaimOwnership is a paid mutator transaction binding the contract method 0x4e71e0c8.
-//
-// Solidity: function claimOwnership() returns()
-func (_Tellor *TellorTransactor) ClaimOwnership(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "claimOwnership")
-}
-
-// ClaimOwnership is a paid mutator transaction binding the contract method 0x4e71e0c8.
-//
-// Solidity: function claimOwnership() returns()
-func (_Tellor *TellorSession) ClaimOwnership() (*types.Transaction, error) {
-	return _Tellor.Contract.ClaimOwnership(&_Tellor.TransactOpts)
-}
-
-// ClaimOwnership is a paid mutator transaction binding the contract method 0x4e71e0c8.
-//
-// Solidity: function claimOwnership() returns()
-func (_Tellor *TellorTransactorSession) ClaimOwnership() (*types.Transaction, error) {
-	return _Tellor.Contract.ClaimOwnership(&_Tellor.TransactOpts)
-}
-
-// DepositStake is a paid mutator transaction binding the contract method 0x0d2d76a2.
-//
-// Solidity: function depositStake() returns()
-func (_Tellor *TellorTransactor) DepositStake(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "depositStake")
-}
-
-// DepositStake is a paid mutator transaction binding the contract method 0x0d2d76a2.
-//
-// Solidity: function depositStake() returns()
-func (_Tellor *TellorSession) DepositStake() (*types.Transaction, error) {
-	return _Tellor.Contract.DepositStake(&_Tellor.TransactOpts)
-}
-
-// DepositStake is a paid mutator transaction binding the contract method 0x0d2d76a2.
-//
-// Solidity: function depositStake() returns()
-func (_Tellor *TellorTransactorSession) DepositStake() (*types.Transaction, error) {
-	return _Tellor.Contract.DepositStake(&_Tellor.TransactOpts)
-}
-
-// ProposeFork is a paid mutator transaction binding the contract method 0x26b7d9f6.
-//
-// Solidity: function proposeFork(address _propNewTellorAddress) returns()
-func (_Tellor *TellorTransactor) ProposeFork(opts *bind.TransactOpts, _propNewTellorAddress common.Address) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "proposeFork", _propNewTellorAddress)
-}
-
-// ProposeFork is a paid mutator transaction binding the contract method 0x26b7d9f6.
-//
-// Solidity: function proposeFork(address _propNewTellorAddress) returns()
-func (_Tellor *TellorSession) ProposeFork(_propNewTellorAddress common.Address) (*types.Transaction, error) {
-	return _Tellor.Contract.ProposeFork(&_Tellor.TransactOpts, _propNewTellorAddress)
-}
-
-// ProposeFork is a paid mutator transaction binding the contract method 0x26b7d9f6.
-//
-// Solidity: function proposeFork(address _propNewTellorAddress) returns()
-func (_Tellor *TellorTransactorSession) ProposeFork(_propNewTellorAddress common.Address) (*types.Transaction, error) {
-	return _Tellor.Contract.ProposeFork(&_Tellor.TransactOpts, _propNewTellorAddress)
-}
-
-// ProposeOwnership is a paid mutator transaction binding the contract method 0x710bf322.
-//
-// Solidity: function proposeOwnership(address _pendingOwner) returns()
-func (_Tellor *TellorTransactor) ProposeOwnership(opts *bind.TransactOpts, _pendingOwner common.Address) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "proposeOwnership", _pendingOwner)
-}
-
-// ProposeOwnership is a paid mutator transaction binding the contract method 0x710bf322.
-//
-// Solidity: function proposeOwnership(address _pendingOwner) returns()
-func (_Tellor *TellorSession) ProposeOwnership(_pendingOwner common.Address) (*types.Transaction, error) {
-	return _Tellor.Contract.ProposeOwnership(&_Tellor.TransactOpts, _pendingOwner)
-}
-
-// ProposeOwnership is a paid mutator transaction binding the contract method 0x710bf322.
-//
-// Solidity: function proposeOwnership(address _pendingOwner) returns()
-func (_Tellor *TellorTransactorSession) ProposeOwnership(_pendingOwner common.Address) (*types.Transaction, error) {
-	return _Tellor.Contract.ProposeOwnership(&_Tellor.TransactOpts, _pendingOwner)
-}
-
-// RequestStakingWithdraw is a paid mutator transaction binding the contract method 0x28449c3a.
-//
-// Solidity: function requestStakingWithdraw() returns()
-func (_Tellor *TellorTransactor) RequestStakingWithdraw(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "requestStakingWithdraw")
-}
-
-// RequestStakingWithdraw is a paid mutator transaction binding the contract method 0x28449c3a.
-//
-// Solidity: function requestStakingWithdraw() returns()
-func (_Tellor *TellorSession) RequestStakingWithdraw() (*types.Transaction, error) {
-	return _Tellor.Contract.RequestStakingWithdraw(&_Tellor.TransactOpts)
-}
-
-// RequestStakingWithdraw is a paid mutator transaction binding the contract method 0x28449c3a.
-//
-// Solidity: function requestStakingWithdraw() returns()
-func (_Tellor *TellorTransactorSession) RequestStakingWithdraw() (*types.Transaction, error) {
-	return _Tellor.Contract.RequestStakingWithdraw(&_Tellor.TransactOpts)
-}
-
-// SubmitMiningSolution is a paid mutator transaction binding the contract method 0x4350283e.
-//
-// Solidity: function submitMiningSolution(string _nonce, uint256[5] _requestId, uint256[5] _value) returns()
-func (_Tellor *TellorTransactor) SubmitMiningSolution(opts *bind.TransactOpts, _nonce string, _requestId [5]*big.Int, _value [5]*big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "submitMiningSolution", _nonce, _requestId, _value)
-}
-
-// SubmitMiningSolution is a paid mutator transaction binding the contract method 0x4350283e.
-//
-// Solidity: function submitMiningSolution(string _nonce, uint256[5] _requestId, uint256[5] _value) returns()
-func (_Tellor *TellorSession) SubmitMiningSolution(_nonce string, _requestId [5]*big.Int, _value [5]*big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.SubmitMiningSolution(&_Tellor.TransactOpts, _nonce, _requestId, _value)
-}
-
-// SubmitMiningSolution is a paid mutator transaction binding the contract method 0x4350283e.
-//
-// Solidity: function submitMiningSolution(string _nonce, uint256[5] _requestId, uint256[5] _value) returns()
-func (_Tellor *TellorTransactorSession) SubmitMiningSolution(_nonce string, _requestId [5]*big.Int, _value [5]*big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.SubmitMiningSolution(&_Tellor.TransactOpts, _nonce, _requestId, _value)
-}
-
-// TallyVotes is a paid mutator transaction binding the contract method 0x4d318b0e.
-//
-// Solidity: function tallyVotes(uint256 _disputeId) returns()
-func (_Tellor *TellorTransactor) TallyVotes(opts *bind.TransactOpts, _disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "tallyVotes", _disputeId)
-}
-
-// TallyVotes is a paid mutator transaction binding the contract method 0x4d318b0e.
-//
-// Solidity: function tallyVotes(uint256 _disputeId) returns()
-func (_Tellor *TellorSession) TallyVotes(_disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.TallyVotes(&_Tellor.TransactOpts, _disputeId)
-}
-
-// TallyVotes is a paid mutator transaction binding the contract method 0x4d318b0e.
-//
-// Solidity: function tallyVotes(uint256 _disputeId) returns()
-func (_Tellor *TellorTransactorSession) TallyVotes(_disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.TallyVotes(&_Tellor.TransactOpts, _disputeId)
-}
-
-// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
-//
-// Solidity: function transfer(address _to, uint256 _amount) returns(bool)
-func (_Tellor *TellorTransactor) Transfer(opts *bind.TransactOpts, _to common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "transfer", _to, _amount)
-}
-
-// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
-//
-// Solidity: function transfer(address _to, uint256 _amount) returns(bool)
-func (_Tellor *TellorSession) Transfer(_to common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.Transfer(&_Tellor.TransactOpts, _to, _amount)
-}
-
-// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
-//
-// Solidity: function transfer(address _to, uint256 _amount) returns(bool)
-func (_Tellor *TellorTransactorSession) Transfer(_to common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.Transfer(&_Tellor.TransactOpts, _to, _amount)
-}
-
-// TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
-//
-// Solidity: function transferFrom(address _from, address _to, uint256 _amount) returns(bool)
-func (_Tellor *TellorTransactor) TransferFrom(opts *bind.TransactOpts, _from common.Address, _to common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "transferFrom", _from, _to, _amount)
-}
-
-// TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
-//
-// Solidity: function transferFrom(address _from, address _to, uint256 _amount) returns(bool)
-func (_Tellor *TellorSession) TransferFrom(_from common.Address, _to common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.TransferFrom(&_Tellor.TransactOpts, _from, _to, _amount)
-}
-
-// TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
-//
-// Solidity: function transferFrom(address _from, address _to, uint256 _amount) returns(bool)
-func (_Tellor *TellorTransactorSession) TransferFrom(_from common.Address, _to common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.TransferFrom(&_Tellor.TransactOpts, _from, _to, _amount)
-}
-
-// UnlockDisputeFee is a paid mutator transaction binding the contract method 0x9a01ca13.
-//
-// Solidity: function unlockDisputeFee(uint256 _disputeId) returns()
-func (_Tellor *TellorTransactor) UnlockDisputeFee(opts *bind.TransactOpts, _disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "unlockDisputeFee", _disputeId)
-}
-
-// UnlockDisputeFee is a paid mutator transaction binding the contract method 0x9a01ca13.
-//
-// Solidity: function unlockDisputeFee(uint256 _disputeId) returns()
-func (_Tellor *TellorSession) UnlockDisputeFee(_disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.UnlockDisputeFee(&_Tellor.TransactOpts, _disputeId)
-}
-
-// UnlockDisputeFee is a paid mutator transaction binding the contract method 0x9a01ca13.
-//
-// Solidity: function unlockDisputeFee(uint256 _disputeId) returns()
-func (_Tellor *TellorTransactorSession) UnlockDisputeFee(_disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.UnlockDisputeFee(&_Tellor.TransactOpts, _disputeId)
-}
-
-// UpdateTellor is a paid mutator transaction binding the contract method 0xf458ab98.
-//
-// Solidity: function updateTellor(uint256 _disputeId) returns()
-func (_Tellor *TellorTransactor) UpdateTellor(opts *bind.TransactOpts, _disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "updateTellor", _disputeId)
-}
-
-// UpdateTellor is a paid mutator transaction binding the contract method 0xf458ab98.
-//
-// Solidity: function updateTellor(uint256 _disputeId) returns()
-func (_Tellor *TellorSession) UpdateTellor(_disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.UpdateTellor(&_Tellor.TransactOpts, _disputeId)
-}
-
-// UpdateTellor is a paid mutator transaction binding the contract method 0xf458ab98.
-//
-// Solidity: function updateTellor(uint256 _disputeId) returns()
-func (_Tellor *TellorTransactorSession) UpdateTellor(_disputeId *big.Int) (*types.Transaction, error) {
-	return _Tellor.Contract.UpdateTellor(&_Tellor.TransactOpts, _disputeId)
-}
-
-// Vote is a paid mutator transaction binding the contract method 0xc9d27afe.
-//
-// Solidity: function vote(uint256 _disputeId, bool _supportsDispute) returns()
-func (_Tellor *TellorTransactor) Vote(opts *bind.TransactOpts, _disputeId *big.Int, _supportsDispute bool) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "vote", _disputeId, _supportsDispute)
-}
-
-// Vote is a paid mutator transaction binding the contract method 0xc9d27afe.
-//
-// Solidity: function vote(uint256 _disputeId, bool _supportsDispute) returns()
-func (_Tellor *TellorSession) Vote(_disputeId *big.Int, _supportsDispute bool) (*types.Transaction, error) {
-	return _Tellor.Contract.Vote(&_Tellor.TransactOpts, _disputeId, _supportsDispute)
-}
-
-// Vote is a paid mutator transaction binding the contract method 0xc9d27afe.
-//
-// Solidity: function vote(uint256 _disputeId, bool _supportsDispute) returns()
-func (_Tellor *TellorTransactorSession) Vote(_disputeId *big.Int, _supportsDispute bool) (*types.Transaction, error) {
-	return _Tellor.Contract.Vote(&_Tellor.TransactOpts, _disputeId, _supportsDispute)
-}
-
-// WithdrawStake is a paid mutator transaction binding the contract method 0xbed9d861.
-//
-// Solidity: function withdrawStake() returns()
-func (_Tellor *TellorTransactor) WithdrawStake(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Tellor.contract.Transact(opts, "withdrawStake")
-}
-
-// WithdrawStake is a paid mutator transaction binding the contract method 0xbed9d861.
-//
-// Solidity: function withdrawStake() returns()
-func (_Tellor *TellorSession) WithdrawStake() (*types.Transaction, error) {
-	return _Tellor.Contract.WithdrawStake(&_Tellor.TransactOpts)
-}
-
-// WithdrawStake is a paid mutator transaction binding the contract method 0xbed9d861.
-//
-// Solidity: function withdrawStake() returns()
-func (_Tellor *TellorTransactorSession) WithdrawStake() (*types.Transaction, error) {
-	return _Tellor.Contract.WithdrawStake(&_Tellor.TransactOpts)
-}
-
 // TellorDisputeABI is the input ABI used to generate the binding from.
-const TellorDisputeABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_disputeID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"int256\",\"name\":\"_result\",\"type\":\"int256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_reportedMiner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_reportingParty\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"_active\",\"type\":\"bool\"}],\"name\":\"DisputeVoteTallied\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_disputeId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_timestamp\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_miner\",\"type\":\"address\"}],\"name\":\"NewDispute\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_newTellor\",\"type\":\"address\"}],\"name\":\"NewTellorAddress\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_disputeID\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"_position\",\"type\":\"bool\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_voter\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_voteWeight\",\"type\":\"uint256\"}],\"name\":\"Voted\",\"type\":\"event\"}]"
+const TellorDisputeABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_disputeId\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"_requestId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"_timestamp\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"_miner\",\"type\":\"address\"}],\"name\":\"NewDispute\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_disputeID\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"_position\",\"type\":\"bool\"},{\"indexed\":true,\"name\":\"_voter\",\"type\":\"address\"}],\"name\":\"Voted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_disputeID\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"_result\",\"type\":\"int256\"},{\"indexed\":true,\"name\":\"_reportedMiner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_reportingParty\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_active\",\"type\":\"bool\"}],\"name\":\"DisputeVoteTallied\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_newTellor\",\"type\":\"address\"}],\"name\":\"NewTellorAddress\",\"type\":\"event\"}]"
 
 // TellorDisputeFuncSigs maps the 4-byte function signature to its string representation.
 var TellorDisputeFuncSigs = map[string]string{
 	"ca9a4ea5": "beginDispute(TellorStorage.TellorStorageStruct storage,uint256,uint256,uint256)",
 	"694bf49f": "proposeFork(TellorStorage.TellorStorageStruct storage,address)",
 	"def6fac7": "tallyVotes(TellorStorage.TellorStorageStruct storage,uint256)",
-	"97f5f972": "unlockDisputeFee(TellorStorage.TellorStorageStruct storage,uint256)",
-	"d7b651c1": "updateMinDisputeFee(TellorStorage.TellorStorageStruct storage)",
-	"22048ecf": "updateTellor(TellorStorage.TellorStorageStruct storage,uint256)",
+	"e15f6f70": "updateDisputeFee(TellorStorage.TellorStorageStruct storage)",
 	"2da0706e": "vote(TellorStorage.TellorStorageStruct storage,uint256,bool)",
 }
 
 // TellorDisputeBin is the compiled bytecode used for deploying new contracts.
-var TellorDisputeBin = "0x612265610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100875760003560e01c806397f5f9721161006557806397f5f9721461012f578063ca9a4ea51461015f578063d7b651c11461019b578063def6fac7146101c557610087565b806322048ecf1461008c5780632da0706e146100be578063694bf49f146100f6575b600080fd5b81801561009857600080fd5b506100bc600480360360408110156100af57600080fd5b50803590602001356101f5565b005b8180156100ca57600080fd5b506100bc600480360360608110156100e157600080fd5b508035906020810135906040013515156103a1565b81801561010257600080fd5b506100bc6004803603604081101561011957600080fd5b50803590602001356001600160a01b0316610651565b81801561013b57600080fd5b506100bc6004803603604081101561015257600080fd5b5080359060200135610b35565b81801561016b57600080fd5b506100bc6004803603608081101561018257600080fd5b508035906020810135906040810135906060013561133e565b8180156101a757600080fd5b506100bc600480360360208110156101be57600080fd5b5035611d91565b8180156101d157600080fd5b506100bc600480360360408110156101e857600080fd5b5080359060200135611e82565b6000818152604483016020818152604080842054808552604a870183528185205480865284845282862083516c64697370757465526f756e647360981b8152845190819003600d01812088526005909101808652848820548287015284518083038701815291850185528151918601919091208752845282862054808752949093529320600281015491929160ff6101009091041615156001146102d5576040805162461bcd60e51b8152602060048201526012602482015271766f7465206e6565647320746f207061737360701b604482015290519081900360640190fd5b604080516874616c6c794461746560b81b815281519081900360090190206000908152600583016020522054620151804291909103116103465760405162461bcd60e51b81526004018080602001828103825260338152602001806121de6033913960400191505060405180910390fd5b60040154604080516d1d195b1b1bdc90dbdb9d1c9858dd60921b8152815190819003600e0190206000908152603f90970160205290952080546001600160a01b0319166001600160a01b039096169590951790945550505050565b600082815260448085016020908152604080842081516a313637b1b5a73ab6b132b960a91b8152825190819003600b018120865260058201845282862054633f48b1ff60e01b8252600482018a905233602483015294810194909452905190939273__$2718d1e96458860b323e2267f4056bb1be$__92633f48b1ff92606480840193829003018186803b15801561043857600080fd5b505af415801561044c573d6000803e3d6000fd5b505050506040513d602081101561046257600080fd5b505133600090815260068401602052604090205490915060ff161515600114156104d3576040805162461bcd60e51b815260206004820152601860248201527f53656e6465722068617320616c726561647920766f7465640000000000000000604482015290519081900360640190fd5b80610519576040805162461bcd60e51b81526020600482015260116024820152700557365722062616c616e6365206973203607c1b604482015290519081900360640190fd5b33600090815260478601602052604090205460031415610579576040805162461bcd60e51b81526020600482015260166024820152754d696e657220697320756e646572206469737075746560501b604482015290519081900360640190fd5b3360009081526006830160209081526040808320805460ff1916600190811790915581516c6e756d6265724f66566f74657360981b8152825190819003600d0190208452600586019092529091208054909101905582156105f35760018201546105e9908263ffffffff61213e16565b600183015561060e565b6001820154610608908263ffffffff61216f16565b60018301555b60408051841515815290518291339187917f911ef2e98570b1d96c0e8ef81107a33d5b8e844aeb8f9710f9bc76c3b3fef40e919081900360200190a45050505050565b604080516001600160a01b0383166020808301919091528251808303820181528284018085528151919092012063c7bb46ad60e01b9091526044820185905233606483015230608483015268056bc75e2d6310000060a4830152915173__$2718d1e96458860b323e2267f4056bb1be$__9163c7bb46ad9160c4808301926000929190829003018186803b1580156106e857600080fd5b505af41580156106fc573d6000803e3d6000fd5b5050604080516b191a5cdc1d5d1950dbdd5b9d60a21b808252825191829003600c90810183206000908152848a016020818152868320805460010190559385528551948590039092019093208352815282822054868352604a8901909152919020549092501590506107b2576000828152604a850160209081526040808320548484526044880183528184208251651bdc9a59d25160d21b815283519081900360060190208552600501909252909120556107c6565b6000828152604a8501602052604090208190555b6000828152604a850160209081526040808320548084526044880180845282852083516c64697370757465526f756e647360981b808252855191829003600d9081018320895260059093018088528689208054600101905585895284885290825285519182900390920181208752818652848720548488529286528086018390528451808203870181529085018552805190860120865290935292208390558282146109d557600082815260448701602081815260408084208151600019870181850152825180820385018152818401808552815191860191909120875260059283018552838720548088529585528387206f6d696e457865637574696f6e4461746560801b90915283519182900360500190912086520190915290912054421015610933576040805162461bcd60e51b81526020600482015260176024820152762234b9b83aba329034b99030b63932b0b23c9037b832b760491b604482015290519081900360640190fd5b600081815260448801602052604090206002015460ff16156109d3576000818152604488016020908152604080832081516874616c6c794461746560b81b81528251908190036009019020845260050190915290205462015180429190910311156109d3576040805162461bcd60e51b815260206004820152601f6024820152600080516020612211833981519152604482015290519081900360640190fd5b505b505060408051610100808201835293815260006020808301828152838501838152606085018481526001608087018181523360a0890181815260c08a019182526001600160a01b039d8e1660e08b019081528c8a526044909f018089528b8a209a518b559651938a019390935593516002890180549451925193518e166301000000026301000000600160b81b0319941515620100000262ff000019941515909e0261ff001993151560ff19909716969096179290921694909417919091169a909a17169890981790975595516003840180549189166001600160a01b031992831617905597516004840180549190981698169790971790955581516a313637b1b5a73ab6b132b960a91b8152825190819003600b018120865260059091018087528286204390559285529285526f6d696e457865637574696f6e4461746560801b835280519283900360100190922083529092522062093a8042019055565b60008181526044830160208181526040808420548452604a860182528084205480855292825280842081516c64697370757465526f756e647360981b8152825190819003600d018120865260059091018084528286205482850152825180830385018152918301835281519184019190912085529091529091205480610bb85750805b6000828152604485016020908152604080832084845281842082516c64697370757465526f756e647360981b8152835190819003600d01902085526005820190935292205480610c06575060015b60408051631c185a5960e21b815281519081900360040190206000908152600585016020529081205415610c74576040805162461bcd60e51b815260206004820152601060248201526f185b1c9958591e481c185a59081bdd5d60821b604482015290519081900360640190fd5b604080516874616c6c794461746560b81b81528151908190036009019020600090815260058501602052205462015180429190910311610ce9576040805162461bcd60e51b815260206004820152601f6024820152600080516020612211833981519152604482015290519081900360640190fd5b600284810154630100000090046001600160a01b0316600090815260478a01602090815260408083208151631c185a5960e21b8152825160049181900391909101902084526005890190925290912060019081905591850154909161010090910460ff1615151415610fd55762015180420642036001820155604080516a1cdd185ad95c90dbdd5b9d60aa1b8152815190819003600b0190206000908152818b01602052208054600019019055610d9f89611d91565b805460041415610e74576005815560028501546003860154604080516a1cdd185ad9505b5bdd5b9d60aa1b8152815190819003600b0181206000908152828e016020528281205463c7bb46ad60e01b8352600483018f90526001600160a01b0363010000009096048616602484015293909416604482015260648101929092525173__$2718d1e96458860b323e2267f4056bb1be$__9263c7bb46ad9260848082019391829003018186803b158015610e5757600080fd5b505af4158015610e6b573d6000803e3d6000fd5b50506000835550505b60005b83811015610fcf576040805182860360208083019190915282518083038201815291830183528151918101919091206000908152600589019091522054925082610ebf578792505b60008a6044016000858152602001908152602001600020905073__$2718d1e96458860b323e2267f4056bb1be$__63c7bb46ad8c308460030160009054906101000a90046001600160a01b031685600501600060405180806266656560e81b815250600301905060405180910390208152602001908152602001600020546040518563ffffffff1660e01b815260040180858152602001846001600160a01b03166001600160a01b03168152602001836001600160a01b03166001600160a01b0316815260200182815260200194505050505060006040518083038186803b158015610faa57600080fd5b505af4158015610fbe573d6000803e3d6000fd5b505060019093019250610e77915050565b50611292565b6001815560408051681c995c5d595cdd125960ba1b815281519081900360099081018220600090815260058901602081815285832054835260488f018152858320681b5a5b995c94db1bdd60ba1b8652865195869003909401909420825290925291902054600214156110a157604080516476616c756560d81b815281519081900360059081018220600090815290890160208181528483205468074696d657374616d760bc1b8552855194859003600901909420835290815283822054825260068501905291909120555b6040805168074696d657374616d760bc1b815281519081900360090190206000908152600588016020908152828220548252600784019052205460ff1615156001141561112a576040805168074696d657374616d760bc1b81528151908190036009019020600090815260058801602090815282822054825260078401905220805460ff191690555b60005b8481101561128f57604080518287036020808301919091528251808303820181529183018352815191810191909120600090815260058a0190915220549350831561118557600084815260448c016020526040902095505b73__$2718d1e96458860b323e2267f4056bb1be$__63c7bb46ad8c308960020160039054906101000a90046001600160a01b03168f60440160008a8152602001908152602001600020600501600060405180806266656560e81b815250600301905060405180910390208152602001908152602001600020546040518563ffffffff1660e01b815260040180858152602001846001600160a01b03166001600160a01b03168152602001836001600160a01b03166001600160a01b0316815260200182815260200194505050505060006040518083038186803b15801561126b57600080fd5b505af415801561127f573d6000803e3d6000fd5b50506001909201915061112d9050565b50505b60408051681b5a5b995c94db1bdd60ba1b815281519081900360090190206000908152600587016020522054600214156113335760408051681c995c5d595cdd125960ba1b81528151908190036009018120600090815260058801602090815283822054825260488d0181528382206b191a5cdc1d5d1950dbdd5b9d60a21b8452845193849003600c01909320825260049092019091522080546000190190555b505050505050505050565b6000838152604885016020908152604080832085845260058101909252909120546113a3576040805162461bcd60e51b815260206004820152601060248201526f04d696e656420626c6f636b20697320360841b604482015290519081900360640190fd5b600582106113ef576040805162461bcd60e51b81526020600482015260146024820152734d696e657220696e6465782069732077726f6e6760601b604482015290519081900360640190fd5b60008381526008820160205260408120836005811061140a57fe5b0154604080516bffffffffffffffffffffffff19606084901b1660208083019190915260348201899052605480830189905283518084039091018152607483018085528151918301919091206b191a5cdc1d5d1950dbdd5b9d60a21b91829052845193849003608001842060009081528c860180855286822054938652865195869003600c01909520815293835284842060019290920191829055808452604a8c0190925292909120546001600160a01b03909316935091801561150657600082815260448a01602090815260408083208151651bdc9a59d25160d21b815282519081900360060190208452600501909152902081905561151c565b506000828152604a890160205260409020819055805b600081815260448a016020818152604080842081516c64697370757465526f756e647360981b808252835191829003600d908101832088526005909301808652848820548989528787529183528451928390039093018220875282855283872060019091019081905587875294845280840185905282518082038501815290830183528051908401208552909152909120839055819083821461172257600082815260448c01602081815260408084208151600019870181850152825180820385018152818401808552815191860191909120875260059283018552838720548088529585528387206f6d696e457865637574696f6e4461746560801b90915283519182900360500190912086520190915290912054421015611680576040805162461bcd60e51b81526020600482015260176024820152762234b9b83aba329034b99030b63932b0b23c9037b832b760491b604482015290519081900360640190fd5b600081815260448d01602052604090206002015460ff161561172057600081815260448d016020908152604080832081516874616c6c794461746560b81b8152825190819003600901902084526005019091529020546201518042919091031115611720576040805162461bcd60e51b815260206004820152601f6024820152600080516020612211833981519152604482015290519081900360640190fd5b505b6000886002141561185e578b60480160008c8152602001908152602001600020600401600060405180806b191a5cdc1d5d1950dbdd5b9d60a21b815250600c01905060405180910390208152602001908152602001600020546001018c60480160008d8152602001908152602001600020600401600060405180806b191a5cdc1d5d1950dbdd5b9d60a21b815250600c01905060405180910390208152602001908152602001600020819055508b60480160008c8152602001908152602001600020600401600060405180806b191a5cdc1d5d1950dbdd5b9d60a21b815250600c01905060405180910390208152602001908152602001600020548c604001600060405180806a1cdd185ad9505b5bdd5b9d60aa1b815250600b019050604051809103902081526020019081526020016000205402905061188e565b5060408051696469737075746546656560b01b8152815190819003600a0190206000908152818d01602052205481025b60405180610100016040528087815260200160008152602001600015158152602001600015158152602001600015158152602001886001600160a01b03168152602001336001600160a01b0316815260200160006001600160a01b03168152508c6044016000878152602001908152602001600020600082015181600001556020820151816001015560408201518160020160006101000a81548160ff02191690831515021790555060608201518160020160016101000a81548160ff02191690831515021790555060808201518160020160026101000a81548160ff02191690831515021790555060a08201518160020160036101000a8154816001600160a01b0302191690836001600160a01b0316021790555060c08201518160030160006101000a8154816001600160a01b0302191690836001600160a01b0316021790555060e08201518160040160006101000a8154816001600160a01b0302191690836001600160a01b031602179055509050508a8c604401600087815260200190815260200160002060050160006040518080681c995c5d595cdd125960ba1b81525060090190506040518091039020815260200190815260200160002081905550898c60440160008781526020019081526020016000206005016000604051808068074696d657374616d760bc1b815250600901905060405180910390208152602001908152602001600020819055508760090160008b81526020019081526020016000208960058110611abf57fe5b01548c6044016000878152602001908152602001600020600501600060405180806476616c756560d81b81525060050190506040518091039020815260200190815260200160002081905550816202a3000242018c6044016000878152602001908152602001600020600501600060405180806f6d696e457865637574696f6e4461746560801b81525060100190506040518091039020815260200190815260200160002081905550438c6044016000878152602001908152602001600020600501600060405180806a313637b1b5a73ab6b132b960a91b815250600b0190506040518091039020815260200190815260200160002081905550888c604401600087815260200190815260200160002060050160006040518080681b5a5b995c94db1bdd60ba1b81525060090190506040518091039020815260200190815260200160002081905550808c6044016000878152602001908152602001600020600501600060405180806266656560e81b8152506003019050604051809103902081526020019081526020016000208190555073__$2718d1e96458860b323e2267f4056bb1be$__63c7bb46ad8d3330856040518563ffffffff1660e01b815260040180858152602001846001600160a01b03166001600160a01b03168152602001836001600160a01b03166001600160a01b0316815260200182815260200194505050505060006040518083038186803b158015611cdc57600080fd5b505af4158015611cf0573d6000803e3d6000fd5b505050508860021415611d265760008a81526007890160209081526040808320805460ff1916600117905560068b019091528120555b6001600160a01b038716600081815260478e0160209081526040918290206003905581518d81529081019290925280518d9288927feceec1aebf67772b2440120c4b4dc913a1fe1b865509219f9456785c23b9da6492918290030190a3505050505050505050505050565b604080516a1cdd185ad9505b5bdd5b9d60aa1b81528151600b918190038201812060009081528484016020818152858320546b7461726765744d696e65727360a01b85528651600c958190039590950185208452828252868420546a1cdd185ad95c90dbdd5b9d60aa1b86528751958690039096019094208352529290922054611e4d9067d02ab486cedc0000906103e8908490611e30908290612195565b6103e802860281611e3d57fe5b0481611e4557fe5b0484036121ad565b60408051696469737075746546656560b01b8152815190819003600a0190206000908152948101602052909320929092555050565b60008181526044830160205260409020600281015460ff1615611ed65760405162461bcd60e51b81526004018080602001828103825260218152602001806121bd6021913960400191505060405180910390fd5b604080516f6d696e457865637574696f6e4461746560801b815281519081900360100190206000908152600583016020522054421015611f4b576040805162461bcd60e51b815260206004820152601f6024820152600080516020612211833981519152604482015290519081900360640190fd5b60038101546001600160a01b0316611faa576040805162461bcd60e51b815260206004820152601c60248201527f7265706f7274696e672050617274792069732061646472657373203000000000604482015290519081900360640190fd5b60018101546000811315611fca5760028201805461ff0019166101001790555b600282015462010000900460ff16612016576002820154630100000090046001600160a01b03166000908152604785016020526040902080546003141561201057600481555b50612093565b604080516b746f74616c5f737570706c7960a01b8152815190819003600c01902060009081528186016020522054606490600a02048110612093576004820154604080516001600160a01b039092168252517fc2d1449eb0b6547aa426e09d9942a77fa4fc8cd3296305b3163e22452e0bcb8d9181900360200190a15b604080516874616c6c794461746560b81b8152815190819003600901812060009081526005850160209081529083902042905560028501805460ff19166001179081905560038601548584526001600160a01b0390811692840192909252610100810460ff1615158385015292516301000000909304169185917f21459c2f5447ebcf83a7f0a238c32c71076faef0d12295e771c0cb1e10434739919081900360600190a350505050565b60008082131561215b57508181018281121561215657fe5b612169565b508181018281131561216957fe5b92915050565b60008082131561218757508082038281131561215657fe5b508082038281121561216957fe5b60008183106121a457816121a6565b825b9392505050565b60008183116121a457816121a656fe4469737075746520686173206265656e20616c726561647920657865637574656454696d6520666f7220766f74696e6720666f72206675727468657220646973707574657320686173206e6f742070617373656454696d6520666f7220766f74696e6720686176656e277420656c617073656400a265627a7a7231582066dba9f781642cba722de9b205ad7db7b450f62c32d90197351dce9c37b72dd464736f6c63430005100032"
+var TellorDisputeBin = "0x611ae5610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100615760003560e01c80632da0706e14610066578063694bf49f146100a0578063ca9a4ea5146100d9578063def6fac714610115578063e15f6f7014610145575b600080fd5b81801561007257600080fd5b5061009e6004803603606081101561008957600080fd5b5080359060208101359060400135151561016f565b005b8180156100ac57600080fd5b5061009e600480360360408110156100c357600080fd5b50803590602001356001600160a01b031661047b565b8180156100e557600080fd5b5061009e600480360360808110156100fc57600080fd5b50803590602081013590604081013590606001356108ec565b81801561012157600080fd5b5061009e6004803603604081101561013857600080fd5b5080359060200135611049565b81801561015157600080fd5b5061009e6004803603602081101561016857600080fd5b503561182f565b60008281526044808501602090815260408084208151600160a91b6a313637b1b5a73ab6b132b9028152825190819003600b018120865260058201845282862054600160e01b633f48b1ff028252600482018a905233602483015294810194909452905190939273__$2718d1e96458860b323e2267f4056bb1be$__92633f48b1ff92606480840193829003018186803b15801561020c57600080fd5b505af4158015610220573d6000803e3d6000fd5b505050506040513d602081101561023657600080fd5b505133600090815260068401602052604090205490915060ff161515600114156102aa5760408051600160e51b62461bcd02815260206004820152601860248201527f53656e6465722068617320616c726561647920766f7465640000000000000000604482015290519081900360640190fd5b600081116103025760408051600160e51b62461bcd02815260206004820152601160248201527f557365722062616c616e63652069732030000000000000000000000000000000604482015290519081900360640190fd5b3360009081526047860160205260409020546003141561036c5760408051600160e51b62461bcd02815260206004820152601660248201527f4d696e657220697320756e646572206469737075746500000000000000000000604482015290519081900360640190fd5b336000908152600680840160209081526040808420805460ff1916600190811790915581517f6e756d6265724f66566f746573000000000000000000000000000000000000008152825190819003600d0181208652600588018085528387208054909301909255600160d01b6571756f72756d028152825190819003909401909320845291905290208054820190558215610420576001820154610416908263ffffffff6119dd16565b600183015561043b565b6001820154610435908263ffffffff611a0e16565b60018301555b6040805184151581529051339186917f86abfce99b7dd908bec0169288797f85049ec73cbe046ed9de818fab3a497ae09181900360200190a35050505050565b604080516001600160a01b03831660601b60208083019190915282518083036014018152603490920183528151918101919091206000818152604a860190925291902054156104ee5760408051600160e51b62461bcd028152602060048201526000602482015290519081900360640190fd5b60408051600160b01b6964697370757465466565028152815190819003600a018120600090815282860160205282812054600160e01b63c7bb46ad028352600483018790523360248401523060448401526064830152915173__$2718d1e96458860b323e2267f4056bb1be$__9263c7bb46ad9260848082019391829003018186803b15801561057d57600080fd5b505af4158015610591573d6000803e3d6000fd5b505050508260400160006040518080600160a21b6b191a5cdc1d5d1950dbdd5b9d02815250600c019050604051809103902081526020019081526020016000206000815480929190600101919050555060008360400160006040518080600160a21b6b191a5cdc1d5d1950dbdd5b9d02815250600c019050604051809103902081526020019081526020016000205490508084604a0160008481526020019081526020016000208190555060405180610100016040528083815260200160008152602001600015158152602001600015158152602001600115158152602001336001600160a01b03168152602001336001600160a01b03168152602001846001600160a01b0316815250846044016000838152602001908152602001600020600082015181600001556020820151816001015560408201518160020160006101000a81548160ff02191690831515021790555060608201518160020160016101000a81548160ff02191690831515021790555060808201518160020160026101000a81548160ff02191690831515021790555060a08201518160020160036101000a8154816001600160a01b0302191690836001600160a01b0316021790555060c08201518160030160006101000a8154816001600160a01b0302191690836001600160a01b0316021790555060e08201518160040160006101000a8154816001600160a01b0302191690836001600160a01b031602179055509050504384604401600083815260200190815260200160002060050160006040518080600160a91b6a313637b1b5a73ab6b132b902815250600b01905060405180910390208152602001908152602001600020819055508360400160006040518080600160b01b696469737075746546656502815250600a019050604051809103902081526020019081526020016000205484604401600083815260200190815260200160002060050160006040518080600160e81b6266656502815250600301905060405180910390208152602001908152602001600020819055504262093a800184604401600083815260200190815260200160002060050160006040518080600160801b6f6d696e457865637574696f6e44617465028152506010019050604051809103902081526020019081526020016000208190555050505050565b600083815260488501602052604090206201518042849003111561094457604051600160e51b62461bcd028152600401808060200182810382526027815260200180611a726027913960400191505060405180910390fd5b60008381526005820160205260409020546109a95760408051600160e51b62461bcd02815260206004820152601060248201527f4d696e656420626c6f636b206973203000000000000000000000000000000000604482015290519081900360640190fd5b60058210610a015760408051600160e51b62461bcd02815260206004820152601460248201527f4d696e657220696e6465782069732077726f6e67000000000000000000000000604482015290519081900360640190fd5b600083815260088201602052604081208360058110610a1c57fe5b0154604080516001600160a01b03909216606081901b60208085019190915260348401899052605480850189905283518086039091018152607490940183528351938101939093206000818152604a8b0190945291909220549192509015610ace5760408051600160e51b62461bcd02815260206004820152601760248201527f4469737075746520697320616c7265616479206f70656e000000000000000000604482015290519081900360640190fd5b60408051600160b01b6964697370757465466565028152815190819003600a0181206000908152828a0160205282812054600160e01b63c7bb46ad028352600483018b90523360248401523060448401526064830152915173__$2718d1e96458860b323e2267f4056bb1be$__9263c7bb46ad9260848082019391829003018186803b158015610b5d57600080fd5b505af4158015610b71573d6000803e3d6000fd5b505050508660400160006040518080600160a21b6b191a5cdc1d5d1950dbdd5b9d02815250600c01905060405180910390208152602001908152602001600020546001018760400160006040518080600160a21b6b191a5cdc1d5d1950dbdd5b9d02815250600c019050604051809103902081526020019081526020016000208190555060008760400160006040518080600160a21b6b191a5cdc1d5d1950dbdd5b9d02815250600c019050604051809103902081526020019081526020016000205490508088604a0160008481526020019081526020016000208190555060405180610100016040528083815260200160008152602001600015158152602001600015158152602001600015158152602001846001600160a01b03168152602001336001600160a01b0316815260200160006001600160a01b0316815250886044016000838152602001908152602001600020600082015181600001556020820151816001015560408201518160020160006101000a81548160ff02191690831515021790555060608201518160020160016101000a81548160ff02191690831515021790555060808201518160020160026101000a81548160ff02191690831515021790555060a08201518160020160036101000a8154816001600160a01b0302191690836001600160a01b0316021790555060c08201518160030160006101000a8154816001600160a01b0302191690836001600160a01b0316021790555060e08201518160040160006101000a8154816001600160a01b0302191690836001600160a01b031602179055509050508688604401600083815260200190815260200160002060050160006040518080600160ba1b681c995c5d595cdd125902815250600901905060405180910390208152602001908152602001600020819055508588604401600083815260200190815260200160002060050160006040518080600160bc1b68074696d657374616d702815250600901905060405180910390208152602001908152602001600020819055508360090160008781526020019081526020016000208560058110610e8757fe5b0154600082815260448a01602081815260408084208151600160d81b6476616c756502815282519081900360059081018220875290910180845282862096909655868552838352600160801b6f6d696e457865637574696f6e446174650281528151908190036010018120855285835281852062093a8042019055868552838352600160a91b6a313637b1b5a73ab6b132b9028152815190819003600b0181208552858352818520439055868552838352600160ba1b681b5a5b995c94db1bdd028152815190819003600901812085528583528185208b9055600160b01b6964697370757465466565028152815190819003600a0181208552818e01835281852054878652938352600160e81b6266656502815281519081900360030190208452939052919020556002851415610fe257600087815260488901602090815260408083208984526007019091529020805460ff191660011790555b6001600160a01b038316600081815260478a016020908152604091829020600390558151898152908101929092528051899284927feceec1aebf67772b2440120c4b4dc913a1fe1b865509219f9456785c23b9da6492918290030190a35050505050505050565b600081815260448301602090815260408083208151600160ba1b681c995c5d595cdd12590281528251908190036009019020845260058101835281842054845260488601909252909120600282015460ff16156110da57604051600160e51b62461bcd028152600401808060200182810382526021815260200180611a996021913960400191505060405180910390fd5b60408051600160801b6f6d696e457865637574696f6e446174650281528151908190036010019020600090815260058401602052205442116111665760408051600160e51b62461bcd02815260206004820152601f60248201527f54696d6520666f7220766f74696e6720686176656e277420656c617073656400604482015290519081900360640190fd5b600282015462010000900460ff16611632576002820154630100000090046001600160a01b0316600090815260478501602052604081206001840154909112156114db5780546003141561138657600081556201518042064203600182015560408051600160aa1b6a1cdd185ad95c90dbdd5b9d028152815190819003600b01902060009081528187016020522080546000190190556112058561182f565b6002830154600384015460408051600160aa1b6a1cdd185ad9505b5bdd5b9d028152815190819003600b0181206000908152828a0160205282812054600160e01b63c7bb46ad028352600483018b90526001600160a01b0363010000009096048616602484015293909416604482015260648101929092525173__$2718d1e96458860b323e2267f4056bb1be$__9263c7bb46ad9260848082019391829003018186803b1580156112b557600080fd5b505af41580156112c9573d6000803e3d6000fd5b50505060038085015460408051600160e81b62666565028152815190819003909301832060009081526005880160205281812054600160e01b63c7bb46ad028552600485018b90523060248601526001600160a01b03909316604485015260648401929092525173__$2718d1e96458860b323e2267f4056bb1be$__935063c7bb46ad926084808201939291829003018186803b15801561136957600080fd5b505af415801561137d573d6000803e3d6000fd5b5050505061143b565b60038084015460408051600160e81b62666565028152815190819003909301832060009081526005870160205281812054600160e01b63c7bb46ad028552600485018a90523060248601526001600160a01b03909316604485015260648401929092525173__$2718d1e96458860b323e2267f4056bb1be$__9263c7bb46ad926084808301939192829003018186803b15801561142257600080fd5b505af4158015611436573d6000803e3d6000fd5b505050505b60028301805461ff00191661010017905560408051600160bc1b68074696d657374616d702815281519081900360090190206000908152600585016020908152828220548252600785019052205460ff161515600114156114d65760408051600160bc1b68074696d657374616d702815281519081900360090190206000908152600585016020908152828220548252600685019052908120555b61162c565b60018155600283015460408051600160e81b62666565028152815190819003600301812060009081526005870160205282812054600160e01b63c7bb46ad028352600483018a90523060248401526001600160a01b0363010000009095049490941660448301526064820193909352905173__$2718d1e96458860b323e2267f4056bb1be$__9263c7bb46ad9260848082019391829003018186803b15801561158357600080fd5b505af4158015611597573d6000803e3d6000fd5b505060408051600160bc1b68074696d657374616d702815281519081900360090190206000908152600587016020908152828220548252600787019052205460ff16151560011415915061162c90505760408051600160bc1b68074696d657374616d70281528151908190036009019020600090815260058501602090815282822054825260078501905220805460ff191690555b506117b1565b6000826001015413156117b157604080517f746f74616c5f737570706c7900000000000000000000000000000000000000008152815190819003600c0190206000908152818601602052205460649060140260408051600160d01b6571756f72756d02815281519081900360060190206000908152600586016020522054919004106117085760408051600160e51b62461bcd02815260206004820152601560248201527f51756f72756d206973206e6f7420726561636865640000000000000000000000604482015290519081900360640190fd5b600482018054604080517f74656c6c6f72436f6e74726163740000000000000000000000000000000000008152815190819003600e0181206000908152603f890160209081529083902080546001600160a01b0319166001600160a01b0395861617905560028701805461ff00191661010017905593549092168252517fc2d1449eb0b6547aa426e09d9942a77fa4fc8cd3296305b3163e22452e0bcb8d929181900390910190a15b60028201805460ff19166001908117918290558301546003840154604080519283526001600160a01b039182166020840152610100840460ff16151583820152516301000000909304169185917f21459c2f5447ebcf83a7f0a238c32c71076faef0d12295e771c0cb1e10434739919081900360600190a350505050565b60408051600160a01b6b7461726765744d696e657273028152815190819003600c0181206000908152828401602081815284832054600160aa1b6a1cdd185ad95c90dbdd5b9d028552855194859003600b0190942083525291909120546103e8919082028161189a57fe5b0410156119a05760408051600160a01b6b7461726765744d696e657273028152815190819003600c0181206000908152828401602081815284832054600160aa1b6a1cdd185ad95c90dbdd5b9d028552855194859003600b01909420835252919091205461196c9167d02ab486cedc0000916103e89161195f9183028161191d57fe5b60408051600160aa1b6a1cdd185ad9505b5bdd5b9d028152815190819003600b019020600090815281890160205220549190046103e80363ffffffff611a3416565b8161196657fe5b04611a5b565b60408051600160b01b6964697370757465466565028152815190819003600a019020600090815281840160205220556119da565b60408051600160b01b6964697370757465466565028152815190819003600a01902060009081528183016020522067d02ab486cedc000090555b50565b6000808213156119fa5750818101828112156119f557fe5b611a08565b5081810182811315611a0857fe5b92915050565b600080821315611a265750808203828113156119f557fe5b5080820382811215611a0857fe5b6000828202831580611a4e575082848281611a4b57fe5b04145b611a5457fe5b9392505050565b6000818311611a6a5781611a54565b509091905056fe5468652076616c756520776173206d696e6564206d6f7265207468616e2061206461792061676f4469737075746520686173206265656e20616c7265616479206578656375746564a165627a7a72305820084b28b0d7bb9de8fec8248a421777c1a5f4014a8c3a7be1ef7ede50ce4ad6780029"
 
 // DeployTellorDispute deploys a new Ethereum contract, binding an instance of TellorDispute to it.
 func DeployTellorDispute(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *TellorDispute, error) {
@@ -1640,17 +878,16 @@ func (it *TellorDisputeVotedIterator) Close() error {
 
 // TellorDisputeVoted represents a Voted event raised by the TellorDispute contract.
 type TellorDisputeVoted struct {
-	DisputeID  *big.Int
-	Position   bool
-	Voter      common.Address
-	VoteWeight *big.Int
-	Raw        types.Log // Blockchain specific contextual infos
+	DisputeID *big.Int
+	Position  bool
+	Voter     common.Address
+	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterVoted is a free log retrieval operation binding the contract event 0x911ef2e98570b1d96c0e8ef81107a33d5b8e844aeb8f9710f9bc76c3b3fef40e.
+// FilterVoted is a free log retrieval operation binding the contract event 0x86abfce99b7dd908bec0169288797f85049ec73cbe046ed9de818fab3a497ae0.
 //
-// Solidity: event Voted(uint256 indexed _disputeID, bool _position, address indexed _voter, uint256 indexed _voteWeight)
-func (_TellorDispute *TellorDisputeFilterer) FilterVoted(opts *bind.FilterOpts, _disputeID []*big.Int, _voter []common.Address, _voteWeight []*big.Int) (*TellorDisputeVotedIterator, error) {
+// Solidity: event Voted(uint256 indexed _disputeID, bool _position, address indexed _voter)
+func (_TellorDispute *TellorDisputeFilterer) FilterVoted(opts *bind.FilterOpts, _disputeID []*big.Int, _voter []common.Address) (*TellorDisputeVotedIterator, error) {
 
 	var _disputeIDRule []interface{}
 	for _, _disputeIDItem := range _disputeID {
@@ -1661,22 +898,18 @@ func (_TellorDispute *TellorDisputeFilterer) FilterVoted(opts *bind.FilterOpts, 
 	for _, _voterItem := range _voter {
 		_voterRule = append(_voterRule, _voterItem)
 	}
-	var _voteWeightRule []interface{}
-	for _, _voteWeightItem := range _voteWeight {
-		_voteWeightRule = append(_voteWeightRule, _voteWeightItem)
-	}
 
-	logs, sub, err := _TellorDispute.contract.FilterLogs(opts, "Voted", _disputeIDRule, _voterRule, _voteWeightRule)
+	logs, sub, err := _TellorDispute.contract.FilterLogs(opts, "Voted", _disputeIDRule, _voterRule)
 	if err != nil {
 		return nil, err
 	}
 	return &TellorDisputeVotedIterator{contract: _TellorDispute.contract, event: "Voted", logs: logs, sub: sub}, nil
 }
 
-// WatchVoted is a free log subscription operation binding the contract event 0x911ef2e98570b1d96c0e8ef81107a33d5b8e844aeb8f9710f9bc76c3b3fef40e.
+// WatchVoted is a free log subscription operation binding the contract event 0x86abfce99b7dd908bec0169288797f85049ec73cbe046ed9de818fab3a497ae0.
 //
-// Solidity: event Voted(uint256 indexed _disputeID, bool _position, address indexed _voter, uint256 indexed _voteWeight)
-func (_TellorDispute *TellorDisputeFilterer) WatchVoted(opts *bind.WatchOpts, sink chan<- *TellorDisputeVoted, _disputeID []*big.Int, _voter []common.Address, _voteWeight []*big.Int) (event.Subscription, error) {
+// Solidity: event Voted(uint256 indexed _disputeID, bool _position, address indexed _voter)
+func (_TellorDispute *TellorDisputeFilterer) WatchVoted(opts *bind.WatchOpts, sink chan<- *TellorDisputeVoted, _disputeID []*big.Int, _voter []common.Address) (event.Subscription, error) {
 
 	var _disputeIDRule []interface{}
 	for _, _disputeIDItem := range _disputeID {
@@ -1687,12 +920,8 @@ func (_TellorDispute *TellorDisputeFilterer) WatchVoted(opts *bind.WatchOpts, si
 	for _, _voterItem := range _voter {
 		_voterRule = append(_voterRule, _voterItem)
 	}
-	var _voteWeightRule []interface{}
-	for _, _voteWeightItem := range _voteWeight {
-		_voteWeightRule = append(_voteWeightRule, _voteWeightItem)
-	}
 
-	logs, sub, err := _TellorDispute.contract.WatchLogs(opts, "Voted", _disputeIDRule, _voterRule, _voteWeightRule)
+	logs, sub, err := _TellorDispute.contract.WatchLogs(opts, "Voted", _disputeIDRule, _voterRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1724,9 +953,9 @@ func (_TellorDispute *TellorDisputeFilterer) WatchVoted(opts *bind.WatchOpts, si
 	}), nil
 }
 
-// ParseVoted is a log parse operation binding the contract event 0x911ef2e98570b1d96c0e8ef81107a33d5b8e844aeb8f9710f9bc76c3b3fef40e.
+// ParseVoted is a log parse operation binding the contract event 0x86abfce99b7dd908bec0169288797f85049ec73cbe046ed9de818fab3a497ae0.
 //
-// Solidity: event Voted(uint256 indexed _disputeID, bool _position, address indexed _voter, uint256 indexed _voteWeight)
+// Solidity: event Voted(uint256 indexed _disputeID, bool _position, address indexed _voter)
 func (_TellorDispute *TellorDisputeFilterer) ParseVoted(log types.Log) (*TellorDisputeVoted, error) {
 	event := new(TellorDisputeVoted)
 	if err := _TellorDispute.contract.UnpackLog(event, "Voted", log); err != nil {
@@ -1736,16 +965,1227 @@ func (_TellorDispute *TellorDisputeFilterer) ParseVoted(log types.Log) (*TellorD
 	return event, nil
 }
 
-// TellorGettersLibraryABI is the input ABI used to generate the binding from.
-const TellorGettersLibraryABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_newTellor\",\"type\":\"address\"}],\"name\":\"NewTellorAddress\",\"type\":\"event\"}]"
+// TellorGettersABI is the input ABI used to generate the binding from.
+const TellorGettersABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"getRequestIdByTimestamp\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"getSubmissionsByTimestamp\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[5]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"getAddressVars\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getSymbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getName\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getVariablesOnDeck\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_request\",\"type\":\"bytes32\"}],\"name\":\"getRequestIdByQueryHash\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"getLastNewValueById\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"isInDispute\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"getNewValueCountbyRequestId\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_user\",\"type\":\"address\"},{\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"balanceOfAt\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"getUintVar\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getRequestIdByRequestQIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_challenge\",\"type\":\"bytes32\"},{\"name\":\"_miner\",\"type\":\"address\"}],\"name\":\"didMine\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"getMinersByRequestIdAndTimestamp\",\"outputs\":[{\"name\":\"\",\"type\":\"address[5]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_user\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_staker\",\"type\":\"address\"}],\"name\":\"getStakerInfo\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestID\",\"type\":\"uint256\"},{\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getTimestampbyRequestIDandIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_disputeId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"getDisputeUintVars\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"retrieveData\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_user\",\"type\":\"address\"},{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"allowedToTrade\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getCurrentVariables\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"string\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_disputeId\",\"type\":\"uint256\"},{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"didVote\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_disputeId\",\"type\":\"uint256\"}],\"name\":\"getAllDisputeVars\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bool\"},{\"name\":\"\",\"type\":\"bool\"},{\"name\":\"\",\"type\":\"bool\"},{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"uint256[9]\"},{\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getRequestQ\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[51]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"getMinedBlockNum\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_hash\",\"type\":\"bytes32\"}],\"name\":\"getDisputeIdByDisputeHash\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_user\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"getRequestUintVars\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"getRequestVars\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"},{\"name\":\"\",\"type\":\"string\"},{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getLastNewValue\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
-// TellorGettersLibraryFuncSigs maps the 4-byte function signature to its string representation.
-var TellorGettersLibraryFuncSigs = map[string]string{
-	"c93299e9": "didMine(TellorStorage.TellorStorageStruct storage,bytes32,address)",
+// TellorGettersFuncSigs maps the 4-byte function signature to its string representation.
+var TellorGettersFuncSigs = map[string]string{
+	"dd62ed3e": "allowance(address,address)",
+	"999cf26c": "allowedToTrade(address,uint256)",
+	"70a08231": "balanceOf(address)",
+	"4ee2cd7e": "balanceOfAt(address,uint256)",
+	"63bb82ad": "didMine(bytes32,address)",
+	"a7c438bc": "didVote(uint256,address)",
+	"133bee5e": "getAddressVars(bytes32)",
+	"af0b1327": "getAllDisputeVars(uint256)",
+	"a22e407a": "getCurrentVariables()",
+	"da379941": "getDisputeIdByDisputeHash(bytes32)",
+	"7f6fd5d9": "getDisputeUintVars(uint256,bytes32)",
+	"fc7cf0a0": "getLastNewValue()",
+	"3180f8df": "getLastNewValueById(uint256)",
+	"c775b542": "getMinedBlockNum(uint256,uint256)",
+	"69026d63": "getMinersByRequestIdAndTimestamp(uint256,uint256)",
+	"17d7de7c": "getName()",
+	"46eee1c4": "getNewValueCountbyRequestId(uint256)",
+	"1db842f0": "getRequestIdByQueryHash(bytes32)",
+	"6173c0b8": "getRequestIdByRequestQIndex(uint256)",
+	"0f0b424d": "getRequestIdByTimestamp(uint256)",
+	"b5413029": "getRequestQ()",
+	"e0ae93c1": "getRequestUintVars(uint256,bytes32)",
+	"e1eee6d6": "getRequestVars(uint256)",
+	"733bdef0": "getStakerInfo(address)",
+	"11c98512": "getSubmissionsByTimestamp(uint256,uint256)",
+	"15070401": "getSymbol()",
+	"77fbb663": "getTimestampbyRequestIDandIndex(uint256,uint256)",
+	"612c8f7f": "getUintVar(bytes32)",
+	"19e8e03b": "getVariablesOnDeck()",
+	"3df0777b": "isInDispute(uint256,uint256)",
+	"93fa4915": "retrieveData(uint256,uint256)",
+	"18160ddd": "totalSupply()",
 }
 
+// TellorGettersBin is the compiled bytecode used for deploying new contracts.
+var TellorGettersBin = "0x608060405234801561001057600080fd5b50611b1f806100206000396000f3fe608060405234801561001057600080fd5b50600436106101f05760003560e01c806370a082311161010f578063af0b1327116100a2578063dd62ed3e11610071578063dd62ed3e146107fa578063e0ae93c114610828578063e1eee6d61461084b578063fc7cf0a014610962576101f0565b8063af0b1327146106f8578063b54130291461079c578063c775b542146107ba578063da379941146107dd576101f0565b806393fa4915116100de57806393fa4915146105da578063999cf26c146105fd578063a22e407a14610629578063a7c438bc146106cc576101f0565b806370a082311461052f578063733bdef01461055557806377fbb663146105945780637f6fd5d9146105b7576101f0565b80633180f8df11610187578063612c8f7f11610156578063612c8f7f146104a65780636173c0b8146104c357806363bb82ad146104e057806369026d631461050c576101f0565b80633180f8df146103f05780633df0777b1461042657806346eee1c41461045d5780634ee2cd7e1461047a576101f0565b806317d7de7c116101c357806317d7de7c1461033557806318160ddd1461033d57806319e8e03b146103455780631db842f0146103d3576101f0565b80630f0b424d146101f557806311c9851214610224578063133bee5e1461027f57806315070401146102b8575b600080fd5b6102126004803603602081101561020b57600080fd5b503561096a565b60408051918252519081900360200190f35b6102476004803603604081101561023a57600080fd5b5080359060200135610982565b604051808260a080838360005b8381101561026c578181015183820152602001610254565b5050505090500191505060405180910390f35b61029c6004803603602081101561029557600080fd5b50356109a3565b604080516001600160a01b039092168252519081900360200190f35b6102c06109b5565b6040805160208082528351818301528351919283929083019185019080838360005b838110156102fa5781810151838201526020016102e2565b50505050905090810190601f1680156103275780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6102c06109c6565b6102126109d2565b61034d6109de565b6040518084815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b8381101561039657818101518382015260200161037e565b50505050905090810190601f1680156103c35780820380516001836020036101000a031916815260200191505b5094505050505060405180910390f35b610212600480360360208110156103e957600080fd5b50356109f8565b61040d6004803603602081101561040657600080fd5b5035610a0a565b6040805192835290151560208301528051918290030190f35b6104496004803603604081101561043c57600080fd5b5080359060200135610a26565b604080519115158252519081900360200190f35b6102126004803603602081101561047357600080fd5b5035610a39565b6102126004803603604081101561049057600080fd5b506001600160a01b038135169060200135610a4b565b610212600480360360208110156104bc57600080fd5b5035610aeb565b610212600480360360208110156104d957600080fd5b5035610afd565b610449600480360360408110156104f657600080fd5b50803590602001356001600160a01b0316610b0f565b6102476004803603604081101561052257600080fd5b5080359060200135610b22565b6102126004803603602081101561054557600080fd5b50356001600160a01b0316610b3c565b61057b6004803603602081101561056b57600080fd5b50356001600160a01b0316610bd4565b6040805192835260208301919091528051918290030190f35b610212600480360360408110156105aa57600080fd5b5080359060200135610be7565b610212600480360360408110156105cd57600080fd5b5080359060200135610bfa565b610212600480360360408110156105f057600080fd5b5080359060200135610c0d565b6104496004803603604081101561061357600080fd5b506001600160a01b038135169060200135610c20565b610631610c8d565b6040518087815260200186815260200185815260200180602001848152602001838152602001828103825285818151815260200191508051906020019080838360005b8381101561068c578181015183820152602001610674565b50505050905090810190601f1680156106b95780820380516001836020036101000a031916815260200191505b5097505050505050505060405180910390f35b610449600480360360408110156106e257600080fd5b50803590602001356001600160a01b0316610cb4565b6107156004803603602081101561070e57600080fd5b5035610cc7565b604080518a815289151560208201528815159181019190915286151560608201526001600160a01b03808716608083015285811660a0830152841660c082015260e081018361012080838360005b8381101561077b578181015183820152602001610763565b50505050905001828152602001995050505050505050505060405180910390f35b6107a4610d0b565b6040518151815280826106608083836020610254565b610212600480360360408110156107d057600080fd5b5080359060200135610d1d565b610212600480360360208110156107f357600080fd5b5035610d30565b6102126004803603604081101561081057600080fd5b506001600160a01b0381358116916020013516610d42565b6102126004803603604081101561083e57600080fd5b5080359060200135610db0565b6108686004803603602081101561086157600080fd5b5035610dc3565b604051808060200180602001878152602001868152602001858152602001848152602001838103835289818151815260200191508051906020019080838360005b838110156108c15781810151838201526020016108a9565b50505050905090810190601f1680156108ee5780820380516001836020036101000a031916815260200191505b5083810382528851815288516020918201918a019080838360005b83811015610921578181015183820152602001610909565b50505050905090810190601f16801561094e5780820380516001836020036101000a031916815260200191505b509850505050505050505060405180910390f35b61040d610def565b600061097c818363ffffffff610e0416565b92915050565b61098a611a97565b61099c6000848463ffffffff610e1a16565b9392505050565b600061097c818363ffffffff610e7416565b60606109c16000610e93565b905090565b60606109c16000610eb3565b60006109c16000610eeb565b60008060606109ed6000610f2f565b925092509250909192565b600061097c818363ffffffff61101e16565b600080610a1d818463ffffffff61103416565b91509150915091565b600061099c81848463ffffffff61109a16565b600061097c818363ffffffff6110c116565b60408051600160e01b633f48b1ff0281526000600482018190526001600160a01b038516602483015260448201849052915173__$2718d1e96458860b323e2267f4056bb1be$__91633f48b1ff916064808301926020929190829003018186803b158015610ab857600080fd5b505af4158015610acc573d6000803e3d6000fd5b505050506040513d6020811015610ae257600080fd5b50519392505050565b600061097c818363ffffffff6110da16565b600061097c818363ffffffff6110ec16565b600061099c81848463ffffffff61115e16565b610b2a611a97565b61099c6000848463ffffffff61118b16565b60408051600160e01b6393b182b30281526000600482018190526001600160a01b0384166024830152915173__$2718d1e96458860b323e2267f4056bb1be$__916393b182b3916044808301926020929190829003018186803b158015610ba257600080fd5b505af4158015610bb6573d6000803e3d6000fd5b505050506040513d6020811015610bcc57600080fd5b505192915050565b600080610a1d818463ffffffff6111ef16565b600061099c81848463ffffffff61121616565b600061099c81848463ffffffff61124916565b600061099c81848463ffffffff61126d16565b60408051600160e11b6356555cf10281526000600482018190526001600160a01b038516602483015260448201849052915173__$2718d1e96458860b323e2267f4056bb1be$__9163acaab9e2916064808301926020929190829003018186803b158015610ab857600080fd5b60008060006060600080610ca16000611291565b949b939a50919850965094509092509050565b600061099c81848463ffffffff61146516565b6000806000806000806000610cda611ab5565b6000610cec818b63ffffffff61149716565b9850985098509850985098509850985098509193959799909294969850565b610d13611ad4565b6109c160006116de565b600061099c81848463ffffffff61171e16565b600061097c818363ffffffff61174216565b60408051600160e21b632fcc801b0281526000600482018190526001600160a01b03808616602484015284166044830152915173__$2718d1e96458860b323e2267f4056bb1be$__9163bf32006c916064808301926020929190829003018186803b158015610ab857600080fd5b600061099c81848463ffffffff61175816565b6060806000808080610ddb818863ffffffff61177c16565b949c939b5091995097509550909350915050565b600080610dfc600061196a565b915091509091565b6000908152604291909101602052604090205490565b610e22611a97565b6000838152604885016020908152604080832085845260090190915290819020815160a08101928390529160059082845b815481526020019060010190808311610e5357505050505090509392505050565b6000908152603f9190910160205260409020546001600160a01b031690565b506040805180820190915260028152600160f21b61151502602082015290565b5060408051808201909152600f81527f54656c6c6f722054726962757465730000000000000000000000000000000000602082015290565b604080517f746f74616c5f737570706c7900000000000000000000000000000000000000008152815190819003600c01902060009081528183016020522054919050565b60008060606000610f3f856119eb565b600081815260488701602081815260408084208151600160c41b670746f74616c54697028152825160089181900391909101812086526004820184528286205495879052938352805460026001821615610100026000190190911604601f8101849004840285018401909252818452949550859492918391908301828280156110095780601f10610fde57610100808354040283529160200191611009565b820191906000526020600020905b815481529060010190602001808311610fec57829003601f168201915b50505050509050935093509350509193909250565b6000908152604991909101602052604090205490565b6000818152604883016020526040812060038101548291901561108a5760038101805461107e918791879190600019810190811061106e57fe5b906000526020600020015461126d565b60019250925050611093565b50600091508190505b9250929050565b60009182526048929092016020908152604080832093835260079093019052205460ff1690565b6000908152604891909101602052604090206003015490565b60009081526040918201602052205490565b600060328211156111475760408051600160e51b62461bcd02815260206004820152601a60248201527f526571756573745120696e6465782069732061626f7665203530000000000000604482015290519081900360640190fd5b506000908152604391909101602052604090205490565b6000918252604192909201602090815260408083206001600160a01b039094168352929052205460ff1690565b611193611a97565b6000838152604885016020908152604080832085845260080190915290819020815160a08101928390529160059082845b81546001600160a01b031681526001909101906020018083116111c457505050505090509392505050565b6001600160a01b031660009081526047919091016020526040902080546001909101549091565b6000828152604884016020526040812060030180548390811061123557fe5b906000526020600020015490509392505050565b60009182526044929092016020908152604080832093835260059093019052205490565b60009182526048929092016020908152604080832093835260069093019052205490565b8054604080517f63757272656e7452657175657374496400000000000000000000000000000000808252825191829003601090810183206000908152848701602081815286832054600160b01b69646966666963756c7479028752875196879003600a01872084528282528784205486885288519788900386018820855283835288852054855260488b01808452898620888a528a51998a900388018a2087528585528a87205487528185528a8720600160a81b6a6772616e756c6172697479028b528b519a8b9003600b018b208852600490810186528b882054998b528b519a8b90039098018a2087529484528986205486528352888520600160c41b670746f74616c54697028952895198899003600801892086529095018252878420548354601f600260001961010060018516150201909216919091049081018490048402890184019099528888529398899889986060988a98899894979596909594919391929185918301828280156114495780601f1061141e57610100808354040283529160200191611449565b820191906000526020600020905b81548152906001019060200180831161142c57829003601f168201915b5050505050925095509550955095509550955091939550919395565b600082815260448401602090815260408083206001600160a01b038516845260060190915290205460ff169392505050565b60008060008060008060006114aa611ab5565b5050506000868152604488016020908152604080832080546002820154600380840154600485015486516101208101808952600160ba1b681c995c5d595cdd125902905287518082036101290190208a526005808801808b52898c205483528951600160bc1b68074696d657374616d70281528a519081900360099081019091208d52818c528a8d2054848d01528a51600160d81b6476616c75650281528b51908190039093019092208c52808b52898c2054838b015289517f6d696e457865637574696f6e446174650000000000000000000000000000000081528a519081900360100190208c52808b52898c2054606084015289517f6e756d6265724f66566f7465730000000000000000000000000000000000000081528a5190819003600d0190208c52808b52898c205460808401528951600160a91b6a313637b1b5a73ab6b132b90281528a5190819003600b0190208c52808b52898c205460a08401528951600160ba1b681b5a5b995c94db1bdd0281528a51908190039092019091208b52808a52888b205460c08301528851600160d01b6571756f72756d02815289519081900360060190208b52808a52888b205460e08301528851600160e81b626665650281528951908190039095019094208a5292909752949096205461010087810191909152600190930154919a5060ff8082169a509281048316985062010000810490921696506001600160a01b0363010000009092048216955091811693921691909295985092959850929598565b6116e6611ad4565b6040805161066081019182905290600184019060339082845b8154815260200190600101908083116116ff5750505050509050919050565b60009182526048929092016020908152604080832093835260059093019052205490565b6000908152604a91909101602052604090205490565b60009182526048929092016020908152604080832093835260049093019052205490565b600081815260488301602090815260408083206002808201548351600160a81b6a6772616e756c6172697479028152845190819003600b018120875260048401808752858820547f7265717565737451506f736974696f6e0000000000000000000000000000000083528651928390036010018320895281885286892054600160c41b670746f74616c5469702845287519384900360080184208a52918852868920548654601f6000196101006001848116159190910291909101909216979097049687018a90048a0285018a019098528584526060998a999098899889988998919788979388019692959294909188918301828280156118be5780601f10611893576101008083540402835291602001916118be565b820191906000526020600020905b8154815290600101906020018083116118a157829003601f168201915b5050885460408051602060026001851615610100026000190190941693909304601f8101849004840282018401909252818152959b508a94509250840190508282801561194c5780601f106119215761010080835404028352916020019161194c565b820191906000526020600020905b81548152906001019060200180831161192f57829003601f168201915b50505050509450965096509650965096509650509295509295509295565b604080517f74696d654f664c6173744e657756616c7565000000000000000000000000000080825282516012928190038301812060009081528585016020818152868320548352604288018152868320549484528651938490039095019092208152925291812054909182916119e191859161126d565b9360019350915050565b6040805161066081019182905260009182918291611a2c9190600187019060339082845b815481526020019060010190808311611a0f575050505050611a47565b60009081526043909501602052505060409092205492915050565b6020810151600060015b6033811015611a915782848260338110611a6757fe5b60200201511115611a8957838160338110611a7e57fe5b602002015192508091505b600101611a51565b50915091565b6040518060a001604052806005906020820280388339509192915050565b6040518061012001604052806009906020820280388339509192915050565b604051806106600160405280603390602082028038833950919291505056fea165627a7a723058202e788995c256878a7fde8b468a19fee28baba317b24071bb65f31edf16b0a32c0029"
+
+// DeployTellorGetters deploys a new Ethereum contract, binding an instance of TellorGetters to it.
+func DeployTellorGetters(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *TellorGetters, error) {
+	parsed, err := abi.JSON(strings.NewReader(TellorGettersABI))
+	if err != nil {
+		return common.Address{}, nil, nil, err
+	}
+
+	tellorTransferAddr, _, _, _ := DeployTellorTransfer(auth, backend)
+	TellorGettersBin = strings.Replace(TellorGettersBin, "__$2718d1e96458860b323e2267f4056bb1be$__", tellorTransferAddr.String()[2:], -1)
+
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(TellorGettersBin), backend)
+	if err != nil {
+		return common.Address{}, nil, nil, err
+	}
+	return address, tx, &TellorGetters{TellorGettersCaller: TellorGettersCaller{contract: contract}, TellorGettersTransactor: TellorGettersTransactor{contract: contract}, TellorGettersFilterer: TellorGettersFilterer{contract: contract}}, nil
+}
+
+// TellorGetters is an auto generated Go binding around an Ethereum contract.
+type TellorGetters struct {
+	TellorGettersCaller     // Read-only binding to the contract
+	TellorGettersTransactor // Write-only binding to the contract
+	TellorGettersFilterer   // Log filterer for contract events
+}
+
+// TellorGettersCaller is an auto generated read-only Go binding around an Ethereum contract.
+type TellorGettersCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// TellorGettersTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type TellorGettersTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// TellorGettersFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type TellorGettersFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// TellorGettersSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type TellorGettersSession struct {
+	Contract     *TellorGetters    // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts     // Call options to use throughout this session
+	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
+}
+
+// TellorGettersCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type TellorGettersCallerSession struct {
+	Contract *TellorGettersCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts        // Call options to use throughout this session
+}
+
+// TellorGettersTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type TellorGettersTransactorSession struct {
+	Contract     *TellorGettersTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts        // Transaction auth options to use throughout this session
+}
+
+// TellorGettersRaw is an auto generated low-level Go binding around an Ethereum contract.
+type TellorGettersRaw struct {
+	Contract *TellorGetters // Generic contract binding to access the raw methods on
+}
+
+// TellorGettersCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type TellorGettersCallerRaw struct {
+	Contract *TellorGettersCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// TellorGettersTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type TellorGettersTransactorRaw struct {
+	Contract *TellorGettersTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewTellorGetters creates a new instance of TellorGetters, bound to a specific deployed contract.
+func NewTellorGetters(address common.Address, backend bind.ContractBackend) (*TellorGetters, error) {
+	contract, err := bindTellorGetters(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &TellorGetters{TellorGettersCaller: TellorGettersCaller{contract: contract}, TellorGettersTransactor: TellorGettersTransactor{contract: contract}, TellorGettersFilterer: TellorGettersFilterer{contract: contract}}, nil
+}
+
+// NewTellorGettersCaller creates a new read-only instance of TellorGetters, bound to a specific deployed contract.
+func NewTellorGettersCaller(address common.Address, caller bind.ContractCaller) (*TellorGettersCaller, error) {
+	contract, err := bindTellorGetters(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &TellorGettersCaller{contract: contract}, nil
+}
+
+// NewTellorGettersTransactor creates a new write-only instance of TellorGetters, bound to a specific deployed contract.
+func NewTellorGettersTransactor(address common.Address, transactor bind.ContractTransactor) (*TellorGettersTransactor, error) {
+	contract, err := bindTellorGetters(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &TellorGettersTransactor{contract: contract}, nil
+}
+
+// NewTellorGettersFilterer creates a new log filterer instance of TellorGetters, bound to a specific deployed contract.
+func NewTellorGettersFilterer(address common.Address, filterer bind.ContractFilterer) (*TellorGettersFilterer, error) {
+	contract, err := bindTellorGetters(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &TellorGettersFilterer{contract: contract}, nil
+}
+
+// bindTellorGetters binds a generic wrapper to an already deployed contract.
+func bindTellorGetters(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(TellorGettersABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_TellorGetters *TellorGettersRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _TellorGetters.Contract.TellorGettersCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_TellorGetters *TellorGettersRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TellorGetters.Contract.TellorGettersTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_TellorGetters *TellorGettersRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _TellorGetters.Contract.TellorGettersTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_TellorGetters *TellorGettersCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _TellorGetters.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_TellorGetters *TellorGettersTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TellorGetters.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_TellorGetters *TellorGettersTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _TellorGetters.Contract.contract.Transact(opts, method, params...)
+}
+
+// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
+//
+// Solidity: function allowance(address _user, address _spender) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) Allowance(opts *bind.CallOpts, _user common.Address, _spender common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "allowance", _user, _spender)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
+//
+// Solidity: function allowance(address _user, address _spender) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) Allowance(_user common.Address, _spender common.Address) (*big.Int, error) {
+	return _TellorGetters.Contract.Allowance(&_TellorGetters.CallOpts, _user, _spender)
+}
+
+// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
+//
+// Solidity: function allowance(address _user, address _spender) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) Allowance(_user common.Address, _spender common.Address) (*big.Int, error) {
+	return _TellorGetters.Contract.Allowance(&_TellorGetters.CallOpts, _user, _spender)
+}
+
+// AllowedToTrade is a free data retrieval call binding the contract method 0x999cf26c.
+//
+// Solidity: function allowedToTrade(address _user, uint256 _amount) view returns(bool)
+func (_TellorGetters *TellorGettersCaller) AllowedToTrade(opts *bind.CallOpts, _user common.Address, _amount *big.Int) (bool, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "allowedToTrade", _user, _amount)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// AllowedToTrade is a free data retrieval call binding the contract method 0x999cf26c.
+//
+// Solidity: function allowedToTrade(address _user, uint256 _amount) view returns(bool)
+func (_TellorGetters *TellorGettersSession) AllowedToTrade(_user common.Address, _amount *big.Int) (bool, error) {
+	return _TellorGetters.Contract.AllowedToTrade(&_TellorGetters.CallOpts, _user, _amount)
+}
+
+// AllowedToTrade is a free data retrieval call binding the contract method 0x999cf26c.
+//
+// Solidity: function allowedToTrade(address _user, uint256 _amount) view returns(bool)
+func (_TellorGetters *TellorGettersCallerSession) AllowedToTrade(_user common.Address, _amount *big.Int) (bool, error) {
+	return _TellorGetters.Contract.AllowedToTrade(&_TellorGetters.CallOpts, _user, _amount)
+}
+
+// BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
+//
+// Solidity: function balanceOf(address _user) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) BalanceOf(opts *bind.CallOpts, _user common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "balanceOf", _user)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
+//
+// Solidity: function balanceOf(address _user) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) BalanceOf(_user common.Address) (*big.Int, error) {
+	return _TellorGetters.Contract.BalanceOf(&_TellorGetters.CallOpts, _user)
+}
+
+// BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
+//
+// Solidity: function balanceOf(address _user) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) BalanceOf(_user common.Address) (*big.Int, error) {
+	return _TellorGetters.Contract.BalanceOf(&_TellorGetters.CallOpts, _user)
+}
+
+// BalanceOfAt is a free data retrieval call binding the contract method 0x4ee2cd7e.
+//
+// Solidity: function balanceOfAt(address _user, uint256 _blockNumber) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) BalanceOfAt(opts *bind.CallOpts, _user common.Address, _blockNumber *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "balanceOfAt", _user, _blockNumber)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// BalanceOfAt is a free data retrieval call binding the contract method 0x4ee2cd7e.
+//
+// Solidity: function balanceOfAt(address _user, uint256 _blockNumber) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) BalanceOfAt(_user common.Address, _blockNumber *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.BalanceOfAt(&_TellorGetters.CallOpts, _user, _blockNumber)
+}
+
+// BalanceOfAt is a free data retrieval call binding the contract method 0x4ee2cd7e.
+//
+// Solidity: function balanceOfAt(address _user, uint256 _blockNumber) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) BalanceOfAt(_user common.Address, _blockNumber *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.BalanceOfAt(&_TellorGetters.CallOpts, _user, _blockNumber)
+}
+
+// DidMine is a free data retrieval call binding the contract method 0x63bb82ad.
+//
+// Solidity: function didMine(bytes32 _challenge, address _miner) view returns(bool)
+func (_TellorGetters *TellorGettersCaller) DidMine(opts *bind.CallOpts, _challenge [32]byte, _miner common.Address) (bool, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "didMine", _challenge, _miner)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// DidMine is a free data retrieval call binding the contract method 0x63bb82ad.
+//
+// Solidity: function didMine(bytes32 _challenge, address _miner) view returns(bool)
+func (_TellorGetters *TellorGettersSession) DidMine(_challenge [32]byte, _miner common.Address) (bool, error) {
+	return _TellorGetters.Contract.DidMine(&_TellorGetters.CallOpts, _challenge, _miner)
+}
+
+// DidMine is a free data retrieval call binding the contract method 0x63bb82ad.
+//
+// Solidity: function didMine(bytes32 _challenge, address _miner) view returns(bool)
+func (_TellorGetters *TellorGettersCallerSession) DidMine(_challenge [32]byte, _miner common.Address) (bool, error) {
+	return _TellorGetters.Contract.DidMine(&_TellorGetters.CallOpts, _challenge, _miner)
+}
+
+// DidVote is a free data retrieval call binding the contract method 0xa7c438bc.
+//
+// Solidity: function didVote(uint256 _disputeId, address _address) view returns(bool)
+func (_TellorGetters *TellorGettersCaller) DidVote(opts *bind.CallOpts, _disputeId *big.Int, _address common.Address) (bool, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "didVote", _disputeId, _address)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// DidVote is a free data retrieval call binding the contract method 0xa7c438bc.
+//
+// Solidity: function didVote(uint256 _disputeId, address _address) view returns(bool)
+func (_TellorGetters *TellorGettersSession) DidVote(_disputeId *big.Int, _address common.Address) (bool, error) {
+	return _TellorGetters.Contract.DidVote(&_TellorGetters.CallOpts, _disputeId, _address)
+}
+
+// DidVote is a free data retrieval call binding the contract method 0xa7c438bc.
+//
+// Solidity: function didVote(uint256 _disputeId, address _address) view returns(bool)
+func (_TellorGetters *TellorGettersCallerSession) DidVote(_disputeId *big.Int, _address common.Address) (bool, error) {
+	return _TellorGetters.Contract.DidVote(&_TellorGetters.CallOpts, _disputeId, _address)
+}
+
+// GetAddressVars is a free data retrieval call binding the contract method 0x133bee5e.
+//
+// Solidity: function getAddressVars(bytes32 _data) view returns(address)
+func (_TellorGetters *TellorGettersCaller) GetAddressVars(opts *bind.CallOpts, _data [32]byte) (common.Address, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getAddressVars", _data)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// GetAddressVars is a free data retrieval call binding the contract method 0x133bee5e.
+//
+// Solidity: function getAddressVars(bytes32 _data) view returns(address)
+func (_TellorGetters *TellorGettersSession) GetAddressVars(_data [32]byte) (common.Address, error) {
+	return _TellorGetters.Contract.GetAddressVars(&_TellorGetters.CallOpts, _data)
+}
+
+// GetAddressVars is a free data retrieval call binding the contract method 0x133bee5e.
+//
+// Solidity: function getAddressVars(bytes32 _data) view returns(address)
+func (_TellorGetters *TellorGettersCallerSession) GetAddressVars(_data [32]byte) (common.Address, error) {
+	return _TellorGetters.Contract.GetAddressVars(&_TellorGetters.CallOpts, _data)
+}
+
+// GetAllDisputeVars is a free data retrieval call binding the contract method 0xaf0b1327.
+//
+// Solidity: function getAllDisputeVars(uint256 _disputeId) view returns(bytes32, bool, bool, bool, address, address, address, uint256[9], int256)
+func (_TellorGetters *TellorGettersCaller) GetAllDisputeVars(opts *bind.CallOpts, _disputeId *big.Int) ([32]byte, bool, bool, bool, common.Address, common.Address, common.Address, [9]*big.Int, *big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getAllDisputeVars", _disputeId)
+
+	if err != nil {
+		return *new([32]byte), *new(bool), *new(bool), *new(bool), *new(common.Address), *new(common.Address), *new(common.Address), *new([9]*big.Int), *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out1 := *abi.ConvertType(out[1], new(bool)).(*bool)
+	out2 := *abi.ConvertType(out[2], new(bool)).(*bool)
+	out3 := *abi.ConvertType(out[3], new(bool)).(*bool)
+	out4 := *abi.ConvertType(out[4], new(common.Address)).(*common.Address)
+	out5 := *abi.ConvertType(out[5], new(common.Address)).(*common.Address)
+	out6 := *abi.ConvertType(out[6], new(common.Address)).(*common.Address)
+	out7 := *abi.ConvertType(out[7], new([9]*big.Int)).(*[9]*big.Int)
+	out8 := *abi.ConvertType(out[8], new(*big.Int)).(**big.Int)
+
+	return out0, out1, out2, out3, out4, out5, out6, out7, out8, err
+
+}
+
+// GetAllDisputeVars is a free data retrieval call binding the contract method 0xaf0b1327.
+//
+// Solidity: function getAllDisputeVars(uint256 _disputeId) view returns(bytes32, bool, bool, bool, address, address, address, uint256[9], int256)
+func (_TellorGetters *TellorGettersSession) GetAllDisputeVars(_disputeId *big.Int) ([32]byte, bool, bool, bool, common.Address, common.Address, common.Address, [9]*big.Int, *big.Int, error) {
+	return _TellorGetters.Contract.GetAllDisputeVars(&_TellorGetters.CallOpts, _disputeId)
+}
+
+// GetAllDisputeVars is a free data retrieval call binding the contract method 0xaf0b1327.
+//
+// Solidity: function getAllDisputeVars(uint256 _disputeId) view returns(bytes32, bool, bool, bool, address, address, address, uint256[9], int256)
+func (_TellorGetters *TellorGettersCallerSession) GetAllDisputeVars(_disputeId *big.Int) ([32]byte, bool, bool, bool, common.Address, common.Address, common.Address, [9]*big.Int, *big.Int, error) {
+	return _TellorGetters.Contract.GetAllDisputeVars(&_TellorGetters.CallOpts, _disputeId)
+}
+
+// GetCurrentVariables is a free data retrieval call binding the contract method 0xa22e407a.
+//
+// Solidity: function getCurrentVariables() view returns(bytes32, uint256, uint256, string, uint256, uint256)
+func (_TellorGetters *TellorGettersCaller) GetCurrentVariables(opts *bind.CallOpts) ([32]byte, *big.Int, *big.Int, string, *big.Int, *big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getCurrentVariables")
+
+	if err != nil {
+		return *new([32]byte), *new(*big.Int), *new(*big.Int), *new(string), *new(*big.Int), *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+	out2 := *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
+	out3 := *abi.ConvertType(out[3], new(string)).(*string)
+	out4 := *abi.ConvertType(out[4], new(*big.Int)).(**big.Int)
+	out5 := *abi.ConvertType(out[5], new(*big.Int)).(**big.Int)
+
+	return out0, out1, out2, out3, out4, out5, err
+
+}
+
+// GetCurrentVariables is a free data retrieval call binding the contract method 0xa22e407a.
+//
+// Solidity: function getCurrentVariables() view returns(bytes32, uint256, uint256, string, uint256, uint256)
+func (_TellorGetters *TellorGettersSession) GetCurrentVariables() ([32]byte, *big.Int, *big.Int, string, *big.Int, *big.Int, error) {
+	return _TellorGetters.Contract.GetCurrentVariables(&_TellorGetters.CallOpts)
+}
+
+// GetCurrentVariables is a free data retrieval call binding the contract method 0xa22e407a.
+//
+// Solidity: function getCurrentVariables() view returns(bytes32, uint256, uint256, string, uint256, uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetCurrentVariables() ([32]byte, *big.Int, *big.Int, string, *big.Int, *big.Int, error) {
+	return _TellorGetters.Contract.GetCurrentVariables(&_TellorGetters.CallOpts)
+}
+
+// GetDisputeIdByDisputeHash is a free data retrieval call binding the contract method 0xda379941.
+//
+// Solidity: function getDisputeIdByDisputeHash(bytes32 _hash) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetDisputeIdByDisputeHash(opts *bind.CallOpts, _hash [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getDisputeIdByDisputeHash", _hash)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetDisputeIdByDisputeHash is a free data retrieval call binding the contract method 0xda379941.
+//
+// Solidity: function getDisputeIdByDisputeHash(bytes32 _hash) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetDisputeIdByDisputeHash(_hash [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetDisputeIdByDisputeHash(&_TellorGetters.CallOpts, _hash)
+}
+
+// GetDisputeIdByDisputeHash is a free data retrieval call binding the contract method 0xda379941.
+//
+// Solidity: function getDisputeIdByDisputeHash(bytes32 _hash) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetDisputeIdByDisputeHash(_hash [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetDisputeIdByDisputeHash(&_TellorGetters.CallOpts, _hash)
+}
+
+// GetDisputeUintVars is a free data retrieval call binding the contract method 0x7f6fd5d9.
+//
+// Solidity: function getDisputeUintVars(uint256 _disputeId, bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetDisputeUintVars(opts *bind.CallOpts, _disputeId *big.Int, _data [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getDisputeUintVars", _disputeId, _data)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetDisputeUintVars is a free data retrieval call binding the contract method 0x7f6fd5d9.
+//
+// Solidity: function getDisputeUintVars(uint256 _disputeId, bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetDisputeUintVars(_disputeId *big.Int, _data [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetDisputeUintVars(&_TellorGetters.CallOpts, _disputeId, _data)
+}
+
+// GetDisputeUintVars is a free data retrieval call binding the contract method 0x7f6fd5d9.
+//
+// Solidity: function getDisputeUintVars(uint256 _disputeId, bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetDisputeUintVars(_disputeId *big.Int, _data [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetDisputeUintVars(&_TellorGetters.CallOpts, _disputeId, _data)
+}
+
+// GetLastNewValue is a free data retrieval call binding the contract method 0xfc7cf0a0.
+//
+// Solidity: function getLastNewValue() view returns(uint256, bool)
+func (_TellorGetters *TellorGettersCaller) GetLastNewValue(opts *bind.CallOpts) (*big.Int, bool, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getLastNewValue")
+
+	if err != nil {
+		return *new(*big.Int), *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out1 := *abi.ConvertType(out[1], new(bool)).(*bool)
+
+	return out0, out1, err
+
+}
+
+// GetLastNewValue is a free data retrieval call binding the contract method 0xfc7cf0a0.
+//
+// Solidity: function getLastNewValue() view returns(uint256, bool)
+func (_TellorGetters *TellorGettersSession) GetLastNewValue() (*big.Int, bool, error) {
+	return _TellorGetters.Contract.GetLastNewValue(&_TellorGetters.CallOpts)
+}
+
+// GetLastNewValue is a free data retrieval call binding the contract method 0xfc7cf0a0.
+//
+// Solidity: function getLastNewValue() view returns(uint256, bool)
+func (_TellorGetters *TellorGettersCallerSession) GetLastNewValue() (*big.Int, bool, error) {
+	return _TellorGetters.Contract.GetLastNewValue(&_TellorGetters.CallOpts)
+}
+
+// GetLastNewValueById is a free data retrieval call binding the contract method 0x3180f8df.
+//
+// Solidity: function getLastNewValueById(uint256 _requestId) view returns(uint256, bool)
+func (_TellorGetters *TellorGettersCaller) GetLastNewValueById(opts *bind.CallOpts, _requestId *big.Int) (*big.Int, bool, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getLastNewValueById", _requestId)
+
+	if err != nil {
+		return *new(*big.Int), *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out1 := *abi.ConvertType(out[1], new(bool)).(*bool)
+
+	return out0, out1, err
+
+}
+
+// GetLastNewValueById is a free data retrieval call binding the contract method 0x3180f8df.
+//
+// Solidity: function getLastNewValueById(uint256 _requestId) view returns(uint256, bool)
+func (_TellorGetters *TellorGettersSession) GetLastNewValueById(_requestId *big.Int) (*big.Int, bool, error) {
+	return _TellorGetters.Contract.GetLastNewValueById(&_TellorGetters.CallOpts, _requestId)
+}
+
+// GetLastNewValueById is a free data retrieval call binding the contract method 0x3180f8df.
+//
+// Solidity: function getLastNewValueById(uint256 _requestId) view returns(uint256, bool)
+func (_TellorGetters *TellorGettersCallerSession) GetLastNewValueById(_requestId *big.Int) (*big.Int, bool, error) {
+	return _TellorGetters.Contract.GetLastNewValueById(&_TellorGetters.CallOpts, _requestId)
+}
+
+// GetMinedBlockNum is a free data retrieval call binding the contract method 0xc775b542.
+//
+// Solidity: function getMinedBlockNum(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetMinedBlockNum(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getMinedBlockNum", _requestId, _timestamp)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetMinedBlockNum is a free data retrieval call binding the contract method 0xc775b542.
+//
+// Solidity: function getMinedBlockNum(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetMinedBlockNum(_requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetMinedBlockNum(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// GetMinedBlockNum is a free data retrieval call binding the contract method 0xc775b542.
+//
+// Solidity: function getMinedBlockNum(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetMinedBlockNum(_requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetMinedBlockNum(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// GetMinersByRequestIdAndTimestamp is a free data retrieval call binding the contract method 0x69026d63.
+//
+// Solidity: function getMinersByRequestIdAndTimestamp(uint256 _requestId, uint256 _timestamp) view returns(address[5])
+func (_TellorGetters *TellorGettersCaller) GetMinersByRequestIdAndTimestamp(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) ([5]common.Address, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getMinersByRequestIdAndTimestamp", _requestId, _timestamp)
+
+	if err != nil {
+		return *new([5]common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([5]common.Address)).(*[5]common.Address)
+
+	return out0, err
+
+}
+
+// GetMinersByRequestIdAndTimestamp is a free data retrieval call binding the contract method 0x69026d63.
+//
+// Solidity: function getMinersByRequestIdAndTimestamp(uint256 _requestId, uint256 _timestamp) view returns(address[5])
+func (_TellorGetters *TellorGettersSession) GetMinersByRequestIdAndTimestamp(_requestId *big.Int, _timestamp *big.Int) ([5]common.Address, error) {
+	return _TellorGetters.Contract.GetMinersByRequestIdAndTimestamp(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// GetMinersByRequestIdAndTimestamp is a free data retrieval call binding the contract method 0x69026d63.
+//
+// Solidity: function getMinersByRequestIdAndTimestamp(uint256 _requestId, uint256 _timestamp) view returns(address[5])
+func (_TellorGetters *TellorGettersCallerSession) GetMinersByRequestIdAndTimestamp(_requestId *big.Int, _timestamp *big.Int) ([5]common.Address, error) {
+	return _TellorGetters.Contract.GetMinersByRequestIdAndTimestamp(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// GetName is a free data retrieval call binding the contract method 0x17d7de7c.
+//
+// Solidity: function getName() view returns(string)
+func (_TellorGetters *TellorGettersCaller) GetName(opts *bind.CallOpts) (string, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getName")
+
+	if err != nil {
+		return *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+
+	return out0, err
+
+}
+
+// GetName is a free data retrieval call binding the contract method 0x17d7de7c.
+//
+// Solidity: function getName() view returns(string)
+func (_TellorGetters *TellorGettersSession) GetName() (string, error) {
+	return _TellorGetters.Contract.GetName(&_TellorGetters.CallOpts)
+}
+
+// GetName is a free data retrieval call binding the contract method 0x17d7de7c.
+//
+// Solidity: function getName() view returns(string)
+func (_TellorGetters *TellorGettersCallerSession) GetName() (string, error) {
+	return _TellorGetters.Contract.GetName(&_TellorGetters.CallOpts)
+}
+
+// GetNewValueCountbyRequestId is a free data retrieval call binding the contract method 0x46eee1c4.
+//
+// Solidity: function getNewValueCountbyRequestId(uint256 _requestId) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetNewValueCountbyRequestId(opts *bind.CallOpts, _requestId *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getNewValueCountbyRequestId", _requestId)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetNewValueCountbyRequestId is a free data retrieval call binding the contract method 0x46eee1c4.
+//
+// Solidity: function getNewValueCountbyRequestId(uint256 _requestId) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetNewValueCountbyRequestId(_requestId *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetNewValueCountbyRequestId(&_TellorGetters.CallOpts, _requestId)
+}
+
+// GetNewValueCountbyRequestId is a free data retrieval call binding the contract method 0x46eee1c4.
+//
+// Solidity: function getNewValueCountbyRequestId(uint256 _requestId) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetNewValueCountbyRequestId(_requestId *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetNewValueCountbyRequestId(&_TellorGetters.CallOpts, _requestId)
+}
+
+// GetRequestIdByQueryHash is a free data retrieval call binding the contract method 0x1db842f0.
+//
+// Solidity: function getRequestIdByQueryHash(bytes32 _request) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetRequestIdByQueryHash(opts *bind.CallOpts, _request [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getRequestIdByQueryHash", _request)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetRequestIdByQueryHash is a free data retrieval call binding the contract method 0x1db842f0.
+//
+// Solidity: function getRequestIdByQueryHash(bytes32 _request) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetRequestIdByQueryHash(_request [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestIdByQueryHash(&_TellorGetters.CallOpts, _request)
+}
+
+// GetRequestIdByQueryHash is a free data retrieval call binding the contract method 0x1db842f0.
+//
+// Solidity: function getRequestIdByQueryHash(bytes32 _request) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetRequestIdByQueryHash(_request [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestIdByQueryHash(&_TellorGetters.CallOpts, _request)
+}
+
+// GetRequestIdByRequestQIndex is a free data retrieval call binding the contract method 0x6173c0b8.
+//
+// Solidity: function getRequestIdByRequestQIndex(uint256 _index) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetRequestIdByRequestQIndex(opts *bind.CallOpts, _index *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getRequestIdByRequestQIndex", _index)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetRequestIdByRequestQIndex is a free data retrieval call binding the contract method 0x6173c0b8.
+//
+// Solidity: function getRequestIdByRequestQIndex(uint256 _index) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetRequestIdByRequestQIndex(_index *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestIdByRequestQIndex(&_TellorGetters.CallOpts, _index)
+}
+
+// GetRequestIdByRequestQIndex is a free data retrieval call binding the contract method 0x6173c0b8.
+//
+// Solidity: function getRequestIdByRequestQIndex(uint256 _index) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetRequestIdByRequestQIndex(_index *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestIdByRequestQIndex(&_TellorGetters.CallOpts, _index)
+}
+
+// GetRequestIdByTimestamp is a free data retrieval call binding the contract method 0x0f0b424d.
+//
+// Solidity: function getRequestIdByTimestamp(uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetRequestIdByTimestamp(opts *bind.CallOpts, _timestamp *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getRequestIdByTimestamp", _timestamp)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetRequestIdByTimestamp is a free data retrieval call binding the contract method 0x0f0b424d.
+//
+// Solidity: function getRequestIdByTimestamp(uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetRequestIdByTimestamp(_timestamp *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestIdByTimestamp(&_TellorGetters.CallOpts, _timestamp)
+}
+
+// GetRequestIdByTimestamp is a free data retrieval call binding the contract method 0x0f0b424d.
+//
+// Solidity: function getRequestIdByTimestamp(uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetRequestIdByTimestamp(_timestamp *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestIdByTimestamp(&_TellorGetters.CallOpts, _timestamp)
+}
+
+// GetRequestQ is a free data retrieval call binding the contract method 0xb5413029.
+//
+// Solidity: function getRequestQ() view returns(uint256[51])
+func (_TellorGetters *TellorGettersCaller) GetRequestQ(opts *bind.CallOpts) ([51]*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getRequestQ")
+
+	if err != nil {
+		return *new([51]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([51]*big.Int)).(*[51]*big.Int)
+
+	return out0, err
+
+}
+
+// GetRequestQ is a free data retrieval call binding the contract method 0xb5413029.
+//
+// Solidity: function getRequestQ() view returns(uint256[51])
+func (_TellorGetters *TellorGettersSession) GetRequestQ() ([51]*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestQ(&_TellorGetters.CallOpts)
+}
+
+// GetRequestQ is a free data retrieval call binding the contract method 0xb5413029.
+//
+// Solidity: function getRequestQ() view returns(uint256[51])
+func (_TellorGetters *TellorGettersCallerSession) GetRequestQ() ([51]*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestQ(&_TellorGetters.CallOpts)
+}
+
+// GetRequestUintVars is a free data retrieval call binding the contract method 0xe0ae93c1.
+//
+// Solidity: function getRequestUintVars(uint256 _requestId, bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetRequestUintVars(opts *bind.CallOpts, _requestId *big.Int, _data [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getRequestUintVars", _requestId, _data)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetRequestUintVars is a free data retrieval call binding the contract method 0xe0ae93c1.
+//
+// Solidity: function getRequestUintVars(uint256 _requestId, bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetRequestUintVars(_requestId *big.Int, _data [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestUintVars(&_TellorGetters.CallOpts, _requestId, _data)
+}
+
+// GetRequestUintVars is a free data retrieval call binding the contract method 0xe0ae93c1.
+//
+// Solidity: function getRequestUintVars(uint256 _requestId, bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetRequestUintVars(_requestId *big.Int, _data [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetRequestUintVars(&_TellorGetters.CallOpts, _requestId, _data)
+}
+
+// GetRequestVars is a free data retrieval call binding the contract method 0xe1eee6d6.
+//
+// Solidity: function getRequestVars(uint256 _requestId) view returns(string, string, bytes32, uint256, uint256, uint256)
+func (_TellorGetters *TellorGettersCaller) GetRequestVars(opts *bind.CallOpts, _requestId *big.Int) (string, string, [32]byte, *big.Int, *big.Int, *big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getRequestVars", _requestId)
+
+	if err != nil {
+		return *new(string), *new(string), *new([32]byte), *new(*big.Int), *new(*big.Int), *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+	out1 := *abi.ConvertType(out[1], new(string)).(*string)
+	out2 := *abi.ConvertType(out[2], new([32]byte)).(*[32]byte)
+	out3 := *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
+	out4 := *abi.ConvertType(out[4], new(*big.Int)).(**big.Int)
+	out5 := *abi.ConvertType(out[5], new(*big.Int)).(**big.Int)
+
+	return out0, out1, out2, out3, out4, out5, err
+
+}
+
+// GetRequestVars is a free data retrieval call binding the contract method 0xe1eee6d6.
+//
+// Solidity: function getRequestVars(uint256 _requestId) view returns(string, string, bytes32, uint256, uint256, uint256)
+func (_TellorGetters *TellorGettersSession) GetRequestVars(_requestId *big.Int) (string, string, [32]byte, *big.Int, *big.Int, *big.Int, error) {
+	return _TellorGetters.Contract.GetRequestVars(&_TellorGetters.CallOpts, _requestId)
+}
+
+// GetRequestVars is a free data retrieval call binding the contract method 0xe1eee6d6.
+//
+// Solidity: function getRequestVars(uint256 _requestId) view returns(string, string, bytes32, uint256, uint256, uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetRequestVars(_requestId *big.Int) (string, string, [32]byte, *big.Int, *big.Int, *big.Int, error) {
+	return _TellorGetters.Contract.GetRequestVars(&_TellorGetters.CallOpts, _requestId)
+}
+
+// GetStakerInfo is a free data retrieval call binding the contract method 0x733bdef0.
+//
+// Solidity: function getStakerInfo(address _staker) view returns(uint256, uint256)
+func (_TellorGetters *TellorGettersCaller) GetStakerInfo(opts *bind.CallOpts, _staker common.Address) (*big.Int, *big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getStakerInfo", _staker)
+
+	if err != nil {
+		return *new(*big.Int), *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+
+	return out0, out1, err
+
+}
+
+// GetStakerInfo is a free data retrieval call binding the contract method 0x733bdef0.
+//
+// Solidity: function getStakerInfo(address _staker) view returns(uint256, uint256)
+func (_TellorGetters *TellorGettersSession) GetStakerInfo(_staker common.Address) (*big.Int, *big.Int, error) {
+	return _TellorGetters.Contract.GetStakerInfo(&_TellorGetters.CallOpts, _staker)
+}
+
+// GetStakerInfo is a free data retrieval call binding the contract method 0x733bdef0.
+//
+// Solidity: function getStakerInfo(address _staker) view returns(uint256, uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetStakerInfo(_staker common.Address) (*big.Int, *big.Int, error) {
+	return _TellorGetters.Contract.GetStakerInfo(&_TellorGetters.CallOpts, _staker)
+}
+
+// GetSubmissionsByTimestamp is a free data retrieval call binding the contract method 0x11c98512.
+//
+// Solidity: function getSubmissionsByTimestamp(uint256 _requestId, uint256 _timestamp) view returns(uint256[5])
+func (_TellorGetters *TellorGettersCaller) GetSubmissionsByTimestamp(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) ([5]*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getSubmissionsByTimestamp", _requestId, _timestamp)
+
+	if err != nil {
+		return *new([5]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([5]*big.Int)).(*[5]*big.Int)
+
+	return out0, err
+
+}
+
+// GetSubmissionsByTimestamp is a free data retrieval call binding the contract method 0x11c98512.
+//
+// Solidity: function getSubmissionsByTimestamp(uint256 _requestId, uint256 _timestamp) view returns(uint256[5])
+func (_TellorGetters *TellorGettersSession) GetSubmissionsByTimestamp(_requestId *big.Int, _timestamp *big.Int) ([5]*big.Int, error) {
+	return _TellorGetters.Contract.GetSubmissionsByTimestamp(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// GetSubmissionsByTimestamp is a free data retrieval call binding the contract method 0x11c98512.
+//
+// Solidity: function getSubmissionsByTimestamp(uint256 _requestId, uint256 _timestamp) view returns(uint256[5])
+func (_TellorGetters *TellorGettersCallerSession) GetSubmissionsByTimestamp(_requestId *big.Int, _timestamp *big.Int) ([5]*big.Int, error) {
+	return _TellorGetters.Contract.GetSubmissionsByTimestamp(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// GetSymbol is a free data retrieval call binding the contract method 0x15070401.
+//
+// Solidity: function getSymbol() view returns(string)
+func (_TellorGetters *TellorGettersCaller) GetSymbol(opts *bind.CallOpts) (string, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getSymbol")
+
+	if err != nil {
+		return *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+
+	return out0, err
+
+}
+
+// GetSymbol is a free data retrieval call binding the contract method 0x15070401.
+//
+// Solidity: function getSymbol() view returns(string)
+func (_TellorGetters *TellorGettersSession) GetSymbol() (string, error) {
+	return _TellorGetters.Contract.GetSymbol(&_TellorGetters.CallOpts)
+}
+
+// GetSymbol is a free data retrieval call binding the contract method 0x15070401.
+//
+// Solidity: function getSymbol() view returns(string)
+func (_TellorGetters *TellorGettersCallerSession) GetSymbol() (string, error) {
+	return _TellorGetters.Contract.GetSymbol(&_TellorGetters.CallOpts)
+}
+
+// GetTimestampbyRequestIDandIndex is a free data retrieval call binding the contract method 0x77fbb663.
+//
+// Solidity: function getTimestampbyRequestIDandIndex(uint256 _requestID, uint256 _index) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetTimestampbyRequestIDandIndex(opts *bind.CallOpts, _requestID *big.Int, _index *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getTimestampbyRequestIDandIndex", _requestID, _index)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetTimestampbyRequestIDandIndex is a free data retrieval call binding the contract method 0x77fbb663.
+//
+// Solidity: function getTimestampbyRequestIDandIndex(uint256 _requestID, uint256 _index) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetTimestampbyRequestIDandIndex(_requestID *big.Int, _index *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetTimestampbyRequestIDandIndex(&_TellorGetters.CallOpts, _requestID, _index)
+}
+
+// GetTimestampbyRequestIDandIndex is a free data retrieval call binding the contract method 0x77fbb663.
+//
+// Solidity: function getTimestampbyRequestIDandIndex(uint256 _requestID, uint256 _index) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetTimestampbyRequestIDandIndex(_requestID *big.Int, _index *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.GetTimestampbyRequestIDandIndex(&_TellorGetters.CallOpts, _requestID, _index)
+}
+
+// GetUintVar is a free data retrieval call binding the contract method 0x612c8f7f.
+//
+// Solidity: function getUintVar(bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) GetUintVar(opts *bind.CallOpts, _data [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getUintVar", _data)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetUintVar is a free data retrieval call binding the contract method 0x612c8f7f.
+//
+// Solidity: function getUintVar(bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) GetUintVar(_data [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetUintVar(&_TellorGetters.CallOpts, _data)
+}
+
+// GetUintVar is a free data retrieval call binding the contract method 0x612c8f7f.
+//
+// Solidity: function getUintVar(bytes32 _data) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) GetUintVar(_data [32]byte) (*big.Int, error) {
+	return _TellorGetters.Contract.GetUintVar(&_TellorGetters.CallOpts, _data)
+}
+
+// GetVariablesOnDeck is a free data retrieval call binding the contract method 0x19e8e03b.
+//
+// Solidity: function getVariablesOnDeck() view returns(uint256, uint256, string)
+func (_TellorGetters *TellorGettersCaller) GetVariablesOnDeck(opts *bind.CallOpts) (*big.Int, *big.Int, string, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "getVariablesOnDeck")
+
+	if err != nil {
+		return *new(*big.Int), *new(*big.Int), *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+	out2 := *abi.ConvertType(out[2], new(string)).(*string)
+
+	return out0, out1, out2, err
+
+}
+
+// GetVariablesOnDeck is a free data retrieval call binding the contract method 0x19e8e03b.
+//
+// Solidity: function getVariablesOnDeck() view returns(uint256, uint256, string)
+func (_TellorGetters *TellorGettersSession) GetVariablesOnDeck() (*big.Int, *big.Int, string, error) {
+	return _TellorGetters.Contract.GetVariablesOnDeck(&_TellorGetters.CallOpts)
+}
+
+// GetVariablesOnDeck is a free data retrieval call binding the contract method 0x19e8e03b.
+//
+// Solidity: function getVariablesOnDeck() view returns(uint256, uint256, string)
+func (_TellorGetters *TellorGettersCallerSession) GetVariablesOnDeck() (*big.Int, *big.Int, string, error) {
+	return _TellorGetters.Contract.GetVariablesOnDeck(&_TellorGetters.CallOpts)
+}
+
+// IsInDispute is a free data retrieval call binding the contract method 0x3df0777b.
+//
+// Solidity: function isInDispute(uint256 _requestId, uint256 _timestamp) view returns(bool)
+func (_TellorGetters *TellorGettersCaller) IsInDispute(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) (bool, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "isInDispute", _requestId, _timestamp)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsInDispute is a free data retrieval call binding the contract method 0x3df0777b.
+//
+// Solidity: function isInDispute(uint256 _requestId, uint256 _timestamp) view returns(bool)
+func (_TellorGetters *TellorGettersSession) IsInDispute(_requestId *big.Int, _timestamp *big.Int) (bool, error) {
+	return _TellorGetters.Contract.IsInDispute(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// IsInDispute is a free data retrieval call binding the contract method 0x3df0777b.
+//
+// Solidity: function isInDispute(uint256 _requestId, uint256 _timestamp) view returns(bool)
+func (_TellorGetters *TellorGettersCallerSession) IsInDispute(_requestId *big.Int, _timestamp *big.Int) (bool, error) {
+	return _TellorGetters.Contract.IsInDispute(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// RetrieveData is a free data retrieval call binding the contract method 0x93fa4915.
+//
+// Solidity: function retrieveData(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) RetrieveData(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "retrieveData", _requestId, _timestamp)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// RetrieveData is a free data retrieval call binding the contract method 0x93fa4915.
+//
+// Solidity: function retrieveData(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersSession) RetrieveData(_requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.RetrieveData(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// RetrieveData is a free data retrieval call binding the contract method 0x93fa4915.
+//
+// Solidity: function retrieveData(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) RetrieveData(_requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	return _TellorGetters.Contract.RetrieveData(&_TellorGetters.CallOpts, _requestId, _timestamp)
+}
+
+// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
+//
+// Solidity: function totalSupply() view returns(uint256)
+func (_TellorGetters *TellorGettersCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorGetters.contract.Call(opts, &out, "totalSupply")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
+//
+// Solidity: function totalSupply() view returns(uint256)
+func (_TellorGetters *TellorGettersSession) TotalSupply() (*big.Int, error) {
+	return _TellorGetters.Contract.TotalSupply(&_TellorGetters.CallOpts)
+}
+
+// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
+//
+// Solidity: function totalSupply() view returns(uint256)
+func (_TellorGetters *TellorGettersCallerSession) TotalSupply() (*big.Int, error) {
+	return _TellorGetters.Contract.TotalSupply(&_TellorGetters.CallOpts)
+}
+
+// TellorGettersLibraryABI is the input ABI used to generate the binding from.
+const TellorGettersLibraryABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_newTellor\",\"type\":\"address\"}],\"name\":\"NewTellorAddress\",\"type\":\"event\"}]"
+
 // TellorGettersLibraryBin is the compiled bytecode used for deploying new contracts.
-var TellorGettersLibraryBin = "0x60dd610025600b82828239805160001a60731461001857fe5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361060335760003560e01c8063c93299e9146038575b600080fd5b606760048036036060811015604c57600080fd5b50803590602081013590604001356001600160a01b0316607b565b604080519115158252519081900360200190f35b6000918252604192909201602090815260408083206001600160a01b039094168352929052205460ff169056fea265627a7a72315820c3cedf815768a97ad7990ed39972e0ba8f61b5b1cd292e2a02802596177aa4e664736f6c63430005100032"
+var TellorGettersLibraryBin = "0x604c6023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea165627a7a723058201c689a6fe7df653536e8469d725c80d3a356b1cbe5450b67a26550ce829c61250029"
 
 // DeployTellorGettersLibrary deploys a new Ethereum contract, binding an instance of TellorGettersLibrary to it.
 func DeployTellorGettersLibrary(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *TellorGettersLibrary, error) {
@@ -2037,153 +2477,168 @@ func (_TellorGettersLibrary *TellorGettersLibraryFilterer) ParseNewTellorAddress
 	return event, nil
 }
 
-// TellorLibraryABI is the input ABI used to generate the binding from.
-const TellorLibraryABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"_currentChallenge\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256[5]\",\"name\":\"_currentRequestId\",\"type\":\"uint256[5]\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_difficulty\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_totalTips\",\"type\":\"uint256\"}],\"name\":\"NewChallenge\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256[5]\",\"name\":\"_requestId\",\"type\":\"uint256[5]\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_time\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256[5]\",\"name\":\"_value\",\"type\":\"uint256[5]\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_totalTips\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"_currentChallenge\",\"type\":\"bytes32\"}],\"name\":\"NewValue\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_miner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"_nonce\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256[5]\",\"name\":\"_requestId\",\"type\":\"uint256[5]\"},{\"indexed\":false,\"internalType\":\"uint256[5]\",\"name\":\"_value\",\"type\":\"uint256[5]\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"_currentChallenge\",\"type\":\"bytes32\"}],\"name\":\"NonceSubmitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipProposed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_tip\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_totalTips\",\"type\":\"uint256\"}],\"name\":\"TipAdded\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[],\"name\":\"_owner\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"_tBlock\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"currentRequestId\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"currentReward\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"currentTotalTips\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"devShare\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"difficulty\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"pending_owner\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"requestCount\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"requestQPosition\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"runningTips\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"slotProgress\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"timeOfLastNewValue\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"timeTarget\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalTip\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"total_supply\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+// TellorMasterABI is the input ABI used to generate the binding from.
+const TellorMasterABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"getRequestIdByTimestamp\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"getSubmissionsByTimestamp\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[5]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"getAddressVars\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getSymbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getName\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getVariablesOnDeck\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_request\",\"type\":\"bytes32\"}],\"name\":\"getRequestIdByQueryHash\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"getLastNewValueById\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"isInDispute\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"getNewValueCountbyRequestId\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newDeity\",\"type\":\"address\"}],\"name\":\"changeDeity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_user\",\"type\":\"address\"},{\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"balanceOfAt\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"getUintVar\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getRequestIdByRequestQIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_challenge\",\"type\":\"bytes32\"},{\"name\":\"_miner\",\"type\":\"address\"}],\"name\":\"didMine\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"getMinersByRequestIdAndTimestamp\",\"outputs\":[{\"name\":\"\",\"type\":\"address[5]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_user\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_staker\",\"type\":\"address\"}],\"name\":\"getStakerInfo\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestID\",\"type\":\"uint256\"},{\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getTimestampbyRequestIDandIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_disputeId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"getDisputeUintVars\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"retrieveData\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_user\",\"type\":\"address\"},{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"allowedToTrade\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getCurrentVariables\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"string\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_disputeId\",\"type\":\"uint256\"},{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"didVote\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_tellorContract\",\"type\":\"address\"}],\"name\":\"changeTellorContract\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_disputeId\",\"type\":\"uint256\"}],\"name\":\"getAllDisputeVars\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bool\"},{\"name\":\"\",\"type\":\"bool\"},{\"name\":\"\",\"type\":\"bool\"},{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"uint256[9]\"},{\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getRequestQ\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[51]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"getMinedBlockNum\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_hash\",\"type\":\"bytes32\"}],\"name\":\"getDisputeIdByDisputeHash\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_user\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"getRequestUintVars\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"getRequestVars\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"},{\"name\":\"\",\"type\":\"string\"},{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getLastNewValue\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_tellorContract\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"fallback\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_newTellor\",\"type\":\"address\"}],\"name\":\"NewTellorAddress\",\"type\":\"event\"}]"
 
-// TellorLibraryFuncSigs maps the 4-byte function signature to its string representation.
-var TellorLibraryFuncSigs = map[string]string{
-	"b2bdfa7b": "_owner()",
-	"6e3cf885": "_tBlock()",
-	"02e8f21b": "addTip(TellorStorage.TellorStorageStruct storage,uint256,uint256)",
-	"314691ff": "claimOwnership(TellorStorage.TellorStorageStruct storage)",
-	"5ae2bfdb": "currentRequestId()",
-	"07621eca": "currentReward()",
-	"75ad1a2a": "currentTotalTips()",
-	"aed04fae": "devShare()",
-	"19cae462": "difficulty()",
-	"2dbfd604": "newBlock(TellorStorage.TellorStorageStruct storage,string,uint256[5])",
-	"7f4ec4c3": "pending_owner()",
-	"291f8b73": "proposeOwnership(TellorStorage.TellorStorageStruct storage,address)",
-	"5badbe4c": "requestCount()",
-	"2bf07e9e": "requestQPosition()",
-	"b0dc7c20": "runningTips()",
-	"03b3160f": "slotProgress()",
-	"a4bc4067": "submitMiningSolution(TellorStorage.TellorStorageStruct storage,string,uint256[5],uint256[5])",
-	"6fd4f229": "timeOfLastNewValue()",
-	"6fc37811": "timeTarget()",
-	"561cb04a": "totalTip()",
-	"3940e9ee": "total_supply()",
-	"ef84b45f": "updateOnDeck(TellorStorage.TellorStorageStruct storage,uint256,uint256)",
+// TellorMasterFuncSigs maps the 4-byte function signature to its string representation.
+var TellorMasterFuncSigs = map[string]string{
+	"dd62ed3e": "allowance(address,address)",
+	"999cf26c": "allowedToTrade(address,uint256)",
+	"70a08231": "balanceOf(address)",
+	"4ee2cd7e": "balanceOfAt(address,uint256)",
+	"47abd7f1": "changeDeity(address)",
+	"ae0a8279": "changeTellorContract(address)",
+	"63bb82ad": "didMine(bytes32,address)",
+	"a7c438bc": "didVote(uint256,address)",
+	"133bee5e": "getAddressVars(bytes32)",
+	"af0b1327": "getAllDisputeVars(uint256)",
+	"a22e407a": "getCurrentVariables()",
+	"da379941": "getDisputeIdByDisputeHash(bytes32)",
+	"7f6fd5d9": "getDisputeUintVars(uint256,bytes32)",
+	"fc7cf0a0": "getLastNewValue()",
+	"3180f8df": "getLastNewValueById(uint256)",
+	"c775b542": "getMinedBlockNum(uint256,uint256)",
+	"69026d63": "getMinersByRequestIdAndTimestamp(uint256,uint256)",
+	"17d7de7c": "getName()",
+	"46eee1c4": "getNewValueCountbyRequestId(uint256)",
+	"1db842f0": "getRequestIdByQueryHash(bytes32)",
+	"6173c0b8": "getRequestIdByRequestQIndex(uint256)",
+	"0f0b424d": "getRequestIdByTimestamp(uint256)",
+	"b5413029": "getRequestQ()",
+	"e0ae93c1": "getRequestUintVars(uint256,bytes32)",
+	"e1eee6d6": "getRequestVars(uint256)",
+	"733bdef0": "getStakerInfo(address)",
+	"11c98512": "getSubmissionsByTimestamp(uint256,uint256)",
+	"15070401": "getSymbol()",
+	"77fbb663": "getTimestampbyRequestIDandIndex(uint256,uint256)",
+	"612c8f7f": "getUintVar(bytes32)",
+	"19e8e03b": "getVariablesOnDeck()",
+	"3df0777b": "isInDispute(uint256,uint256)",
+	"93fa4915": "retrieveData(uint256,uint256)",
+	"18160ddd": "totalSupply()",
 }
 
-// TellorLibraryBin is the compiled bytecode used for deploying new contracts.
-var TellorLibraryBin = "0x61290e610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361061014c5760003560e01c80635badbe4c116100c25780637f4ec4c3116100865780637f4ec4c314610344578063a4bc40671461034c578063aed04fae146103d4578063b0dc7c20146103dc578063b2bdfa7b146103e4578063ef84b45f146103ec5761014c565b80635badbe4c1461031c5780636e3cf885146103245780636fc378111461032c5780636fd4f2291461033457806375ad1a2a1461033c5761014c565b80632bf07e9e116101145780632bf07e9e146101ec5780632dbfd604146101f4578063314691ff146102da5780633940e9ee14610304578063561cb04a1461030c5780635ae2bfdb146103145761014c565b806302e8f21b1461015157806303b3160f1461018957806307621eca146101a357806319cae462146101ab578063291f8b73146101b3575b600080fd5b81801561015d57600080fd5b506101876004803603606081101561017457600080fd5b5080359060208101359060400135610422565b005b610191610675565b60408051918252519081900360200190f35b610191610687565b6101916106ab565b8180156101bf57600080fd5b50610187600480360360408110156101d657600080fd5b50803590602001356001600160a01b03166106bd565b6101916107c5565b81801561020057600080fd5b50610187600480360360e081101561021757600080fd5b8135919081019060408101602082013564010000000081111561023957600080fd5b82018360208201111561024b57600080fd5b8035906020019184600183028401116401000000008311171561026d57600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250506040805160a081810190925293969594818101949350915060059083908390808284376000920191909152509194506107d79350505050565b8180156102e657600080fd5b50610187600480360360208110156102fd57600080fd5b503561103f565b61019161117b565b61019161119f565b6101916111b1565b6101916111d5565b6101916111f9565b61019161120b565b61019161122f565b610191611241565b610191611253565b81801561035857600080fd5b50610187600480360361018081101561037057600080fd5b8135919081019060408101602082013564010000000081111561039257600080fd5b8201836020820111156103a457600080fd5b803590602001918460018302840111640100000000831117156103c657600080fd5b919350915060a08101611265565b610191611336565b61019161135a565b61019161137e565b8180156103f857600080fd5b506101876004803603606081101561040f57600080fd5b5080359060208101359060400135611390565b81610465576040805162461bcd60e51b815260206004820152600e60248201526d052657175657374496420697320360941b604482015290519081900360640190fd5b806104b7576040805162461bcd60e51b815260206004820152601c60248201527f5469702073686f756c642062652067726561746572207468616e203000000000604482015290519081900360640190fd5b7f05de9147d05477c0a5dc675aeea733157f5092f82add148cf39d579cafe3dc98600090815260408085016020529020546001018281141561052b577f05de9147d05477c0a5dc675aeea733157f5092f82add148cf39d579cafe3dc9860009081526040808601602052902081905561057f565b80831061057f576040805162461bcd60e51b815260206004820181905260248201527f526571756573744964206973206e6f74206c657373207468616e20636f756e74604482015290519081900360640190fd5b6040805163c7bb46ad60e01b81526004810186905233602482015230604482015260648101849052905173__$2718d1e96458860b323e2267f4056bb1be$__9163c7bb46ad916084808301926000929190829003018186803b1580156105e457600080fd5b505af41580156105f8573d6000803e3d6000fd5b50505050610607848484611390565b600083815260488501602090815260408083206000805160206127d48339815191528452600401825291829020548251858152918201528151859233927fd32134405b68f6f7220f9c38ae310df1b648d16188006768d45be2f7c24e8820929081900390910190a350505050565b6000805160206127f483398151915281565b7f9b6853911475b07474368644a0d922ee13bc76a15cd3e97d3e334326424a47d481565b6000805160206127b483398151915281565b6000805160206127948339815191526000908152603f830160205260409020546001600160a01b0316331461072f576040805162461bcd60e51b815260206004820152601360248201527229b2b73232b91034b9903737ba1037bbb732b960691b604482015290519081900360640190fd5b6000805160206127948339815191526000908152603f830160205260408082205490516001600160a01b03808516939216917fb51454ce8c7f26becd312a46c4815553887f2ec876a0b8dc813b87f62edf6f8091a36000805160206128148339815191526000908152603f92909201602052604090912080546001600160a01b0319166001600160a01b03909216919091179055565b60008051602061285483398151915281565b60008051602061283483398151915260009081526040808501602081815282842054845260488701815282842060008051602061277483398151915285529190529082205490914291909103906108306104b0836115b8565b6000805160206127b483398151915260009081526040888101602052808220547fad16221efc80aaf1b7e69bd3ecb61ba5ffa539adf129c3b4ffff769c9b5bbc338352912054610fa092900381029190910591508161088e57600191505b61089b82820160016115d0565b6000805160206127b4833981519152600090815260408981016020528082209290925588546000805160206127748339815191528252919020603c429081069003908190556108e8612655565b60005b6005811015610c165760015b6005811015610a9c57600082815260098a0160205260408120826005811061091b57fe5b0154600084815260088c016020526040812091925090836005811061093c57fe5b01546001600160a01b03169050825b60008111801561097a5750600085815260098d016020526040902060001982016005811061097557fe5b015483105b15610a2d57600085815260098d016020526040902060001982016005811061099e57fe5b0154600086815260098e016020526040902082600581106109bb57fe5b0155600085815260088d01602052604090206000198201600581106109dc57fe5b0154600086815260088e01602052604090206001600160a01b03909116908260058110610a0557fe5b0180546001600160a01b0319166001600160a01b03929092169190911790556000190161094b565b83811015610a9157600085815260098d016020526040902083908260058110610a5257fe5b0155600085815260088d016020526040902082908260058110610a7157fe5b0180546001600160a01b0319166001600160a01b03929092169190911790555b5050506001016108f7565b5060008b60480160008b8460058110610ab157fe5b602002015181526020019081526020016000209050886009016000838152602001908152602001600020600580602002604051908101604052809291908260058015610b12576020028201915b815481526020019060010190808311610afe575b5050505050925082600260058110610b2657fe5b6020908102919091015160008681526006840183526040808220929092558481526008808d01845282822088835290850190935220610b66916005612673565b5060008281526009808b0160209081526040808420888552928501909152909120610b929160056126ae565b50600082815260088a0160205260408120610bac916126e5565b600082815260098a0160205260408120610bc5916126e5565b600381018054600181810183556000928352602080842090920187905586835260058401825260408084204390556000805160206127d48339815191528452600490940190915291812055016108eb565b50827fbeb3b9f46c8d7bb00c873fca10d307538df350866d25f891ffb395147ddbdc458984848e60400160007fdb21f0c4accc4f2f5f1045353763a9ffe7091ceaf0fcceb5831858d96cf8463160001b8152602001908152602001600020546040518085600560200280838360005b83811015610c9d578181015183820152602001610c85565b5050505090500184815260200183600560200280838360005b83811015610cce578181015183820152602001610cb6565b5050505090500182815260200194505050505060405180910390a28751600083815260428c016020908152604082209290925560348c01805460018101825590825291902001829055610d1f612655565b8851600090815260488c016020908152604080832086845260080190915290819020815160a08101928390529160059082845b81546001600160a01b03168152600190910190602001808311610d525750505050509050610d818b88836115df565b60008051602061283483398151915260009081526040808d01602052902080546001019055610dae612655565b610db78c611a4f565b905060005b6005811015610ed157818160058110610dd157fe5b60200201518d6035018260058110610de557fe5b6002020155600060018e0160488f0182858560058110610e0157fe5b60200201518152602001908152602001600020600401600060008051602061285483398151915260001b81526020019081526020016000205460338110610e4457fe5b015560488d016000838360058110610e5857fe5b6020020151815260200190815260200160002060040160006000805160206127d483398151915260001b8152602001908152602001600020548d60400160006000805160206128ba83398151915260001b8152602001908152602001600020600082825401925050819055508080600101915050610dbc565b508a8560014303406040516020018080602001848152602001838152602001828103825285818151815260200191508051906020019080838360005b83811015610f25578181015183820152602001610f0d565b50505050905090810190601f168015610f525780820380516001836020036101000a031916815260200191505b50945050505050604051602081830303815290604052805190602001209450848c60000181905550847f1d85ce10456e29b67de37887496d3f1fcf1b64c79c4d07484038703a9f5c1408828e60400160006000805160206127b483398151915260001b8152602001908152602001600020548f60400160006000805160206128ba83398151915260001b8152602001908152602001600020546040518084600560200280838360005b83811015611013578181015183820152602001610ffb565b5050505091909101938452505060208201526040805191829003019150a2505050505050505050505050565b6000805160206128148339815191526000908152603f820160205260409020546001600160a01b031633146110bb576040805162461bcd60e51b815260206004820152601b60248201527f53656e646572206973206e6f742070656e64696e67206f776e65720000000000604482015290519081900360640190fd5b6000805160206128148339815191526000908152603f820160205260408082205460008051602061279483398151915283528183205491516001600160a01b039182169392909116917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e091a36000805160206128148339815191526000908152603f9091016020526040808220546000805160206127948339815191528352912080546001600160a01b0319166001600160a01b03909216919091179055565b7fb1557182e4359a1f0c6301278e8f5b35a776ab58d39892581e357578fb28783681565b6000805160206127d483398151915281565b7f7584d7d8701714da9c117f5bf30af73b0b88aca5338a84a21eb28de2fe0d93b881565b7f05de9147d05477c0a5dc675aeea733157f5092f82add148cf39d579cafe3dc9881565b60008051602061283483398151915281565b7fad16221efc80aaf1b7e69bd3ecb61ba5ffa539adf129c3b4ffff769c9b5bbc3381565b60008051602061277483398151915281565b6000805160206128ba83398151915281565b60008051602061281483398151915281565b6112a58585858080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250611b3c92505050565b61132f8585858080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250506040805160a081810190925292508791506005908390839080828437600092019190915250506040805160a0818101909252915086906005908390839080828437600092019190915250611dd2915050565b5050505050565b7f8fe9ded8d7c08f720cf0340699024f83522ea66b2bbfb8f557851cb9ee63b54c81565b7fdb21f0c4accc4f2f5f1045353763a9ffe7091ceaf0fcceb5831858d96cf8463181565b60008051602061279483398151915281565b600082815260488401602090815260408083206000805160206127d4833981519152845260048101909252909120546113cf908363ffffffff6124a316565b6000805160206127d4833981519152600090815260048301602052604090205560358401548314806114045750603784015483145b806114125750603984015483145b806114205750603b84015483145b8061142e5750603d84015483145b1561145c576000805160206128ba8339815191526000908152604080860160205290208054830190556115b2565b6000805160206128548339815191526000908152600482016020526040902054611578576040805161066081019182905260009182916114be91600189019060339082845b8154815260200190600101908083116114a15750505050506124b2565b6000805160206127d4833981519152600090815260048601602052604090205491935091508210806114ee575081155b15611571576000805160206127d4833981519152600090815260048401602052604090205460018701826033811061152257fe5b0155600081815260438701602090815260408083208054845260488a01835281842060008051602061285483398151915285526004908101845282852085905590899055860190915290208190555b50506115b2565b600080516020612854833981519152600090815260048201602052604090205482906001860190603381106115a957fe5b01805490910190555b50505050565b60008183106115c757816115c9565b825b9392505050565b60008183136115c757816115c9565b6000805160206128ba83398151915260009081526040848101602052808220548351825163c7bb46ad60e01b8152600481018890523060248201526001600160a01b039091166044820152600a90910461012c670de0b6b3a7640000878102919091048281016064850152935190949192600285049273__$2718d1e96458860b323e2267f4056bb1be$__9263c7bb46ad926084808201939291829003018186803b15801561168d57600080fd5b505af41580156116a1573d6000803e3d6000fd5b5050505073__$2718d1e96458860b323e2267f4056bb1be$__63c7bb46ad8830886001600581106116ce57fe5b6020020151604080516001600160e01b031960e087901b16815260048101949094526001600160a01b039283166024850152911660448301528686016064830152516084808301926000929190829003018186803b15801561172f57600080fd5b505af4158015611743573d6000803e3d6000fd5b5050505073__$2718d1e96458860b323e2267f4056bb1be$__63c7bb46ad88308860026005811061177057fe5b6020020151604080516001600160e01b031960e087901b16815260048101949094526001600160a01b039283166024850152911660448301528686016064830152516084808301926000929190829003018186803b1580156117d157600080fd5b505af41580156117e5573d6000803e3d6000fd5b5050505073__$2718d1e96458860b323e2267f4056bb1be$__63c7bb46ad88308860036005811061181257fe5b6020020151604080516001600160e01b031960e087901b16815260048101949094526001600160a01b039283166024850152911660448301528686016064830152516084808301926000929190829003018186803b15801561187357600080fd5b505af4158015611887573d6000803e3d6000fd5b5050505073__$2718d1e96458860b323e2267f4056bb1be$__63c7bb46ad8830886004600581106118b457fe5b6020020151604080516001600160e01b031960e087901b16815260048101949094526001600160a01b039283166024850152911660448301528686016064830152516084808301926000929190829003018186803b15801561191557600080fd5b505af4158015611929573d6000803e3d6000fd5b50506000805160206128ba833981519152600090815260408a81016020908152818320547fb1557182e4359a1f0c6301278e8f5b35a776ab58d39892581e357578fb28783684528284208054600290920460058b0289010390910190556000805160206127948339815191528352603f8c01905280822054815163c7bb46ad60e01b8152600481018d90523060248201526001600160a01b03909116604482015260648101869052905173__$2718d1e96458860b323e2267f4056bb1be$__945063c7bb46ad935060848083019392829003018186803b158015611a0c57600080fd5b505af4158015611a20573d6000803e3d6000fd5b50506000805160206128ba83398151915260009081526040998a01602052988920989098555050505050505050565b611a57612655565b611a5f612655565b611a67612655565b60408051610660810191829052611aa091600187019060339082845b815481526020019060010190808311611a83575050505050612501565b909250905060005b6005811015611b3457828160058110611abd57fe5b602002015115611b0357846043016000838360058110611ad957fe5b6020020151815260200190815260200160002054848260058110611af957fe5b6020020152611b2c565b846035018160040360058110611b1557fe5b6002020154848260058110611b2657fe5b60200201525b600101611aa8565b505050919050565b8160400160006000805160206127b483398151915260001b815260200190815260200160002054600260038460000154338560405160200180848152602001836001600160a01b03166001600160a01b031660601b815260140182805190602001908083835b60208310611bc15780518252601f199092019160209182019101611ba2565b6001836020036101000a038019825116818451168082178552505050505050905001935050505060405160208183030381529060405280519060200120604051602001808281526020019150506040516020818303038152906040526040518082805190602001908083835b60208310611c4c5780518252601f199092019160209182019101611c2d565b51815160209384036101000a60001901801990921691161790526040519190930194509192505080830381855afa158015611c8b573d6000803e3d6000fd5b5050506040515160601b60405160200180826bffffffffffffffffffffffff19166bffffffffffffffffffffffff191681526014019150506040516020818303038152906040526040518082805190602001908083835b60208310611d015780518252601f199092019160209182019101611ce2565b51815160209384036101000a60001901801990921691161790526040519190930194509192505080830381855afa158015611d40573d6000803e3d6000fd5b5050506040513d6020811015611d5557600080fd5b505181611d5e57fe5b061580611d9357506000805160206127748339815191526000908152604080840160205290205461038490603c420642030310155b611dce5760405162461bcd60e51b81526004018080602001828103825260258152602001806128956025913960400191505060405180910390fd5b5050565b6040805133602080830182905283518084038201815292840184528251928101929092206000918252604788019092529190912054600114611e5b576040805162461bcd60e51b815260206004820152601a60248201527f4d696e657220737461747573206973206e6f74207374616b6572000000000000604482015290519081900360640190fd5b60008181526040808701602052902054610384429190910311611eaf5760405162461bcd60e51b815260040180806020018281038252602a81526020018061274a602a913960400191505060405180910390fd5b6035850154835114611efe576040805162461bcd60e51b8152602060048201526013602482015272526571756573742049442069732077726f6e6760681b604482015290519081900360640190fd5b6037850154602084015114611f50576040805162461bcd60e51b8152602060048201526013602482015272526571756573742049442069732077726f6e6760681b604482015290519081900360640190fd5b6039850154604084015114611fa2576040805162461bcd60e51b8152602060048201526013602482015272526571756573742049442069732077726f6e6760681b604482015290519081900360640190fd5b603b850154606084015114611ff4576040805162461bcd60e51b8152602060048201526013602482015272526571756573742049442069732077726f6e6760681b604482015290519081900360640190fd5b603d850154608084015114612046576040805162461bcd60e51b8152602060048201526013602482015272526571756573742049442069732077726f6e6760681b604482015290519081900360640190fd5b60008181526040808701602090815281832042905587546000805160206127f483398151915284528284205481855260418a018352838520338652909252919092205490919060ff16156120cb5760405162461bcd60e51b81526004018080602001828103825260218152602001806128746021913960400191505060405180910390fd5b6000828152604188016020908152604080832033808552908352818420805460ff191660019081179091556000805160206128348339815191528552828c01845282852054855260488c018452828520908552600881019093529220909190836005811061213557fe5b0180546001600160a01b0319166001600160a01b0392909216919091179055845160008080526009830160205260409020836005811061217157fe5b015560208086015160016000908152600984019092526040909120836005811061219757fe5b015560408086015160026000908152600984016020529190912083600581106121bc57fe5b0155606085015160036000908152600983016020526040902083600581106121e057fe5b01556080850151600460009081526009830160205260409020836005811061220457fe5b0155600080805260088201602052604090203390836005811061222357fe5b0180546001600160a01b0319166001600160a01b03929092169190911790556001600090815260088201602052604090203390836005811061226157fe5b0180546001600160a01b0319166001600160a01b03929092169190911790556002600090815260088201602052604090203390836005811061229f57fe5b0180546001600160a01b0319166001600160a01b0392909216919091179055600360009081526008820160205260409020339083600581106122dd57fe5b0180546001600160a01b0319166001600160a01b03929092169190911790556004600090815260088201602052604090203390836005811061231b57fe5b0180546001600160a01b0319166001600160a01b03929092169190911790556001820160051415612375576123518888886107d7565b6000805160206127f483398151915260009081526040808a0160205281205561239b565b6000805160206127f483398151915260009081526040808a016020529020805460010190555b82336001600160a01b03167f0e4e65dc389613b6884b7f8c615e54fd3b894fbbbc534c990037744eea942000898989604051808060200184600560200280838360005b838110156123f65781810151838201526020016123de565b5050505090500183600560200280838360005b83811015612421578181015183820152602001612409565b50505050905001828103825285818151815260200191508051906020019080838360005b8381101561245d578181015183820152602001612445565b50505050905090810190601f16801561248a5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a35050505050505050565b6000828201838110156115c957fe5b610640810151603260315b80156124fb57828482603381106124d057fe5b602002015110156124f2578381603381106124e757fe5b602002015192508091505b600019016124bd565b50915091565b612509612655565b612511612655565b60208301516000805b60058110156125945785816001016033811061253257fe5b602002015185826005811061254357fe5b60200201526001810184826005811061255857fe5b60200201528285826005811061256a57fe5b6020020151101561258c5784816005811061258157fe5b602002015192508091505b60010161251a565b5060065b603381101561264d57828682603381106125ae57fe5b60200201511115612645578581603381106125c557fe5b60200201518583600581106125d657fe5b6020020152808483600581106125e857fe5b60200201528581603381106125f957fe5b6020020151925060005b6005811015612643578386826005811061261957fe5b6020020151101561263b5785816005811061263057fe5b602002015193508092505b600101612603565b505b600101612598565b505050915091565b6040518060a001604052806005906020820280388339509192915050565b826005810192821561269e579182015b8281111561269e578254825591600101919060010190612683565b506126aa929150612708565b5090565b82600581019282156126d9579182015b828111156126d95782548255916001019190600101906126be565b506126aa92915061272f565b506000815560010160008155600101600081556001016000815560010160009055565b61272c91905b808211156126aa5780546001600160a01b031916815560010161270e565b90565b61272c91905b808211156126aa576000815560010161273556fe4d696e65722063616e206f6e6c792077696e2072657761726473206f6e636520706572203135206d696e97e6eb29f6a85471f7cc9b57f9e4c3deaf398cfc9798673160d7798baf0b13a49dbc393ddc18fd27b1d9b1b129059925688d2f2d5818a5ec3ebb750b7c286ea6b12aff7664b16cb99339be399b863feecd64d14817be7e1f042f97e3f358e64e2a9e355a92978430eca9c1aa3a9ba590094bac282594bccf82de16b83046e2c36c505cb2db6644f57b42d87bd9407b0f66788b07d0617a2bc1356a0e69e66f9a44b2657a0f8a90ed8e62f4c4cceca06eacaa9b4b25751ae1ebca9280a70abd68969ea04b74d02bb4d9e6e8e57236e1b9ca31627139ae9f0e465249932e8245021e344bd070f05f1c5b3f0b1266f4f20d837a0a8190a3a2da8b0375eac2ba86ea4d696e657220616c7265616479207375626d6974746564207468652076616c7565496e636f7272656374206e6f6e636520666f722063757272656e74206368616c6c656e6765d26d9834adf5a73309c4974bf654850bb699df8505e70d4cfde365c417b19dfca265627a7a72315820560c28e41e2da77aaec03d843b4b0bcbfdaf55c5d0ccad564a2a13e215805ed164736f6c63430005100032"
+// TellorMasterBin is the compiled bytecode used for deploying new contracts.
+var TellorMasterBin = "0x608060405234801561001057600080fd5b506040516020806121a98339810180604052602081101561003057600080fd5b5051604080517f4601f1cd000000000000000000000000000000000000000000000000000000008152600060048201819052915173__$1becb5b1f96e7eaaad954eccce9f50deb1$__92634601f1cd9260248082019391829003018186803b15801561009b57600080fd5b505af41580156100af573d6000803e3d6000fd5b5050604080517f5f6f776e657200000000000000000000000000000000000000000000000000008152815190819003600690810182206000908152603f602081815285832080546001600160a01b0319908116339081179092557f5f646569747900000000000000000000000000000000000000000000000000008752875196879003909501862084528282528684208054861690911790557f74656c6c6f72436f6e74726163740000000000000000000000000000000000008552855194859003600e01852083529081529084902080546001600160a01b03891693168317905590825291517fc2d1449eb0b6547aa426e09d9942a77fa4fc8cd3296305b3163e22452e0bcb8d9450908190039091019150a150611fd6806101d36000396000f3fe6080604052600436106101f95760003560e01c806370a082311161010d578063ae0a8279116100a0578063da3799411161006f578063da37994114610a41578063dd62ed3e14610a6b578063e0ae93c114610aa6578063e1eee6d614610ad6578063fc7cf0a014610bfa576101f9565b8063ae0a827914610902578063af0b132714610935578063b5413029146109e6578063c775b54214610a11576101f9565b806393fa4915116100dc57806393fa4915146107b0578063999cf26c146107e0578063a22e407a14610819578063a7c438bc146108c9576101f9565b806370a08231146106d1578063733bdef01461070457806377fbb663146107505780637f6fd5d914610780576101f9565b80633180f8df116101905780634ee2cd7e1161015f5780634ee2cd7e146105db578063612c8f7f146106145780636173c0b81461063e57806363bb82ad1461066857806369026d63146106a1576101f9565b80633180f8df146104f55780633df0777b1461053857806346eee1c41461057c57806347abd7f1146105a6576101f9565b806317d7de7c116101cc57806317d7de7c1461040657806318160ddd1461041b57806319e8e03b146104305780631db842f0146104cb576101f9565b80630f0b424d1461029257806311c98512146102ce578063133bee5e14610336578063150704011461037c575b60408051600160921b6d1d195b1b1bdc90dbdb9d1c9858dd028152815190819003600e0181206000908152603f602090815283822054601f369081018390048302850183019095528484526001600160a01b03169360609392918190840183828082843760009201829052508451949550938493509150506020840185600019f43d604051816000823e82801561028e578282f35b8282fd5b34801561029e57600080fd5b506102bc600480360360208110156102b557600080fd5b5035610c0f565b60408051918252519081900360200190f35b3480156102da57600080fd5b506102fe600480360360408110156102f157600080fd5b5080359060200135610c27565b604051808260a080838360005b8381101561032357818101518382015260200161030b565b5050505090500191505060405180910390f35b34801561034257600080fd5b506103606004803603602081101561035957600080fd5b5035610c48565b604080516001600160a01b039092168252519081900360200190f35b34801561038857600080fd5b50610391610c5a565b6040805160208082528351818301528351919283929083019185019080838360005b838110156103cb5781810151838201526020016103b3565b50505050905090810190601f1680156103f85780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b34801561041257600080fd5b50610391610c6b565b34801561042757600080fd5b506102bc610c77565b34801561043c57600080fd5b50610445610c83565b6040518084815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b8381101561048e578181015183820152602001610476565b50505050905090810190601f1680156104bb5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390f35b3480156104d757600080fd5b506102bc600480360360208110156104ee57600080fd5b5035610c9d565b34801561050157600080fd5b5061051f6004803603602081101561051857600080fd5b5035610caf565b6040805192835290151560208301528051918290030190f35b34801561054457600080fd5b506105686004803603604081101561055b57600080fd5b5080359060200135610ccb565b604080519115158252519081900360200190f35b34801561058857600080fd5b506102bc6004803603602081101561059f57600080fd5b5035610cde565b3480156105b257600080fd5b506105d9600480360360208110156105c957600080fd5b50356001600160a01b0316610cf0565b005b3480156105e757600080fd5b506102bc600480360360408110156105fe57600080fd5b506001600160a01b038135169060200135610d04565b34801561062057600080fd5b506102bc6004803603602081101561063757600080fd5b5035610da4565b34801561064a57600080fd5b506102bc6004803603602081101561066157600080fd5b5035610db6565b34801561067457600080fd5b506105686004803603604081101561068b57600080fd5b50803590602001356001600160a01b0316610dc8565b3480156106ad57600080fd5b506102fe600480360360408110156106c457600080fd5b5080359060200135610ddb565b3480156106dd57600080fd5b506102bc600480360360208110156106f457600080fd5b50356001600160a01b0316610df5565b34801561071057600080fd5b506107376004803603602081101561072757600080fd5b50356001600160a01b0316610e8d565b6040805192835260208301919091528051918290030190f35b34801561075c57600080fd5b506102bc6004803603604081101561077357600080fd5b5080359060200135610ea0565b34801561078c57600080fd5b506102bc600480360360408110156107a357600080fd5b5080359060200135610eb3565b3480156107bc57600080fd5b506102bc600480360360408110156107d357600080fd5b5080359060200135610ec6565b3480156107ec57600080fd5b506105686004803603604081101561080357600080fd5b506001600160a01b038135169060200135610ed9565b34801561082557600080fd5b5061082e610f46565b6040518087815260200186815260200185815260200180602001848152602001838152602001828103825285818151815260200191508051906020019080838360005b83811015610889578181015183820152602001610871565b50505050905090810190601f1680156108b65780820380516001836020036101000a031916815260200191505b5097505050505050505060405180910390f35b3480156108d557600080fd5b50610568600480360360408110156108ec57600080fd5b50803590602001356001600160a01b0316610f6d565b34801561090e57600080fd5b506105d96004803603602081101561092557600080fd5b50356001600160a01b0316610f80565b34801561094157600080fd5b5061095f6004803603602081101561095857600080fd5b5035610f91565b604080518a815289151560208201528815159181019190915286151560608201526001600160a01b03808716608083015285811660a0830152841660c082015260e081018361012080838360005b838110156109c55781810151838201526020016109ad565b50505050905001828152602001995050505050505050505060405180910390f35b3480156109f257600080fd5b506109fb610fd5565b604051815181528082610660808383602061030b565b348015610a1d57600080fd5b506102bc60048036036040811015610a3457600080fd5b5080359060200135610fe7565b348015610a4d57600080fd5b506102bc60048036036020811015610a6457600080fd5b5035610ffa565b348015610a7757600080fd5b506102bc60048036036040811015610a8e57600080fd5b506001600160a01b038135811691602001351661100c565b348015610ab257600080fd5b506102bc60048036036040811015610ac957600080fd5b508035906020013561107a565b348015610ae257600080fd5b50610b0060048036036020811015610af957600080fd5b503561108d565b604051808060200180602001878152602001868152602001858152602001848152602001838103835289818151815260200191508051906020019080838360005b83811015610b59578181015183820152602001610b41565b50505050905090810190601f168015610b865780820380516001836020036101000a031916815260200191505b5083810382528851815288516020918201918a019080838360005b83811015610bb9578181015183820152602001610ba1565b50505050905090810190601f168015610be65780820380516001836020036101000a031916815260200191505b509850505050505050505060405180910390f35b348015610c0657600080fd5b5061051f6110b9565b6000610c21818363ffffffff6110ce16565b92915050565b610c2f611f4e565b610c416000848463ffffffff6110e416565b9392505050565b6000610c21818363ffffffff61113e16565b6060610c66600061115d565b905090565b6060610c66600061117d565b6000610c6660006111b5565b6000806060610c9260006111f9565b925092509250909192565b6000610c21818363ffffffff6112e816565b600080610cc2818463ffffffff6112fe16565b91509150915091565b6000610c4181848463ffffffff61136416565b6000610c21818363ffffffff61138b16565b610d0160008263ffffffff6113a416565b50565b60408051600160e01b633f48b1ff0281526000600482018190526001600160a01b038516602483015260448201849052915173__$2718d1e96458860b323e2267f4056bb1be$__91633f48b1ff916064808301926020929190829003018186803b158015610d7157600080fd5b505af4158015610d85573d6000803e3d6000fd5b505050506040513d6020811015610d9b57600080fd5b50519392505050565b6000610c21818363ffffffff61147e16565b6000610c21818363ffffffff61149016565b6000610c4181848463ffffffff61150216565b610de3611f4e565b610c416000848463ffffffff61152f16565b60408051600160e01b6393b182b30281526000600482018190526001600160a01b0384166024830152915173__$2718d1e96458860b323e2267f4056bb1be$__916393b182b3916044808301926020929190829003018186803b158015610e5b57600080fd5b505af4158015610e6f573d6000803e3d6000fd5b505050506040513d6020811015610e8557600080fd5b505192915050565b600080610cc2818463ffffffff61159316565b6000610c4181848463ffffffff6115ba16565b6000610c4181848463ffffffff6115ed16565b6000610c4181848463ffffffff61161116565b60408051600160e11b6356555cf10281526000600482018190526001600160a01b038516602483015260448201849052915173__$2718d1e96458860b323e2267f4056bb1be$__9163acaab9e2916064808301926020929190829003018186803b158015610d7157600080fd5b60008060006060600080610f5a6000611635565b949b939a50919850965094509092509050565b6000610c4181848463ffffffff61180916565b610d0160008263ffffffff61183b16565b6000806000806000806000610fa4611f6c565b6000610fb6818b63ffffffff61194e16565b9850985098509850985098509850985098509193959799909294969850565b610fdd611f8b565b610c666000611b95565b6000610c4181848463ffffffff611bd516565b6000610c21818363ffffffff611bf916565b60408051600160e21b632fcc801b0281526000600482018190526001600160a01b03808616602484015284166044830152915173__$2718d1e96458860b323e2267f4056bb1be$__9163bf32006c916064808301926020929190829003018186803b158015610d7157600080fd5b6000610c4181848463ffffffff611c0f16565b60608060008080806110a5818863ffffffff611c3316565b949c939b5091995097509550909350915050565b6000806110c66000611e21565b915091509091565b6000908152604291909101602052604090205490565b6110ec611f4e565b6000838152604885016020908152604080832085845260090190915290819020815160a08101928390529160059082845b81548152602001906001019080831161111d57505050505090509392505050565b6000908152603f9190910160205260409020546001600160a01b031690565b506040805180820190915260028152600160f21b61151502602082015290565b5060408051808201909152600f81527f54656c6c6f722054726962757465730000000000000000000000000000000000602082015290565b604080517f746f74616c5f737570706c7900000000000000000000000000000000000000008152815190819003600c01902060009081528183016020522054919050565b6000806060600061120985611ea2565b600081815260488701602081815260408084208151600160c41b670746f74616c54697028152825160089181900391909101812086526004820184528286205495879052938352805460026001821615610100026000190190911604601f8101849004840285018401909252818452949550859492918391908301828280156112d35780601f106112a8576101008083540402835291602001916112d3565b820191906000526020600020905b8154815290600101906020018083116112b657829003601f168201915b50505050509050935093509350509193909250565b6000908152604991909101602052604090205490565b6000818152604883016020526040812060038101548291901561135457600381018054611348918791879190600019810190811061133857fe5b9060005260206000200154611611565b6001925092505061135d565b50600091508190505b9250929050565b60009182526048929092016020908152604080832093835260079093019052205460ff1690565b6000908152604891909101602052604090206003015490565b60408051600160d01b655f646569747902815281519081900360060190206000908152603f840160205220546001600160a01b0316331461142f5760408051600160e51b62461bcd02815260206004820152601360248201527f53656e646572206973206e6f7420646569747900000000000000000000000000604482015290519081900360640190fd5b60408051600160d01b655f646569747902815281519081900360060190206000908152603f90930160205290912080546001600160a01b039092166001600160a01b0319909216919091179055565b60009081526040918201602052205490565b600060328211156114eb5760408051600160e51b62461bcd02815260206004820152601a60248201527f526571756573745120696e6465782069732061626f7665203530000000000000604482015290519081900360640190fd5b506000908152604391909101602052604090205490565b6000918252604192909201602090815260408083206001600160a01b039094168352929052205460ff1690565b611537611f4e565b6000838152604885016020908152604080832085845260080190915290819020815160a08101928390529160059082845b81546001600160a01b0316815260019091019060200180831161156857505050505090509392505050565b6001600160a01b031660009081526047919091016020526040902080546001909101549091565b600082815260488401602052604081206003018054839081106115d957fe5b906000526020600020015490509392505050565b60009182526044929092016020908152604080832093835260059093019052205490565b60009182526048929092016020908152604080832093835260069093019052205490565b8054604080517f63757272656e7452657175657374496400000000000000000000000000000000808252825191829003601090810183206000908152848701602081815286832054600160b01b69646966666963756c7479028752875196879003600a01872084528282528784205486885288519788900386018820855283835288852054855260488b01808452898620888a528a51998a900388018a2087528585528a87205487528185528a8720600160a81b6a6772616e756c6172697479028b528b519a8b9003600b018b208852600490810186528b882054998b528b519a8b90039098018a2087529484528986205486528352888520600160c41b670746f74616c54697028952895198899003600801892086529095018252878420548354601f600260001961010060018516150201909216919091049081018490048402890184019099528888529398899889986060988a98899894979596909594919391929185918301828280156117ed5780601f106117c2576101008083540402835291602001916117ed565b820191906000526020600020905b8154815290600101906020018083116117d057829003601f168201915b5050505050925095509550955095509550955091939550919395565b600082815260448401602090815260408083206001600160a01b038516845260060190915290205460ff169392505050565b60408051600160d01b655f646569747902815281519081900360060190206000908152603f840160205220546001600160a01b031633146118c65760408051600160e51b62461bcd02815260206004820152601360248201527f53656e646572206973206e6f7420646569747900000000000000000000000000604482015290519081900360640190fd5b60408051600160921b6d1d195b1b1bdc90dbdb9d1c9858dd028152815190819003600e0181206000908152603f850160209081529083902080546001600160a01b0386166001600160a01b03199091168117909155825291517fc2d1449eb0b6547aa426e09d9942a77fa4fc8cd3296305b3163e22452e0bcb8d929181900390910190a15050565b6000806000806000806000611961611f6c565b5050506000868152604488016020908152604080832080546002820154600380840154600485015486516101208101808952600160ba1b681c995c5d595cdd125902905287518082036101290190208a526005808801808b52898c205483528951600160bc1b68074696d657374616d70281528a519081900360099081019091208d52818c528a8d2054848d01528a51600160d81b6476616c75650281528b51908190039093019092208c52808b52898c2054838b015289517f6d696e457865637574696f6e446174650000000000000000000000000000000081528a519081900360100190208c52808b52898c2054606084015289517f6e756d6265724f66566f7465730000000000000000000000000000000000000081528a5190819003600d0190208c52808b52898c205460808401528951600160a91b6a313637b1b5a73ab6b132b90281528a5190819003600b0190208c52808b52898c205460a08401528951600160ba1b681b5a5b995c94db1bdd0281528a51908190039092019091208b52808a52888b205460c08301528851600160d01b6571756f72756d02815289519081900360060190208b52808a52888b205460e08301528851600160e81b626665650281528951908190039095019094208a5292909752949096205461010087810191909152600190930154919a5060ff8082169a509281048316985062010000810490921696506001600160a01b0363010000009092048216955091811693921691909295985092959850929598565b611b9d611f8b565b6040805161066081019182905290600184019060339082845b815481526020019060010190808311611bb65750505050509050919050565b60009182526048929092016020908152604080832093835260059093019052205490565b6000908152604a91909101602052604090205490565b60009182526048929092016020908152604080832093835260049093019052205490565b600081815260488301602090815260408083206002808201548351600160a81b6a6772616e756c6172697479028152845190819003600b018120875260048401808752858820547f7265717565737451506f736974696f6e0000000000000000000000000000000083528651928390036010018320895281885286892054600160c41b670746f74616c5469702845287519384900360080184208a52918852868920548654601f6000196101006001848116159190910291909101909216979097049687018a90048a0285018a019098528584526060998a99909889988998899891978897938801969295929490918891830182828015611d755780601f10611d4a57610100808354040283529160200191611d75565b820191906000526020600020905b815481529060010190602001808311611d5857829003601f168201915b5050885460408051602060026001851615610100026000190190941693909304601f8101849004840282018401909252818152959b508a945092508401905082828015611e035780601f10611dd857610100808354040283529160200191611e03565b820191906000526020600020905b815481529060010190602001808311611de657829003601f168201915b50505050509450965096509650965096509650509295509295509295565b604080517f74696d654f664c6173744e657756616c756500000000000000000000000000008082528251601292819003830181206000908152858501602081815286832054835260428801815286832054948452865193849003909501909220815292529181205490918291611e98918591611611565b9360019350915050565b6040805161066081019182905260009182918291611ee39190600187019060339082845b815481526020019060010190808311611ec6575050505050611efe565b60009081526043909501602052505060409092205492915050565b6020810151600060015b6033811015611f485782848260338110611f1e57fe5b60200201511115611f4057838160338110611f3557fe5b602002015192508091505b600101611f08565b50915091565b6040518060a001604052806005906020820280388339509192915050565b6040518061012001604052806009906020820280388339509192915050565b604051806106600160405280603390602082028038833950919291505056fea165627a7a72305820e9be70d7f0c609824a3a4fdcba6c9ca0866cf88e4e5336da9dfac083b062c99c0029"
 
-// DeployTellorLibrary deploys a new Ethereum contract, binding an instance of TellorLibrary to it.
-func DeployTellorLibrary(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *TellorLibrary, error) {
-	parsed, err := abi.JSON(strings.NewReader(TellorLibraryABI))
+// DeployTellorMaster deploys a new Ethereum contract, binding an instance of TellorMaster to it.
+func DeployTellorMaster(auth *bind.TransactOpts, backend bind.ContractBackend, _tellorContract common.Address) (common.Address, *types.Transaction, *TellorMaster, error) {
+	parsed, err := abi.JSON(strings.NewReader(TellorMasterABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
+
+	tellorStakeAddr, _, _, _ := DeployTellorStake(auth, backend)
+	TellorMasterBin = strings.Replace(TellorMasterBin, "__$1becb5b1f96e7eaaad954eccce9f50deb1$__", tellorStakeAddr.String()[2:], -1)
 
 	tellorTransferAddr, _, _, _ := DeployTellorTransfer(auth, backend)
-	TellorLibraryBin = strings.Replace(TellorLibraryBin, "__$2718d1e96458860b323e2267f4056bb1be$__", tellorTransferAddr.String()[2:], -1)
+	TellorMasterBin = strings.Replace(TellorMasterBin, "__$2718d1e96458860b323e2267f4056bb1be$__", tellorTransferAddr.String()[2:], -1)
 
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(TellorLibraryBin), backend)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(TellorMasterBin), backend, _tellorContract)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	return address, tx, &TellorLibrary{TellorLibraryCaller: TellorLibraryCaller{contract: contract}, TellorLibraryTransactor: TellorLibraryTransactor{contract: contract}, TellorLibraryFilterer: TellorLibraryFilterer{contract: contract}}, nil
+	return address, tx, &TellorMaster{TellorMasterCaller: TellorMasterCaller{contract: contract}, TellorMasterTransactor: TellorMasterTransactor{contract: contract}, TellorMasterFilterer: TellorMasterFilterer{contract: contract}}, nil
 }
 
-// TellorLibrary is an auto generated Go binding around an Ethereum contract.
-type TellorLibrary struct {
-	TellorLibraryCaller     // Read-only binding to the contract
-	TellorLibraryTransactor // Write-only binding to the contract
-	TellorLibraryFilterer   // Log filterer for contract events
+// TellorMaster is an auto generated Go binding around an Ethereum contract.
+type TellorMaster struct {
+	TellorMasterCaller     // Read-only binding to the contract
+	TellorMasterTransactor // Write-only binding to the contract
+	TellorMasterFilterer   // Log filterer for contract events
 }
 
-// TellorLibraryCaller is an auto generated read-only Go binding around an Ethereum contract.
-type TellorLibraryCaller struct {
+// TellorMasterCaller is an auto generated read-only Go binding around an Ethereum contract.
+type TellorMasterCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TellorLibraryTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type TellorLibraryTransactor struct {
+// TellorMasterTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type TellorMasterTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TellorLibraryFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type TellorLibraryFilterer struct {
+// TellorMasterFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type TellorMasterFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TellorLibrarySession is an auto generated Go binding around an Ethereum contract,
+// TellorMasterSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type TellorLibrarySession struct {
-	Contract     *TellorLibrary    // Generic contract binding to set the session for
+type TellorMasterSession struct {
+	Contract     *TellorMaster     // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// TellorLibraryCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// TellorMasterCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type TellorLibraryCallerSession struct {
-	Contract *TellorLibraryCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts        // Call options to use throughout this session
+type TellorMasterCallerSession struct {
+	Contract *TellorMasterCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts       // Call options to use throughout this session
 }
 
-// TellorLibraryTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// TellorMasterTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type TellorLibraryTransactorSession struct {
-	Contract     *TellorLibraryTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts        // Transaction auth options to use throughout this session
+type TellorMasterTransactorSession struct {
+	Contract     *TellorMasterTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts       // Transaction auth options to use throughout this session
 }
 
-// TellorLibraryRaw is an auto generated low-level Go binding around an Ethereum contract.
-type TellorLibraryRaw struct {
-	Contract *TellorLibrary // Generic contract binding to access the raw methods on
+// TellorMasterRaw is an auto generated low-level Go binding around an Ethereum contract.
+type TellorMasterRaw struct {
+	Contract *TellorMaster // Generic contract binding to access the raw methods on
 }
 
-// TellorLibraryCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type TellorLibraryCallerRaw struct {
-	Contract *TellorLibraryCaller // Generic read-only contract binding to access the raw methods on
+// TellorMasterCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type TellorMasterCallerRaw struct {
+	Contract *TellorMasterCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// TellorLibraryTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type TellorLibraryTransactorRaw struct {
-	Contract *TellorLibraryTransactor // Generic write-only contract binding to access the raw methods on
+// TellorMasterTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type TellorMasterTransactorRaw struct {
+	Contract *TellorMasterTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewTellorLibrary creates a new instance of TellorLibrary, bound to a specific deployed contract.
-func NewTellorLibrary(address common.Address, backend bind.ContractBackend) (*TellorLibrary, error) {
-	contract, err := bindTellorLibrary(address, backend, backend, backend)
+// NewTellorMaster creates a new instance of TellorMaster, bound to a specific deployed contract.
+func NewTellorMaster(address common.Address, backend bind.ContractBackend) (*TellorMaster, error) {
+	contract, err := bindTellorMaster(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &TellorLibrary{TellorLibraryCaller: TellorLibraryCaller{contract: contract}, TellorLibraryTransactor: TellorLibraryTransactor{contract: contract}, TellorLibraryFilterer: TellorLibraryFilterer{contract: contract}}, nil
+	return &TellorMaster{TellorMasterCaller: TellorMasterCaller{contract: contract}, TellorMasterTransactor: TellorMasterTransactor{contract: contract}, TellorMasterFilterer: TellorMasterFilterer{contract: contract}}, nil
 }
 
-// NewTellorLibraryCaller creates a new read-only instance of TellorLibrary, bound to a specific deployed contract.
-func NewTellorLibraryCaller(address common.Address, caller bind.ContractCaller) (*TellorLibraryCaller, error) {
-	contract, err := bindTellorLibrary(address, caller, nil, nil)
+// NewTellorMasterCaller creates a new read-only instance of TellorMaster, bound to a specific deployed contract.
+func NewTellorMasterCaller(address common.Address, caller bind.ContractCaller) (*TellorMasterCaller, error) {
+	contract, err := bindTellorMaster(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TellorLibraryCaller{contract: contract}, nil
+	return &TellorMasterCaller{contract: contract}, nil
 }
 
-// NewTellorLibraryTransactor creates a new write-only instance of TellorLibrary, bound to a specific deployed contract.
-func NewTellorLibraryTransactor(address common.Address, transactor bind.ContractTransactor) (*TellorLibraryTransactor, error) {
-	contract, err := bindTellorLibrary(address, nil, transactor, nil)
+// NewTellorMasterTransactor creates a new write-only instance of TellorMaster, bound to a specific deployed contract.
+func NewTellorMasterTransactor(address common.Address, transactor bind.ContractTransactor) (*TellorMasterTransactor, error) {
+	contract, err := bindTellorMaster(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TellorLibraryTransactor{contract: contract}, nil
+	return &TellorMasterTransactor{contract: contract}, nil
 }
 
-// NewTellorLibraryFilterer creates a new log filterer instance of TellorLibrary, bound to a specific deployed contract.
-func NewTellorLibraryFilterer(address common.Address, filterer bind.ContractFilterer) (*TellorLibraryFilterer, error) {
-	contract, err := bindTellorLibrary(address, nil, nil, filterer)
+// NewTellorMasterFilterer creates a new log filterer instance of TellorMaster, bound to a specific deployed contract.
+func NewTellorMasterFilterer(address common.Address, filterer bind.ContractFilterer) (*TellorMasterFilterer, error) {
+	contract, err := bindTellorMaster(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &TellorLibraryFilterer{contract: contract}, nil
+	return &TellorMasterFilterer{contract: contract}, nil
 }
 
-// bindTellorLibrary binds a generic wrapper to an already deployed contract.
-func bindTellorLibrary(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(TellorLibraryABI))
+// bindTellorMaster binds a generic wrapper to an already deployed contract.
+func bindTellorMaster(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(TellorMasterABI))
 	if err != nil {
 		return nil, err
 	}
@@ -2194,539 +2649,1121 @@ func bindTellorLibrary(address common.Address, caller bind.ContractCaller, trans
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_TellorLibrary *TellorLibraryRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _TellorLibrary.Contract.TellorLibraryCaller.contract.Call(opts, result, method, params...)
+func (_TellorMaster *TellorMasterRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _TellorMaster.Contract.TellorMasterCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_TellorLibrary *TellorLibraryRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TellorLibrary.Contract.TellorLibraryTransactor.contract.Transfer(opts)
+func (_TellorMaster *TellorMasterRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TellorMaster.Contract.TellorMasterTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_TellorLibrary *TellorLibraryRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _TellorLibrary.Contract.TellorLibraryTransactor.contract.Transact(opts, method, params...)
+func (_TellorMaster *TellorMasterRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _TellorMaster.Contract.TellorMasterTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_TellorLibrary *TellorLibraryCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _TellorLibrary.Contract.contract.Call(opts, result, method, params...)
+func (_TellorMaster *TellorMasterCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _TellorMaster.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_TellorLibrary *TellorLibraryTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TellorLibrary.Contract.contract.Transfer(opts)
+func (_TellorMaster *TellorMasterTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TellorMaster.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_TellorLibrary *TellorLibraryTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _TellorLibrary.Contract.contract.Transact(opts, method, params...)
+func (_TellorMaster *TellorMasterTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _TellorMaster.Contract.contract.Transact(opts, method, params...)
 }
 
-// Owner is a free data retrieval call binding the contract method 0xb2bdfa7b.
+// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function _owner() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) Owner(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function allowance(address _user, address _spender) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) Allowance(opts *bind.CallOpts, _user common.Address, _spender common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "_owner")
+	err := _TellorMaster.contract.Call(opts, &out, "allowance", _user, _spender)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// Owner is a free data retrieval call binding the contract method 0xb2bdfa7b.
+// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function _owner() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) Owner() ([32]byte, error) {
-	return _TellorLibrary.Contract.Owner(&_TellorLibrary.CallOpts)
+// Solidity: function allowance(address _user, address _spender) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) Allowance(_user common.Address, _spender common.Address) (*big.Int, error) {
+	return _TellorMaster.Contract.Allowance(&_TellorMaster.CallOpts, _user, _spender)
 }
 
-// Owner is a free data retrieval call binding the contract method 0xb2bdfa7b.
+// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function _owner() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) Owner() ([32]byte, error) {
-	return _TellorLibrary.Contract.Owner(&_TellorLibrary.CallOpts)
+// Solidity: function allowance(address _user, address _spender) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) Allowance(_user common.Address, _spender common.Address) (*big.Int, error) {
+	return _TellorMaster.Contract.Allowance(&_TellorMaster.CallOpts, _user, _spender)
 }
 
-// TBlock is a free data retrieval call binding the contract method 0x6e3cf885.
+// AllowedToTrade is a free data retrieval call binding the contract method 0x999cf26c.
 //
-// Solidity: function _tBlock() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) TBlock(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function allowedToTrade(address _user, uint256 _amount) view returns(bool)
+func (_TellorMaster *TellorMasterCaller) AllowedToTrade(opts *bind.CallOpts, _user common.Address, _amount *big.Int) (bool, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "_tBlock")
+	err := _TellorMaster.contract.Call(opts, &out, "allowedToTrade", _user, _amount)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(bool), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
 
 }
 
-// TBlock is a free data retrieval call binding the contract method 0x6e3cf885.
+// AllowedToTrade is a free data retrieval call binding the contract method 0x999cf26c.
 //
-// Solidity: function _tBlock() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) TBlock() ([32]byte, error) {
-	return _TellorLibrary.Contract.TBlock(&_TellorLibrary.CallOpts)
+// Solidity: function allowedToTrade(address _user, uint256 _amount) view returns(bool)
+func (_TellorMaster *TellorMasterSession) AllowedToTrade(_user common.Address, _amount *big.Int) (bool, error) {
+	return _TellorMaster.Contract.AllowedToTrade(&_TellorMaster.CallOpts, _user, _amount)
 }
 
-// TBlock is a free data retrieval call binding the contract method 0x6e3cf885.
+// AllowedToTrade is a free data retrieval call binding the contract method 0x999cf26c.
 //
-// Solidity: function _tBlock() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) TBlock() ([32]byte, error) {
-	return _TellorLibrary.Contract.TBlock(&_TellorLibrary.CallOpts)
+// Solidity: function allowedToTrade(address _user, uint256 _amount) view returns(bool)
+func (_TellorMaster *TellorMasterCallerSession) AllowedToTrade(_user common.Address, _amount *big.Int) (bool, error) {
+	return _TellorMaster.Contract.AllowedToTrade(&_TellorMaster.CallOpts, _user, _amount)
 }
 
-// CurrentRequestId is a free data retrieval call binding the contract method 0x5ae2bfdb.
+// BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function currentRequestId() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) CurrentRequestId(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function balanceOf(address _user) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) BalanceOf(opts *bind.CallOpts, _user common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "currentRequestId")
+	err := _TellorMaster.contract.Call(opts, &out, "balanceOf", _user)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// CurrentRequestId is a free data retrieval call binding the contract method 0x5ae2bfdb.
+// BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function currentRequestId() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) CurrentRequestId() ([32]byte, error) {
-	return _TellorLibrary.Contract.CurrentRequestId(&_TellorLibrary.CallOpts)
+// Solidity: function balanceOf(address _user) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) BalanceOf(_user common.Address) (*big.Int, error) {
+	return _TellorMaster.Contract.BalanceOf(&_TellorMaster.CallOpts, _user)
 }
 
-// CurrentRequestId is a free data retrieval call binding the contract method 0x5ae2bfdb.
+// BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function currentRequestId() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) CurrentRequestId() ([32]byte, error) {
-	return _TellorLibrary.Contract.CurrentRequestId(&_TellorLibrary.CallOpts)
+// Solidity: function balanceOf(address _user) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) BalanceOf(_user common.Address) (*big.Int, error) {
+	return _TellorMaster.Contract.BalanceOf(&_TellorMaster.CallOpts, _user)
 }
 
-// CurrentReward is a free data retrieval call binding the contract method 0x07621eca.
+// BalanceOfAt is a free data retrieval call binding the contract method 0x4ee2cd7e.
 //
-// Solidity: function currentReward() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) CurrentReward(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function balanceOfAt(address _user, uint256 _blockNumber) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) BalanceOfAt(opts *bind.CallOpts, _user common.Address, _blockNumber *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "currentReward")
+	err := _TellorMaster.contract.Call(opts, &out, "balanceOfAt", _user, _blockNumber)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// CurrentReward is a free data retrieval call binding the contract method 0x07621eca.
+// BalanceOfAt is a free data retrieval call binding the contract method 0x4ee2cd7e.
 //
-// Solidity: function currentReward() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) CurrentReward() ([32]byte, error) {
-	return _TellorLibrary.Contract.CurrentReward(&_TellorLibrary.CallOpts)
+// Solidity: function balanceOfAt(address _user, uint256 _blockNumber) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) BalanceOfAt(_user common.Address, _blockNumber *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.BalanceOfAt(&_TellorMaster.CallOpts, _user, _blockNumber)
 }
 
-// CurrentReward is a free data retrieval call binding the contract method 0x07621eca.
+// BalanceOfAt is a free data retrieval call binding the contract method 0x4ee2cd7e.
 //
-// Solidity: function currentReward() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) CurrentReward() ([32]byte, error) {
-	return _TellorLibrary.Contract.CurrentReward(&_TellorLibrary.CallOpts)
+// Solidity: function balanceOfAt(address _user, uint256 _blockNumber) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) BalanceOfAt(_user common.Address, _blockNumber *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.BalanceOfAt(&_TellorMaster.CallOpts, _user, _blockNumber)
 }
 
-// CurrentTotalTips is a free data retrieval call binding the contract method 0x75ad1a2a.
+// DidMine is a free data retrieval call binding the contract method 0x63bb82ad.
 //
-// Solidity: function currentTotalTips() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) CurrentTotalTips(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function didMine(bytes32 _challenge, address _miner) view returns(bool)
+func (_TellorMaster *TellorMasterCaller) DidMine(opts *bind.CallOpts, _challenge [32]byte, _miner common.Address) (bool, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "currentTotalTips")
+	err := _TellorMaster.contract.Call(opts, &out, "didMine", _challenge, _miner)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(bool), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
 
 }
 
-// CurrentTotalTips is a free data retrieval call binding the contract method 0x75ad1a2a.
+// DidMine is a free data retrieval call binding the contract method 0x63bb82ad.
 //
-// Solidity: function currentTotalTips() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) CurrentTotalTips() ([32]byte, error) {
-	return _TellorLibrary.Contract.CurrentTotalTips(&_TellorLibrary.CallOpts)
+// Solidity: function didMine(bytes32 _challenge, address _miner) view returns(bool)
+func (_TellorMaster *TellorMasterSession) DidMine(_challenge [32]byte, _miner common.Address) (bool, error) {
+	return _TellorMaster.Contract.DidMine(&_TellorMaster.CallOpts, _challenge, _miner)
 }
 
-// CurrentTotalTips is a free data retrieval call binding the contract method 0x75ad1a2a.
+// DidMine is a free data retrieval call binding the contract method 0x63bb82ad.
 //
-// Solidity: function currentTotalTips() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) CurrentTotalTips() ([32]byte, error) {
-	return _TellorLibrary.Contract.CurrentTotalTips(&_TellorLibrary.CallOpts)
+// Solidity: function didMine(bytes32 _challenge, address _miner) view returns(bool)
+func (_TellorMaster *TellorMasterCallerSession) DidMine(_challenge [32]byte, _miner common.Address) (bool, error) {
+	return _TellorMaster.Contract.DidMine(&_TellorMaster.CallOpts, _challenge, _miner)
 }
 
-// DevShare is a free data retrieval call binding the contract method 0xaed04fae.
+// DidVote is a free data retrieval call binding the contract method 0xa7c438bc.
 //
-// Solidity: function devShare() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) DevShare(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function didVote(uint256 _disputeId, address _address) view returns(bool)
+func (_TellorMaster *TellorMasterCaller) DidVote(opts *bind.CallOpts, _disputeId *big.Int, _address common.Address) (bool, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "devShare")
+	err := _TellorMaster.contract.Call(opts, &out, "didVote", _disputeId, _address)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(bool), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
 
 }
 
-// DevShare is a free data retrieval call binding the contract method 0xaed04fae.
+// DidVote is a free data retrieval call binding the contract method 0xa7c438bc.
 //
-// Solidity: function devShare() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) DevShare() ([32]byte, error) {
-	return _TellorLibrary.Contract.DevShare(&_TellorLibrary.CallOpts)
+// Solidity: function didVote(uint256 _disputeId, address _address) view returns(bool)
+func (_TellorMaster *TellorMasterSession) DidVote(_disputeId *big.Int, _address common.Address) (bool, error) {
+	return _TellorMaster.Contract.DidVote(&_TellorMaster.CallOpts, _disputeId, _address)
 }
 
-// DevShare is a free data retrieval call binding the contract method 0xaed04fae.
+// DidVote is a free data retrieval call binding the contract method 0xa7c438bc.
 //
-// Solidity: function devShare() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) DevShare() ([32]byte, error) {
-	return _TellorLibrary.Contract.DevShare(&_TellorLibrary.CallOpts)
+// Solidity: function didVote(uint256 _disputeId, address _address) view returns(bool)
+func (_TellorMaster *TellorMasterCallerSession) DidVote(_disputeId *big.Int, _address common.Address) (bool, error) {
+	return _TellorMaster.Contract.DidVote(&_TellorMaster.CallOpts, _disputeId, _address)
 }
 
-// Difficulty is a free data retrieval call binding the contract method 0x19cae462.
+// GetAddressVars is a free data retrieval call binding the contract method 0x133bee5e.
 //
-// Solidity: function difficulty() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) Difficulty(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getAddressVars(bytes32 _data) view returns(address)
+func (_TellorMaster *TellorMasterCaller) GetAddressVars(opts *bind.CallOpts, _data [32]byte) (common.Address, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "difficulty")
+	err := _TellorMaster.contract.Call(opts, &out, "getAddressVars", _data)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(common.Address), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
 
 }
 
-// Difficulty is a free data retrieval call binding the contract method 0x19cae462.
+// GetAddressVars is a free data retrieval call binding the contract method 0x133bee5e.
 //
-// Solidity: function difficulty() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) Difficulty() ([32]byte, error) {
-	return _TellorLibrary.Contract.Difficulty(&_TellorLibrary.CallOpts)
+// Solidity: function getAddressVars(bytes32 _data) view returns(address)
+func (_TellorMaster *TellorMasterSession) GetAddressVars(_data [32]byte) (common.Address, error) {
+	return _TellorMaster.Contract.GetAddressVars(&_TellorMaster.CallOpts, _data)
 }
 
-// Difficulty is a free data retrieval call binding the contract method 0x19cae462.
+// GetAddressVars is a free data retrieval call binding the contract method 0x133bee5e.
 //
-// Solidity: function difficulty() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) Difficulty() ([32]byte, error) {
-	return _TellorLibrary.Contract.Difficulty(&_TellorLibrary.CallOpts)
+// Solidity: function getAddressVars(bytes32 _data) view returns(address)
+func (_TellorMaster *TellorMasterCallerSession) GetAddressVars(_data [32]byte) (common.Address, error) {
+	return _TellorMaster.Contract.GetAddressVars(&_TellorMaster.CallOpts, _data)
 }
 
-// PendingOwner is a free data retrieval call binding the contract method 0x7f4ec4c3.
+// GetAllDisputeVars is a free data retrieval call binding the contract method 0xaf0b1327.
 //
-// Solidity: function pending_owner() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) PendingOwner(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getAllDisputeVars(uint256 _disputeId) view returns(bytes32, bool, bool, bool, address, address, address, uint256[9], int256)
+func (_TellorMaster *TellorMasterCaller) GetAllDisputeVars(opts *bind.CallOpts, _disputeId *big.Int) ([32]byte, bool, bool, bool, common.Address, common.Address, common.Address, [9]*big.Int, *big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "pending_owner")
+	err := _TellorMaster.contract.Call(opts, &out, "getAllDisputeVars", _disputeId)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new([32]byte), *new(bool), *new(bool), *new(bool), *new(common.Address), *new(common.Address), *new(common.Address), *new([9]*big.Int), *new(*big.Int), err
 	}
 
 	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out1 := *abi.ConvertType(out[1], new(bool)).(*bool)
+	out2 := *abi.ConvertType(out[2], new(bool)).(*bool)
+	out3 := *abi.ConvertType(out[3], new(bool)).(*bool)
+	out4 := *abi.ConvertType(out[4], new(common.Address)).(*common.Address)
+	out5 := *abi.ConvertType(out[5], new(common.Address)).(*common.Address)
+	out6 := *abi.ConvertType(out[6], new(common.Address)).(*common.Address)
+	out7 := *abi.ConvertType(out[7], new([9]*big.Int)).(*[9]*big.Int)
+	out8 := *abi.ConvertType(out[8], new(*big.Int)).(**big.Int)
+
+	return out0, out1, out2, out3, out4, out5, out6, out7, out8, err
+
+}
+
+// GetAllDisputeVars is a free data retrieval call binding the contract method 0xaf0b1327.
+//
+// Solidity: function getAllDisputeVars(uint256 _disputeId) view returns(bytes32, bool, bool, bool, address, address, address, uint256[9], int256)
+func (_TellorMaster *TellorMasterSession) GetAllDisputeVars(_disputeId *big.Int) ([32]byte, bool, bool, bool, common.Address, common.Address, common.Address, [9]*big.Int, *big.Int, error) {
+	return _TellorMaster.Contract.GetAllDisputeVars(&_TellorMaster.CallOpts, _disputeId)
+}
+
+// GetAllDisputeVars is a free data retrieval call binding the contract method 0xaf0b1327.
+//
+// Solidity: function getAllDisputeVars(uint256 _disputeId) view returns(bytes32, bool, bool, bool, address, address, address, uint256[9], int256)
+func (_TellorMaster *TellorMasterCallerSession) GetAllDisputeVars(_disputeId *big.Int) ([32]byte, bool, bool, bool, common.Address, common.Address, common.Address, [9]*big.Int, *big.Int, error) {
+	return _TellorMaster.Contract.GetAllDisputeVars(&_TellorMaster.CallOpts, _disputeId)
+}
+
+// GetCurrentVariables is a free data retrieval call binding the contract method 0xa22e407a.
+//
+// Solidity: function getCurrentVariables() view returns(bytes32, uint256, uint256, string, uint256, uint256)
+func (_TellorMaster *TellorMasterCaller) GetCurrentVariables(opts *bind.CallOpts) ([32]byte, *big.Int, *big.Int, string, *big.Int, *big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getCurrentVariables")
+
+	if err != nil {
+		return *new([32]byte), *new(*big.Int), *new(*big.Int), *new(string), *new(*big.Int), *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+	out2 := *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
+	out3 := *abi.ConvertType(out[3], new(string)).(*string)
+	out4 := *abi.ConvertType(out[4], new(*big.Int)).(**big.Int)
+	out5 := *abi.ConvertType(out[5], new(*big.Int)).(**big.Int)
+
+	return out0, out1, out2, out3, out4, out5, err
+
+}
+
+// GetCurrentVariables is a free data retrieval call binding the contract method 0xa22e407a.
+//
+// Solidity: function getCurrentVariables() view returns(bytes32, uint256, uint256, string, uint256, uint256)
+func (_TellorMaster *TellorMasterSession) GetCurrentVariables() ([32]byte, *big.Int, *big.Int, string, *big.Int, *big.Int, error) {
+	return _TellorMaster.Contract.GetCurrentVariables(&_TellorMaster.CallOpts)
+}
+
+// GetCurrentVariables is a free data retrieval call binding the contract method 0xa22e407a.
+//
+// Solidity: function getCurrentVariables() view returns(bytes32, uint256, uint256, string, uint256, uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetCurrentVariables() ([32]byte, *big.Int, *big.Int, string, *big.Int, *big.Int, error) {
+	return _TellorMaster.Contract.GetCurrentVariables(&_TellorMaster.CallOpts)
+}
+
+// GetDisputeIdByDisputeHash is a free data retrieval call binding the contract method 0xda379941.
+//
+// Solidity: function getDisputeIdByDisputeHash(bytes32 _hash) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetDisputeIdByDisputeHash(opts *bind.CallOpts, _hash [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getDisputeIdByDisputeHash", _hash)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// PendingOwner is a free data retrieval call binding the contract method 0x7f4ec4c3.
+// GetDisputeIdByDisputeHash is a free data retrieval call binding the contract method 0xda379941.
 //
-// Solidity: function pending_owner() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) PendingOwner() ([32]byte, error) {
-	return _TellorLibrary.Contract.PendingOwner(&_TellorLibrary.CallOpts)
+// Solidity: function getDisputeIdByDisputeHash(bytes32 _hash) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetDisputeIdByDisputeHash(_hash [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetDisputeIdByDisputeHash(&_TellorMaster.CallOpts, _hash)
 }
 
-// PendingOwner is a free data retrieval call binding the contract method 0x7f4ec4c3.
+// GetDisputeIdByDisputeHash is a free data retrieval call binding the contract method 0xda379941.
 //
-// Solidity: function pending_owner() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) PendingOwner() ([32]byte, error) {
-	return _TellorLibrary.Contract.PendingOwner(&_TellorLibrary.CallOpts)
+// Solidity: function getDisputeIdByDisputeHash(bytes32 _hash) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetDisputeIdByDisputeHash(_hash [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetDisputeIdByDisputeHash(&_TellorMaster.CallOpts, _hash)
 }
 
-// RequestCount is a free data retrieval call binding the contract method 0x5badbe4c.
+// GetDisputeUintVars is a free data retrieval call binding the contract method 0x7f6fd5d9.
 //
-// Solidity: function requestCount() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) RequestCount(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getDisputeUintVars(uint256 _disputeId, bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetDisputeUintVars(opts *bind.CallOpts, _disputeId *big.Int, _data [32]byte) (*big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "requestCount")
+	err := _TellorMaster.contract.Call(opts, &out, "getDisputeUintVars", _disputeId, _data)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// RequestCount is a free data retrieval call binding the contract method 0x5badbe4c.
+// GetDisputeUintVars is a free data retrieval call binding the contract method 0x7f6fd5d9.
 //
-// Solidity: function requestCount() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) RequestCount() ([32]byte, error) {
-	return _TellorLibrary.Contract.RequestCount(&_TellorLibrary.CallOpts)
+// Solidity: function getDisputeUintVars(uint256 _disputeId, bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetDisputeUintVars(_disputeId *big.Int, _data [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetDisputeUintVars(&_TellorMaster.CallOpts, _disputeId, _data)
 }
 
-// RequestCount is a free data retrieval call binding the contract method 0x5badbe4c.
+// GetDisputeUintVars is a free data retrieval call binding the contract method 0x7f6fd5d9.
 //
-// Solidity: function requestCount() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) RequestCount() ([32]byte, error) {
-	return _TellorLibrary.Contract.RequestCount(&_TellorLibrary.CallOpts)
+// Solidity: function getDisputeUintVars(uint256 _disputeId, bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetDisputeUintVars(_disputeId *big.Int, _data [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetDisputeUintVars(&_TellorMaster.CallOpts, _disputeId, _data)
 }
 
-// RequestQPosition is a free data retrieval call binding the contract method 0x2bf07e9e.
+// GetLastNewValue is a free data retrieval call binding the contract method 0xfc7cf0a0.
 //
-// Solidity: function requestQPosition() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) RequestQPosition(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getLastNewValue() view returns(uint256, bool)
+func (_TellorMaster *TellorMasterCaller) GetLastNewValue(opts *bind.CallOpts) (*big.Int, bool, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "requestQPosition")
+	err := _TellorMaster.contract.Call(opts, &out, "getLastNewValue")
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), *new(bool), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out1 := *abi.ConvertType(out[1], new(bool)).(*bool)
+
+	return out0, out1, err
+
+}
+
+// GetLastNewValue is a free data retrieval call binding the contract method 0xfc7cf0a0.
+//
+// Solidity: function getLastNewValue() view returns(uint256, bool)
+func (_TellorMaster *TellorMasterSession) GetLastNewValue() (*big.Int, bool, error) {
+	return _TellorMaster.Contract.GetLastNewValue(&_TellorMaster.CallOpts)
+}
+
+// GetLastNewValue is a free data retrieval call binding the contract method 0xfc7cf0a0.
+//
+// Solidity: function getLastNewValue() view returns(uint256, bool)
+func (_TellorMaster *TellorMasterCallerSession) GetLastNewValue() (*big.Int, bool, error) {
+	return _TellorMaster.Contract.GetLastNewValue(&_TellorMaster.CallOpts)
+}
+
+// GetLastNewValueById is a free data retrieval call binding the contract method 0x3180f8df.
+//
+// Solidity: function getLastNewValueById(uint256 _requestId) view returns(uint256, bool)
+func (_TellorMaster *TellorMasterCaller) GetLastNewValueById(opts *bind.CallOpts, _requestId *big.Int) (*big.Int, bool, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getLastNewValueById", _requestId)
+
+	if err != nil {
+		return *new(*big.Int), *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out1 := *abi.ConvertType(out[1], new(bool)).(*bool)
+
+	return out0, out1, err
+
+}
+
+// GetLastNewValueById is a free data retrieval call binding the contract method 0x3180f8df.
+//
+// Solidity: function getLastNewValueById(uint256 _requestId) view returns(uint256, bool)
+func (_TellorMaster *TellorMasterSession) GetLastNewValueById(_requestId *big.Int) (*big.Int, bool, error) {
+	return _TellorMaster.Contract.GetLastNewValueById(&_TellorMaster.CallOpts, _requestId)
+}
+
+// GetLastNewValueById is a free data retrieval call binding the contract method 0x3180f8df.
+//
+// Solidity: function getLastNewValueById(uint256 _requestId) view returns(uint256, bool)
+func (_TellorMaster *TellorMasterCallerSession) GetLastNewValueById(_requestId *big.Int) (*big.Int, bool, error) {
+	return _TellorMaster.Contract.GetLastNewValueById(&_TellorMaster.CallOpts, _requestId)
+}
+
+// GetMinedBlockNum is a free data retrieval call binding the contract method 0xc775b542.
+//
+// Solidity: function getMinedBlockNum(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetMinedBlockNum(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getMinedBlockNum", _requestId, _timestamp)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// RequestQPosition is a free data retrieval call binding the contract method 0x2bf07e9e.
+// GetMinedBlockNum is a free data retrieval call binding the contract method 0xc775b542.
 //
-// Solidity: function requestQPosition() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) RequestQPosition() ([32]byte, error) {
-	return _TellorLibrary.Contract.RequestQPosition(&_TellorLibrary.CallOpts)
+// Solidity: function getMinedBlockNum(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetMinedBlockNum(_requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetMinedBlockNum(&_TellorMaster.CallOpts, _requestId, _timestamp)
 }
 
-// RequestQPosition is a free data retrieval call binding the contract method 0x2bf07e9e.
+// GetMinedBlockNum is a free data retrieval call binding the contract method 0xc775b542.
 //
-// Solidity: function requestQPosition() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) RequestQPosition() ([32]byte, error) {
-	return _TellorLibrary.Contract.RequestQPosition(&_TellorLibrary.CallOpts)
+// Solidity: function getMinedBlockNum(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetMinedBlockNum(_requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetMinedBlockNum(&_TellorMaster.CallOpts, _requestId, _timestamp)
 }
 
-// RunningTips is a free data retrieval call binding the contract method 0xb0dc7c20.
+// GetMinersByRequestIdAndTimestamp is a free data retrieval call binding the contract method 0x69026d63.
 //
-// Solidity: function runningTips() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) RunningTips(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getMinersByRequestIdAndTimestamp(uint256 _requestId, uint256 _timestamp) view returns(address[5])
+func (_TellorMaster *TellorMasterCaller) GetMinersByRequestIdAndTimestamp(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) ([5]common.Address, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "runningTips")
+	err := _TellorMaster.contract.Call(opts, &out, "getMinersByRequestIdAndTimestamp", _requestId, _timestamp)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new([5]common.Address), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new([5]common.Address)).(*[5]common.Address)
 
 	return out0, err
 
 }
 
-// RunningTips is a free data retrieval call binding the contract method 0xb0dc7c20.
+// GetMinersByRequestIdAndTimestamp is a free data retrieval call binding the contract method 0x69026d63.
 //
-// Solidity: function runningTips() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) RunningTips() ([32]byte, error) {
-	return _TellorLibrary.Contract.RunningTips(&_TellorLibrary.CallOpts)
+// Solidity: function getMinersByRequestIdAndTimestamp(uint256 _requestId, uint256 _timestamp) view returns(address[5])
+func (_TellorMaster *TellorMasterSession) GetMinersByRequestIdAndTimestamp(_requestId *big.Int, _timestamp *big.Int) ([5]common.Address, error) {
+	return _TellorMaster.Contract.GetMinersByRequestIdAndTimestamp(&_TellorMaster.CallOpts, _requestId, _timestamp)
 }
 
-// RunningTips is a free data retrieval call binding the contract method 0xb0dc7c20.
+// GetMinersByRequestIdAndTimestamp is a free data retrieval call binding the contract method 0x69026d63.
 //
-// Solidity: function runningTips() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) RunningTips() ([32]byte, error) {
-	return _TellorLibrary.Contract.RunningTips(&_TellorLibrary.CallOpts)
+// Solidity: function getMinersByRequestIdAndTimestamp(uint256 _requestId, uint256 _timestamp) view returns(address[5])
+func (_TellorMaster *TellorMasterCallerSession) GetMinersByRequestIdAndTimestamp(_requestId *big.Int, _timestamp *big.Int) ([5]common.Address, error) {
+	return _TellorMaster.Contract.GetMinersByRequestIdAndTimestamp(&_TellorMaster.CallOpts, _requestId, _timestamp)
 }
 
-// SlotProgress is a free data retrieval call binding the contract method 0x03b3160f.
+// GetName is a free data retrieval call binding the contract method 0x17d7de7c.
 //
-// Solidity: function slotProgress() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) SlotProgress(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getName() view returns(string)
+func (_TellorMaster *TellorMasterCaller) GetName(opts *bind.CallOpts) (string, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "slotProgress")
+	err := _TellorMaster.contract.Call(opts, &out, "getName")
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(string), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
 
 	return out0, err
 
 }
 
-// SlotProgress is a free data retrieval call binding the contract method 0x03b3160f.
+// GetName is a free data retrieval call binding the contract method 0x17d7de7c.
 //
-// Solidity: function slotProgress() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) SlotProgress() ([32]byte, error) {
-	return _TellorLibrary.Contract.SlotProgress(&_TellorLibrary.CallOpts)
+// Solidity: function getName() view returns(string)
+func (_TellorMaster *TellorMasterSession) GetName() (string, error) {
+	return _TellorMaster.Contract.GetName(&_TellorMaster.CallOpts)
 }
 
-// SlotProgress is a free data retrieval call binding the contract method 0x03b3160f.
+// GetName is a free data retrieval call binding the contract method 0x17d7de7c.
 //
-// Solidity: function slotProgress() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) SlotProgress() ([32]byte, error) {
-	return _TellorLibrary.Contract.SlotProgress(&_TellorLibrary.CallOpts)
+// Solidity: function getName() view returns(string)
+func (_TellorMaster *TellorMasterCallerSession) GetName() (string, error) {
+	return _TellorMaster.Contract.GetName(&_TellorMaster.CallOpts)
 }
 
-// TimeOfLastNewValue is a free data retrieval call binding the contract method 0x6fd4f229.
+// GetNewValueCountbyRequestId is a free data retrieval call binding the contract method 0x46eee1c4.
 //
-// Solidity: function timeOfLastNewValue() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) TimeOfLastNewValue(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getNewValueCountbyRequestId(uint256 _requestId) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetNewValueCountbyRequestId(opts *bind.CallOpts, _requestId *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "timeOfLastNewValue")
+	err := _TellorMaster.contract.Call(opts, &out, "getNewValueCountbyRequestId", _requestId)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// TimeOfLastNewValue is a free data retrieval call binding the contract method 0x6fd4f229.
+// GetNewValueCountbyRequestId is a free data retrieval call binding the contract method 0x46eee1c4.
 //
-// Solidity: function timeOfLastNewValue() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) TimeOfLastNewValue() ([32]byte, error) {
-	return _TellorLibrary.Contract.TimeOfLastNewValue(&_TellorLibrary.CallOpts)
+// Solidity: function getNewValueCountbyRequestId(uint256 _requestId) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetNewValueCountbyRequestId(_requestId *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetNewValueCountbyRequestId(&_TellorMaster.CallOpts, _requestId)
 }
 
-// TimeOfLastNewValue is a free data retrieval call binding the contract method 0x6fd4f229.
+// GetNewValueCountbyRequestId is a free data retrieval call binding the contract method 0x46eee1c4.
 //
-// Solidity: function timeOfLastNewValue() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) TimeOfLastNewValue() ([32]byte, error) {
-	return _TellorLibrary.Contract.TimeOfLastNewValue(&_TellorLibrary.CallOpts)
+// Solidity: function getNewValueCountbyRequestId(uint256 _requestId) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetNewValueCountbyRequestId(_requestId *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetNewValueCountbyRequestId(&_TellorMaster.CallOpts, _requestId)
 }
 
-// TimeTarget is a free data retrieval call binding the contract method 0x6fc37811.
+// GetRequestIdByQueryHash is a free data retrieval call binding the contract method 0x1db842f0.
 //
-// Solidity: function timeTarget() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) TimeTarget(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getRequestIdByQueryHash(bytes32 _request) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetRequestIdByQueryHash(opts *bind.CallOpts, _request [32]byte) (*big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "timeTarget")
+	err := _TellorMaster.contract.Call(opts, &out, "getRequestIdByQueryHash", _request)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// TimeTarget is a free data retrieval call binding the contract method 0x6fc37811.
+// GetRequestIdByQueryHash is a free data retrieval call binding the contract method 0x1db842f0.
 //
-// Solidity: function timeTarget() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) TimeTarget() ([32]byte, error) {
-	return _TellorLibrary.Contract.TimeTarget(&_TellorLibrary.CallOpts)
+// Solidity: function getRequestIdByQueryHash(bytes32 _request) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetRequestIdByQueryHash(_request [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestIdByQueryHash(&_TellorMaster.CallOpts, _request)
 }
 
-// TimeTarget is a free data retrieval call binding the contract method 0x6fc37811.
+// GetRequestIdByQueryHash is a free data retrieval call binding the contract method 0x1db842f0.
 //
-// Solidity: function timeTarget() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) TimeTarget() ([32]byte, error) {
-	return _TellorLibrary.Contract.TimeTarget(&_TellorLibrary.CallOpts)
+// Solidity: function getRequestIdByQueryHash(bytes32 _request) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetRequestIdByQueryHash(_request [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestIdByQueryHash(&_TellorMaster.CallOpts, _request)
 }
 
-// TotalTip is a free data retrieval call binding the contract method 0x561cb04a.
+// GetRequestIdByRequestQIndex is a free data retrieval call binding the contract method 0x6173c0b8.
 //
-// Solidity: function totalTip() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) TotalTip(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getRequestIdByRequestQIndex(uint256 _index) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetRequestIdByRequestQIndex(opts *bind.CallOpts, _index *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "totalTip")
+	err := _TellorMaster.contract.Call(opts, &out, "getRequestIdByRequestQIndex", _index)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// TotalTip is a free data retrieval call binding the contract method 0x561cb04a.
+// GetRequestIdByRequestQIndex is a free data retrieval call binding the contract method 0x6173c0b8.
 //
-// Solidity: function totalTip() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) TotalTip() ([32]byte, error) {
-	return _TellorLibrary.Contract.TotalTip(&_TellorLibrary.CallOpts)
+// Solidity: function getRequestIdByRequestQIndex(uint256 _index) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetRequestIdByRequestQIndex(_index *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestIdByRequestQIndex(&_TellorMaster.CallOpts, _index)
 }
 
-// TotalTip is a free data retrieval call binding the contract method 0x561cb04a.
+// GetRequestIdByRequestQIndex is a free data retrieval call binding the contract method 0x6173c0b8.
 //
-// Solidity: function totalTip() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) TotalTip() ([32]byte, error) {
-	return _TellorLibrary.Contract.TotalTip(&_TellorLibrary.CallOpts)
+// Solidity: function getRequestIdByRequestQIndex(uint256 _index) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetRequestIdByRequestQIndex(_index *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestIdByRequestQIndex(&_TellorMaster.CallOpts, _index)
 }
 
-// TotalSupply is a free data retrieval call binding the contract method 0x3940e9ee.
+// GetRequestIdByTimestamp is a free data retrieval call binding the contract method 0x0f0b424d.
 //
-// Solidity: function total_supply() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCaller) TotalSupply(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function getRequestIdByTimestamp(uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetRequestIdByTimestamp(opts *bind.CallOpts, _timestamp *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _TellorLibrary.contract.Call(opts, &out, "total_supply")
+	err := _TellorMaster.contract.Call(opts, &out, "getRequestIdByTimestamp", _timestamp)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// TotalSupply is a free data retrieval call binding the contract method 0x3940e9ee.
+// GetRequestIdByTimestamp is a free data retrieval call binding the contract method 0x0f0b424d.
 //
-// Solidity: function total_supply() view returns(bytes32)
-func (_TellorLibrary *TellorLibrarySession) TotalSupply() ([32]byte, error) {
-	return _TellorLibrary.Contract.TotalSupply(&_TellorLibrary.CallOpts)
+// Solidity: function getRequestIdByTimestamp(uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetRequestIdByTimestamp(_timestamp *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestIdByTimestamp(&_TellorMaster.CallOpts, _timestamp)
 }
 
-// TotalSupply is a free data retrieval call binding the contract method 0x3940e9ee.
+// GetRequestIdByTimestamp is a free data retrieval call binding the contract method 0x0f0b424d.
 //
-// Solidity: function total_supply() view returns(bytes32)
-func (_TellorLibrary *TellorLibraryCallerSession) TotalSupply() ([32]byte, error) {
-	return _TellorLibrary.Contract.TotalSupply(&_TellorLibrary.CallOpts)
+// Solidity: function getRequestIdByTimestamp(uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetRequestIdByTimestamp(_timestamp *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestIdByTimestamp(&_TellorMaster.CallOpts, _timestamp)
 }
 
-// TellorLibraryNewChallengeIterator is returned from FilterNewChallenge and is used to iterate over the raw logs and unpacked data for NewChallenge events raised by the TellorLibrary contract.
-type TellorLibraryNewChallengeIterator struct {
-	Event *TellorLibraryNewChallenge // Event containing the contract specifics and raw log
+// GetRequestQ is a free data retrieval call binding the contract method 0xb5413029.
+//
+// Solidity: function getRequestQ() view returns(uint256[51])
+func (_TellorMaster *TellorMasterCaller) GetRequestQ(opts *bind.CallOpts) ([51]*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getRequestQ")
+
+	if err != nil {
+		return *new([51]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([51]*big.Int)).(*[51]*big.Int)
+
+	return out0, err
+
+}
+
+// GetRequestQ is a free data retrieval call binding the contract method 0xb5413029.
+//
+// Solidity: function getRequestQ() view returns(uint256[51])
+func (_TellorMaster *TellorMasterSession) GetRequestQ() ([51]*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestQ(&_TellorMaster.CallOpts)
+}
+
+// GetRequestQ is a free data retrieval call binding the contract method 0xb5413029.
+//
+// Solidity: function getRequestQ() view returns(uint256[51])
+func (_TellorMaster *TellorMasterCallerSession) GetRequestQ() ([51]*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestQ(&_TellorMaster.CallOpts)
+}
+
+// GetRequestUintVars is a free data retrieval call binding the contract method 0xe0ae93c1.
+//
+// Solidity: function getRequestUintVars(uint256 _requestId, bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetRequestUintVars(opts *bind.CallOpts, _requestId *big.Int, _data [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getRequestUintVars", _requestId, _data)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetRequestUintVars is a free data retrieval call binding the contract method 0xe0ae93c1.
+//
+// Solidity: function getRequestUintVars(uint256 _requestId, bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetRequestUintVars(_requestId *big.Int, _data [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestUintVars(&_TellorMaster.CallOpts, _requestId, _data)
+}
+
+// GetRequestUintVars is a free data retrieval call binding the contract method 0xe0ae93c1.
+//
+// Solidity: function getRequestUintVars(uint256 _requestId, bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetRequestUintVars(_requestId *big.Int, _data [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetRequestUintVars(&_TellorMaster.CallOpts, _requestId, _data)
+}
+
+// GetRequestVars is a free data retrieval call binding the contract method 0xe1eee6d6.
+//
+// Solidity: function getRequestVars(uint256 _requestId) view returns(string, string, bytes32, uint256, uint256, uint256)
+func (_TellorMaster *TellorMasterCaller) GetRequestVars(opts *bind.CallOpts, _requestId *big.Int) (string, string, [32]byte, *big.Int, *big.Int, *big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getRequestVars", _requestId)
+
+	if err != nil {
+		return *new(string), *new(string), *new([32]byte), *new(*big.Int), *new(*big.Int), *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+	out1 := *abi.ConvertType(out[1], new(string)).(*string)
+	out2 := *abi.ConvertType(out[2], new([32]byte)).(*[32]byte)
+	out3 := *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
+	out4 := *abi.ConvertType(out[4], new(*big.Int)).(**big.Int)
+	out5 := *abi.ConvertType(out[5], new(*big.Int)).(**big.Int)
+
+	return out0, out1, out2, out3, out4, out5, err
+
+}
+
+// GetRequestVars is a free data retrieval call binding the contract method 0xe1eee6d6.
+//
+// Solidity: function getRequestVars(uint256 _requestId) view returns(string, string, bytes32, uint256, uint256, uint256)
+func (_TellorMaster *TellorMasterSession) GetRequestVars(_requestId *big.Int) (string, string, [32]byte, *big.Int, *big.Int, *big.Int, error) {
+	return _TellorMaster.Contract.GetRequestVars(&_TellorMaster.CallOpts, _requestId)
+}
+
+// GetRequestVars is a free data retrieval call binding the contract method 0xe1eee6d6.
+//
+// Solidity: function getRequestVars(uint256 _requestId) view returns(string, string, bytes32, uint256, uint256, uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetRequestVars(_requestId *big.Int) (string, string, [32]byte, *big.Int, *big.Int, *big.Int, error) {
+	return _TellorMaster.Contract.GetRequestVars(&_TellorMaster.CallOpts, _requestId)
+}
+
+// GetStakerInfo is a free data retrieval call binding the contract method 0x733bdef0.
+//
+// Solidity: function getStakerInfo(address _staker) view returns(uint256, uint256)
+func (_TellorMaster *TellorMasterCaller) GetStakerInfo(opts *bind.CallOpts, _staker common.Address) (*big.Int, *big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getStakerInfo", _staker)
+
+	if err != nil {
+		return *new(*big.Int), *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+
+	return out0, out1, err
+
+}
+
+// GetStakerInfo is a free data retrieval call binding the contract method 0x733bdef0.
+//
+// Solidity: function getStakerInfo(address _staker) view returns(uint256, uint256)
+func (_TellorMaster *TellorMasterSession) GetStakerInfo(_staker common.Address) (*big.Int, *big.Int, error) {
+	return _TellorMaster.Contract.GetStakerInfo(&_TellorMaster.CallOpts, _staker)
+}
+
+// GetStakerInfo is a free data retrieval call binding the contract method 0x733bdef0.
+//
+// Solidity: function getStakerInfo(address _staker) view returns(uint256, uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetStakerInfo(_staker common.Address) (*big.Int, *big.Int, error) {
+	return _TellorMaster.Contract.GetStakerInfo(&_TellorMaster.CallOpts, _staker)
+}
+
+// GetSubmissionsByTimestamp is a free data retrieval call binding the contract method 0x11c98512.
+//
+// Solidity: function getSubmissionsByTimestamp(uint256 _requestId, uint256 _timestamp) view returns(uint256[5])
+func (_TellorMaster *TellorMasterCaller) GetSubmissionsByTimestamp(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) ([5]*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getSubmissionsByTimestamp", _requestId, _timestamp)
+
+	if err != nil {
+		return *new([5]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([5]*big.Int)).(*[5]*big.Int)
+
+	return out0, err
+
+}
+
+// GetSubmissionsByTimestamp is a free data retrieval call binding the contract method 0x11c98512.
+//
+// Solidity: function getSubmissionsByTimestamp(uint256 _requestId, uint256 _timestamp) view returns(uint256[5])
+func (_TellorMaster *TellorMasterSession) GetSubmissionsByTimestamp(_requestId *big.Int, _timestamp *big.Int) ([5]*big.Int, error) {
+	return _TellorMaster.Contract.GetSubmissionsByTimestamp(&_TellorMaster.CallOpts, _requestId, _timestamp)
+}
+
+// GetSubmissionsByTimestamp is a free data retrieval call binding the contract method 0x11c98512.
+//
+// Solidity: function getSubmissionsByTimestamp(uint256 _requestId, uint256 _timestamp) view returns(uint256[5])
+func (_TellorMaster *TellorMasterCallerSession) GetSubmissionsByTimestamp(_requestId *big.Int, _timestamp *big.Int) ([5]*big.Int, error) {
+	return _TellorMaster.Contract.GetSubmissionsByTimestamp(&_TellorMaster.CallOpts, _requestId, _timestamp)
+}
+
+// GetSymbol is a free data retrieval call binding the contract method 0x15070401.
+//
+// Solidity: function getSymbol() view returns(string)
+func (_TellorMaster *TellorMasterCaller) GetSymbol(opts *bind.CallOpts) (string, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getSymbol")
+
+	if err != nil {
+		return *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+
+	return out0, err
+
+}
+
+// GetSymbol is a free data retrieval call binding the contract method 0x15070401.
+//
+// Solidity: function getSymbol() view returns(string)
+func (_TellorMaster *TellorMasterSession) GetSymbol() (string, error) {
+	return _TellorMaster.Contract.GetSymbol(&_TellorMaster.CallOpts)
+}
+
+// GetSymbol is a free data retrieval call binding the contract method 0x15070401.
+//
+// Solidity: function getSymbol() view returns(string)
+func (_TellorMaster *TellorMasterCallerSession) GetSymbol() (string, error) {
+	return _TellorMaster.Contract.GetSymbol(&_TellorMaster.CallOpts)
+}
+
+// GetTimestampbyRequestIDandIndex is a free data retrieval call binding the contract method 0x77fbb663.
+//
+// Solidity: function getTimestampbyRequestIDandIndex(uint256 _requestID, uint256 _index) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetTimestampbyRequestIDandIndex(opts *bind.CallOpts, _requestID *big.Int, _index *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getTimestampbyRequestIDandIndex", _requestID, _index)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetTimestampbyRequestIDandIndex is a free data retrieval call binding the contract method 0x77fbb663.
+//
+// Solidity: function getTimestampbyRequestIDandIndex(uint256 _requestID, uint256 _index) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetTimestampbyRequestIDandIndex(_requestID *big.Int, _index *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetTimestampbyRequestIDandIndex(&_TellorMaster.CallOpts, _requestID, _index)
+}
+
+// GetTimestampbyRequestIDandIndex is a free data retrieval call binding the contract method 0x77fbb663.
+//
+// Solidity: function getTimestampbyRequestIDandIndex(uint256 _requestID, uint256 _index) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetTimestampbyRequestIDandIndex(_requestID *big.Int, _index *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.GetTimestampbyRequestIDandIndex(&_TellorMaster.CallOpts, _requestID, _index)
+}
+
+// GetUintVar is a free data retrieval call binding the contract method 0x612c8f7f.
+//
+// Solidity: function getUintVar(bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) GetUintVar(opts *bind.CallOpts, _data [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getUintVar", _data)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetUintVar is a free data retrieval call binding the contract method 0x612c8f7f.
+//
+// Solidity: function getUintVar(bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) GetUintVar(_data [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetUintVar(&_TellorMaster.CallOpts, _data)
+}
+
+// GetUintVar is a free data retrieval call binding the contract method 0x612c8f7f.
+//
+// Solidity: function getUintVar(bytes32 _data) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) GetUintVar(_data [32]byte) (*big.Int, error) {
+	return _TellorMaster.Contract.GetUintVar(&_TellorMaster.CallOpts, _data)
+}
+
+// GetVariablesOnDeck is a free data retrieval call binding the contract method 0x19e8e03b.
+//
+// Solidity: function getVariablesOnDeck() view returns(uint256, uint256, string)
+func (_TellorMaster *TellorMasterCaller) GetVariablesOnDeck(opts *bind.CallOpts) (*big.Int, *big.Int, string, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "getVariablesOnDeck")
+
+	if err != nil {
+		return *new(*big.Int), *new(*big.Int), *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+	out2 := *abi.ConvertType(out[2], new(string)).(*string)
+
+	return out0, out1, out2, err
+
+}
+
+// GetVariablesOnDeck is a free data retrieval call binding the contract method 0x19e8e03b.
+//
+// Solidity: function getVariablesOnDeck() view returns(uint256, uint256, string)
+func (_TellorMaster *TellorMasterSession) GetVariablesOnDeck() (*big.Int, *big.Int, string, error) {
+	return _TellorMaster.Contract.GetVariablesOnDeck(&_TellorMaster.CallOpts)
+}
+
+// GetVariablesOnDeck is a free data retrieval call binding the contract method 0x19e8e03b.
+//
+// Solidity: function getVariablesOnDeck() view returns(uint256, uint256, string)
+func (_TellorMaster *TellorMasterCallerSession) GetVariablesOnDeck() (*big.Int, *big.Int, string, error) {
+	return _TellorMaster.Contract.GetVariablesOnDeck(&_TellorMaster.CallOpts)
+}
+
+// IsInDispute is a free data retrieval call binding the contract method 0x3df0777b.
+//
+// Solidity: function isInDispute(uint256 _requestId, uint256 _timestamp) view returns(bool)
+func (_TellorMaster *TellorMasterCaller) IsInDispute(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) (bool, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "isInDispute", _requestId, _timestamp)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsInDispute is a free data retrieval call binding the contract method 0x3df0777b.
+//
+// Solidity: function isInDispute(uint256 _requestId, uint256 _timestamp) view returns(bool)
+func (_TellorMaster *TellorMasterSession) IsInDispute(_requestId *big.Int, _timestamp *big.Int) (bool, error) {
+	return _TellorMaster.Contract.IsInDispute(&_TellorMaster.CallOpts, _requestId, _timestamp)
+}
+
+// IsInDispute is a free data retrieval call binding the contract method 0x3df0777b.
+//
+// Solidity: function isInDispute(uint256 _requestId, uint256 _timestamp) view returns(bool)
+func (_TellorMaster *TellorMasterCallerSession) IsInDispute(_requestId *big.Int, _timestamp *big.Int) (bool, error) {
+	return _TellorMaster.Contract.IsInDispute(&_TellorMaster.CallOpts, _requestId, _timestamp)
+}
+
+// RetrieveData is a free data retrieval call binding the contract method 0x93fa4915.
+//
+// Solidity: function retrieveData(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) RetrieveData(opts *bind.CallOpts, _requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "retrieveData", _requestId, _timestamp)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// RetrieveData is a free data retrieval call binding the contract method 0x93fa4915.
+//
+// Solidity: function retrieveData(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterSession) RetrieveData(_requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.RetrieveData(&_TellorMaster.CallOpts, _requestId, _timestamp)
+}
+
+// RetrieveData is a free data retrieval call binding the contract method 0x93fa4915.
+//
+// Solidity: function retrieveData(uint256 _requestId, uint256 _timestamp) view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) RetrieveData(_requestId *big.Int, _timestamp *big.Int) (*big.Int, error) {
+	return _TellorMaster.Contract.RetrieveData(&_TellorMaster.CallOpts, _requestId, _timestamp)
+}
+
+// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
+//
+// Solidity: function totalSupply() view returns(uint256)
+func (_TellorMaster *TellorMasterCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _TellorMaster.contract.Call(opts, &out, "totalSupply")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
+//
+// Solidity: function totalSupply() view returns(uint256)
+func (_TellorMaster *TellorMasterSession) TotalSupply() (*big.Int, error) {
+	return _TellorMaster.Contract.TotalSupply(&_TellorMaster.CallOpts)
+}
+
+// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
+//
+// Solidity: function totalSupply() view returns(uint256)
+func (_TellorMaster *TellorMasterCallerSession) TotalSupply() (*big.Int, error) {
+	return _TellorMaster.Contract.TotalSupply(&_TellorMaster.CallOpts)
+}
+
+// ChangeDeity is a paid mutator transaction binding the contract method 0x47abd7f1.
+//
+// Solidity: function changeDeity(address _newDeity) returns()
+func (_TellorMaster *TellorMasterTransactor) ChangeDeity(opts *bind.TransactOpts, _newDeity common.Address) (*types.Transaction, error) {
+	return _TellorMaster.contract.Transact(opts, "changeDeity", _newDeity)
+}
+
+// ChangeDeity is a paid mutator transaction binding the contract method 0x47abd7f1.
+//
+// Solidity: function changeDeity(address _newDeity) returns()
+func (_TellorMaster *TellorMasterSession) ChangeDeity(_newDeity common.Address) (*types.Transaction, error) {
+	return _TellorMaster.Contract.ChangeDeity(&_TellorMaster.TransactOpts, _newDeity)
+}
+
+// ChangeDeity is a paid mutator transaction binding the contract method 0x47abd7f1.
+//
+// Solidity: function changeDeity(address _newDeity) returns()
+func (_TellorMaster *TellorMasterTransactorSession) ChangeDeity(_newDeity common.Address) (*types.Transaction, error) {
+	return _TellorMaster.Contract.ChangeDeity(&_TellorMaster.TransactOpts, _newDeity)
+}
+
+// ChangeTellorContract is a paid mutator transaction binding the contract method 0xae0a8279.
+//
+// Solidity: function changeTellorContract(address _tellorContract) returns()
+func (_TellorMaster *TellorMasterTransactor) ChangeTellorContract(opts *bind.TransactOpts, _tellorContract common.Address) (*types.Transaction, error) {
+	return _TellorMaster.contract.Transact(opts, "changeTellorContract", _tellorContract)
+}
+
+// ChangeTellorContract is a paid mutator transaction binding the contract method 0xae0a8279.
+//
+// Solidity: function changeTellorContract(address _tellorContract) returns()
+func (_TellorMaster *TellorMasterSession) ChangeTellorContract(_tellorContract common.Address) (*types.Transaction, error) {
+	return _TellorMaster.Contract.ChangeTellorContract(&_TellorMaster.TransactOpts, _tellorContract)
+}
+
+// ChangeTellorContract is a paid mutator transaction binding the contract method 0xae0a8279.
+//
+// Solidity: function changeTellorContract(address _tellorContract) returns()
+func (_TellorMaster *TellorMasterTransactorSession) ChangeTellorContract(_tellorContract common.Address) (*types.Transaction, error) {
+	return _TellorMaster.Contract.ChangeTellorContract(&_TellorMaster.TransactOpts, _tellorContract)
+}
+
+// Fallback is a paid mutator transaction binding the contract fallback function.
+//
+// Solidity: fallback() payable returns()
+func (_TellorMaster *TellorMasterTransactor) Fallback(opts *bind.TransactOpts, calldata []byte) (*types.Transaction, error) {
+	return _TellorMaster.contract.RawTransact(opts, calldata)
+}
+
+// Fallback is a paid mutator transaction binding the contract fallback function.
+//
+// Solidity: fallback() payable returns()
+func (_TellorMaster *TellorMasterSession) Fallback(calldata []byte) (*types.Transaction, error) {
+	return _TellorMaster.Contract.Fallback(&_TellorMaster.TransactOpts, calldata)
+}
+
+// Fallback is a paid mutator transaction binding the contract fallback function.
+//
+// Solidity: fallback() payable returns()
+func (_TellorMaster *TellorMasterTransactorSession) Fallback(calldata []byte) (*types.Transaction, error) {
+	return _TellorMaster.Contract.Fallback(&_TellorMaster.TransactOpts, calldata)
+}
+
+// TellorMasterNewTellorAddressIterator is returned from FilterNewTellorAddress and is used to iterate over the raw logs and unpacked data for NewTellorAddress events raised by the TellorMaster contract.
+type TellorMasterNewTellorAddressIterator struct {
+	Event *TellorMasterNewTellorAddress // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2740,7 +3777,7 @@ type TellorLibraryNewChallengeIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TellorLibraryNewChallengeIterator) Next() bool {
+func (it *TellorMasterNewTellorAddressIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2749,7 +3786,7 @@ func (it *TellorLibraryNewChallengeIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TellorLibraryNewChallenge)
+			it.Event = new(TellorMasterNewTellorAddress)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2764,7 +3801,7 @@ func (it *TellorLibraryNewChallengeIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TellorLibraryNewChallenge)
+		it.Event = new(TellorMasterNewTellorAddress)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2780,821 +3817,41 @@ func (it *TellorLibraryNewChallengeIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorLibraryNewChallengeIterator) Error() error {
+func (it *TellorMasterNewTellorAddressIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TellorLibraryNewChallengeIterator) Close() error {
+func (it *TellorMasterNewTellorAddressIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TellorLibraryNewChallenge represents a NewChallenge event raised by the TellorLibrary contract.
-type TellorLibraryNewChallenge struct {
-	CurrentChallenge [32]byte
-	CurrentRequestId [5]*big.Int
-	Difficulty       *big.Int
-	TotalTips        *big.Int
-	Raw              types.Log // Blockchain specific contextual infos
-}
-
-// FilterNewChallenge is a free log retrieval operation binding the contract event 0x1d85ce10456e29b67de37887496d3f1fcf1b64c79c4d07484038703a9f5c1408.
-//
-// Solidity: event NewChallenge(bytes32 indexed _currentChallenge, uint256[5] _currentRequestId, uint256 _difficulty, uint256 _totalTips)
-func (_TellorLibrary *TellorLibraryFilterer) FilterNewChallenge(opts *bind.FilterOpts, _currentChallenge [][32]byte) (*TellorLibraryNewChallengeIterator, error) {
-
-	var _currentChallengeRule []interface{}
-	for _, _currentChallengeItem := range _currentChallenge {
-		_currentChallengeRule = append(_currentChallengeRule, _currentChallengeItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.FilterLogs(opts, "NewChallenge", _currentChallengeRule)
-	if err != nil {
-		return nil, err
-	}
-	return &TellorLibraryNewChallengeIterator{contract: _TellorLibrary.contract, event: "NewChallenge", logs: logs, sub: sub}, nil
-}
-
-// WatchNewChallenge is a free log subscription operation binding the contract event 0x1d85ce10456e29b67de37887496d3f1fcf1b64c79c4d07484038703a9f5c1408.
-//
-// Solidity: event NewChallenge(bytes32 indexed _currentChallenge, uint256[5] _currentRequestId, uint256 _difficulty, uint256 _totalTips)
-func (_TellorLibrary *TellorLibraryFilterer) WatchNewChallenge(opts *bind.WatchOpts, sink chan<- *TellorLibraryNewChallenge, _currentChallenge [][32]byte) (event.Subscription, error) {
-
-	var _currentChallengeRule []interface{}
-	for _, _currentChallengeItem := range _currentChallenge {
-		_currentChallengeRule = append(_currentChallengeRule, _currentChallengeItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.WatchLogs(opts, "NewChallenge", _currentChallengeRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(TellorLibraryNewChallenge)
-				if err := _TellorLibrary.contract.UnpackLog(event, "NewChallenge", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseNewChallenge is a log parse operation binding the contract event 0x1d85ce10456e29b67de37887496d3f1fcf1b64c79c4d07484038703a9f5c1408.
-//
-// Solidity: event NewChallenge(bytes32 indexed _currentChallenge, uint256[5] _currentRequestId, uint256 _difficulty, uint256 _totalTips)
-func (_TellorLibrary *TellorLibraryFilterer) ParseNewChallenge(log types.Log) (*TellorLibraryNewChallenge, error) {
-	event := new(TellorLibraryNewChallenge)
-	if err := _TellorLibrary.contract.UnpackLog(event, "NewChallenge", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// TellorLibraryNewValueIterator is returned from FilterNewValue and is used to iterate over the raw logs and unpacked data for NewValue events raised by the TellorLibrary contract.
-type TellorLibraryNewValueIterator struct {
-	Event *TellorLibraryNewValue // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *TellorLibraryNewValueIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(TellorLibraryNewValue)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(TellorLibraryNewValue)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorLibraryNewValueIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *TellorLibraryNewValueIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// TellorLibraryNewValue represents a NewValue event raised by the TellorLibrary contract.
-type TellorLibraryNewValue struct {
-	RequestId        [5]*big.Int
-	Time             *big.Int
-	Value            [5]*big.Int
-	TotalTips        *big.Int
-	CurrentChallenge [32]byte
-	Raw              types.Log // Blockchain specific contextual infos
-}
-
-// FilterNewValue is a free log retrieval operation binding the contract event 0xbeb3b9f46c8d7bb00c873fca10d307538df350866d25f891ffb395147ddbdc45.
-//
-// Solidity: event NewValue(uint256[5] _requestId, uint256 _time, uint256[5] _value, uint256 _totalTips, bytes32 indexed _currentChallenge)
-func (_TellorLibrary *TellorLibraryFilterer) FilterNewValue(opts *bind.FilterOpts, _currentChallenge [][32]byte) (*TellorLibraryNewValueIterator, error) {
-
-	var _currentChallengeRule []interface{}
-	for _, _currentChallengeItem := range _currentChallenge {
-		_currentChallengeRule = append(_currentChallengeRule, _currentChallengeItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.FilterLogs(opts, "NewValue", _currentChallengeRule)
-	if err != nil {
-		return nil, err
-	}
-	return &TellorLibraryNewValueIterator{contract: _TellorLibrary.contract, event: "NewValue", logs: logs, sub: sub}, nil
-}
-
-// WatchNewValue is a free log subscription operation binding the contract event 0xbeb3b9f46c8d7bb00c873fca10d307538df350866d25f891ffb395147ddbdc45.
-//
-// Solidity: event NewValue(uint256[5] _requestId, uint256 _time, uint256[5] _value, uint256 _totalTips, bytes32 indexed _currentChallenge)
-func (_TellorLibrary *TellorLibraryFilterer) WatchNewValue(opts *bind.WatchOpts, sink chan<- *TellorLibraryNewValue, _currentChallenge [][32]byte) (event.Subscription, error) {
-
-	var _currentChallengeRule []interface{}
-	for _, _currentChallengeItem := range _currentChallenge {
-		_currentChallengeRule = append(_currentChallengeRule, _currentChallengeItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.WatchLogs(opts, "NewValue", _currentChallengeRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(TellorLibraryNewValue)
-				if err := _TellorLibrary.contract.UnpackLog(event, "NewValue", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseNewValue is a log parse operation binding the contract event 0xbeb3b9f46c8d7bb00c873fca10d307538df350866d25f891ffb395147ddbdc45.
-//
-// Solidity: event NewValue(uint256[5] _requestId, uint256 _time, uint256[5] _value, uint256 _totalTips, bytes32 indexed _currentChallenge)
-func (_TellorLibrary *TellorLibraryFilterer) ParseNewValue(log types.Log) (*TellorLibraryNewValue, error) {
-	event := new(TellorLibraryNewValue)
-	if err := _TellorLibrary.contract.UnpackLog(event, "NewValue", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// TellorLibraryNonceSubmittedIterator is returned from FilterNonceSubmitted and is used to iterate over the raw logs and unpacked data for NonceSubmitted events raised by the TellorLibrary contract.
-type TellorLibraryNonceSubmittedIterator struct {
-	Event *TellorLibraryNonceSubmitted // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *TellorLibraryNonceSubmittedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(TellorLibraryNonceSubmitted)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(TellorLibraryNonceSubmitted)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorLibraryNonceSubmittedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *TellorLibraryNonceSubmittedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// TellorLibraryNonceSubmitted represents a NonceSubmitted event raised by the TellorLibrary contract.
-type TellorLibraryNonceSubmitted struct {
-	Miner            common.Address
-	Nonce            string
-	RequestId        [5]*big.Int
-	Value            [5]*big.Int
-	CurrentChallenge [32]byte
-	Raw              types.Log // Blockchain specific contextual infos
-}
-
-// FilterNonceSubmitted is a free log retrieval operation binding the contract event 0x0e4e65dc389613b6884b7f8c615e54fd3b894fbbbc534c990037744eea942000.
-//
-// Solidity: event NonceSubmitted(address indexed _miner, string _nonce, uint256[5] _requestId, uint256[5] _value, bytes32 indexed _currentChallenge)
-func (_TellorLibrary *TellorLibraryFilterer) FilterNonceSubmitted(opts *bind.FilterOpts, _miner []common.Address, _currentChallenge [][32]byte) (*TellorLibraryNonceSubmittedIterator, error) {
-
-	var _minerRule []interface{}
-	for _, _minerItem := range _miner {
-		_minerRule = append(_minerRule, _minerItem)
-	}
-
-	var _currentChallengeRule []interface{}
-	for _, _currentChallengeItem := range _currentChallenge {
-		_currentChallengeRule = append(_currentChallengeRule, _currentChallengeItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.FilterLogs(opts, "NonceSubmitted", _minerRule, _currentChallengeRule)
-	if err != nil {
-		return nil, err
-	}
-	return &TellorLibraryNonceSubmittedIterator{contract: _TellorLibrary.contract, event: "NonceSubmitted", logs: logs, sub: sub}, nil
-}
-
-// WatchNonceSubmitted is a free log subscription operation binding the contract event 0x0e4e65dc389613b6884b7f8c615e54fd3b894fbbbc534c990037744eea942000.
-//
-// Solidity: event NonceSubmitted(address indexed _miner, string _nonce, uint256[5] _requestId, uint256[5] _value, bytes32 indexed _currentChallenge)
-func (_TellorLibrary *TellorLibraryFilterer) WatchNonceSubmitted(opts *bind.WatchOpts, sink chan<- *TellorLibraryNonceSubmitted, _miner []common.Address, _currentChallenge [][32]byte) (event.Subscription, error) {
-
-	var _minerRule []interface{}
-	for _, _minerItem := range _miner {
-		_minerRule = append(_minerRule, _minerItem)
-	}
-
-	var _currentChallengeRule []interface{}
-	for _, _currentChallengeItem := range _currentChallenge {
-		_currentChallengeRule = append(_currentChallengeRule, _currentChallengeItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.WatchLogs(opts, "NonceSubmitted", _minerRule, _currentChallengeRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(TellorLibraryNonceSubmitted)
-				if err := _TellorLibrary.contract.UnpackLog(event, "NonceSubmitted", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseNonceSubmitted is a log parse operation binding the contract event 0x0e4e65dc389613b6884b7f8c615e54fd3b894fbbbc534c990037744eea942000.
-//
-// Solidity: event NonceSubmitted(address indexed _miner, string _nonce, uint256[5] _requestId, uint256[5] _value, bytes32 indexed _currentChallenge)
-func (_TellorLibrary *TellorLibraryFilterer) ParseNonceSubmitted(log types.Log) (*TellorLibraryNonceSubmitted, error) {
-	event := new(TellorLibraryNonceSubmitted)
-	if err := _TellorLibrary.contract.UnpackLog(event, "NonceSubmitted", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// TellorLibraryOwnershipProposedIterator is returned from FilterOwnershipProposed and is used to iterate over the raw logs and unpacked data for OwnershipProposed events raised by the TellorLibrary contract.
-type TellorLibraryOwnershipProposedIterator struct {
-	Event *TellorLibraryOwnershipProposed // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *TellorLibraryOwnershipProposedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(TellorLibraryOwnershipProposed)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(TellorLibraryOwnershipProposed)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorLibraryOwnershipProposedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *TellorLibraryOwnershipProposedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// TellorLibraryOwnershipProposed represents a OwnershipProposed event raised by the TellorLibrary contract.
-type TellorLibraryOwnershipProposed struct {
-	PreviousOwner common.Address
-	NewOwner      common.Address
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterOwnershipProposed is a free log retrieval operation binding the contract event 0xb51454ce8c7f26becd312a46c4815553887f2ec876a0b8dc813b87f62edf6f80.
-//
-// Solidity: event OwnershipProposed(address indexed _previousOwner, address indexed _newOwner)
-func (_TellorLibrary *TellorLibraryFilterer) FilterOwnershipProposed(opts *bind.FilterOpts, _previousOwner []common.Address, _newOwner []common.Address) (*TellorLibraryOwnershipProposedIterator, error) {
-
-	var _previousOwnerRule []interface{}
-	for _, _previousOwnerItem := range _previousOwner {
-		_previousOwnerRule = append(_previousOwnerRule, _previousOwnerItem)
-	}
-	var _newOwnerRule []interface{}
-	for _, _newOwnerItem := range _newOwner {
-		_newOwnerRule = append(_newOwnerRule, _newOwnerItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.FilterLogs(opts, "OwnershipProposed", _previousOwnerRule, _newOwnerRule)
-	if err != nil {
-		return nil, err
-	}
-	return &TellorLibraryOwnershipProposedIterator{contract: _TellorLibrary.contract, event: "OwnershipProposed", logs: logs, sub: sub}, nil
-}
-
-// WatchOwnershipProposed is a free log subscription operation binding the contract event 0xb51454ce8c7f26becd312a46c4815553887f2ec876a0b8dc813b87f62edf6f80.
-//
-// Solidity: event OwnershipProposed(address indexed _previousOwner, address indexed _newOwner)
-func (_TellorLibrary *TellorLibraryFilterer) WatchOwnershipProposed(opts *bind.WatchOpts, sink chan<- *TellorLibraryOwnershipProposed, _previousOwner []common.Address, _newOwner []common.Address) (event.Subscription, error) {
-
-	var _previousOwnerRule []interface{}
-	for _, _previousOwnerItem := range _previousOwner {
-		_previousOwnerRule = append(_previousOwnerRule, _previousOwnerItem)
-	}
-	var _newOwnerRule []interface{}
-	for _, _newOwnerItem := range _newOwner {
-		_newOwnerRule = append(_newOwnerRule, _newOwnerItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.WatchLogs(opts, "OwnershipProposed", _previousOwnerRule, _newOwnerRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(TellorLibraryOwnershipProposed)
-				if err := _TellorLibrary.contract.UnpackLog(event, "OwnershipProposed", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseOwnershipProposed is a log parse operation binding the contract event 0xb51454ce8c7f26becd312a46c4815553887f2ec876a0b8dc813b87f62edf6f80.
-//
-// Solidity: event OwnershipProposed(address indexed _previousOwner, address indexed _newOwner)
-func (_TellorLibrary *TellorLibraryFilterer) ParseOwnershipProposed(log types.Log) (*TellorLibraryOwnershipProposed, error) {
-	event := new(TellorLibraryOwnershipProposed)
-	if err := _TellorLibrary.contract.UnpackLog(event, "OwnershipProposed", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// TellorLibraryOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the TellorLibrary contract.
-type TellorLibraryOwnershipTransferredIterator struct {
-	Event *TellorLibraryOwnershipTransferred // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *TellorLibraryOwnershipTransferredIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(TellorLibraryOwnershipTransferred)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(TellorLibraryOwnershipTransferred)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorLibraryOwnershipTransferredIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *TellorLibraryOwnershipTransferredIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// TellorLibraryOwnershipTransferred represents a OwnershipTransferred event raised by the TellorLibrary contract.
-type TellorLibraryOwnershipTransferred struct {
-	PreviousOwner common.Address
-	NewOwner      common.Address
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
-//
-// Solidity: event OwnershipTransferred(address indexed _previousOwner, address indexed _newOwner)
-func (_TellorLibrary *TellorLibraryFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, _previousOwner []common.Address, _newOwner []common.Address) (*TellorLibraryOwnershipTransferredIterator, error) {
-
-	var _previousOwnerRule []interface{}
-	for _, _previousOwnerItem := range _previousOwner {
-		_previousOwnerRule = append(_previousOwnerRule, _previousOwnerItem)
-	}
-	var _newOwnerRule []interface{}
-	for _, _newOwnerItem := range _newOwner {
-		_newOwnerRule = append(_newOwnerRule, _newOwnerItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.FilterLogs(opts, "OwnershipTransferred", _previousOwnerRule, _newOwnerRule)
-	if err != nil {
-		return nil, err
-	}
-	return &TellorLibraryOwnershipTransferredIterator{contract: _TellorLibrary.contract, event: "OwnershipTransferred", logs: logs, sub: sub}, nil
-}
-
-// WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
-//
-// Solidity: event OwnershipTransferred(address indexed _previousOwner, address indexed _newOwner)
-func (_TellorLibrary *TellorLibraryFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *TellorLibraryOwnershipTransferred, _previousOwner []common.Address, _newOwner []common.Address) (event.Subscription, error) {
-
-	var _previousOwnerRule []interface{}
-	for _, _previousOwnerItem := range _previousOwner {
-		_previousOwnerRule = append(_previousOwnerRule, _previousOwnerItem)
-	}
-	var _newOwnerRule []interface{}
-	for _, _newOwnerItem := range _newOwner {
-		_newOwnerRule = append(_newOwnerRule, _newOwnerItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.WatchLogs(opts, "OwnershipTransferred", _previousOwnerRule, _newOwnerRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(TellorLibraryOwnershipTransferred)
-				if err := _TellorLibrary.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
-//
-// Solidity: event OwnershipTransferred(address indexed _previousOwner, address indexed _newOwner)
-func (_TellorLibrary *TellorLibraryFilterer) ParseOwnershipTransferred(log types.Log) (*TellorLibraryOwnershipTransferred, error) {
-	event := new(TellorLibraryOwnershipTransferred)
-	if err := _TellorLibrary.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// TellorLibraryTipAddedIterator is returned from FilterTipAdded and is used to iterate over the raw logs and unpacked data for TipAdded events raised by the TellorLibrary contract.
-type TellorLibraryTipAddedIterator struct {
-	Event *TellorLibraryTipAdded // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *TellorLibraryTipAddedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(TellorLibraryTipAdded)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(TellorLibraryTipAdded)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorLibraryTipAddedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *TellorLibraryTipAddedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// TellorLibraryTipAdded represents a TipAdded event raised by the TellorLibrary contract.
-type TellorLibraryTipAdded struct {
-	Sender    common.Address
-	RequestId *big.Int
-	Tip       *big.Int
-	TotalTips *big.Int
+// TellorMasterNewTellorAddress represents a NewTellorAddress event raised by the TellorMaster contract.
+type TellorMasterNewTellorAddress struct {
+	NewTellor common.Address
 	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterTipAdded is a free log retrieval operation binding the contract event 0xd32134405b68f6f7220f9c38ae310df1b648d16188006768d45be2f7c24e8820.
+// FilterNewTellorAddress is a free log retrieval operation binding the contract event 0xc2d1449eb0b6547aa426e09d9942a77fa4fc8cd3296305b3163e22452e0bcb8d.
 //
-// Solidity: event TipAdded(address indexed _sender, uint256 indexed _requestId, uint256 _tip, uint256 _totalTips)
-func (_TellorLibrary *TellorLibraryFilterer) FilterTipAdded(opts *bind.FilterOpts, _sender []common.Address, _requestId []*big.Int) (*TellorLibraryTipAddedIterator, error) {
+// Solidity: event NewTellorAddress(address _newTellor)
+func (_TellorMaster *TellorMasterFilterer) FilterNewTellorAddress(opts *bind.FilterOpts) (*TellorMasterNewTellorAddressIterator, error) {
 
-	var _senderRule []interface{}
-	for _, _senderItem := range _sender {
-		_senderRule = append(_senderRule, _senderItem)
-	}
-	var _requestIdRule []interface{}
-	for _, _requestIdItem := range _requestId {
-		_requestIdRule = append(_requestIdRule, _requestIdItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.FilterLogs(opts, "TipAdded", _senderRule, _requestIdRule)
+	logs, sub, err := _TellorMaster.contract.FilterLogs(opts, "NewTellorAddress")
 	if err != nil {
 		return nil, err
 	}
-	return &TellorLibraryTipAddedIterator{contract: _TellorLibrary.contract, event: "TipAdded", logs: logs, sub: sub}, nil
+	return &TellorMasterNewTellorAddressIterator{contract: _TellorMaster.contract, event: "NewTellorAddress", logs: logs, sub: sub}, nil
 }
 
-// WatchTipAdded is a free log subscription operation binding the contract event 0xd32134405b68f6f7220f9c38ae310df1b648d16188006768d45be2f7c24e8820.
+// WatchNewTellorAddress is a free log subscription operation binding the contract event 0xc2d1449eb0b6547aa426e09d9942a77fa4fc8cd3296305b3163e22452e0bcb8d.
 //
-// Solidity: event TipAdded(address indexed _sender, uint256 indexed _requestId, uint256 _tip, uint256 _totalTips)
-func (_TellorLibrary *TellorLibraryFilterer) WatchTipAdded(opts *bind.WatchOpts, sink chan<- *TellorLibraryTipAdded, _sender []common.Address, _requestId []*big.Int) (event.Subscription, error) {
+// Solidity: event NewTellorAddress(address _newTellor)
+func (_TellorMaster *TellorMasterFilterer) WatchNewTellorAddress(opts *bind.WatchOpts, sink chan<- *TellorMasterNewTellorAddress) (event.Subscription, error) {
 
-	var _senderRule []interface{}
-	for _, _senderItem := range _sender {
-		_senderRule = append(_senderRule, _senderItem)
-	}
-	var _requestIdRule []interface{}
-	for _, _requestIdItem := range _requestId {
-		_requestIdRule = append(_requestIdRule, _requestIdItem)
-	}
-
-	logs, sub, err := _TellorLibrary.contract.WatchLogs(opts, "TipAdded", _senderRule, _requestIdRule)
+	logs, sub, err := _TellorMaster.contract.WatchLogs(opts, "NewTellorAddress")
 	if err != nil {
 		return nil, err
 	}
@@ -3604,8 +3861,8 @@ func (_TellorLibrary *TellorLibraryFilterer) WatchTipAdded(opts *bind.WatchOpts,
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TellorLibraryTipAdded)
-				if err := _TellorLibrary.contract.UnpackLog(event, "TipAdded", log); err != nil {
+				event := new(TellorMasterNewTellorAddress)
+				if err := _TellorMaster.contract.UnpackLog(event, "NewTellorAddress", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3626,12 +3883,12 @@ func (_TellorLibrary *TellorLibraryFilterer) WatchTipAdded(opts *bind.WatchOpts,
 	}), nil
 }
 
-// ParseTipAdded is a log parse operation binding the contract event 0xd32134405b68f6f7220f9c38ae310df1b648d16188006768d45be2f7c24e8820.
+// ParseNewTellorAddress is a log parse operation binding the contract event 0xc2d1449eb0b6547aa426e09d9942a77fa4fc8cd3296305b3163e22452e0bcb8d.
 //
-// Solidity: event TipAdded(address indexed _sender, uint256 indexed _requestId, uint256 _tip, uint256 _totalTips)
-func (_TellorLibrary *TellorLibraryFilterer) ParseTipAdded(log types.Log) (*TellorLibraryTipAdded, error) {
-	event := new(TellorLibraryTipAdded)
-	if err := _TellorLibrary.contract.UnpackLog(event, "TipAdded", log); err != nil {
+// Solidity: event NewTellorAddress(address _newTellor)
+func (_TellorMaster *TellorMasterFilterer) ParseNewTellorAddress(log types.Log) (*TellorMasterNewTellorAddress, error) {
+	event := new(TellorMasterNewTellorAddress)
+	if err := _TellorMaster.contract.UnpackLog(event, "NewTellorAddress", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -3639,17 +3896,18 @@ func (_TellorLibrary *TellorLibraryFilterer) ParseTipAdded(log types.Log) (*Tell
 }
 
 // TellorStakeABI is the input ABI used to generate the binding from.
-const TellorStakeABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"}],\"name\":\"NewStake\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"}],\"name\":\"StakeWithdrawRequested\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"}],\"name\":\"StakeWithdrawn\",\"type\":\"event\"}]"
+const TellorStakeABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_sender\",\"type\":\"address\"}],\"name\":\"NewStake\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_sender\",\"type\":\"address\"}],\"name\":\"StakeWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_sender\",\"type\":\"address\"}],\"name\":\"StakeWithdrawRequested\",\"type\":\"event\"}]"
 
 // TellorStakeFuncSigs maps the 4-byte function signature to its string representation.
 var TellorStakeFuncSigs = map[string]string{
 	"820a2d66": "depositStake(TellorStorage.TellorStorageStruct storage)",
+	"4601f1cd": "init(TellorStorage.TellorStorageStruct storage)",
 	"c9cf5e4c": "requestStakingWithdraw(TellorStorage.TellorStorageStruct storage)",
 	"44bacc4b": "withdrawStake(TellorStorage.TellorStorageStruct storage)",
 }
 
 // TellorStakeBin is the compiled bytecode used for deploying new contracts.
-var TellorStakeBin = "0x6105f6610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361061004b5760003560e01c806344bacc4b14610050578063820a2d661461007c578063c9cf5e4c146100a6575b600080fd5b81801561005c57600080fd5b5061007a6004803603602081101561007357600080fd5b50356100d0565b005b81801561008857600080fd5b5061007a6004803603602081101561009f57600080fd5b50356101ad565b8180156100b257600080fd5b5061007a600480360360208110156100c957600080fd5b5035610221565b3360009081526047820160205260409020600181015462093a8090620151804206420303101561013c576040805162461bcd60e51b8152602060048201526012602482015271372064617973206469646e2774207061737360701b604482015290519081900360640190fd5b805460021461017c5760405162461bcd60e51b815260040180806020018281038252602381526020018061057d6023913960400191505060405180910390fd5b600080825560405133917f4a7934670bd8304e7da22378be1368f7c4fef17c5aee81804beda8638fe428ec91a25050565b6101b78133610356565b73__$541ca5f99b9f01aa12a867587622feef24$__63d7b651c1826040518263ffffffff1660e01b81526004018082815260200191505060006040518083038186803b15801561020657600080fd5b505af415801561021a573d6000803e3d6000fd5b5050505050565b3360009081526047820160205260409020805460011461027e576040805162461bcd60e51b8152602060048201526013602482015272135a5b995c881a5cc81b9bdd081cdd185ad959606a1b604482015290519081900360640190fd5b6002815562015180420642036001820155604080516a1cdd185ad95c90dbdd5b9d60aa1b8152815190819003600b0181206000908152828501602052828120805460001901905563d7b651c160e01b825260048201859052915173__$541ca5f99b9f01aa12a867587622feef24$__9263d7b651c19260248082019391829003018186803b15801561030f57600080fd5b505af4158015610323573d6000803e3d6000fd5b50506040513392507f453865710d0cb4b14ad25de371c860da196368895daa9662e5087711d14daecf9150600090a25050565b604080516a1cdd185ad9505b5bdd5b9d60aa1b8152815190819003600b0181206000908152828501602090815290839020546393b182b360e01b8352600483018690526001600160a01b0385166024840152925173__$2718d1e96458860b323e2267f4056bb1be$__926393b182b3926044808301939192829003018186803b1580156103e257600080fd5b505af41580156103f6573d6000803e3d6000fd5b505050506040513d602081101561040c57600080fd5b5051101561044b5760405162461bcd60e51b81526004018080602001828103825260228152602001806105a06022913960400191505060405180910390fd5b6001600160a01b0381166000908152604783016020526040902054158061048c57506001600160a01b03811660009081526047830160205260409020546002145b6104dd576040805162461bcd60e51b815260206004820152601b60248201527f4d696e657220697320696e207468652077726f6e672073746174650000000000604482015290519081900360640190fd5b604080516a1cdd185ad95c90dbdd5b9d60aa1b8152815190819003600b01812060009081528483016020908152838220805460019081019091558385018552808452620151804290810690038285019081526001600160a01b038716808552604789019093528584209451855551930192909255915190917f46d8ab1385f70e5a3673e97c23c764f7600f7ed7a09b6687deae7131d51752e291a2505056fe4d696e657220776173206e6f74206c6f636b656420666f72207769746864726177616c42616c616e6365206973206c6f776572207468616e207374616b6520616d6f756e74a265627a7a72315820cdc805361426f5edf2b819282e7e929c9e335a8f793b4b02167d919227e99d5864736f6c63430005100032"
+var TellorStakeBin = "0x610ae6610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100565760003560e01c806344bacc4b1461005b5780634601f1cd14610087578063820a2d66146100b1578063c9cf5e4c146100db575b600080fd5b81801561006757600080fd5b506100856004803603602081101561007e57600080fd5b5035610105565b005b81801561009357600080fd5b50610085600480360360208110156100aa57600080fd5b50356101f3565b8180156100bd57600080fd5b50610085600480360360208110156100d457600080fd5b5035610666565b8180156100e757600080fd5b50610085600480360360208110156100fe57600080fd5b50356106da565b3360009081526047820160205260409020600181015462093a8090620151804206420303101561017f5760408051600160e51b62461bcd02815260206004820152601260248201527f372064617973206469646e277420706173730000000000000000000000000000604482015290519081900360640190fd5b80546002146101c257604051600160e51b62461bcd028152600401808060200182810382526023815260200180610a766023913960400191505060405180910390fd5b600080825560405133917f4a7934670bd8304e7da22378be1368f7c4fef17c5aee81804beda8638fe428ec91a25050565b60408051600160c01b67646563696d616c73028152815190819003600801902060009081528183016020522054156102755760408051600160e51b62461bcd02815260206004820152601160248201527f546f6f206d616e7920646563696d616c73000000000000000000000000000000604482015290519081900360640190fd5b3060009081526045820160205260408082208151600160e31b631d6f7b81028152600481019190915269014542ba12a337c00000196024820152905173__$2718d1e96458860b323e2267f4056bb1be$__9263eb7bdc089260448082019391829003018186803b1580156102e857600080fd5b505af41580156102fc573d6000803e3d6000fd5b50505050610308610a57565b506040805160c08101825273e037ec8ec9ec423826750853899394de7f024fee815273cdd8fa31af8475574b8909f135d510579a8087d3602082015273b9dd5afd86547df817da2d0fb89334a6f8edd8919181019190915273230570cd052f40e14c14a81038c6f3aa685d712b6060820152733233afa02644ccd048587f8ba6e99b3c00a34dcc608082015273e010ac6e0248790e08f42d5f697160dedf97e02460a082015260005b600681101561048a5773__$2718d1e96458860b323e2267f4056bb1be$__63eb7bdc088460450160008585600681106103e657fe5b60200201516001600160a01b03166001600160a01b03168152602001908152602001600020683635c9adc5dea000006040518363ffffffff1660e01b8152600401808381526020018281526020019250505060006040518083038186803b15801561045057600080fd5b505af4158015610464573d6000803e3d6000fd5b505050506104828383836006811061047857fe5b6020020151610822565b6001016103b1565b50604080517f746f74616c5f737570706c7900000000000000000000000000000000000000008152815190819003600c908101822060009081528386016020818152858320805469014542ba12a337c00000019055600160c01b67646563696d616c7302855285519485900360080185208352818152858320601290557f7461726765744d696e657273000000000000000000000000000000000000000085528551948590039093018420825280835284822060c89055600160aa1b6a1cdd185ad9505b5bdd5b9d028452845193849003600b0184208252808352848220683635c9adc5dea000009055600160b01b6964697370757465466565028452845193849003600a908101852083528184528583206834957444b840e800009055600160b21b691d1a5b5955185c99d95d0280865286519586900382018620845282855286842061025890558552855194859003019093208152919052205442816105ee57fe5b604080517f74696d654f664c6173744e657756616c756500000000000000000000000000008152815190819003601201812060009081529582016020818152838820959094064203909455600160b01b69646966666963756c7479028152815190819003600a01902085529190529091206001905550565b6106708133610822565b73__$541ca5f99b9f01aa12a867587622feef24$__63e15f6f70826040518263ffffffff1660e01b81526004018082815260200191505060006040518083038186803b1580156106bf57600080fd5b505af41580156106d3573d6000803e3d6000fd5b5050505050565b336000908152604782016020526040902080546001146107445760408051600160e51b62461bcd02815260206004820152601360248201527f4d696e6572206973206e6f74207374616b656400000000000000000000000000604482015290519081900360640190fd5b600281556201518042064203600182015560408051600160aa1b6a1cdd185ad95c90dbdd5b9d028152815190819003600b01812060009081528285016020528281208054600019019055600160e41b630e15f6f702825260048201859052915173__$541ca5f99b9f01aa12a867587622feef24$__9263e15f6f709260248082019391829003018186803b1580156107db57600080fd5b505af41580156107ef573d6000803e3d6000fd5b50506040513392507f453865710d0cb4b14ad25de371c860da196368895daa9662e5087711d14daecf9150600090a25050565b60408051600160aa1b6a1cdd185ad9505b5bdd5b9d028152815190819003600b018120600090815282850160209081529083902054600160e01b6393b182b3028352600483018690526001600160a01b0385166024840152925173__$2718d1e96458860b323e2267f4056bb1be$__926393b182b3926044808301939192829003018186803b1580156108b457600080fd5b505af41580156108c8573d6000803e3d6000fd5b505050506040513d60208110156108de57600080fd5b5051101561092057604051600160e51b62461bcd028152600401808060200182810382526022815260200180610a996022913960400191505060405180910390fd5b6001600160a01b0381166000908152604783016020526040902054158061096157506001600160a01b03811660009081526047830160205260409020546002145b6109b55760408051600160e51b62461bcd02815260206004820152601b60248201527f4d696e657220697320696e207468652077726f6e672073746174650000000000604482015290519081900360640190fd5b60408051600160aa1b6a1cdd185ad95c90dbdd5b9d028152815190819003600b01812060009081528483016020908152838220805460019081019091558385018552808452620151804290810690038285019081526001600160a01b038716808552604789019093528584209451855551930192909255915190917f46d8ab1385f70e5a3673e97c23c764f7600f7ed7a09b6687deae7131d51752e291a25050565b6040518060c00160405280600690602082028038833950919291505056fe4d696e657220776173206e6f74206c6f636b656420666f72207769746864726177616c42616c616e6365206973206c6f776572207468616e207374616b6520616d6f756e74a165627a7a72305820db5868096a29411176fc3708099d96e2fd8b65425aa74855960ea0d36ebdf2ea0029"
 
 // DeployTellorStake deploys a new Ethereum contract, binding an instance of TellorStake to it.
 func DeployTellorStake(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *TellorStake, error) {
@@ -4249,7 +4507,7 @@ func (_TellorStake *TellorStakeFilterer) ParseStakeWithdrawn(log types.Log) (*Te
 const TellorStorageABI = "[]"
 
 // TellorStorageBin is the compiled bytecode used for deploying new contracts.
-var TellorStorageBin = "0x60556023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a72315820a55148fbceb456b0c0471c78615eea400e035716e558fd5bb3f904402f6a0e6e64736f6c63430005100032"
+var TellorStorageBin = "0x604c6023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea165627a7a7230582085c9e6c6a61d67e8bd4f3fae68f983a7a52a07b202fddced15b1144c19542d970029"
 
 // DeployTellorStorage deploys a new Ethereum contract, binding an instance of TellorStorage to it.
 func DeployTellorStorage(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *TellorStorage, error) {
@@ -4408,7 +4666,7 @@ func (_TellorStorage *TellorStorageTransactorRaw) Transact(opts *bind.TransactOp
 }
 
 // TellorTransferABI is the input ABI used to generate the binding from.
-const TellorTransferABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[],\"name\":\"stakeAmount\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const TellorTransferABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"_spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"_from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"_to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"}]"
 
 // TellorTransferFuncSigs maps the 4-byte function signature to its string representation.
 var TellorTransferFuncSigs = map[string]string{
@@ -4418,14 +4676,14 @@ var TellorTransferFuncSigs = map[string]string{
 	"93b182b3": "balanceOf(TellorStorage.TellorStorageStruct storage,address)",
 	"3f48b1ff": "balanceOfAt(TellorStorage.TellorStorageStruct storage,address,uint256)",
 	"c7bb46ad": "doTransfer(TellorStorage.TellorStorageStruct storage,address,address,uint256)",
-	"60c7dc47": "stakeAmount()",
+	"9be5647f": "getBalanceAt(TellorStorage.Checkpoint[] storage,uint256)",
 	"c84b96f5": "transfer(TellorStorage.TellorStorageStruct storage,address,uint256)",
 	"ca501899": "transferFrom(TellorStorage.TellorStorageStruct storage,address,address,uint256)",
 	"eb7bdc08": "updateBalanceAtNow(TellorStorage.Checkpoint[] storage,uint256)",
 }
 
 // TellorTransferBin is the compiled bytecode used for deploying new contracts.
-var TellorTransferBin = "0x610adf610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100a85760003560e01c8063bf32006c11610070578063bf32006c146101aa578063c7bb46ad146101de578063c84b96f514610229578063ca50189914610268578063eb7bdc08146102b1576100a8565b80633f48b1ff146100ad57806360c7dc47146100f1578063850dcc32146100f957806393b182b31461014c578063acaab9e214610178575b600080fd5b6100df600480360360608110156100c357600080fd5b508035906001600160a01b0360208201351690604001356102e1565b60408051918252519081900360200190f35b6100df61048e565b81801561010557600080fd5b506101386004803603606081101561011c57600080fd5b508035906001600160a01b0360208201351690604001356104b2565b604080519115158252519081900360200190f35b6100df6004803603604081101561016257600080fd5b50803590602001356001600160a01b03166105f1565b6101386004803603606081101561018e57600080fd5b508035906001600160a01b0360208201351690604001356105fe565b6100df600480360360608110156101c057600080fd5b508035906001600160a01b03602082013581169160400135166106ae565b8180156101ea57600080fd5b506102276004803603608081101561020157600080fd5b508035906001600160a01b036020820135811691604081013590911690606001356106db565b005b81801561023557600080fd5b506101386004803603606081101561024c57600080fd5b508035906001600160a01b0360208201351690604001356108b4565b81801561027457600080fd5b506101386004803603608081101561028b57600080fd5b508035906001600160a01b036020820135811691604081013590911690606001356108cc565b8180156102bd57600080fd5b50610227600480360360408110156102d457600080fd5b508035906020013561097e565b6001600160a01b03821660009081526045840160205260408120805415806103295750828160008154811061031257fe5b6000918252602090912001546001600160801b0316115b15610338576000915050610487565b80548190600019810190811061034a57fe5b6000918252602090912001546001600160801b0316831061039c5780548190600019810190811061037757fe5b600091825260209091200154600160801b90046001600160801b031691506104879050565b8054600090600119015b818111156104545760006002600183850101049050858482815481106103c857fe5b6000918252602090912001546001600160801b03161415610417578381815481106103ef57fe5b600091825260209091200154600160801b90046001600160801b031694506104879350505050565b8584828154811061042457fe5b6000918252602090912001546001600160801b031610156104475780925061044e565b6001810391505b506103a6565b82828154811061046057fe5b600091825260209091200154600160801b90046001600160801b0316935061048792505050565b9392505050565b7f7be108969d31a3f0b261465c71f2b0ba9301cd914d55d9091c3b36a49d4d41b281565b60006001600160a01b038316610506576040805162461bcd60e51b81526020600482015260146024820152735370656e64657220697320302d6164647265737360601b604482015290519081900360640190fd5b33600090815260468501602090815260408083206001600160a01b03871684529091529020541580610536575081155b610587576040805162461bcd60e51b815260206004820152601b60248201527f5370656e64657220697320616c726561647920617070726f7665640000000000604482015290519081900360640190fd5b33600081815260468601602090815260408083206001600160a01b03881680855290835292819020869055805186815290519293927f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925929181900390910190a35060019392505050565b60006104878383436102e1565b6001600160a01b03821660009081526047840160205260408120541580159061064157506001600160a01b03831660009081526047850160205260409020546005115b15610699577f7be108969d31a3f0b261465c71f2b0ba9301cd914d55d9091c3b36a49d4d41b260009081526040808601602052902054829061068386866105f1565b031061069157506001610487565b506000610487565b816106a485856105f1565b1015949350505050565b6001600160a01b039182166000908152604693909301602090815260408085209290931684525290205490565b806107175760405162461bcd60e51b8152600401808060200182810382526021815260200180610a8a6021913960400191505060405180910390fd5b6001600160a01b03821661076a576040805162461bcd60e51b815260206004820152601560248201527452656365697665722069732030206164647265737360581b604482015290519081900360640190fd5b6107758484836105fe565b6107b05760405162461bcd60e51b8152600401808060200182810382526027815260200180610a636027913960400191505060405180910390fd5b60006107bc85856105f1565b6001600160a01b038516600090815260458701602052604090209091506107e59083830361097e565b6107ef85846105f1565b905080828201101561083c576040805162461bcd60e51b815260206004820152601160248201527013dd995c999b1bddc81a185c1c195b9959607a1b604482015290519081900360640190fd5b6001600160a01b038316600090815260458601602052604090206108629082840161097e565b826001600160a01b0316846001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef846040518082815260200191505060405180910390a35050505050565b60006108c2843385856106db565b5060019392505050565b6001600160a01b0383166000908152604685016020908152604080832033845290915281205482111561093b576040805162461bcd60e51b8152602060048201526012602482015271416c6c6f77616e63652069732077726f6e6760701b604482015290519081900360640190fd5b6001600160a01b03841660009081526046860160209081526040808320338452909152902080548390039055610973858585856106db565b506001949350505050565b815415806109b35750815443908390600019810190811061099b57fe5b6000918252602090912001546001600160801b031614155b15610a245760408051808201909152436001600160801b0390811682528281166020808401918252855460018101875560008781529190912093519301805491516fffffffffffffffffffffffffffffffff19909216938316939093178216600160801b9190921602179055610a5e565b815460009083906000198101908110610a3957fe5b600091825260209091200180546001600160801b03808516600160801b029116179055505b505056fe53686f756c6420686176652073756666696369656e742062616c616e636520746f207472616465547269656420746f2073656e64206e6f6e2d706f73697469766520616d6f756e74a265627a7a72315820ced4f1c53ca85755aab115bc6f87c6e1d827f466c0e41ec5077592614bcf891e64736f6c63430005100032"
+var TellorTransferBin = "0x610afc610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100a85760003560e01c8063bf32006c11610070578063bf32006c146101c5578063c7bb46ad146101f9578063c84b96f514610244578063ca50189914610283578063eb7bdc08146102cc576100a8565b80633f48b1ff146100ad578063850dcc32146100f157806393b182b3146101445780639be5647f14610170578063acaab9e214610193575b600080fd5b6100df600480360360608110156100c357600080fd5b508035906001600160a01b0360208201351690604001356102fc565b60408051918252519081900360200190f35b8180156100fd57600080fd5b506101306004803603606081101561011457600080fd5b508035906001600160a01b036020820135169060400135610395565b604080519115158252519081900360200190f35b6100df6004803603604081101561015a57600080fd5b50803590602001356001600160a01b031661045f565b6100df6004803603604081101561018657600080fd5b5080359060200135610475565b610130600480360360608110156101a957600080fd5b508035906001600160a01b0360208201351690604001356105a5565b6100df600480360360608110156101db57600080fd5b508035906001600160a01b036020820135811691604001351661064e565b81801561020557600080fd5b506102426004803603608081101561021c57600080fd5b508035906001600160a01b0360208201358116916040810135909116906060013561067b565b005b81801561025057600080fd5b506101306004803603606081101561026757600080fd5b508035906001600160a01b036020820135169060400135610879565b81801561028f57600080fd5b50610130600480360360808110156102a657600080fd5b508035906001600160a01b03602082013581169160408101359091169060600135610891565b8180156102d857600080fd5b50610242600480360360408110156102ef57600080fd5b5080359060200135610951565b6001600160a01b0382166000908152604584016020526040812054158061035a57506001600160a01b03831660009081526045850160205260408120805484929061034357fe5b6000918252602090912001546001600160801b0316115b156103675750600061038e565b6001600160a01b0383166000908152604585016020526040902061038b9083610475565b90505b9392505050565b60006001600160a01b0383166103f55760408051600160e51b62461bcd02815260206004820152601460248201527f5370656e64657220697320302d61646472657373000000000000000000000000604482015290519081900360640190fd5b33600081815260468601602090815260408083206001600160a01b03881680855290835292819020869055805186815290519293927f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925929181900390910190a35060019392505050565b600061046c8383436102fc565b90505b92915050565b81546000906104865750600061046f565b82548390600019810190811061049857fe5b6000918252602090912001546001600160801b031682106104e8578254839060001981019081106104c557fe5b600091825260209091200154600160801b90046001600160801b0316905061046f565b826000815481106104f557fe5b6000918252602090912001546001600160801b03168210156105195750600061046f565b8254600090600019015b8181111561057457600060026001838501010490508486828154811061054557fe5b6000918252602090912001546001600160801b0316116105675780925061056e565b6001810391505b50610523565b84828154811061058057fe5b600091825260209091200154600160801b90046001600160801b031695945050505050565b6001600160a01b0382166000908152604784016020526040812054156106275760408051600160aa1b6a1cdd185ad9505b5bdd5b9d028152815190819003600b0190206000908152818601602052908120546106159084906106099081898961045f565b9063ffffffff610a2a16565b106106225750600161038e565b610644565b600061063783610609878761045f565b106106445750600161038e565b5060009392505050565b6001600160a01b039182166000908152604693909301602090815260408085209290931684525290205490565b600081116106bd57604051600160e51b62461bcd028152600401808060200182810382526021815260200180610a876021913960400191505060405180910390fd5b6001600160a01b03821661071b5760408051600160e51b62461bcd02815260206004820152601560248201527f5265636569766572206973203020616464726573730000000000000000000000604482015290519081900360640190fd5b6107268484836105a5565b61076457604051600160e51b62461bcd028152600401808060200182810382526029815260200180610aa86029913960400191505060405180910390fd5b60006107718585436102fc565b6001600160a01b0385166000908152604587016020526040902090915061079a90838303610951565b6107a58584436102fc565b90508082820110156108015760408051600160e51b62461bcd02815260206004820152601160248201527f4f766572666c6f772068617070656e6564000000000000000000000000000000604482015290519081900360640190fd5b6001600160a01b0383166000908152604586016020526040902061082790828401610951565b826001600160a01b0316846001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef846040518082815260200191505060405180910390a35050505050565b60006108878433858561067b565b5060019392505050565b6001600160a01b0383166000908152604685016020908152604080832033845290915281205482111561090e5760408051600160e51b62461bcd02815260206004820152601260248201527f416c6c6f77616e63652069732077726f6e670000000000000000000000000000604482015290519081900360640190fd5b6001600160a01b038416600090815260468601602090815260408083203384529091529020805483900390556109468585858561067b565b506001949350505050565b815415806109855750815443908390600019810190811061096e57fe5b6000918252602090912001546001600160801b0316105b156109ec578154600090839061099e8260018301610a3c565b815481106109a857fe5b600091825260209091200180546001600160801b03848116600160801b024382166fffffffffffffffffffffffffffffffff19909316929092171617905550610a26565b815460009083906000198101908110610a0157fe5b600091825260209091200180546001600160801b03808516600160801b029116179055505b5050565b600082821115610a3657fe5b50900390565b815481835581811115610a6057600083815260209020610a60918101908301610a65565b505050565b610a8391905b80821115610a7f5760008155600101610a6b565b5090565b9056fe547269656420746f2073656e64206e6f6e2d706f73697469766520616d6f756e745374616b6520616d6f756e7420776173206e6f742072656d6f7665642066726f6d2062616c616e6365a165627a7a723058200793dd2abbe038ef75653e0c28f0f4c0c73c61aadc64f751aa19024691a408130029"
 
 // DeployTellorTransfer deploys a new Ethereum contract, binding an instance of TellorTransfer to it.
 func DeployTellorTransfer(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *TellorTransfer, error) {
@@ -4581,37 +4839,6 @@ func (_TellorTransfer *TellorTransferTransactorRaw) Transfer(opts *bind.Transact
 // Transact invokes the (paid) contract method with params as input values.
 func (_TellorTransfer *TellorTransferTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _TellorTransfer.Contract.contract.Transact(opts, method, params...)
-}
-
-// StakeAmount is a free data retrieval call binding the contract method 0x60c7dc47.
-//
-// Solidity: function stakeAmount() view returns(bytes32)
-func (_TellorTransfer *TellorTransferCaller) StakeAmount(opts *bind.CallOpts) ([32]byte, error) {
-	var out []interface{}
-	err := _TellorTransfer.contract.Call(opts, &out, "stakeAmount")
-
-	if err != nil {
-		return *new([32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
-
-	return out0, err
-
-}
-
-// StakeAmount is a free data retrieval call binding the contract method 0x60c7dc47.
-//
-// Solidity: function stakeAmount() view returns(bytes32)
-func (_TellorTransfer *TellorTransferSession) StakeAmount() ([32]byte, error) {
-	return _TellorTransfer.Contract.StakeAmount(&_TellorTransfer.CallOpts)
-}
-
-// StakeAmount is a free data retrieval call binding the contract method 0x60c7dc47.
-//
-// Solidity: function stakeAmount() view returns(bytes32)
-func (_TellorTransfer *TellorTransferCallerSession) StakeAmount() ([32]byte, error) {
-	return _TellorTransfer.Contract.StakeAmount(&_TellorTransfer.CallOpts)
 }
 
 // TellorTransferApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the TellorTransfer contract.
@@ -4926,7 +5153,7 @@ func (_TellorTransfer *TellorTransferFilterer) ParseTransfer(log types.Log) (*Te
 const UtilitiesABI = "[]"
 
 // UtilitiesBin is the compiled bytecode used for deploying new contracts.
-var UtilitiesBin = "0x60556023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a723158207e0a5d32626a4dd437a03b5f062d4e01d5e2302473aa896aee86008178cdd13f64736f6c63430005100032"
+var UtilitiesBin = "0x604c6023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea165627a7a72305820a5e8d2430733ba3b53482c0c8d2963d6083df88352a24d76bad00868ab3d9cf90029"
 
 // DeployUtilities deploys a new Ethereum contract, binding an instance of Utilities to it.
 func DeployUtilities(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *Utilities, error) {

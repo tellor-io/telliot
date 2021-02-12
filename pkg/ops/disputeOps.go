@@ -21,7 +21,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	master "github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -113,9 +113,9 @@ func getNonceSubmissions(
 	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	valueBlock *big.Int,
-	dispute *master.TellorDisputeNewDispute,
+	dispute *tellorCurrent.TellorDisputeNewDispute,
 ) ([]*apiOracle.PriceStamp, error) {
-	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorLibraryABI))
+	tokenAbi, err := abi.JSON(strings.NewReader(tellorCurrent.TellorLibraryABI))
 	if err != nil {
 		return nil, errors.Wrap(err, "parse abi")
 	}
@@ -153,7 +153,7 @@ func getNonceSubmissions(
 		}
 
 		for _, l := range logs {
-			nonceSubmit := master.TellorLibraryNonceSubmitted{}
+			nonceSubmit := tellorCurrent.TellorLibraryNonceSubmitted{}
 			err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 			if err != nil {
 				return nil, errors.Wrap(err, "unpack into object")
@@ -193,7 +193,7 @@ func List(
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) error {
-
+	cfg := config.GetConfig()
 	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorDisputeABI))
 	if err != nil {
 		return errors.Wrap(err, "parse abi")
@@ -224,7 +224,7 @@ func List(
 
 	level.Info(logger).Log("msg", "get currently open disputes", "open", len(logs))
 	for _, rawDispute := range logs {
-		dispute := master.TellorDisputeNewDispute{}
+		dispute := tellorCurrent.TellorDisputeNewDispute{}
 		err := bar.UnpackLog(&dispute, "NewDispute", rawDispute)
 		if err != nil {
 			return errors.Wrap(err, "unpack dispute event from logs")
