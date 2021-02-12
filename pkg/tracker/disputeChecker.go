@@ -47,7 +47,7 @@ type ValueCheckResult struct {
 // CheckValueAtTime queries for the details regarding the disputed value.
 func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Time) (*ValueCheckResult, error) {
 
-	// check the value in 5 places, spread over cfg.Trackers.DisputeTimeDelta.Duration.
+	// Check the value in 5 places, spread over cfg.Trackers.DisputeTimeDelta.Duration.
 	var datapoints []float64
 	var times []time.Time
 	for i := 0; i < 5; i++ {
