@@ -20,7 +20,7 @@ func OpenTestDB(t *testing.T) (DB, func()) {
 	tmpdir, err := ioutil.TempDir("", "test")
 	testutil.Ok(t, err)
 
-	cfg, err := config.ParseConfig(filepath.Join("..", "..", "configs/config.json"))
+	cfg, err := config.ParseConfig(filepath.Join("..", "..", "configs", "config.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
