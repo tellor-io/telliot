@@ -28,6 +28,6 @@ func TestMeanAt(t *testing.T) {
 	ethIndexes := indexes["ETH/USD"]
 	execEthUsdPsrs(context.Background(), t, ethIndexes)
 
-	_, _, err = MeanAt(ethIndexes, clck.Now(), cfg.Trackers.MinConfidence)
+	_, _, err = MeanAt(ethIndexes, clck.Now(), cfg.Trackers.SleepCycle.Seconds())
 	testutil.Ok(t, err)
 }
