@@ -22,7 +22,9 @@ var configJSON = `{
 	"trackers": {"names":{}},
     "dbFile": "/tellorDB",
 	"logger": {"db.Db":"DEBUG"},
-    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
+    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `",
+    "apiFile": "` + filepath.Join("..", "..", "configs", "api.json") + `",
+    "manualDataFile": "` + filepath.Join("..", "..", "configs", "manualData.json") + `"
 }
 `
 
