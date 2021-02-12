@@ -179,12 +179,3 @@ var configJSON = `{
     "dbFile": "/tellorDB",
     "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `"
 }`
-
-func TestMain(m *testing.M) {
-	err := config.ParseConfigBytes([]byte(configJSON))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "parse mock config: %v\n", err)
-		os.Exit(-1)
-	}
-	os.Exit(m.Run())
-}

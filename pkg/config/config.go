@@ -166,36 +166,6 @@ var defaultConfig = Config{
 const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
 const NodeURLEnvName = "NODE_URL"
 
-func ParseConfigBytes(data []byte) error {
-	err := json.Unmarshal(data, &defaultConfig)
-	config := &defaultConfig
-	if err != nil {
-		return errors.Wrap(err, "parse config json")
-	}
-	err = godotenv.Load(defaultConfig.EnvFile)
-	// Ignore file doesn't exist errors.
-	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrap(err, "loading .env file")
-	}
-
-	if len(config.ServerWhitelist) == 0 {
-		if strings.Contains(config.PublicAddress, "0x") {
-			config.ServerWhitelist = append(config.ServerWhitelist, config.PublicAddress)
-		} else {
-			config.ServerWhitelist = append(config.ServerWhitelist, "0x"+config.PublicAddress)
-		}
-	}
-
-	os.Setenv(PrivateKeyEnvName, strings.ToLower(strings.ReplaceAll(os.Getenv(PrivateKeyEnvName), "0x", "")))
-	config.PublicAddress = strings.ToLower(strings.ReplaceAll(config.PublicAddress, "0x", ""))
-
-	err = validateConfig(config)
-	if err != nil {
-		return errors.Wrap(err, "config validation")
-	}
-	return nil
-}
-
 func validateConfig(cfg *Config) error {
 	b, err := hex.DecodeString(cfg.PublicAddress)
 	if err != nil || len(b) != 20 {
