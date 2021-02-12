@@ -36,6 +36,7 @@ type SolutionHandler struct {
 	currentNonce     string
 	currentValues    [5]*big.Int
 	submitter        tellorCommon.TransactionSubmitter
+	cfg              *config.Config
 }
 
 func CreateSolutionHandler(cfg *config.Config, logger log.Logger, submitter tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) *SolutionHandler {
@@ -44,6 +45,7 @@ func CreateSolutionHandler(cfg *config.Config, logger log.Logger, submitter tell
 		proxy:     proxy,
 		submitter: submitter,
 		logger:    log.With(logger, "component", ComponentName),
+		cfg:       cfg,
 	}
 }
 
@@ -62,11 +64,7 @@ func (s *SolutionHandler) Submit(ctx context.Context, result *Result) (*types.Tr
 		val := m[valKey]
 		var value *big.Int
 		if len(val) == 0 {
-			cfg, err := config.ParseConfig("")
-			if err != nil {
-				return nil, errors.Wrapf(err, "parsing config")
-			}
-			jsonFile, err := os.Open(cfg.ManualDataFile)
+			jsonFile, err := os.Open(s.cfg.ManualDataFile)
 			if err != nil {
 				return nil, errors.Wrapf(err, "manualData read Error")
 			}
