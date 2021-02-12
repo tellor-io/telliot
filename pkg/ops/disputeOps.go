@@ -187,12 +187,13 @@ func getNonceSubmissions(
 
 func List(
 	ctx context.Context,
+	cfg *config.Config,
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) error {
-	cfg := config.GetConfig()
+
 	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorDisputeABI))
 	if err != nil {
 		return errors.Wrap(err, "parse abi")
@@ -316,7 +317,7 @@ func List(
 		level.Info(logger).Log(
 			"msg", "recommedation based on",
 			"datapoints", len(result.Datapoints),
-			"deltaMinutes", cfg.DisputeTimeDelta.Duration.Minutes(),
+			"deltaMinutes", cfg.Trackers.DisputeTimeDelta.Duration.Minutes(),
 			"closest", numToShow,
 		)
 		minTotalDelta := time.Duration(math.MaxInt64)

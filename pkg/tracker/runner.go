@@ -58,9 +58,8 @@ func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, 
 
 // Start will kick off the runner until the given exit channel selects.
 func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
-	trackerNames := r.config.Trackers
 	var trackers []Tracker
-	for name, activated := range trackerNames {
+	for name, activated := range r.config.Trackers.Names {
 		if activated {
 			level.Info(r.logger).Log("msg", "starting tracker", "name", name)
 			t, err := createTracker(r.logger, name, r.config, r.db, r.client, r.contract, r.account)
@@ -79,8 +78,8 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		return nil
 	}
 
-	level.Info(r.logger).Log("msg", "starting trackers", "sleepCycle", r.config.TrackerSleepCycle)
-	ticker := time.NewTicker(r.config.TrackerSleepCycle.Duration / time.Duration(len(trackers)))
+	level.Info(r.logger).Log("msg", "starting trackers", "sleepCycle", r.config.Trackers.SleepCycle)
+	ticker := time.NewTicker(r.config.Trackers.SleepCycle.Duration / time.Duration(len(trackers)))
 
 	// after first run, let others know that tracker output data is ready for use.
 	doneFirstExec := make(chan bool, len(trackers))

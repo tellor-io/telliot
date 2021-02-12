@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -58,7 +57,7 @@ func SetRequestValue(id string, at time.Time, info PriceInfo) {
 	valueHistoryMutex.Unlock()
 }
 
-func writeOutHistory(logger log.Logger) {
+func writeOutHistory(logger log.Logger, cfg *config.Config) {
 	valueHistoryMutex.Lock()
 	for _, v := range valueHistory {
 		v.Trim()
@@ -73,9 +72,7 @@ func writeOutHistory(logger log.Logger) {
 		return
 	}
 
-	cfg := config.GetConfig()
-	psrSavedData := filepath.Join(cfg.ConfigFolder, "saved.json")
-	psrSavedDataTmp := psrSavedData + ".tmp"
+	psrSavedDataTmp := cfg.HistoryFile + ".tmp"
 	err = ioutil.WriteFile(psrSavedDataTmp, data, 0644)
 	if err != nil {
 		level.Error(logger).Log(
@@ -86,7 +83,7 @@ func writeOutHistory(logger log.Logger) {
 		return
 	}
 	// Rename tmp file to old file (should be atomic on most modern OS)
-	err = os.Rename(psrSavedDataTmp, psrSavedData)
+	err = os.Rename(psrSavedDataTmp, cfg.HistoryFile)
 	if err != nil {
 		level.Error(logger).Log("msg", "move new PSR save onto old", "err", err)
 		return
@@ -112,22 +109,20 @@ func EnsureValueOracle(logger log.Logger, cfg *config.Config) error {
 	}
 	logger = log.With(logger, "component", ComponentName)
 
-	historyPath := filepath.Join(cfg.ConfigFolder, "saved.json")
-
-	_, err = os.Stat(historyPath)
+	_, err = os.Stat(cfg.HistoryFile)
 	exists := true
 	if err != nil {
 		if os.IsNotExist(err) {
 			exists = false
 		} else {
-			return errors.Wrapf(err, "stat error file: %v", historyPath)
+			return errors.Wrapf(err, "stat error file: %v", cfg.HistoryFile)
 		}
 	}
 
 	if exists {
-		byteValue, err := ioutil.ReadFile(historyPath)
+		byteValue, err := ioutil.ReadFile(cfg.HistoryFile)
 		if err != nil {
-			return errors.Wrapf(err, "read psr file:%v", historyPath)
+			return errors.Wrapf(err, "read psr file:%v", cfg.HistoryFile)
 		}
 		err = json.Unmarshal(byteValue, &valueHistory)
 		if err != nil {
@@ -140,7 +135,7 @@ func EnsureValueOracle(logger log.Logger, cfg *config.Config) error {
 	go func() {
 		for {
 			time.Sleep(2 * time.Minute)
-			writeOutHistory(logger)
+			writeOutHistory(logger, cfg)
 		}
 	}()
 	return nil

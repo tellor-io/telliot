@@ -12,7 +12,6 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -48,6 +47,7 @@ type MiningTasker struct {
 	proxy         db.DataServerProxy
 	pubKey        string
 	currChallenge *MiningChallenge
+	cfg           *config.Config
 }
 
 func CreateTasker(logger log.Logger, cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
@@ -56,6 +56,7 @@ func CreateTasker(logger log.Logger, cfg *config.Config, proxy db.DataServerProx
 		proxy:  proxy,
 		pubKey: "0x" + cfg.PublicAddress,
 		logger: log.With(logger, "component", ComponentName),
+		cfg:    cfg,
 	}
 }
 
@@ -144,9 +145,14 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		}
 		val := m2[valKey]
 		if len(val) == 0 {
-			cfg := config.GetConfig()
-			indexPath := filepath.Join(cfg.ConfigFolder, "manualData.json")
-			jsonFile, err := os.Open(indexPath)
+			if err != nil {
+				level.Error(mt.logger).Log(
+					"msg", "parsing config",
+					"err ", err,
+				)
+				return nil, false
+			}
+			jsonFile, err := os.Open(mt.cfg.ManualDataFile)
 			if err != nil {
 				return nil, false
 			}

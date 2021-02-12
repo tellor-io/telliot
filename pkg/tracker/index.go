@@ -41,16 +41,15 @@ func GetIndexes() map[string][]*IndexTracker {
 	return indexes
 }
 
-// parseIndexFile parses indexes.json file and returns a *IndexTracker,
+// parseApiFile parses api.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
-func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
+func parseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
-	indexFilePath := filepath.Join(cfg.ConfigFolder, "indexes.json")
-	byteValue, err := ioutil.ReadFile(indexFilePath)
+	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "read index file @ %s", indexFilePath)
+		return nil, nil, errors.Wrapf(err, "read index file @ %s", cfg.ApiFile)
 	}
 	// Parse to json.
 	baseIndexes := make(map[string][]IndexObject)
@@ -91,7 +90,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 				switch api.Type {
 				case httpIndexType:
 					{
-						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.FetchTimeout.Duration}, logger}
+						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.Trackers.FetchTimeout.Duration}, logger}
 						u, err := url.Parse(api.URL)
 						if err != nil {
 							return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
@@ -100,7 +99,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 					}
 				case fileIndexType:
 					{
-						source = &JSONfile{filepath: filepath.Join(cfg.ConfigFolder, api.URL)}
+						source = &JSONfile{filepath: api.URL}
 						name = filepath.Base(api.URL)
 					}
 				case ethereumIndexType:
@@ -129,7 +128,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 					return nil, nil, errors.New("unknown index type for index object")
 				}
 
-				if api.Interval.Duration > 0 && (api.Interval.Duration < cfg.TrackerSleepCycle.Duration) {
+				if api.Interval.Duration > 0 && (api.Interval.Duration < cfg.Trackers.SleepCycle.Duration) {
 					return nil, nil, errors.New("api interval can't be smaller than the global tracker cycle")
 				}
 
@@ -145,6 +144,7 @@ func parseIndexFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy
 					Interval:   api.Interval.Duration,
 					Param:      api.Param,
 					Type:       api.Type,
+					cfg:        cfg,
 				}
 
 				trackersPerURL[api.URL] = current
@@ -174,7 +174,7 @@ func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerP
 
 	// Load trackers from the index file,
 	// and build a tracker for each unique URL, symbol
-	indexers, symbolsForAPI, err := parseIndexFile(logger, cfg, db, client)
+	indexers, symbolsForAPI, err := parseApiFile(logger, cfg, db, client)
 	if err != nil {
 		return nil, err
 	}
@@ -241,6 +241,7 @@ type IndexTracker struct {
 	Param            string
 	Type             IndexType
 	lastRunTimestamp time.Time
+	cfg              *config.Config
 }
 
 type DataSource interface {
@@ -289,7 +290,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	//save the value into our local data window (set 0 volume for now)
 	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price: vals[0], Volume: volume})
 	//update all the values that depend on these symbols
-	return UpdatePSRs(ctx, i.DB, i.Symbols)
+	return UpdatePSRs(ctx, i.cfg, i.DB, i.Symbols)
 }
 
 func (i *IndexTracker) String() string {
