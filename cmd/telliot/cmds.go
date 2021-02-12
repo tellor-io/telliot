@@ -305,7 +305,7 @@ func (s showCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
-	return ops.List(ctx, logger, client, contract, account)
+	return ops.List(ctx, cfg, logger, client, contract, account)
 }
 
 type dataserverCmd struct {

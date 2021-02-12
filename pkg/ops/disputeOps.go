@@ -187,15 +187,12 @@ func getNonceSubmissions(
 
 func List(
 	ctx context.Context,
+	cfg *config.Config,
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) error {
-	cfg, err := config.ParseConfig("")
-	if err != nil {
-		return errors.Wrapf(err, "parsing config")
-	}
 
 	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorDisputeABI))
 	if err != nil {

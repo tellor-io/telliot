@@ -47,6 +47,7 @@ type MiningTasker struct {
 	proxy         db.DataServerProxy
 	pubKey        string
 	currChallenge *MiningChallenge
+	cfg           *config.Config
 }
 
 func CreateTasker(logger log.Logger, cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
@@ -55,6 +56,7 @@ func CreateTasker(logger log.Logger, cfg *config.Config, proxy db.DataServerProx
 		proxy:  proxy,
 		pubKey: "0x" + cfg.PublicAddress,
 		logger: log.With(logger, "component", ComponentName),
+		cfg:    cfg,
 	}
 }
 
@@ -143,7 +145,6 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		}
 		val := m2[valKey]
 		if len(val) == 0 {
-			cfg, err := config.ParseConfig("")
 			if err != nil {
 				level.Error(mt.logger).Log(
 					"msg", "parsing config",
@@ -151,7 +152,7 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 				)
 				return nil, false
 			}
-			jsonFile, err := os.Open(cfg.ManualDataFile)
+			jsonFile, err := os.Open(mt.cfg.ManualDataFile)
 			if err != nil {
 				return nil, false
 			}
