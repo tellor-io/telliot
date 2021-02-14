@@ -22,6 +22,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -193,8 +194,7 @@ func List(
 	contract *contracts.Tellor,
 	account *rpc.Account,
 ) error {
-	cfg := config.GetConfig()
-	tokenAbi, err := abi.JSON(strings.NewReader(master.TellorDisputeABI))
+	tokenAbi, err := abi.JSON(strings.NewReader(tellorMaster.TellorDisputeABI))
 	if err != nil {
 		return errors.Wrap(err, "parse abi")
 	}
