@@ -15,7 +15,6 @@ import (
 	uniswap "github.com/tellor-io/telliot/pkg/contracts/uniswap"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 )
 
 // ABICodec holds abi definitions for encoding/decoding contract methods and events.
@@ -62,13 +61,10 @@ func BuildCodec(logger log.Logger) (*ABICodec, error) {
 	eventMap := make(map[string]*abi.Event)
 	for _, a := range abiStruct.Methods {
 		sig := hexutil.Encode(a.ID)
-		level.Debug(logger).Log("msg", "mapping method sig", "sig", sig, "method", a.Name)
 		methodMap[sig] = &abi.Method{Name: a.Name, Constant: a.Constant, Inputs: a.Inputs, Outputs: a.Outputs}
 	}
 	for _, e := range abiStruct.Events {
 		sig := hexutil.Encode(e.ID.Bytes())
-		//abiCodecLog.Debug("Mapping event sig: %s to event %s", sig, e.Name)
-		level.Debug(logger).Log("msg", "mapping method sig", "sig", sig, "method", e.Name)
 		eventMap[sig] = &abi.Event{Name: e.Name, Anonymous: e.Anonymous, Inputs: e.Inputs}
 	}
 
