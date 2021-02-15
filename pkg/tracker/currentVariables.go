@@ -78,7 +78,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		}
 	}
 
-	err = b.db.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficutly)))
+	err = b.db.Put(db.DifficultyKey, []byte(hexutil.EncodeBig(returnNewVariables.Difficulty)))
 	if err != nil {
 		return errors.Wrap(err, "difficulty put")
 	}
