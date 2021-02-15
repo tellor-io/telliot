@@ -57,8 +57,14 @@ generate-check: check-git generate
 	$(call require_clean_work_tree,'detected change in the generated files, run make generate and update')
 
 .PHONY: generate-bindings
-generate-bindings:
-	@go run ./scripts/bindings
+generate-bindings: $(CONTRAGET)
+	@$(CONTRAGET) --addr=0xFe41Cb708CD98C5B20423433309E55b53F79134a --download-dst=tmp --pkg-dst=pkg/contracts --name=tellorMaster
+	@sleep 5 #Etherscan allows one request per 5 sec without an api key.
+	@$(CONTRAGET) --addr=0x7e05e8a675e649261acc19423db34dd4826f9a98 --download-dst=tmp --pkg-dst=pkg/contracts --name=tellorCurrent
+	@sleep 5
+	@$(CONTRAGET) --addr=0x9C84391B443ea3a48788079a5f98e2EaD55c9309 --download-dst=tmp --pkg-dst=pkg/contracts --name=balancer
+	@sleep 5
+	@$(CONTRAGET) --addr=0x03E6c12eF405AC3F642B9184eDed8E1322de1a9e --download-dst=tmp --pkg-dst=pkg/contracts --name=uniswap
 
 .PHONY: generate-testdata
 generate-testdata:

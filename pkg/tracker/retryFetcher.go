@@ -32,12 +32,6 @@ func fetchWithRetries(logger log.Logger, req *FetchRequest) ([]byte, error) {
 }
 
 func _recFetch(logger log.Logger, req *FetchRequest, expiration time.Time) ([]byte, error) {
-	level.Debug(logger).Log(
-		"msg", "fetch request will expire",
-		"at", expiration,
-		"timeout", req.timeout,
-	)
-
 	now := clck.Now()
 	client.Timeout = expiration.Sub(now)
 
