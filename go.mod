@@ -19,7 +19,6 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.11 // indirect
-	github.com/nanmu42/etherscan-api v1.1.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0
@@ -32,7 +31,6 @@ require (
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	go.uber.org/goleak v1.1.10
-	go.uber.org/multierr v1.3.0
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/sys v0.0.0-20201231184435-2d18734c6014 // indirect
 )
