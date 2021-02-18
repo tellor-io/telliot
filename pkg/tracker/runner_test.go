@@ -58,7 +58,7 @@ func TestRunner(t *testing.T) {
 	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
 
-	runner, _ := NewRunner(logger, cfg, proxy, client, &contract, accounts)
+	runner, _ := NewRunner(logger, cfg, proxy, client, contract, accounts)
 
 	runner.Ready()
 	if err := runner.Start(context.Background(), exitCh); err != nil {

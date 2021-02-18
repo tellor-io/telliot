@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package pow
+package mining
 
 import (
 	"context"
@@ -14,8 +14,11 @@ import (
 	"time"
 
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/util"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -37,7 +40,7 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	cfg := config.OpenTestConfig(t)
 	_string := fmt.Sprintf("%x", challenge.Challenge) + cfg.PublicAddress[2:]
-	hashIn := decodeHex(_string)
+	hashIn := util.DecodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
 
 	a, err := hashFn(hashIn)
@@ -97,7 +100,17 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 }
 
 func TestCpuMiner(t *testing.T) {
-	impl := NewCpuMiner(0)
+	opts := &rpc.MockOptions{
+		Nonce:         1,
+		GasPrice:      big.NewInt(700000000),
+		TokenBalance:  big.NewInt(0),
+		Top50Requests: []*big.Int{},
+		DisputeStatus: big.NewInt(1),
+	}
+	client := rpc.NewMockClientWithValues(opts)
+	contract, err := contracts.NewITellor(client)
+	testutil.Ok(t, err)
+	impl := NewCpuMiner(0, contract)
 	DoCompleteMiningLoop(t, impl, 100)
 }
 
@@ -106,10 +119,20 @@ func TestMulti(t *testing.T) {
 		t.Skip()
 	}
 	cfg := config.OpenTestConfig(t)
+	opts := &rpc.MockOptions{
+		Nonce:         1,
+		GasPrice:      big.NewInt(700000000),
+		TokenBalance:  big.NewInt(0),
+		Top50Requests: []*big.Int{},
+		DisputeStatus: big.NewInt(1),
+	}
+	client := rpc.NewMockClientWithValues(opts)
+	contract, err := contracts.NewITellor(client)
+	testutil.Ok(t, err)
 
 	var hashers []Hasher
 	for i := 0; i < 4; i++ {
-		hashers = append(hashers, NewCpuMiner(int64(i)))
+		hashers = append(hashers, NewCpuMiner(int64(i), contract))
 	}
 
 	fmt.Printf("Using %d hashers\n", len(hashers))
@@ -150,7 +173,7 @@ func TestHashFunction(t *testing.T) {
 	for k, v := range testVectors {
 		nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", k))
 		_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
-		bytes := decodeHex(_string)
+		bytes := util.DecodeHex(_string)
 		result, err := hashFn(bytes)
 		testutil.Ok(t, err)
 		if result.Text(16) != v {
@@ -163,7 +186,7 @@ func BenchmarkHashFunction(b *testing.B) {
 	challenge := createChallenge(0, 500)
 	nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", 10))
 	_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
-	bytes := decodeHex(_string)
+	bytes := util.DecodeHex(_string)
 
 	for i := 0; i < b.N; i++ {
 		_, err := hashFn(bytes)

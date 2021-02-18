@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package pow
+package mining
 
 import (
 	"context"
@@ -15,9 +15,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
-const ComponentName = "pow"
+const ComponentName = "miner"
 
 type HashSettings struct {
 	prefix     []byte
@@ -53,7 +54,7 @@ type MiningChallenge struct {
 
 func NewHashSettings(challenge *MiningChallenge, publicAddr string) *HashSettings {
 	_string := fmt.Sprintf("%x", challenge.Challenge) + publicAddr[2:]
-	hashPrefix := decodeHex(_string)
+	hashPrefix := util.DecodeHex(_string)
 	return &HashSettings{
 		prefix:     hashPrefix,
 		difficulty: challenge.Difficulty,
@@ -78,7 +79,6 @@ type MiningGroup struct {
 }
 
 func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, ctx context.Context, close context.CancelFunc) (*MiningGroup, error) {
-
 	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
@@ -94,7 +94,6 @@ func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, ctx
 		//start with a small estimate for hash rate, much faster to increase the gusses rather than decrease
 		group.Backends[i] = &Backend{Hasher: hasher, HashRateEstimate: rateInitialGuess}
 	}
-
 	return group, nil
 }
 

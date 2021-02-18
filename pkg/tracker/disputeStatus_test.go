@@ -48,9 +48,9 @@ func TestDisputeStatus(t *testing.T) {
 	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
 	for _, account := range accounts {
-		tracker := NewDisputeTracker(logger, cfg, proxy, &contract, account)
+		tracker := NewDisputeTracker(logger, cfg, proxy, contract, account)
 		testutil.Ok(t, tracker.Exec(context.Background()))
-		v, err := proxy.Get(db.DisputeStatusPrefix + account.Address.String())
+		v, err := proxy.Get(db.DisputeStatusKeyFor(account.Address))
 		testutil.Ok(t, err)
 		b, err := hexutil.DecodeBig(string(v))
 		testutil.Ok(t, err)
@@ -78,9 +78,9 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
 	for _, account := range accounts {
-		tracker := NewDisputeTracker(logger, cfg, proxy, &contract, account)
+		tracker := NewDisputeTracker(logger, cfg, proxy, contract, account)
 		testutil.Ok(t, tracker.Exec(context.Background()))
-		v, err := proxy.Get(db.DisputeStatusPrefix + account.Address.String())
+		v, err := proxy.Get(db.DisputeStatusKeyFor(account.Address))
 		testutil.Ok(t, err)
 		b, err := hexutil.DecodeBig(string(v))
 		testutil.Ok(t, err)

@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package pow
+package tasker
 
 import (
 	"bytes"
@@ -10,14 +10,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
-	"math/big"
 	"math/rand"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -26,14 +23,17 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
-const (
+const ComponentName = "tasker"
+
+/* const (
 	statusWaitNext = iota + 1
 	statusFailure
 	statusSuccess
-)
+) */
 
 /**
  * Tasker role is to pull challenge and other information from the data server
@@ -49,70 +49,60 @@ const (
  * - Otherwise, push new challenge to output channel
  */
 
-type WorkInfo struct {
-	work          *Work
-	instantSubmit bool
-}
-
-func (wi *WorkInfo) GetWork() (*Work, bool) {
-	return wi.work, wi.instantSubmit
-}
-
 type MiningTasker struct {
 	ctx                           context.Context
 	close                         context.CancelFunc
 	logger                        log.Logger
 	proxy                         db.DataServerProxy
 	accounts                      []*rpc.Account
-	currChallenge                 *MiningChallenge
+	currChallenge                 *mining.MiningChallenge
 	contractInstance              *contracts.ITellor
 	instantSubmitSentForThisBlock bool
 	client                        contracts.ETHClient
 	cfg                           *config.Config
-	workSink                      chan *WorkInfo
+	workSink                      chan *mining.Work
 	Running                       bool
 	done                          chan bool
 	resubscribe                   chan bool
 }
 
-func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) *MiningTasker {
+func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*MiningTasker, chan *mining.Work) {
 	ctx, close := context.WithCancel(ctx)
-	return &MiningTasker{
+	tasker := &MiningTasker{
 		ctx:              ctx,
 		close:            close,
 		proxy:            proxy,
 		accounts:         accounts,
 		contractInstance: contract,
-		workSink:         make(chan *WorkInfo, 1),
+		workSink:         make(chan *mining.Work, 1),
 		done:             make(chan bool),
 		resubscribe:      make(chan bool),
 		logger:           log.With(logger, "component", ComponentName),
+		cfg:              cfg,
+		client:           client,
 	}
+	return tasker, tasker.workSink
 }
 
-func (mt *MiningTasker) getCurrentChallenge() (*tellor.ITellorNewChallengeIterator, error) {
-	var tellorLibraryFilterer *tellor.ITellorFilterer
-	tellorLibraryFilterer, err := tellor.NewITellorFilterer(mt.contractInstance.Address, mt.client)
+func (mt *MiningTasker) getCurrentChallenge() (*tellor.ITellorNewChallenge, error) {
+	newVariables, err := mt.contractInstance.GetNewCurrentVariables(nil)
 	if err != nil {
+		level.Warn(mt.logger).Log("msg", "new current variables retrieval - contract might not be upgraded", "err", err)
 		return nil, err
 	}
-	itr, _ := tellorLibraryFilterer.FilterNewChallenge(&bind.FilterOpts{}, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error in get NewChallenge iterator")
-	}
-	return itr, err
+	return &tellor.ITellorNewChallenge{
+		CurrentChallenge: newVariables.Challenge,
+		Difficulty:       newVariables.Difficutly,
+		CurrentRequestId: newVariables.RequestIds,
+		TotalTips:        newVariables.Tip,
+	}, err
 }
 
 func (mt *MiningTasker) getNewChallengeChannel() (chan *tellor.ITellorNewChallenge, event.Subscription, error) {
 	sink := make(chan *tellor.ITellorNewChallenge)
-	var tellorLibraryFilterer *tellor.ITellorFilterer
-	tellorLibraryFilterer, err := tellor.NewITellorFilterer(mt.contractInstance.Address, mt.client)
+	sub, err := mt.contractInstance.ITellorFilterer.WatchNewChallenge(&bind.WatchOpts{}, sink, nil)
 	if err != nil {
-		return nil, nil, err
-	}
-	sub, _ := tellorLibraryFilterer.WatchNewChallenge(&bind.WatchOpts{}, sink, nil)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "error in get NewChallenge channel")
+		return nil, nil, errors.Wrap(err, "error in getting NewChallenge channel")
 	}
 	return sink, sub, nil
 }
@@ -130,7 +120,6 @@ func (mt *MiningTasker) subscribeToNewChallenge() error {
 			case <-mt.done:
 				sub.Unsubscribe()
 				level.Info(mt.logger).Log("msg", "unsubscribed to NewChallenge events")
-				mt.Running = false
 				return
 			case err := <-sub.Err():
 				if err != nil {
@@ -139,9 +128,7 @@ func (mt *MiningTasker) subscribeToNewChallenge() error {
 						"new challenge subscription error",
 						"err", err)
 				}
-				if mt.Running {
-					mt.resubscribe <- true
-				}
+				mt.resubscribe <- true
 			case vLog := <-sink:
 				mt.sendWork(vLog)
 			}
@@ -150,25 +137,26 @@ func (mt *MiningTasker) subscribeToNewChallenge() error {
 	return nil
 }
 
-func (mt *MiningTasker) WorkSink() chan *WorkInfo {
-	return mt.workSink
-}
-
-func (mt *MiningTasker) sendWork(vLog *tellor.ITellorNewChallenge) {
-	work, instantSubmit := mt.CreateWork(vLog)
+func (mt *MiningTasker) sendWork(challenge *tellor.ITellorNewChallenge) {
+	if challenge.CurrentRequestId[0].Int64() > int64(100) || challenge.CurrentRequestId[0].Int64() == 0 {
+		level.Warn(mt.logger).Log("msg", "new current variables request ID not correct - contract about to be upgraded")
+		return
+	}
+	work := mt.CreateWork(challenge)
 	// Send new work to the sink.
-	mt.workSink <- &WorkInfo{work, instantSubmit}
+	if work != nil {
+		mt.workSink <- work
+	}
 }
 
 func (mt *MiningTasker) Start() error {
-	mt.Running = true
 	level.Info(mt.logger).Log("msg", "tasker has been started")
 	currentChallenge, err := mt.getCurrentChallenge()
 	if err != nil {
 		return errors.Wrap(err, "tasker getting the current challenge")
 	}
 	level.Info(mt.logger).Log("msg", "tasker is sending the initial challenge to the miner")
-	mt.sendWork(currentChallenge.Event)
+	mt.sendWork(currentChallenge)
 	err = mt.subscribeToNewChallenge()
 	if err != nil {
 		return errors.Wrap(err, "tasker subscribing to new challenges")
@@ -187,27 +175,15 @@ func (mt *MiningTasker) Start() error {
 }
 
 func (mt *MiningTasker) Stop() {
-	level.Info(mt.logger).Log("msg", "shutting down tasker...")
 	mt.close()
-	cnt := 0
-	for {
-		time.Sleep(500 * time.Millisecond)
-		cnt++
-		if !mt.Running {
-			break
-		}
-		if cnt > 60 {
-			level.Warn(mt.logger).Log("msg", "expected tasker to stop by now, Giving up...")
-			return
-		}
-	}
 	level.Info(mt.logger).Log("msg", "tasker shutdown complete")
 }
 
-func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) (*Work, bool) {
+func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) *mining.Work {
+	/* TODO: Do we need these anymore?
 	dispKeys := []string{}
 	for _, account := range mt.accounts {
-		dispKeys = append(dispKeys, db.DisputeStatusPrefix+account.Address.String())
+		dispKeys = append(dispKeys, db.DisputeStatusKeyFor(account.Address))
 
 	}
 	keys := []string{
@@ -223,66 +199,20 @@ func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) (*Work
 
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
-		level.Error(mt.logger).Log("msg", "get data from data proxy, cannot continue")
-		return nil, false
+		level.Error(mt.logger).Log("msg", "get data from data proxy, cannot continue at all")
+		return nil
 	}
 
 	level.Debug(mt.logger).Log("msg", "received data", "data", m)
 
 	for _, dispKey := range dispKeys {
 		if mt.checkDispute(m[dispKey]) == statusWaitNext {
-			return nil, false
+			return nil
 		}
-	}
+	}*/
 
 	diff := challenge.Difficulty
-	var reqIDs [5]*big.Int
-
-	instantSubmit := false
-
-	timeOfLastNewValue, err := mt.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
-	if err != nil {
-		level.Debug(mt.logger).Log("msg", "getting last submitted data in the oracle", "err", err)
-		return nil, false
-	}
-
-	now := time.Now()
-	tm := time.Unix(timeOfLastNewValue.Int64(), 0)
-	level.Debug(mt.logger).Log("msg", "last submitted data in the oracle", "time", now.Sub(tm))
-	if now.Sub(tm) >= time.Duration(15)*time.Minute {
-		instantSubmit = true
-	}
-
-	r, stat := mt.getInt(m[db.RequestIdKey0])
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
-	}
-	reqIDs[0] = r
-
-	r, stat = mt.getInt(m[db.RequestIdKey1])
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
-	}
-	reqIDs[1] = r
-
-	r, stat = mt.getInt(m[db.RequestIdKey2])
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
-	}
-	reqIDs[2] = r
-
-	r, stat = mt.getInt(m[db.RequestIdKey3])
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
-	}
-	reqIDs[3] = r
-
-	r, stat = mt.getInt(m[db.RequestIdKey4])
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
-	}
-	reqIDs[4] = r
-
+	reqIDs := challenge.CurrentRequestId
 	for i := 0; i < 5; i++ {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
 		m2, err := mt.proxy.BatchGet([]string{valKey})
@@ -300,11 +230,11 @@ func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) (*Work
 					"msg", "parsing config",
 					"err ", err,
 				)
-				return nil, false
+				return nil
 			}
 			jsonFile, err := os.Open(mt.cfg.ManualDataFile)
 			if err != nil {
-				return nil, false
+				return nil
 			}
 			defer jsonFile.Close()
 			byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -317,13 +247,13 @@ func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) (*Work
 					"msg", "pricing data not available for request",
 					"request", reqIDs[i].Uint64(),
 				)
-				return nil, false
+				return nil
 			}
 			level.Info(mt.logger).Log("msg", "USING MANUALLY ENTERED VALUE!!!! USE CAUTION")
 		}
 	}
 
-	newChallenge := &MiningChallenge{
+	newChallenge := &mining.MiningChallenge{
 		Challenge:  challenge.CurrentChallenge[:],
 		Difficulty: diff,
 		RequestIDs: reqIDs,
@@ -331,9 +261,9 @@ func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) (*Work
 
 	// If this challenge is already sent out, don't do it again.
 	if mt.currChallenge != nil &&
-		(!instantSubmit || (instantSubmit && mt.instantSubmitSentForThisBlock)) && // Not instanst submit or instant submit but already has been sent out.
+		mt.instantSubmitSentForThisBlock && // Not instanst submit or instant submit but already has been sent out.
 		bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) { // This a new oracle block so a new challenge.
-		return nil, false
+		return nil
 	}
 
 	// When it is a new challenge reset the instant submit status.
@@ -341,22 +271,17 @@ func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) (*Work
 		mt.instantSubmitSentForThisBlock = false
 	}
 
-	if instantSubmit {
-		mt.instantSubmitSentForThisBlock = true
-	}
-
 	level.Debug(mt.logger).Log("msg", "new challenge for mining",
-		"hex", fmt.Sprintf("%x", m[db.CurrentChallengeKey]),
+		"hex", fmt.Sprintf("%x", newChallenge.Challenge),
 		"difficulty", diff,
 		"requestIDs", fmt.Sprintf("%+v", reqIDs),
-		"instantSubmit", instantSubmit,
 	)
 
 	mt.currChallenge = newChallenge
-	return &Work{Challenge: newChallenge, PublicAddr: mt.accounts[0].Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
+	return &mining.Work{Challenge: newChallenge, PublicAddr: mt.accounts[0].Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
 }
 
-func (mt *MiningTasker) checkDispute(disp []byte) int {
+/* func (mt *MiningTasker) checkDispute(disp []byte) int {
 	disputed, stat := mt.getInt(disp)
 	if stat == statusWaitNext || stat == statusFailure {
 		return stat
@@ -381,4 +306,4 @@ func (mt *MiningTasker) getInt(data []byte) (*big.Int, int) {
 		return nil, statusFailure
 	}
 	return val, statusSuccess
-}
+} */

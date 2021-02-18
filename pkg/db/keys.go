@@ -3,7 +3,12 @@
 
 package db
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
+)
 
 const (
 	// BalanceKey is the key to store/lookup account balance.
@@ -73,4 +78,12 @@ func isKnownKey(key string) bool {
 		}
 	}
 	return true
+}
+
+func DisputeStatusKeyFor(address common.Address) string {
+	return fmt.Sprintf("%s%s", DisputeStatusPrefix, strings.ToLower(address.String()))
+}
+
+func TributeBalanceKeyFor(address common.Address) string {
+	return fmt.Sprintf("%s%s", TributeBalancePrefix, strings.ToLower(address.String()))
 }

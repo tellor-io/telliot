@@ -31,7 +31,7 @@ func (b *DisputeTracker) String() string {
 	return DisputeTrackerName
 }
 
-func NewDisputeTrackers(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.Tellor, accounts []*rpc.Account) []Tracker {
+func NewDisputeTrackers(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.ITellor, accounts []*rpc.Account) []Tracker {
 	trackers := make([]Tracker, len(accounts))
 	for i, account := range accounts {
 		trackers[i] = &DisputeTracker{
@@ -45,7 +45,7 @@ func NewDisputeTrackers(logger log.Logger, config *config.Config, db db.DataServ
 	return trackers
 }
 
-func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *DisputeTracker {
+func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *DisputeTracker {
 	return &DisputeTracker{
 		config:   config,
 		db:       db,
@@ -63,7 +63,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 		return errors.Wrap(err, "getting staker info")
 	}
 	enc := hexutil.EncodeBig(status)
-	dbKey := db.DisputeStatusKeyFor(b.account)
+	dbKey := db.DisputeStatusKeyFor(b.account.Address)
 	level.Debug(b.logger).Log("msg", "storing miner status", "key", dbKey, "status", enc)
 	err = b.db.Put(dbKey, []byte(enc))
 	if err != nil {

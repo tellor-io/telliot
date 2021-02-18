@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package pow
+package mining
 
 import (
 	"context"
@@ -10,15 +10,16 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 )
 
 const NumProcessors = 1
 
-func SetupMiningGroup(ctx context.Context, close context.CancelFunc, logger log.Logger, cfg *config.Config) (*MiningGroup, error) {
+func SetupMiningGroup(ctx context.Context, close context.CancelFunc, logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	var hashers []Hasher
 	level.Info(logger).Log("msg", "starting CPU mining", "threads", NumProcessors)
 	for i := 0; i < NumProcessors; i++ {
-		hashers = append(hashers, NewCpuMiner(int64(i)))
+		hashers = append(hashers, NewCpuMiner(int64(i), contractInstance))
 	}
 	miningGrp, err := NewMiningGroup(logger, cfg, hashers, ctx, close)
 	if err != nil {

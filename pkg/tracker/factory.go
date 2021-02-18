@@ -13,7 +13,7 @@ import (
 )
 
 // CreateTracker a tracker instance by its well-known name.
-func createTracker(name string, logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.Tellor, accounts []*rpc.Account) ([]Tracker, error) {
+func createTracker(name string, logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) ([]Tracker, error) {
 	switch name {
 	case "balance":
 		{

@@ -27,7 +27,7 @@ func (b *CurrentVariablesTracker) String() string {
 	return "CurrentVariablesTracker"
 }
 
-func NewCurrentVariablesTrackers(logger log.Logger, db db.DataServerProxy, contract *contracts.Tellor, accounts []*rpc.Account) []Tracker {
+func NewCurrentVariablesTrackers(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, accounts []*rpc.Account) []Tracker {
 	trackers := make([]Tracker, len(accounts))
 	for i, account := range accounts {
 		trackers[i] = &CurrentVariablesTracker{
@@ -40,7 +40,7 @@ func NewCurrentVariablesTrackers(logger log.Logger, db db.DataServerProxy, contr
 	return trackers
 }
 
-func NewCurrentVariablesTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *CurrentVariablesTracker {
+func NewCurrentVariablesTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *CurrentVariablesTracker {
 	return &CurrentVariablesTracker{
 		db:       db,
 		contract: contract,

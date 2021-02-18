@@ -37,10 +37,10 @@ func TestTributeBalance(t *testing.T) {
 	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
 	for _, account := range accounts {
-		tracker := NewTributeTracker(logger, proxy, &contract, account)
+		tracker := NewTributeTracker(logger, proxy, contract, account)
 		err = tracker.Exec(context.Background())
 		testutil.Ok(t, err)
-		v, err := proxy.Get(db.TributeBalancePrefix + account.Address.String())
+		v, err := proxy.Get(db.TributeBalanceKeyFor(account.Address))
 		testutil.Ok(t, err)
 		b, err := hexutil.DecodeBig(string(v))
 		testutil.Ok(t, err)

@@ -30,7 +30,7 @@ func parseConfig(path string) (*config.Config, error) {
 	return cfg, nil
 }
 
-func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.Tellor, []*rpc.Account, error) {
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, []*rpc.Account, error) {
 
 	// Create an rpc client
 	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
@@ -57,7 +57,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 		return nil, nil, nil, errors.New("ethereum node is still syncing with the network")
 	}
 
-	return client, &contract, accounts, nil
+	return client, contract, accounts, nil
 }
 
 // migrateAndOpenDB migrates the tx costs and deletes the db.

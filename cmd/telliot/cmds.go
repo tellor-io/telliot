@@ -6,25 +6,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"net/http"
-	"os"
-	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/dataServer"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/ops"
-	"github.com/tellor-io/telliot/pkg/pow"
-	"github.com/tellor-io/telliot/pkg/rest"
 	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/submitter"
+	"github.com/tellor-io/telliot/pkg/tasker"
 )
 
 var GitTag string
@@ -308,7 +304,7 @@ func (s migrateCmd) Run() error {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
 
-	auth, err := ops.PrepareEthTransaction(ctx, client, account)
+	auth, err := ops.PrepareEthTransaction(ctx, client, account[0])
 	if err != nil {
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
@@ -437,14 +433,10 @@ func (d dataserverCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
-
-	// Create os kill sig listener.
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
 
 	DB, err := migrateAndOpenDB(logger, cfg)
 	if err != nil {
@@ -454,48 +446,49 @@ func (d dataserverCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "open remote DB instance")
 	}
-	ch := make(chan os.Signal)
-	ds, err := ops.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, account)
+	ds, err := dataServer.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
 	if err != nil {
 		return errors.Wrapf(err, "creating data server")
 	}
-	// Start and wait for it to be ready
-	if err := ds.Start(); err != nil {
-		return errors.Wrapf(err, "starting data server")
-	}
-	<-ds.Ready()
 
-	http.Handle("/metrics", promhttp.Handler())
-	srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
-	if err != nil {
-		return errors.Wrapf(err, "creating http data server")
-	}
-	srv.Start()
+	// We define our run groups here.
+	var g run.Group
+	// Run groups.
+	{
+		// Handle interupts.
+		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
 
-	// Wait for kill sig.
-	<-c
-	// Notify exit channels.
-	ch <- os.Interrupt
-
-	cnt := 0
-	start := time.Now()
-	for {
-		cnt++
-		dsStopped := false
-
-		if ds != nil {
-			dsStopped = !ds.Running
-		} else {
-			dsStopped = true
+		{
+			// Start and wait for it to be ready.
+			g.Add(func() error {
+				return errors.Wrapf(ds.Start(), "starting data server")
+			}, func(error) {
+				ds.Stop()
+			})
 		}
 
-		if !dsStopped && cnt > 60 {
-			level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
-		} else if dsStopped {
-			break
+		// Metrics server.
+		{
+			http.Handle("/metrics", promhttp.Handler())
+			srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.Mine.ListenHost, cfg.Mine.ListenPort)}
+			g.Add(func() error {
+				level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
+				// returns ErrServerClosed on graceful close
+				var err error
+				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
+					err = errors.Wrapf(err, "ListenAndServe")
+				}
+				return err
+			}, func(error) {
+				srv.Close()
+			})
 		}
-		time.Sleep(500 * time.Millisecond)
+
 	}
+	if err := g.Run(); err != nil {
+		return err
+	}
+
 	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
 }
@@ -516,9 +509,38 @@ func (m mineCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
-	// Create os kill sig listener.
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+
+	// DataServer is the Telliot data server.
+	var proxy db.DataServerProxy
+
+	var ds *dataServer.DataServerOps
+	DB, err := migrateAndOpenDB(logger, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "initializing database")
+	}
+	if cfg.Mine.RemoteDBHost != "" {
+		proxy, err = db.OpenRemote(logger, cfg, DB)
+	} else {
+		proxy, err = db.OpenLocal(logger, cfg, DB)
+	}
+	if err != nil {
+		return errors.Wrapf(err, "open remote DB instance")
+
+	}
+
+	// Not using a remote DB so need to start the trackers.
+	if cfg.Mine.RemoteDBHost == "" {
+		ds, err = dataServer.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
+		if err != nil {
+			return errors.Wrapf(err, "creating data server")
+		}
+		// Start and wait for it to be ready.
+		if err := ds.Start(); err != nil {
+			return errors.Wrap(err, "starting data server")
+		}
+		// We need to wait until the DataServer instance is ready.
+		<-ds.Ready()
+	}
 
 	// We define our run groups here.
 	var g run.Group
@@ -544,87 +566,18 @@ func (m mineCmd) Run() error {
 			})
 		}
 
-		// DataServer is the Telliot data server.
-		var proxy db.DataServerProxy
-		{
-			var ds *ops.DataServerOps
-			DB, err := migrateAndOpenDB(logger, cfg)
-			if err != nil {
-				return errors.Wrapf(err, "initializing database")
-			}
-			if cfg.Mine.RemoteDBHost != "" {
-				proxy, err = db.OpenRemote(logger, cfg, DB)
-			} else {
-				proxy, err = db.OpenLocal(logger, cfg, DB)
-			}
-			if err != nil {
-				return errors.Wrapf(err, "open remote DB instance")
-
-			}
-
-			// Not using a remote DB so need to start the trackers.
-			if cfg.Mine.RemoteDBHost == "" {
-				ds, err = ops.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
-				if err != nil {
-					return errors.Wrapf(err, "creating data server")
-				}
-				// Start and wait for it to be ready.
-				g.Add(func() error {
-					return errors.Wrapf(ds.Start(), "starting data server")
-				}, func(error) {
-					ds.Stop()
-				})
-
-				// We need to wait until the DataServer instance is ready.
-				<-ds.Ready()
-			}
-		}
-
 		// Run a miner manager for each of the accounts.
-		{
+		if true {
 			// Run a tasker instance.
-			tasker := pow.CreateTasker(ctx, logger, cfg, proxy, client, contract, accounts)
+			tasker, taskerCh := tasker.CreateTasker(ctx, logger, cfg, proxy, client, contract, accounts)
 			g.Add(func() error {
 				return tasker.Start()
 			}, func(error) {
 				tasker.Stop()
 			})
-			// Initialize the solutionHandler.
-			submitters := []tellorCommon.TransactionSubmitter{}
-			for _, account := range accounts {
-				submitters = append(submitters, ops.NewSubmitter(logger, cfg, client, contract, account))
-			}
-			solutionHandler := pow.CreateSolutionHandler(cfg, logger, submitters, proxy)
-			for _, account := range accounts {
-				var v []byte
-				for i := 0; i < 10; i++ {
-					// Start the miner.
-					v, err = proxy.Get(db.DisputeStatusPrefix + account.Address.String())
-					if err != nil {
-						level.Warn(logger).Log("msg", "getting dispute status. Check if staked", "err", err)
-					}
-					if len(v) != 0 {
-						break
-					}
-					select {
-					case <-c: // Early exit from os.Interrupt.
-						return nil
-					default:
-					}
-					time.Sleep(1 * time.Second)
-				}
-				if len(v) == 0 {
-					return errors.New("no status result after 10 attempts. this usually means no connection to the DB")
-				}
 
-				status, _ := hexutil.DecodeBig(string(v))
-				if status.Cmp(big.NewInt(1)) != 0 {
-					return errors.New("miner is not able to mine with current status")
-				}
-
-			}
 			// the Miner component.
-			miner, err := ops.CreateMiningManager(logger, ctx, cfg, proxy, contract, tasker, solutionHandler)
+			miner, err := mining.CreateMiningManager(logger, ctx, cfg, proxy, contract, taskerCh)
 			if err != nil {
 				return errors.Wrapf(err, "creating miner")
 			}
@@ -633,7 +586,26 @@ func (m mineCmd) Run() error {
 			}, func(error) {
 				miner.Stop()
 			})
+
+			// Add a submitter for each account.
+			for _, account := range accounts {
+				// Get a channel on which it listens for new data to submit.
+				txSubmitter := submitter.NewSubmitter(logger, cfg, client, contract, account)
+				submitter, submitCh := submitter.CreateSubmitter(ctx, cfg, logger, client, contract, account, txSubmitter, proxy)
+				g.Add(func() error {
+					return submitter.Start()
+				}, func(error) {
+					submitter.Stop()
+				})
+				miner.Subscribe(submitCh)
+			}
+
 		}
+	}
+	if err := g.Run(); err != nil {
+		level.Info(logger).Log("msg", "main exited with error", "err", err)
+		ds.Stop()
+		return err
 	}
 	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
