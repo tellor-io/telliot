@@ -19,7 +19,7 @@ import (
 type TxnSubmitter struct {
 	cfg      *config.Config
 	client   contracts.ETHClient
-	contract *contracts.Tellor
+	contract *contracts.ITellor
 	account  *rpc.Account
 	logger   log.Logger
 }
@@ -29,7 +29,7 @@ func NewSubmitter(
 	logger log.Logger,
 	cfg *config.Config,
 	client contracts.ETHClient,
-	tellor *contracts.Tellor,
+	tellor *contracts.ITellor,
 	account *rpc.Account) TxnSubmitter {
 	return TxnSubmitter{
 		cfg:      cfg,

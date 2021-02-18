@@ -24,7 +24,7 @@ const DisputeTrackerName = "DisputeTracker2"
 
 type DisputeTracker struct {
 	db       db.DataServerProxy
-	contract *contracts.Tellor
+	contract *contracts.ITellor
 	account  *rpc.Account
 	logger   log.Logger
 	config   *config.Config
@@ -34,7 +34,7 @@ func (b *DisputeTracker) String() string {
 	return DisputeTrackerName
 }
 
-func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *DisputeTracker {
+func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *DisputeTracker {
 	return &DisputeTracker{
 		config:   config,
 		db:       db,
@@ -46,7 +46,7 @@ func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DataServe
 
 func (b *DisputeTracker) Exec(ctx context.Context) error {
 
-	status, _, err := b.contract.Getter.GetStakerInfo(nil, b.account.Address)
+	status, _, err := b.contract.GetStakerInfo(nil, b.account.Address)
 
 	if err != nil {
 		return errors.Wrap(err, "getting staker info")
@@ -66,7 +66,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 	//asking for dispute status
 	for _, addr := range b.config.ServerWhitelist {
 		address := common.HexToAddress(addr)
-		status, _, err := b.contract.Getter.GetStakerInfo(nil, address)
+		status, _, err := b.contract.GetStakerInfo(nil, address)
 		if err != nil {
 			level.Error(b.logger).Log("msg", "getting staker dispute status for miner", "address", addr, "err", err)
 		}

@@ -30,7 +30,7 @@ func parseConfig(path string) (*config.Config, error) {
 	return cfg, nil
 }
 
-func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.Tellor, *rpc.Account, error) {
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, *rpc.Account, error) {
 
 	// Create an rpc client
 	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
@@ -38,7 +38,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
 
-	contract, err := contracts.NewTellor(client)
+	contract, err := contracts.NewITellor(client)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
 	}
@@ -57,7 +57,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 		return nil, nil, nil, errors.New("ethereum node is still syncing with the network")
 	}
 
-	return client, &contract, &account, nil
+	return client, contract, &account, nil
 }
 
 // migrateAndOpenDB migrates the tx costs and deletes the db.
@@ -98,6 +98,7 @@ func migrateAndOpenDB(logger log.Logger, cfg *config.Config) (db.DB, error) {
 }
 
 var cli struct {
+	Migrate  migrateCmd  `cmd:"" help:"Migrate funds from the old oracle contract"`
 	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
 	Approve  approveCmd  `cmd:"" help:"Approve tokens"`
 	Balance  balanceCmd  `cmd:"" help:"Check the balance of an address"`
@@ -114,7 +115,7 @@ var cli struct {
 	} `cmd:"" help:"Perform commands related to disputes"`
 	Dataserver dataserverCmd `cmd:"" help:"launch only a dataserver instance"`
 	Mine       mineCmd       `cmd:"" help:"mine TRB and submit values"`
-	Version    VersionCmd    `cmd:"" help:"Show the Docker version information"`
+	Version    VersionCmd    `cmd:"" help:"Show the CLI version information"`
 }
 
 func main() {

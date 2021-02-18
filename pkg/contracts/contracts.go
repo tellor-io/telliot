@@ -9,13 +9,27 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
+	"github.com/tellor-io/telliot/pkg/contracts/balancer"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/uniswap"
 )
 
-type Tellor struct {
-	Getter  *tellorMaster.TellorGetters
-	Caller  *tellorCurrent.Tellor
+type (
+	ITellorNewDispute    = tellor.ITellorNewDispute
+	TellorNonceSubmitted = tellor.TellorNonceSubmitted
+)
+
+const (
+	BPoolABI          = balancer.BPoolABI
+	BTokenABI         = balancer.BTokenABI
+	IERC20ABI         = uniswap.IERC20ABI
+	IUniswapV2PairABI = uniswap.IUniswapV2PairABI
+	ITellorABI        = tellor.ITellorABI
+)
+
+type ITellor struct {
+	*tellor.ITellor
+	*tellor.ITellorNewDispute
 	Address common.Address
 }
 
@@ -71,34 +85,17 @@ func getContractAddress(client ETHClient) (string, error) {
 	}
 }
 
-func NewTellor(client ETHClient) (Tellor, error) {
-	_contractAddress, err := getContractAddress(client)
-	if err != nil {
-		return Tellor{}, errors.Wrap(err, "getting tellor contract address")
-	}
-	contractAddress := common.HexToAddress(_contractAddress)
-	contractTellorInstance, err := tellorCurrent.NewTellor(contractAddress, client)
-	if err != nil {
-		return Tellor{}, errors.Wrap(err, "creating telllor caller")
-	}
-	contractGetterInstance, err := tellorMaster.NewTellorGetters(contractAddress, client)
-	if err != nil {
-		return Tellor{}, errors.Wrap(err, "creating telllor getter")
-	}
-
-	return Tellor{Address: contractAddress, Getter: contractGetterInstance, Caller: contractTellorInstance}, nil
-}
-
-func NewTellorGetters(client ETHClient) (*tellorMaster.TellorGetters, error) {
+func NewITellor(client ETHClient) (*ITellor, error) {
 	_contractAddress, err := getContractAddress(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting tellor contract address")
 	}
 	contractAddress := common.HexToAddress(_contractAddress)
-	contractGetterInstance, err := tellorMaster.NewTellorGetters(contractAddress, client)
+
+	contractInterfaceInstance, err := tellor.NewITellor(contractAddress, client)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating telllor getter")
+		return nil, errors.Wrap(err, "creating telllor interface")
 	}
 
-	return contractGetterInstance, nil
+	return &ITellor{Address: contractAddress, ITellor: contractInterfaceInstance}, nil
 }

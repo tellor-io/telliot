@@ -100,7 +100,8 @@ func (c *clientInstance) Close() {
 
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
-		level.Info(c.logger).Log("msg", "sending txn on-chain", "details", tx)
+		data, _ := tx.MarshalJSON()
+		level.Info(c.logger).Log("msg", "sending txn on-chain", "details", data)
 		return c.ethClient.SendTransaction(*_ctx, tx)
 	})
 	return _err

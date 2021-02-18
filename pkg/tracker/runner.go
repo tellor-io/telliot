@@ -25,7 +25,7 @@ const ComponentName = "tracker"
 type Runner struct {
 	db           db.DataServerProxy
 	client       contracts.ETHClient
-	contract     *contracts.Tellor
+	contract     *contracts.ITellor
 	account      *rpc.Account
 	readyChannel chan bool
 	logger       log.Logger
@@ -34,7 +34,7 @@ type Runner struct {
 }
 
 // NewRunner will create a new runner instance.
-func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.Tellor, account *rpc.Account) (*Runner, error) {
+func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, account *rpc.Account) (*Runner, error) {
 	logger, err := logging.ApplyFilter(*config, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")

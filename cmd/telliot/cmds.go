@@ -138,7 +138,7 @@ func (b *balanceCmd) Run() error {
 			return errors.Wrapf(err, "parsing argument")
 		}
 	}
-	return ops.Balance(ctx, logger, client, contract.Getter, addr.addr)
+	return ops.Balance(ctx, logger, client, contract, addr.addr)
 }
 
 type depositCmd struct {
@@ -219,6 +219,37 @@ func (s statusCmd) Run() error {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
 	return ops.ShowStatus(ctx, logger, client, contract, account)
+}
+
+type migrateCmd struct {
+	Config configPath `type:"existingfile" help:"path to config file"`
+}
+
+func (s migrateCmd) Run() error {
+	cfg, err := parseConfig(string(s.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger := logging.NewLogger()
+
+	ctx := context.Background()
+	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
+
+	auth, err := ops.PrepareEthTransaction(ctx, client, account)
+	if err != nil {
+		return errors.Wrap(err, "prepare ethereum transaction")
+	}
+
+	tx, err := contract.Migrate(auth)
+	if err != nil {
+		return errors.Wrap(err, "contract failed")
+	}
+	level.Info(logger).Log("msg", "TRB migrated", "txHash", tx.Hash().Hex())
+	return nil
 }
 
 type newDisputeCmd struct {

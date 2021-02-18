@@ -39,7 +39,7 @@ func CreateServer(
 	config *config.Config,
 	DB db.DataServerProxy,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	contract *contracts.ITellor,
 	account *rpc.Account,
 ) (*DataServer, error) {
 	run, err := tracker.NewRunner(logger, config, DB, client, contract, account)

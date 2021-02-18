@@ -16,7 +16,7 @@ import (
 
 const (
 	TellorMainnetAddress = "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5"
-	TellorRinkebyAddress = "0xFe41Cb708CD98C5B20423433309E55b53F79134a"
+	TellorRinkebyAddress = "0x89bB2EDC32db3332E6FC0DE9a27D6b6bB670C236"
 )
 
 // Unfortunate hack to enable json parsing of human readable time strings

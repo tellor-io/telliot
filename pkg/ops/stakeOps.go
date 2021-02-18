@@ -50,16 +50,16 @@ func Deposit(
 	ctx context.Context,
 	logger log.Logger,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	contract *contracts.ITellor,
 	account *rpc.Account,
 ) error {
 
-	balance, err := contract.Getter.BalanceOf(nil, account.Address)
+	balance, err := contract.BalanceOf(nil, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "get TRB balance")
 	}
 
-	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
+	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "get stake status")
 	}
@@ -72,7 +72,7 @@ func Deposit(
 	dat := crypto.Keccak256([]byte("stakeAmount"))
 	var dat32 [32]byte
 	copy(dat32[:], dat)
-	stakeAmt, err := contract.Getter.GetUintVar(nil, dat32)
+	stakeAmt, err := contract.GetUintVar(nil, dat32)
 	if err != nil {
 		return errors.Wrap(err, "fetching stake amount")
 	}
@@ -88,7 +88,7 @@ func Deposit(
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
 
-	tx, err := contract.Caller.DepositStake(auth)
+	tx, err := contract.DepositStake(auth)
 	if err != nil {
 		return errors.Wrap(err, "contract failed")
 	}
@@ -100,10 +100,10 @@ func ShowStatus(
 	ctx context.Context,
 	logger log.Logger,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	contract *contracts.ITellor,
 	account *rpc.Account,
 ) error {
-	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
+	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "get stake status")
 	}
@@ -116,11 +116,11 @@ func RequestStakingWithdraw(
 	ctx context.Context,
 	logger log.Logger,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	contract *contracts.ITellor,
 	account *rpc.Account,
 ) error {
 
-	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
+	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "get stake status")
 	}
@@ -134,7 +134,7 @@ func RequestStakingWithdraw(
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
 
-	tx, err := contract.Caller.RequestStakingWithdraw(auth)
+	tx, err := contract.RequestStakingWithdraw(auth)
 	if err != nil {
 		return errors.Wrap(err, "contract")
 	}
@@ -147,10 +147,10 @@ func WithdrawStake(
 	ctx context.Context,
 	logger log.Logger,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	contract *contracts.ITellor,
 	account *rpc.Account,
 ) error {
-	status, startTime, err := contract.Getter.GetStakerInfo(nil, account.Address)
+	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "get stake status")
 	}
@@ -165,7 +165,7 @@ func WithdrawStake(
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
 
-	tx, err := contract.Caller.WithdrawStake(auth)
+	tx, err := contract.WithdrawStake(auth)
 	if err != nil {
 		return errors.Wrap(err, "contract")
 	}
