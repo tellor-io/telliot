@@ -5,6 +5,7 @@ package pow
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,11 +16,15 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
@@ -44,31 +49,168 @@ const (
  * - Otherwise, push new challenge to output channel
  */
 
-type MiningTasker struct {
-	logger                        log.Logger
-	proxy                         db.DataServerProxy
-	account                       *rpc.Account
-	currChallenge                 *MiningChallenge
-	cfg                           *config.Config
-	contractInstance              *contracts.ITellor
-	instantSubmitSentForThisBlock bool
+type WorkInfo struct {
+	work          *Work
+	instantSubmit bool
 }
 
-func CreateTasker(logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor, proxy db.DataServerProxy, account *rpc.Account) *MiningTasker {
+func (wi *WorkInfo) GetWork() (*Work, bool) {
+	return wi.work, wi.instantSubmit
+}
+
+type MiningTasker struct {
+	ctx                           context.Context
+	close                         context.CancelFunc
+	logger                        log.Logger
+	proxy                         db.DataServerProxy
+	accounts                      []*rpc.Account
+	currChallenge                 *MiningChallenge
+	contractInstance              *contracts.ITellor
+	instantSubmitSentForThisBlock bool
+	client                        contracts.ETHClient
+	cfg                           *config.Config
+	workSink                      chan *WorkInfo
+	Running                       bool
+	done                          chan bool
+	resubscribe                   chan bool
+}
+
+func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) *MiningTasker {
+	ctx, close := context.WithCancel(ctx)
 	return &MiningTasker{
+		ctx:              ctx,
+		close:            close,
 		proxy:            proxy,
-		account:          account,
+		accounts:         accounts,
+		contractInstance: contract,
+		workSink:         make(chan *WorkInfo, 1),
+		done:             make(chan bool),
+		resubscribe:      make(chan bool),
 		logger:           log.With(logger, "component", ComponentName),
-		cfg:              cfg,
-		contractInstance: contractInstance,
 	}
 }
 
-func (mt *MiningTasker) GetWork() (*Work, bool) {
-	dispKey := db.DisputeStatusPrefix + mt.account.Address.String()
+func (mt *MiningTasker) getCurrentChallenge() (*tellor.ITellorNewChallengeIterator, error) {
+	var tellorLibraryFilterer *tellor.ITellorFilterer
+	tellorLibraryFilterer, err := tellor.NewITellorFilterer(mt.contractInstance.Address, mt.client)
+	if err != nil {
+		return nil, err
+	}
+	itr, _ := tellorLibraryFilterer.FilterNewChallenge(&bind.FilterOpts{}, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error in get NewChallenge iterator")
+	}
+	return itr, err
+}
+
+func (mt *MiningTasker) getNewChallengeChannel() (chan *tellor.ITellorNewChallenge, event.Subscription, error) {
+	sink := make(chan *tellor.ITellorNewChallenge)
+	var tellorLibraryFilterer *tellor.ITellorFilterer
+	tellorLibraryFilterer, err := tellor.NewITellorFilterer(mt.contractInstance.Address, mt.client)
+	if err != nil {
+		return nil, nil, err
+	}
+	sub, _ := tellorLibraryFilterer.WatchNewChallenge(&bind.WatchOpts{}, sink, nil)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "error in get NewChallenge channel")
+	}
+	return sink, sub, nil
+}
+
+func (mt *MiningTasker) subscribeToNewChallenge() error {
+	sink, sub, err := mt.getNewChallengeChannel()
+	if err != nil {
+		return err
+	}
+	level.Info(mt.logger).Log("msg", "subscribed to NewChallenge events")
+
+	go func() {
+		for {
+			select {
+			case <-mt.done:
+				sub.Unsubscribe()
+				level.Info(mt.logger).Log("msg", "unsubscribed to NewChallenge events")
+				mt.Running = false
+				return
+			case err := <-sub.Err():
+				if err != nil {
+					level.Error(mt.logger).Log(
+						"msg",
+						"new challenge subscription error",
+						"err", err)
+				}
+				if mt.Running {
+					mt.resubscribe <- true
+				}
+			case vLog := <-sink:
+				mt.sendWork(vLog)
+			}
+		}
+	}()
+	return nil
+}
+
+func (mt *MiningTasker) WorkSink() chan *WorkInfo {
+	return mt.workSink
+}
+
+func (mt *MiningTasker) sendWork(vLog *tellor.ITellorNewChallenge) {
+	work, instantSubmit := mt.CreateWork(vLog)
+	// Send new work to the sink.
+	mt.workSink <- &WorkInfo{work, instantSubmit}
+}
+
+func (mt *MiningTasker) Start() error {
+	mt.Running = true
+	level.Info(mt.logger).Log("msg", "tasker has been started")
+	currentChallenge, err := mt.getCurrentChallenge()
+	if err != nil {
+		return errors.Wrap(err, "tasker getting the current challenge")
+	}
+	level.Info(mt.logger).Log("msg", "tasker is sending the initial challenge to the miner")
+	mt.sendWork(currentChallenge.Event)
+	err = mt.subscribeToNewChallenge()
+	if err != nil {
+		return errors.Wrap(err, "tasker subscribing to new challenges")
+	}
+	for {
+		select {
+		case <-mt.resubscribe:
+			err = mt.subscribeToNewChallenge()
+			if err != nil {
+				return errors.Wrap(err, "tasker resubscribing to new challenges")
+			}
+		case <-mt.ctx.Done():
+			mt.done <- true
+		}
+	}
+}
+
+func (mt *MiningTasker) Stop() {
+	level.Info(mt.logger).Log("msg", "shutting down tasker...")
+	mt.close()
+	cnt := 0
+	for {
+		time.Sleep(500 * time.Millisecond)
+		cnt++
+		if !mt.Running {
+			break
+		}
+		if cnt > 60 {
+			level.Warn(mt.logger).Log("msg", "expected tasker to stop by now, Giving up...")
+			return
+		}
+	}
+	level.Info(mt.logger).Log("msg", "tasker shutdown complete")
+}
+
+func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) (*Work, bool) {
+	dispKeys := []string{}
+	for _, account := range mt.accounts {
+		dispKeys = append(dispKeys, db.DisputeStatusPrefix+account.Address.String())
+
+	}
 	keys := []string{
-		db.DifficultyKey,
-		db.CurrentChallengeKey,
 		db.RequestIdKey,
 		db.RequestIdKey0,
 		db.RequestIdKey1,
@@ -76,8 +218,8 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		db.RequestIdKey3,
 		db.RequestIdKey4,
 		db.LastNewValueKey,
-		dispKey,
 	}
+	keys = append(keys, dispKeys...)
 
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
@@ -85,14 +227,15 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		return nil, false
 	}
 
-	if mt.checkDispute(m[dispKey]) == statusWaitNext {
-		level.Info(mt.logger).Log("msg", "no dispute results from data server, waiting for next cycle", "key", dispKey)
-		return nil, false
+	level.Debug(mt.logger).Log("msg", "received data", "data", m)
+
+	for _, dispKey := range dispKeys {
+		if mt.checkDispute(m[dispKey]) == statusWaitNext {
+			return nil, false
+		}
 	}
-	diff, stat := mt.getInt(m[db.DifficultyKey])
-	if stat == statusWaitNext || stat == statusFailure {
-		return nil, false
-	}
+
+	diff := challenge.Difficulty
 	var reqIDs [5]*big.Int
 
 	instantSubmit := false
@@ -181,7 +324,7 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 	}
 
 	newChallenge := &MiningChallenge{
-		Challenge:  m[db.CurrentChallengeKey],
+		Challenge:  challenge.CurrentChallenge[:],
 		Difficulty: diff,
 		RequestIDs: reqIDs,
 	}
@@ -210,7 +353,7 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 	)
 
 	mt.currChallenge = newChallenge
-	return &Work{Challenge: newChallenge, PublicAddr: mt.account.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
+	return &Work{Challenge: newChallenge, PublicAddr: mt.accounts[0].Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {

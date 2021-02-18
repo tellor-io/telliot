@@ -31,7 +31,7 @@ import (
 )
 
 type WorkSource interface {
-	GetWork() (*pow.Work, bool)
+	WorkSink() chan *pow.WorkInfo
 }
 
 type SolutionSink interface {
@@ -111,43 +111,38 @@ func CreateMiningManager(
 		toMineInput:      make(chan *pow.Work),
 		solutionOutput:   make(chan *pow.Result),
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace:   "telliot",
-			Subsystem:   "mining",
-			Name:        "submit_total",
-			ConstLabels: prometheus.Labels{"address": account.Address.String()},
-			Help:        "The total number of submitted solutions",
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_total",
+			Help:      "The total number of submitted solutions",
 		}),
 		submitFailCount: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace:   "telliot",
-			Subsystem:   "mining",
-			Name:        "submit_fails_total",
-			ConstLabels: prometheus.Labels{"address": account.Address.String()},
-			Help:        "The total number of failed submission",
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_fails_total",
+			Help:      "The total number of failed submission",
 		}),
 		submitProfit: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace:   "telliot",
-			Subsystem:   "mining",
-			Name:        "submit_profit",
-			ConstLabels: prometheus.Labels{"address": account.Address.String()},
-			Help:        "The current submit profit in percents",
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_profit",
+			Help:      "The current submit profit in percents",
 		},
 			[]string{"slot"},
 		),
 		submitCost: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace:   "telliot",
-			Subsystem:   "mining",
-			Name:        "submit_cost",
-			ConstLabels: prometheus.Labels{"address": account.Address.String()},
-			Help:        "The current submit cost in 1e18 eth",
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_cost",
+			Help:      "The current submit cost in 1e18 eth",
 		},
 			[]string{"slot"},
 		),
 		submitReward: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace:   "telliot",
-			Subsystem:   "mining",
-			Name:        "submit_reward",
-			ConstLabels: prometheus.Labels{"address": account.Address.String()},
-			Help:        "The current reward in 1e18 eth",
+			Namespace: "telliot",
+			Subsystem: "mining",
+			Name:      "submit_reward",
+			Help:      "The current reward in 1e18 eth",
 		},
 			[]string{"slot"},
 		),
@@ -158,7 +153,6 @@ func CreateMiningManager(
 // Start will start the mining run loop.
 func (mgr *MiningMgr) Start() error {
 	mgr.Running = true
-	ticker := time.NewTicker(mgr.cfg.Mine.MiningInterruptCheckInterval.Duration)
 
 	// Start the mining group.
 	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)
@@ -200,14 +194,6 @@ func (mgr *MiningMgr) Start() error {
 					continue
 				}
 			}
-
-			lastSubmit, err := mgr.lastSubmit()
-			if err != nil {
-				level.Error(mgr.logger).Log("msg", "checking last submit time", "err", err)
-			} else if lastSubmit < mgr.cfg.Mine.MinSubmitPeriod.Duration {
-				level.Debug(mgr.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", mgr.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
-				continue
-			}
 			tx, err := mgr.solHandler.Submit(mgr.ctx, solution)
 			if err != nil {
 				level.Error(mgr.logger).Log("msg", "submiting a solution", "err", err)
@@ -223,20 +209,20 @@ func (mgr *MiningMgr) Start() error {
 			mgr.solutionPending = nil
 
 		// Time to check for a new challenge.
-		case <-ticker.C:
-			mgr.newWork()
+		case workInfo := <-mgr.tasker.WorkSink():
+			mgr.handleWork(workInfo)
 		}
 	}
 }
 
-// newWork is non blocking worker that sends new work to the pow workers
+// handleWork is non blocking worker that sends new work to the pow workers
 // or re-sends a current pending solution to the submitter when the challenge hasn't changes.
-func (mgr *MiningMgr) newWork() {
+func (mgr *MiningMgr) handleWork(workInfo *pow.WorkInfo) {
 	go func() {
 		// instantSubmit means 15 mins have passed so
 		// the difficulty now is zero and any solution/nonce will work so
 		// can just submit without sending to the miner.
-		work, instantSubmit := mgr.tasker.GetWork()
+		work, instantSubmit := workInfo.GetWork()
 		if instantSubmit {
 			mgr.solutionOutput <- &pow.Result{Work: work, Nonce: "anything will work"}
 		} else {
@@ -439,7 +425,7 @@ func (mgr *MiningMgr) profit() (int64, error) {
 
 // Stop will take care of stopping the dataserver component.
 func (mgr *MiningMgr) Stop() {
-	level.Info(mgr.logger).Log("msg", "shutting down data server...", "account", mgr.account.Address.String())
+	level.Info(mgr.logger).Log("msg", "shutting down data server...")
 	mgr.close()
 	cnt := 0
 	for {
@@ -453,5 +439,5 @@ func (mgr *MiningMgr) Stop() {
 			return
 		}
 	}
-	level.Info(mgr.logger).Log("msg", "miner shutdown complete", "account", mgr.account.Address.String())
+	level.Info(mgr.logger).Log("msg", "miner shutdown complete")
 }

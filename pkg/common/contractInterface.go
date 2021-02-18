@@ -7,6 +7,7 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/tellor-io/telliot/pkg/db"
 )
@@ -32,6 +33,6 @@ type TransactionSubmitter interface {
 	// Submit prepares a transaction and sends it to the generatorFN.
 	// The ctxName is primarily for logging under which context the transaction is being prepared.
 	Submit(ctx context.Context, proxy db.DataServerProxy, ctxName string, factoryFn TransactionGeneratorFN) (*types.Transaction, error)
-	// PublicKey returns the public key of the account used in this TransactionSubmitter.
-	PublicKey() string
+	// Address returns the public key address of the account used in this TransactionSubmitter.
+	Address() common.Address
 }

@@ -582,6 +582,14 @@ func (m mineCmd) Run() error {
 
 		// Run a miner manager for each of the accounts.
 		{
+			// Run a tasker instance.
+			tasker := pow.CreateTasker(ctx, logger, cfg, proxy, client, contract, accounts)
+			g.Add(func() error {
+				return tasker.Start()
+			}, func(error) {
+				tasker.Stop()
+			})
+			// Initialize the solutionHandler.
 			submitters := []tellorCommon.TransactionSubmitter{}
 			for _, account := range accounts {
 				submitters = append(submitters, ops.NewSubmitter(logger, cfg, client, contract, account))
@@ -613,19 +621,18 @@ func (m mineCmd) Run() error {
 				if status.Cmp(big.NewInt(1)) != 0 {
 					return errors.New("miner is not able to mine with current status")
 				}
-				// Initialzie a tasker instance.
-				tasker := pow.CreateTasker(logger, cfg, proxy, account)
-				miner, err := ops.CreateMiningManager(logger, ctx, cfg, proxy, contract, account, tasker, solutionHandler)
-				if err != nil {
-					return errors.Wrapf(err, "creating miner")
-				}
-				g.Add(func() error {
-					return miner.Start()
-				}, func(error) {
-					miner.Stop()
-					level.Info(logger).Log("msg", "miner has been stopped", "account", account.Address.String())
-				})
+
 			}
+			// the Miner component.
+			miner, err := ops.CreateMiningManager(logger, ctx, cfg, proxy, contract, tasker, solutionHandler)
+			if err != nil {
+				return errors.Wrapf(err, "creating miner")
+			}
+			g.Add(func() error {
+				return miner.Start()
+			}, func(error) {
+				miner.Stop()
+			})
 		}
 	}
 	level.Info(logger).Log("msg", "main shutdown complete")

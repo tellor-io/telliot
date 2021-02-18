@@ -6,6 +6,7 @@ package ops
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
@@ -45,7 +46,7 @@ func (s TxnSubmitter) Submit(ctx context.Context, proxy db.DataServerProxy, ctxN
 	return rpc.SubmitContractTxn(ctx, s.logger, s.cfg, proxy, s.client, s.contract, s.account, ctxName, callback)
 }
 
-// PublicKey returns the public key of the account.
-func (s TxnSubmitter) PublicKey() string {
-	return s.account.Address.String()
+// Address returns the public key address of the account.
+func (s TxnSubmitter) Address() common.Address {
+	return s.account.Address
 }
