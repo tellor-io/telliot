@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -16,7 +17,7 @@ import (
 
 const (
 	TellorMainnetAddress = "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5"
-	TellorRinkebyAddress = "0xFe41Cb708CD98C5B20423433309E55b53F79134a"
+	TellorRinkebyAddress = "0x4756942F9B7c3824bBAb8F61ea536033FfD9BcD4"
 )
 
 // Unfortunate hack to enable json parsing of human readable time strings
@@ -102,7 +103,6 @@ type Config struct {
 	EnvFile string `json:"envFile"`
 }
 
-// TODO remove or refactor to not be a global config instance.
 var defaultConfig = Config{
 	GasMax:        10,
 	GasMultiplier: 1,
@@ -187,6 +187,14 @@ func ParseConfig(path string) (*Config, error) {
 			return nil, errors.Wrap(err, "parse config")
 		}
 
+	}
+
+	if len(cfg.ServerWhitelist) == 0 {
+		if strings.Contains(cfg.PublicAddress, "0x") {
+			cfg.ServerWhitelist = append(cfg.ServerWhitelist, cfg.PublicAddress)
+		} else {
+			cfg.ServerWhitelist = append(cfg.ServerWhitelist, "0x"+cfg.PublicAddress)
+		}
 	}
 
 	err = godotenv.Load(cfg.EnvFile)
