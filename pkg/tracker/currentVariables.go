@@ -18,7 +18,7 @@ import (
 
 type CurrentVariablesTracker struct {
 	db       db.DataServerProxy
-	contract *contracts.Tellor
+	contract *contracts.ITellor
 	account  *rpc.Account
 	logger   log.Logger
 }
@@ -27,7 +27,7 @@ func (b *CurrentVariablesTracker) String() string {
 	return "CurrentVariablesTracker"
 }
 
-func NewCurrentVariablesTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *CurrentVariablesTracker {
+func NewCurrentVariablesTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *CurrentVariablesTracker {
 	return &CurrentVariablesTracker{
 		db:       db,
 		contract: contract,
@@ -37,7 +37,7 @@ func NewCurrentVariablesTracker(logger log.Logger, db db.DataServerProxy, contra
 }
 
 func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
-	returnNewVariables, err := b.contract.Caller.GetNewCurrentVariables(nil)
+	returnNewVariables, err := b.contract.GetNewCurrentVariables(nil)
 	if err != nil {
 		level.Warn(b.logger).Log("msg", "new current variables retrieval - contract might not be upgraded", "err", err)
 		return nil
@@ -48,7 +48,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 	}
 
 	// If it has been mined, don't save it.
-	myStatus, err := b.contract.Getter.DidMine(nil, returnNewVariables.Challenge, b.account.Address)
+	myStatus, err := b.contract.DidMine(nil, returnNewVariables.Challenge, b.account.Address)
 	if err != nil {
 		return errors.Wrap(err, "status retrieval")
 	}
@@ -57,7 +57,7 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		bitSetVar = []byte{1}
 	}
 
-	timeOfLastNewValue, err := b.contract.Getter.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
+	timeOfLastNewValue, err := b.contract.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
 	if err != nil {
 		return errors.Wrap(err, "time of last new value retrieval")
 	}

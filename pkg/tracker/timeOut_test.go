@@ -27,7 +27,7 @@ func TestTimeOutString(t *testing.T) {
 
 }
 
-//Can't make the test compile with current setup. Need a contract.Getter connected to the client, but didn't managed to compile this
+//Can't make the test compile with current setup. Need a contract connected to the client, but didn't managed to compile this
 // func TestTimeOutTracker(t *testing.T) {
 
 // 	DB, cleanup := db.OpenTestDB(t)
@@ -48,7 +48,7 @@ func TestTimeOutString(t *testing.T) {
 // 	// ctx = context.WithValue(ctx, common.ClientContextKey, client)
 // 	// ctx = context.WithValue(ctx, common.DBContextKey, db)
 
-// 	contract := contracts.Tellor{}
+// 	contract := contracts.ITellor{}
 // 	account := rpc.Account{}
 // 	logSetup := util.SetupLogger()
 // 	logger := logSetup("debug")

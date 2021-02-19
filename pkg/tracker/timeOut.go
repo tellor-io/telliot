@@ -25,7 +25,7 @@ import (
 type TimeOutTracker struct {
 	config   *config.Config
 	db       db.DataServerProxy
-	contract *contracts.Tellor
+	contract *contracts.ITellor
 	account  *rpc.Account
 	logger   log.Logger
 }
@@ -34,7 +34,7 @@ func (b *TimeOutTracker) String() string {
 	return "TimeOutTracker"
 }
 
-func NewTimeOutTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *TimeOutTracker {
+func NewTimeOutTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *TimeOutTracker {
 	return &TimeOutTracker{
 		config:   config,
 		db:       db,
@@ -53,7 +53,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "decoding address")
 	}
-	status, err := b.contract.Getter.GetUintVar(nil, rpc.Keccak256(decoded))
+	status, err := b.contract.GetUintVar(nil, rpc.Keccak256(decoded))
 
 	if err != nil {
 		return errors.Wrapf(err, "getting dispute status")
@@ -76,7 +76,7 @@ func (b *TimeOutTracker) Exec(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrapf(err, "decoding address")
 		}
-		status, err := b.contract.Getter.GetUintVar(nil, rpc.Keccak256(decoded))
+		status, err := b.contract.GetUintVar(nil, rpc.Keccak256(decoded))
 		if err != nil {
 			level.Error(b.logger).Log("msg", "getting staker timeOut status for miner", "address", addr, "err", err)
 		}

@@ -39,7 +39,7 @@ func CreateDataServerOps(
 	config *config.Config,
 	DB db.DataServerProxy,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	contract *contracts.ITellor,
 	account *rpc.Account,
 	exitCh chan os.Signal,
 ) (*DataServerOps, error) {

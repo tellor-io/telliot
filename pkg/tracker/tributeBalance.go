@@ -18,7 +18,7 @@ import (
 
 type TributeTracker struct {
 	db       db.DataServerProxy
-	contract *contracts.Tellor
+	contract *contracts.ITellor
 	account  *rpc.Account
 	logger   log.Logger
 }
@@ -27,7 +27,7 @@ func (b *TributeTracker) String() string {
 	return "TributeTracker"
 }
 
-func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.Tellor, account *rpc.Account) *TributeTracker {
+func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *TributeTracker {
 	return &TributeTracker{
 		db:       db,
 		contract: contract,
@@ -37,7 +37,7 @@ func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contr
 }
 
 func (b *TributeTracker) Exec(ctx context.Context) error {
-	balance, err := b.contract.Getter.BalanceOf(nil, b.account.Address)
+	balance, err := b.contract.BalanceOf(nil, b.account.Address)
 	balanceInTributes, _ := big.NewFloat(1).SetString(balance.String())
 
 	decimals, _ := big.NewFloat(1).SetString("1000000000000000000")

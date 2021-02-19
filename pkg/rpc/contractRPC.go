@@ -20,8 +20,6 @@ import (
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/db"
 )
 
@@ -30,20 +28,19 @@ type contractWrapper struct {
 	options     *bind.TransactOpts
 	fromAddress common.Address
 
-	*tellorCurrent.Tellor
-	*tellorMaster.TellorGetters
+	*contracts.ITellor
 }
 
 func (c contractWrapper) AddTip(requestID *big.Int, amount *big.Int) (*types.Transaction, error) {
-	return c.Tellor.AddTip(c.options, requestID, amount)
+	return c.ITellor.AddTip(c.options, requestID, amount)
 }
 
 func (c contractWrapper) SubmitSolution(solution string, requestID [5]*big.Int, value [5]*big.Int) (*types.Transaction, error) {
-	return c.Tellor.SubmitMiningSolution(c.options, solution, requestID, value)
+	return c.ITellor.SubmitMiningSolution(c.options, solution, requestID, value)
 }
 
 func (c contractWrapper) DidMine(challenge [32]byte) (bool, error) {
-	return c.TellorGetters.DidMine(nil, challenge, c.fromAddress)
+	return c.ITellor.DidMine(nil, challenge, c.fromAddress)
 }
 
 func SubmitContractTxn(
@@ -52,7 +49,7 @@ func SubmitContractTxn(
 	cfg *config.Config,
 	proxy db.DataServerProxy,
 	client contracts.ETHClient,
-	tellor *contracts.Tellor,
+	tellor *contracts.ITellor,
 	account *Account,
 	ctxName string,
 	callback tellorCommon.TransactionGeneratorFN,
@@ -138,7 +135,7 @@ func SubmitContractTxn(
 
 		level.Info(logger).Log("msg", "gas price", "value", gasPrice)
 
-		wrapper := contractWrapper{auth, account.Address, tellor.Caller, tellor.Getter}
+		wrapper := contractWrapper{auth, account.Address, tellor}
 		tx, err := callback(ctx, wrapper)
 
 		if err != nil {

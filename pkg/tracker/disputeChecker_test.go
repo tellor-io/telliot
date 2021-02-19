@@ -30,14 +30,14 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	if _, err := BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}
-	contract, err := contracts.NewTellor(client)
+	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
 	ctx := context.Background()
 	ethUSDPairs := indexes["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-	disputeChecker := &disputeChecker{lastCheckedBlock: 500, config: cfg, logger: logger, client: client, contract: &contract}
+	disputeChecker := &disputeChecker{lastCheckedBlock: 500, config: cfg, logger: logger, client: client, contract: contract}
 	testutil.Ok(t, disputeChecker.Exec(ctx))
 }
 
@@ -45,13 +45,13 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
 	logger := logging.NewLogger()
 	client := rpc.NewMockClient()
-	contract, err := contracts.NewTellor(client)
+	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
-	disputeChecker := NewDisputeChecker(logger, cfg, client, &contract, 500)
+	disputeChecker := NewDisputeChecker(logger, cfg, client, contract, 500)
 	if _, err := BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}

@@ -14,7 +14,6 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -27,11 +26,11 @@ func prepareTransfer(
 	ctx context.Context,
 	logger log.Logger,
 	client contracts.ETHClient,
-	instance *tellorMaster.TellorGetters,
+	tellor *contracts.ITellor,
 	account *rpc.Account,
 	amt *big.Int,
 ) (*bind.TransactOpts, error) {
-	balance, err := instance.BalanceOf(nil, account.Address)
+	balance, err := tellor.BalanceOf(nil, account.Address)
 	if err != nil {
 		return nil, errors.Wrap(err, "get balance")
 	}
@@ -52,17 +51,17 @@ func Transfer(
 	ctx context.Context,
 	logger log.Logger,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	tellor *contracts.ITellor,
 	account *rpc.Account,
 	toAddress common.Address,
 	amt *big.Int,
 ) error {
-	auth, err := prepareTransfer(ctx, logger, client, contract.Getter, account, amt)
+	auth, err := prepareTransfer(ctx, logger, client, tellor, account, amt)
 	if err != nil {
 		return errors.Wrap(err, "preparing transfer")
 	}
 
-	tx, err := contract.Caller.Transfer(auth, toAddress, amt)
+	tx, err := tellor.Transfer(auth, toAddress, amt)
 	if err != nil {
 		return errors.Wrap(err, "calling transfer")
 	}
@@ -79,17 +78,17 @@ func Approve(
 	ctx context.Context,
 	logger log.Logger,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	tellor *contracts.ITellor,
 	account *rpc.Account,
 	spender common.Address,
 	amt *big.Int,
 ) error {
-	auth, err := prepareTransfer(ctx, logger, client, contract.Getter, account, amt)
+	auth, err := prepareTransfer(ctx, logger, client, tellor, account, amt)
 	if err != nil {
 		return errors.Wrap(err, "preparing transfer")
 	}
 
-	tx, err := contract.Caller.Approve(auth, spender, amt)
+	tx, err := tellor.Approve(auth, spender, amt)
 	if err != nil {
 		return errors.Wrap(err, "calling approve")
 	}
@@ -97,13 +96,13 @@ func Approve(
 	return nil
 }
 
-func Balance(ctx context.Context, logger log.Logger, client contracts.ETHClient, getterInstance *tellorMaster.TellorGetters,
+func Balance(ctx context.Context, logger log.Logger, client contracts.ETHClient, tellor *contracts.ITellor,
 	addr common.Address) error {
 	ethBalance, err := client.BalanceAt(ctx, addr, nil)
 	if err != nil {
 		return errors.Wrap(err, "get eth balance")
 	}
-	trbBalance, err := getterInstance.BalanceOf(nil, addr)
+	trbBalance, err := tellor.BalanceOf(nil, addr)
 	if err != nil {
 		return errors.Wrapf(err, "getting trb balance")
 	}

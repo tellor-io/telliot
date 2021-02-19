@@ -58,9 +58,7 @@ generate-check: check-git generate
 
 .PHONY: generate-bindings
 generate-bindings: $(CONTRAGET)
-	@$(CONTRAGET) --addr=0xFe41Cb708CD98C5B20423433309E55b53F79134a --download-dst=tmp --pkg-dst=pkg/contracts --name=tellorMaster
-	@sleep 5 #Etherscan allows one request per 5 sec without an api key.
-	@$(CONTRAGET) --addr=0x7e05e8a675e649261acc19423db34dd4826f9a98 --download-dst=tmp --pkg-dst=pkg/contracts --name=tellorCurrent
+	@$(CONTRAGET) --addr=0x0151AcaeE1Ae3AD599Ab84DF9F01C7C3CE888CaC --download-dst=tmp --pkg-dst=pkg/contracts --name=tellor --pkg-aliases="total_supply=total_supply_var;Transfer=TransferEvent"
 	@sleep 5
 	@$(CONTRAGET) --addr=0x9C84391B443ea3a48788079a5f98e2EaD55c9309 --download-dst=tmp --pkg-dst=pkg/contracts --name=balancer
 	@sleep 5

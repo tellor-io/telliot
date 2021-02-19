@@ -21,13 +21,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorCurrent"
 )
 
 type disputeChecker struct {
 	config           *config.Config
 	client           contracts.ETHClient
-	contract         *contracts.Tellor
+	contract         *contracts.ITellor
 	lastCheckedBlock uint64
 	logger           log.Logger
 }
@@ -99,7 +98,7 @@ func NewDisputeChecker(
 	logger log.Logger,
 	config *config.Config,
 	client contracts.ETHClient,
-	contract *contracts.Tellor,
+	contract *contracts.ITellor,
 	lastCheckedBlock uint64,
 ) *disputeChecker {
 	return &disputeChecker{
@@ -128,16 +127,16 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 		return nil
 	}
 
-	tokenAbi, err := abi.JSON(strings.NewReader(tellorCurrent.TellorLibraryABI))
+	abi, err := abi.JSON(strings.NewReader(contracts.ITellorABI))
 	if err != nil {
 		return errors.Wrap(err, "parse abi")
 	}
 
 	//just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
-	bar := bind.NewBoundContract(c.contract.Address, tokenAbi, nil, nil, nil)
+	bar := bind.NewBoundContract(c.contract.Address, abi, nil, nil, nil)
 
 	checkUntil := toCheck - blockDelay
-	nonceSubmitID := tokenAbi.Events["NonceSubmitted"].ID
+	nonceSubmitID := abi.Events["NonceSubmitted"].ID
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(c.lastCheckedBlock)),
 		ToBlock:   big.NewInt(int64(checkUntil)),
@@ -150,7 +149,7 @@ func (c *disputeChecker) Exec(ctx context.Context) error {
 	}
 	blockTimes := make(map[uint64]time.Time)
 	for _, l := range logs {
-		nonceSubmit := tellorCurrent.TellorLibraryNonceSubmitted{}
+		nonceSubmit := contracts.TellorNonceSubmitted{}
 		err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
 		if err != nil {
 			return errors.Wrap(err, "unpack into object")

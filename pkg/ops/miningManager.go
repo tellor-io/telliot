@@ -24,7 +24,6 @@ import (
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorMaster"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/pow"
@@ -47,17 +46,17 @@ type SolutionSink interface {
 // Transaction cost for submitting in each slot might be different so because of this
 // the manager needs to complete few transaction to gather the tx cost for each slot.
 type MiningMgr struct {
-	exitCh          chan os.Signal
-	logger          log.Logger
-	Running         bool
-	ethClient       contracts.ETHClient
-	group           *pow.MiningGroup
-	tasker          WorkSource
-	solHandler      SolutionSink
-	solutionPending *pow.Result
-	database        db.DataServerProxy
-	contractGetter  *tellorMaster.TellorGetters
-	cfg             *config.Config
+	exitCh           chan os.Signal
+	logger           log.Logger
+	Running          bool
+	ethClient        contracts.ETHClient
+	group            *pow.MiningGroup
+	tasker           WorkSource
+	solHandler       SolutionSink
+	solutionPending  *pow.Result
+	database         db.DataServerProxy
+	contractInstance *contracts.ITellor
+	cfg              *config.Config
 
 	toMineInput     chan *pow.Work
 	solutionOutput  chan *pow.Result
@@ -74,7 +73,7 @@ func CreateMiningManager(
 	exitCh chan os.Signal,
 	cfg *config.Config,
 	database db.DataServerProxy,
-	contract *contracts.Tellor,
+	contract *contracts.ITellor,
 	account *rpc.Account,
 ) (*MiningMgr, error) {
 
@@ -87,7 +86,7 @@ func CreateMiningManager(
 	if err != nil {
 		return nil, errors.Wrap(err, "creating client")
 	}
-	getter, err := contracts.NewTellorGetters(client)
+	contractInstance, err := contracts.NewITellor(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting addresses")
 	}
@@ -100,19 +99,19 @@ func CreateMiningManager(
 
 	submitter := NewSubmitter(logger, cfg, client, contract, account)
 	mng := &MiningMgr{
-		exitCh:          exitCh,
-		logger:          log.With(logger, "component", ComponentName),
-		Running:         false,
-		group:           group,
-		tasker:          nil,
-		solutionPending: nil,
-		solHandler:      nil,
-		contractGetter:  getter,
-		cfg:             cfg,
-		database:        database,
-		ethClient:       client,
-		toMineInput:     make(chan *pow.Work),
-		solutionOutput:  make(chan *pow.Result),
+		exitCh:           exitCh,
+		logger:           log.With(logger, "component", ComponentName),
+		Running:          false,
+		group:            group,
+		tasker:           nil,
+		solutionPending:  nil,
+		solHandler:       nil,
+		contractInstance: contractInstance,
+		cfg:              cfg,
+		database:         database,
+		ethClient:        client,
+		toMineInput:      make(chan *pow.Work),
+		solutionOutput:   make(chan *pow.Result),
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace: "telliot",
 			Subsystem: "mining",
@@ -287,11 +286,11 @@ func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
 // Should add `currentReward` func to the contract to avoid this code duplication.
 // Tracking issue https://github.com/tellor-io/TellorCore/issues/101
 func (mgr *MiningMgr) currentReward() (*big.Int, error) {
-	timeOfLastNewValue, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
+	timeOfLastNewValue, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
 	if err != nil {
 		return nil, errors.New("getting timeOfLastNewValue")
 	}
-	currentTotalTips, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("currentTotalTips")))
+	currentTotalTips, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("currentTotalTips")))
 	if err != nil {
 		return nil, errors.New("getting currentTotalTips")
 	}
@@ -333,7 +332,7 @@ func (mgr *MiningMgr) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
 }
 
 func (mgr *MiningMgr) gasUsed() (*big.Int, *big.Int, error) {
-	slotNum, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
+	slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting slotProgress")
 	}
@@ -378,7 +377,7 @@ func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		}
 
 		gasUsed := big.NewInt(int64(receipt.GasUsed))
-		slotNum, err := mgr.contractGetter.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
+		slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
 		if err != nil {
 			level.Error(mgr.logger).Log("msg", "getting slotProgress for calculating transaction cost", "err", err)
 		}
