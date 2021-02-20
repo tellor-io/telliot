@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -50,7 +51,7 @@ func Dispute(
 		return errors.Wrap(err, "fetch balance")
 	}
 	var asBytes32 [32]byte
-	copy(asBytes32[:], "0x8b75eb45d88e80f0e4ec77d23936268694c0e7ac2e0c9085c5c6bdfcfbc49239") // keccak256(disputeFee).
+	copy(asBytes32[:], crypto.Keccak256([]byte("_DISPUTE_FEE")))
 	disputeCost, err := contract.GetUintVar(nil, asBytes32)
 	if err != nil {
 		return errors.Wrap(err, "get dispute cost")
