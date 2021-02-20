@@ -148,7 +148,7 @@ func CreateMiningManager(
 		),
 	}
 
-	mng.tasker = pow.CreateTasker(logger, cfg, database)
+	mng.tasker = pow.CreateTasker(logger, cfg, mng.contractInstance, database)
 	mng.solHandler = pow.CreateSolutionHandler(cfg, logger, submitter, database)
 	return mng, nil
 }
@@ -187,7 +187,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			// when there is no new challenge.
 			mgr.solutionPending = solution
 
-			profitPercent, err := mgr.profit() // Call it regardless of whether we use it to set the metrics.
+			profitPercent, err := mgr.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
 			if mgr.cfg.Mine.ProfitThreshold > 0 {
 				if err != nil {
 					level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)

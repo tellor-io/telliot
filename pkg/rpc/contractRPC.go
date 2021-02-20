@@ -59,6 +59,8 @@ func SubmitContractTxn(
 	if err != nil {
 		return nil, errors.Wrap(err, "getting nonce for miner address")
 	}
+
+	// Use the same nonce in case there is a stuck transaction so that it submits with the current nonce but higher gas price.
 	IntNonce := int64(nonce)
 	keys := []string{
 		db.GasKey,
@@ -139,15 +141,17 @@ func SubmitContractTxn(
 		tx, err := callback(ctx, wrapper)
 		if err != nil {
 			if strings.Contains(err.Error(), "nonce too low") { // Can't use error type matching because of the way the eth client is implemented.
-
 				IntNonce = IntNonce + 1
+				level.Debug(logger).Log("msg", "last transaction has been confirmed so will increase the nonce and resend the transaction.")
+
 			} else if strings.Contains(err.Error(), "replacement transaction underpriced") { // Can't use error type matching because of the way the eth client is implemented.
+				level.Debug(logger).Log("msg", "last transaction is stuck so will increase the gas price and try to resend")
 				finalError = err
 			} else {
 				finalError = errors.Wrap(err, "callback")
 			}
-			time.Sleep(15 * time.Second)
-			level.Debug(logger).Log("msg", "retrying sending an errored transaction", "err", err.Error())
+
+			time.Sleep(1 * time.Second)
 			continue
 		}
 		return tx, nil
