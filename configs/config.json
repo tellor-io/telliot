@@ -1,15 +1,14 @@
 {
-    "publicAddress": "0x0000000000000000000000000000000000000000",
-    "gasMax": 10,
-    "dbFile": "tmp/db",
-    "apiFile": "configs/api.json",
-    "manualDataFile": "configs/manualData.json",
-    "envFile": ".env",
+    "PublicAddress": "0x0000000000000000000000000000000000000000",
+    "GasMax": 10,
+    "DbFile": "tmp/db",
+    "ApiFile": "configs/api.json",
+    "ManualDataFile": "configs/manualData.json",
+    "EnvFile": ".env",
     "Mine": {
         "ListenHost": "0.0.0.0",
         "ListenPort": 9090,
-        "RemoteDBHost": "localhost",
-        "RemoteDBPort": 5000
+        "ProfitThreshold": 100
     },
     "Dataserver": {
         "ListenHost": "0.0.0.0",

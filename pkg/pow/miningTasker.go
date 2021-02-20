@@ -54,7 +54,7 @@ func CreateTasker(logger log.Logger, cfg *config.Config, proxy db.DataServerProx
 
 	return &MiningTasker{
 		proxy:  proxy,
-		pubKey: "0x" + cfg.PublicAddress,
+		pubKey: cfg.PublicAddress,
 		logger: log.With(logger, "component", ComponentName),
 		cfg:    cfg,
 	}
@@ -73,18 +73,16 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		db.RequestIdKey4,
 		db.LastNewValueKey,
 		dispKey,
-		db.LastSubmissionKey,
 	}
 
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
-		level.Error(mt.logger).Log("msg", "get data from data proxy, cannot continue at all")
+		level.Error(mt.logger).Log("msg", "get data from data proxy, cannot continue")
 		return nil, false
 	}
 
-	level.Debug(mt.logger).Log("msg", "received data", "data", m)
-
 	if mt.checkDispute(m[dispKey]) == statusWaitNext {
+		level.Info(mt.logger).Log("msg", "no dispute results from data server, waiting for next cycle", "key", dispKey)
 		return nil, false
 	}
 	diff, stat := mt.getInt(m[db.DifficultyKey])
@@ -98,7 +96,7 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 
 	now := time.Now()
 	tm := time.Unix(l.Int64(), 0)
-	level.Debug(mt.logger).Log("msg", "since last value", "time", now.Sub(tm))
+	level.Debug(mt.logger).Log("msg", "last submitted data in the oracle", "time", now.Sub(tm))
 	if now.Sub(tm) >= time.Duration(15)*time.Minute {
 		instantSubmit = true
 	}
@@ -183,6 +181,14 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 	if mt.currChallenge != nil && !instantSubmit && bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
 		return nil, false
 	}
+
+	level.Debug(mt.logger).Log("msg", "new challenge for mining",
+		"hex", fmt.Sprintf("%x", m[db.CurrentChallengeKey]),
+		"difficulty", diff,
+		"requestIDs", fmt.Sprintf("%+v", reqIDs),
+		"instantSubmit", instantSubmit,
+	)
+
 	mt.currChallenge = newChallenge
 	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
 }
@@ -190,9 +196,6 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 func (mt *MiningTasker) checkDispute(disp []byte) int {
 	disputed, stat := mt.getInt(disp)
 	if stat == statusWaitNext || stat == statusFailure {
-		if stat == statusWaitNext {
-			level.Info(mt.logger).Log("msg", "no dispute results from data server, waiting for next cycle")
-		}
 		return stat
 	}
 

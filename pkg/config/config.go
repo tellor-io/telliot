@@ -17,7 +17,7 @@ import (
 
 const (
 	TellorMainnetAddress = "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5"
-	TellorRinkebyAddress = "0x4756942F9B7c3824bBAb8F61ea536033FfD9BcD4"
+	TellorRinkebyAddress = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
 )
 
 // Unfortunate hack to enable json parsing of human readable time strings
@@ -88,17 +88,17 @@ type Trackers struct {
 type Config struct {
 	Mine             Mine
 	DataServer       DataServer
-	Trackers         Trackers          `json:"trackers"`
-	PublicAddress    string            `json:"publicAddress"`
-	EthClientTimeout uint              `json:"ethClientTimeout"`
-	DBFile           string            `json:"dbFile"`
-	GasMultiplier    float32           `json:"gasMultiplier"`
-	GasMax           uint              `json:"gasMax"`
-	ServerWhitelist  []string          `json:"serverWhitelist"`
-	ApiFile          string            `json:"apiFile"`
-	ManualDataFile   string            `json:"manualDataFile"`
-	HistoryFile      string            `json:"historyFile"`
-	Logger           map[string]string `json:"logger"`
+	Trackers         Trackers
+	PublicAddress    string
+	EthClientTimeout uint
+	DBFile           string
+	GasMultiplier    float32
+	GasMax           uint
+	ServerWhitelist  []string
+	ApiFile          string
+	ManualDataFile   string
+	HistoryFile      string
+	Logger           map[string]string
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
 }
@@ -126,7 +126,6 @@ var defaultConfig = Config{
 		DisputeTimeDelta: Duration{5 * time.Minute},
 		DisputeThreshold: 0.01,
 		Names: map[string]bool{
-			"timeOut":          true,
 			"balance":          true,
 			"currentVariables": true,
 			"disputeStatus":    true,
@@ -189,18 +188,29 @@ func ParseConfig(path string) (*Config, error) {
 
 	}
 
+	if err := validate(cfg); err != nil {
+		return nil, errors.Wrap(err, "validate config")
+	}
+
+	cfg.PublicAddress = strings.ToLower(cfg.PublicAddress) // To be consistent everywhere.
+
 	if len(cfg.ServerWhitelist) == 0 {
-		if strings.Contains(cfg.PublicAddress, "0x") {
-			cfg.ServerWhitelist = append(cfg.ServerWhitelist, cfg.PublicAddress)
-		} else {
-			cfg.ServerWhitelist = append(cfg.ServerWhitelist, "0x"+cfg.PublicAddress)
-		}
+		cfg.ServerWhitelist = append(cfg.ServerWhitelist, cfg.PublicAddress)
 	}
 
 	err = godotenv.Load(cfg.EnvFile)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "loading env vars from env file")
 	}
 
 	return cfg, nil
+}
+
+func validate(cfg *Config) error {
+	if !strings.Contains(cfg.PublicAddress, "0x") {
+		return errors.New("public key should start with 0x")
+	}
+
+	return nil
+
 }

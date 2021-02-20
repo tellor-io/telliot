@@ -57,17 +57,17 @@ func (b *CurrentVariablesTracker) Exec(ctx context.Context) error {
 		bitSetVar = []byte{1}
 	}
 
-	timeOfLastNewValue, err := b.contract.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
+	timeOfLastNewValue, err := b.contract.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
 	if err != nil {
 		return errors.Wrap(err, "time of last new value retrieval")
 	}
 	err = b.db.Put(db.LastNewValueKey, []byte(hexutil.EncodeBig(timeOfLastNewValue)))
 	if err != nil {
-		return errors.Wrap(err, "ast new value put")
+		return errors.Wrap(err, "last new value put")
 	}
 	err = b.db.Put(db.CurrentChallengeKey, returnNewVariables.Challenge[:])
 	if err != nil {
-		return errors.Wrap(err, "current variables put")
+		return errors.Wrap(err, "current challenge put")
 	}
 
 	for i := 0; i < 5; i++ {

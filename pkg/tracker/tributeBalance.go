@@ -38,18 +38,19 @@ func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contr
 
 func (b *TributeTracker) Exec(ctx context.Context) error {
 	balance, err := b.contract.BalanceOf(nil, b.account.Address)
-	balanceInTributes, _ := big.NewFloat(1).SetString(balance.String())
+	if err != nil {
+		return errors.Wrap(err, "retrieving balance")
+	}
+	balanceH, _ := big.NewFloat(1).SetString(balance.String())
 
 	decimals, _ := big.NewFloat(1).SetString("1000000000000000000")
 
 	if decimals != nil {
-		balanceInTributes = balanceInTributes.Quo(balanceInTributes, decimals)
+		balanceH = balanceH.Quo(balanceH, decimals)
 	}
 
-	level.Debug(b.logger).Log("msg", "tribute balance", "raw", balance, "trb", balanceInTributes)
-	if err != nil {
-		return errors.Wrap(err, "retrieving balance")
-	}
+	level.Info(b.logger).Log("msg", "TRB balance", "amount", balanceH)
+
 	enc := hexutil.EncodeBig(balance)
 	return b.db.Put(db.TributeBalanceKey, []byte(enc))
 }

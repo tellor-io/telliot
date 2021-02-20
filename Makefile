@@ -58,7 +58,7 @@ generate-check: check-git generate
 
 .PHONY: generate-bindings
 generate-bindings: $(CONTRAGET)
-	@$(CONTRAGET) --addr=0x0151AcaeE1Ae3AD599Ab84DF9F01C7C3CE888CaC --download-dst=tmp --pkg-dst=pkg/contracts --name=tellor --pkg-aliases="total_supply=total_supply_var;Transfer=TransferEvent"
+	@$(CONTRAGET) --addr=0x04b5129735b5d9b1b54109f2c4c06ea23b506a95 --download-dst=tmp --pkg-dst=pkg/contracts --name=tellor --pkg-aliases="Transfer=Transfered"
 	@sleep 5
 	@$(CONTRAGET) --addr=0x9C84391B443ea3a48788079a5f98e2EaD55c9309 --download-dst=tmp --pkg-dst=pkg/contracts --name=balancer
 	@sleep 5

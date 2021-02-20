@@ -105,19 +105,18 @@ func open(logger log.Logger, cfg *config.Config, localDB DB, isRemote bool) (Dat
 	wlLRU := make(map[string]*lru.ARCCache)
 	for _, a := range whitelist {
 		addr := common.HexToAddress(a)
-		asStr := strings.ToLower(addr.Hex())
 		hist, err := lru.NewARC(50)
 		if err != nil {
 			return nil, err
 		}
-		wlLRU[asStr] = hist
-		wlMap[asStr] = true
+		wlLRU[addr.Hex()] = hist
+		wlMap[addr.Hex()] = true
 	}
 
 	url := "http://" + cfg.Mine.RemoteDBHost + ":" + strconv.Itoa(int(cfg.Mine.RemoteDBPort))
 	i := &remoteImpl{
 		privateKey:    privateKey,
-		publicAddress: strings.ToLower(fromAddress.Hex()),
+		publicAddress: fromAddress.Hex(),
 		localDB:       localDB,
 		postURL:       url,
 		whitelist:     wlMap,
@@ -125,11 +124,18 @@ func open(logger log.Logger, cfg *config.Config, localDB DB, isRemote bool) (Dat
 		logger:        log.With(logger, "component", ComponentName),
 		isRemote:      isRemote,
 	}
-	level.Info(i.logger).Log(
-		"msg", "created remote data proxy connector",
-		"host", cfg.Mine.RemoteDBHost,
-		"port", cfg.Mine.RemoteDBPort,
-	)
+
+	if isRemote {
+		level.Info(i.logger).Log(
+			"msg", "created remote data connector",
+			"host", cfg.Mine.RemoteDBHost,
+			"port", cfg.Mine.RemoteDBPort,
+		)
+	} else {
+		level.Info(i.logger).Log(
+			"msg", "created local data connector",
+		)
+	}
 	return i, nil
 }
 
@@ -342,7 +348,7 @@ func (i *remoteImpl) Verify(hash []byte, timestamp int64, sig []byte) error {
 		return err
 	}
 	addr := crypto.PubkeyToAddress(*pubKey)
-	ashex := strings.ToLower(addr.Hex())
+	ashex := addr.Hex()
 	level.Debug(i.logger).Log(
 		"msg", "verifying signature against whitelist",
 		"address", ashex,

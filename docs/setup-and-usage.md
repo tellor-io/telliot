@@ -63,7 +63,7 @@ kubectl create configmap telliot-$NAME \
   --from-file=.local/configs/$NAME/manualData.json \
   -o yaml --dry-run=client | kubectl apply -f -
 
-# Copy the deployment and run it.
+# Copy the StatefulSet and run it.
 cp configs/manifests/telliot.yml .local/configs/$NAME/telliot.yml
 sed -i "s/telliot-main/telliot-$NAME/g" .local/configs/$NAME/telliot.yml
 kubectl apply -f .local/configs/$NAME/telliot.yml
@@ -74,6 +74,17 @@ kubectl apply -f .local/configs/$NAME/telliot.yml
 ```bash
 export NAME= # Put an instance name here. Something short as some properties are limited by length(e.g `export NAME=PR320`).
 # Run all the other commands from initial k8s setup.
+```
+
+#### To delete an instance.
+
+```bash
+export NAME=
+kubectl delete statefulsets.apps $NAME
+kubectl delete service $NAME
+kubectl delete configmap $NAME
+kubectl delete secret $NAME
+kubectl delete persistentvolumeclaims $NAME
 ```
 
 #### To run a custom docker image.

@@ -5,9 +5,6 @@ package tracker
 
 import (
 	"context"
-	"fmt"
-
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -52,7 +49,7 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 		return errors.Wrap(err, "getting staker info")
 	}
 	enc := hexutil.EncodeBig(status)
-	level.Info(b.logger).Log("msg", "staker status", "status", enc)
+	level.Debug(b.logger).Log("msg", "storing miner status", "key", db.DisputeStatusKey, "status", enc)
 	err = b.db.Put(db.DisputeStatusKey, []byte(enc))
 	if err != nil {
 		return errors.Wrap(err, "storing dispute")
@@ -70,8 +67,8 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 		if err != nil {
 			level.Error(b.logger).Log("msg", "getting staker dispute status for miner", "address", addr, "err", err)
 		}
-		level.Info(b.logger).Log("msg", "whitelisted miner", "address", addr, "status", status)
-		dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.DisputeStatusKey)
+		dbKey := addr + "-" + db.DisputeStatusKey
+		level.Debug(b.logger).Log("msg", "storing whitelisted miner status", "key", dbKey, "status", status)
 		err = b.db.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
 			level.Error(b.logger).Log("msg", "storing staker dispute status", "err", err)

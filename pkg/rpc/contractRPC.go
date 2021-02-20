@@ -6,12 +6,12 @@ package rpc
 import (
 	"context"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-kit/kit/log"
@@ -69,7 +69,7 @@ func SubmitContractTxn(
 	}
 	gasPrice := getInt(m[db.GasKey])
 	if gasPrice.Cmp(big.NewInt(0)) == 0 {
-		level.Warn(logger).Log("msg", "Missing gas price from DB, falling back to client suggested gas price")
+		level.Warn(logger).Log("msg", "no gas price from DB, falling back to client suggested gas price")
 		gasPrice, err = client.SuggestGasPrice(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "determine gas price to submit txn")
@@ -137,24 +137,20 @@ func SubmitContractTxn(
 
 		wrapper := contractWrapper{auth, account.Address, tellor}
 		tx, err := callback(ctx, wrapper)
-
 		if err != nil {
-			if errors.Is(err, core.ErrNonceTooLow) {
+			if strings.Contains(err.Error(), "nonce too low") { // Can't use error type matching because of the way the eth client is implemented.
+
 				IntNonce = IntNonce + 1
-			} else if errors.Is(err, core.ErrReplaceUnderpriced) {
+			} else if strings.Contains(err.Error(), "replacement transaction underpriced") { // Can't use error type matching because of the way the eth client is implemented.
 				finalError = err
-				continue
 			} else {
 				finalError = errors.Wrap(err, "callback")
-				continue
 			}
+			time.Sleep(15 * time.Second)
+			level.Debug(logger).Log("msg", "retrying sending an errored transaction", "err", err.Error())
+			continue
 		}
-
-		if tx != nil {
-			return tx, nil
-		}
-
-		time.Sleep(15 * time.Second)
+		return tx, nil
 	}
 
 	return nil, errors.Wrapf(finalError, "submit txn after 5 attempts ctx:%v", ctxName)

@@ -58,6 +58,7 @@ spec:
         - "--storage.tsdb.path=/data"
         - "--storage.tsdb.retention.size=40GB" 
         - "--web.enable-lifecycle" 
+        - "--web.enable-admin-api"
         name: prometheus
         volumeMounts:
         - name: config-volume
