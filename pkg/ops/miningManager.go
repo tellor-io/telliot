@@ -332,9 +332,9 @@ func (mgr *MiningMgr) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
 }
 
 func (mgr *MiningMgr) gasUsed() (*big.Int, *big.Int, error) {
-	slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
+	slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting slotProgress")
+		return nil, nil, errors.Wrap(err, "getting _SLOT_PROGRESS")
 	}
 	// This is the price for the last transaction so increment +1
 	// to get the price for next slot transaction.
@@ -359,10 +359,10 @@ func (mgr *MiningMgr) gasUsed() (*big.Int, *big.Int, error) {
 // as soon as the transaction passes and
 // saves it in the database for profit calculations.
 // TODO[Krasi] To be more detirministic and simplify this
-// should get the `slotProgress` and `gasUsed` from the `NonceSubmitted` event.
+// should get the `_SLOT_PROGRESS` and `gasUsed` from the `NonceSubmitted` event.
 // At the moment there is a slight chance of a race condition if
 // another transaction has passed between checking the transaction cost and
-// checking the `slotProgress`
+// checking the `_SLOT_PROGRESS`
 // Tracking issue https://github.com/tellor-io/TellorCore/issues/101
 func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 	go func(tx *types.Transaction) {
@@ -377,9 +377,9 @@ func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		}
 
 		gasUsed := big.NewInt(int64(receipt.GasUsed))
-		slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
+		slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
 		if err != nil {
-			level.Error(mgr.logger).Log("msg", "getting slotProgress for calculating transaction cost", "err", err)
+			level.Error(mgr.logger).Log("msg", "getting _SLOT_PROGRESS for calculating transaction cost", "err", err)
 		}
 
 		txID := tellorCommon.PriceTXs + slotNum.String()

@@ -69,7 +69,7 @@ func Deposit(
 		return nil
 	}
 
-	dat := crypto.Keccak256([]byte("stakeAmount"))
+	dat := crypto.Keccak256([]byte("_STAKE_AMOUNT"))
 	var dat32 [32]byte
 	copy(dat32[:], dat)
 	stakeAmt, err := contract.GetUintVar(nil, dat32)
