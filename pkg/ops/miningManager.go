@@ -265,7 +265,7 @@ func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting last submit time for:%v", mgr.cfg.PublicAddress)
 	}
-	// The Miner has never submitted so put a timestamp at the bigining of unix time.
+	// The Miner has never submitted so put a timestamp at the biginning of unix time.
 	if last.Int64() == 0 {
 		last.Set(big.NewInt(1))
 	}
