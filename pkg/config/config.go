@@ -192,8 +192,6 @@ func ParseConfig(path string) (*Config, error) {
 		return nil, errors.Wrap(err, "validate config")
 	}
 
-	cfg.PublicAddress = strings.ToLower(cfg.PublicAddress) // To be consistent everywhere.
-
 	if len(cfg.ServerWhitelist) == 0 {
 		cfg.ServerWhitelist = append(cfg.ServerWhitelist, cfg.PublicAddress)
 	}
