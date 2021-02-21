@@ -151,7 +151,9 @@ func SubmitContractTxn(
 				finalError = errors.Wrap(err, "callback")
 			}
 
-			time.Sleep(1 * time.Second)
+			delay := 15 * time.Second
+			level.Debug(logger).Log("msg", "will retry a send", "retryDelay", delay)
+			time.Sleep(delay)
 			continue
 		}
 		return tx, nil
