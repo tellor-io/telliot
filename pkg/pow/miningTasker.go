@@ -211,7 +211,7 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 	)
 
 	mt.currChallenge = newChallenge
-	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
+	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey, Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {
