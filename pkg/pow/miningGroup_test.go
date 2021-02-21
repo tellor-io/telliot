@@ -35,7 +35,7 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 
 func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 	cfg := config.OpenTestConfig(t)
-	_string := fmt.Sprintf("%x", challenge.Challenge) + cfg.PublicAddress
+	_string := fmt.Sprintf("%x", challenge.Challenge) + cfg.PublicAddress[2:]
 	hashIn := decodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
 
@@ -75,7 +75,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 			if result == nil {
 				testutil.Ok(t, errors.Errorf("nil result for challenge %v", v))
 			} else {
-				//Fixing a possible nil pointer deference... not sure if that's the appropriate way to do it
+				// Fixing a possible nil pointer deference... not sure if that's the appropriate way to do it.
 				CheckSolution(t, challenge, result.Nonce)
 			}
 		case <-time.After(timeout):

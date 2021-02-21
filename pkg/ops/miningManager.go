@@ -5,15 +5,14 @@ package ops
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
@@ -91,7 +90,6 @@ func CreateMiningManager(
 		return nil, errors.Wrap(err, "getting addresses")
 	}
 
-	//ops logging
 	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
@@ -150,7 +148,7 @@ func CreateMiningManager(
 		),
 	}
 
-	mng.tasker = pow.CreateTasker(logger, cfg, database)
+	mng.tasker = pow.CreateTasker(logger, cfg, mng.contractInstance, database)
 	mng.solHandler = pow.CreateSolutionHandler(cfg, logger, submitter, database)
 	return mng, nil
 }
@@ -189,7 +187,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 			// when there is no new challenge.
 			mgr.solutionPending = solution
 
-			profitPercent, err := mgr.profit() // Call it regardless of whether we use it to set the metrics.
+			profitPercent, err := mgr.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
 			if mgr.cfg.Mine.ProfitThreshold > 0 {
 				if err != nil {
 					level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)
@@ -257,20 +255,22 @@ func (mgr *MiningMgr) newWork() {
 }
 
 func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
-	fromAddress := common.HexToAddress(mgr.cfg.PublicAddress)
-	pubKey := strings.ToLower(fromAddress.Hex())
+	address := "000000000000000000000000" + mgr.cfg.PublicAddress[2:]
+	decoded, err := hex.DecodeString(address)
+	if err != nil {
+		return 0, errors.Wrapf(err, "decoding address")
+	}
+	last, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256(decoded))
 
-	address := common.HexToAddress(pubKey)
-	dbKey := fmt.Sprintf("%s-%s", strings.ToLower(address.Hex()), db.TimeOutKey)
-	last, err := mgr.database.Get(dbKey)
 	if err != nil {
-		return time.Duration(0), errors.Wrapf(err, "timeout retrieval error")
+		return 0, errors.Wrapf(err, "getting last submit time for:%v", mgr.cfg.PublicAddress)
 	}
-	lastDecoded, err := hexutil.DecodeBig(string(last))
-	if err != nil {
-		return time.Duration(0), errors.Wrapf(err, "timeout key decode last:%v", last)
+	// The Miner has never submitted so put a timestamp at the beginning of unix time.
+	if last.Int64() == 0 {
+		last.Set(big.NewInt(1))
 	}
-	lastInt := lastDecoded.Int64()
+
+	lastInt := last.Int64()
 	now := time.Now()
 	var lastSubmit time.Duration
 	if lastInt > 0 {
@@ -286,13 +286,13 @@ func (mgr *MiningMgr) lastSubmit() (time.Duration, error) {
 // Should add `currentReward` func to the contract to avoid this code duplication.
 // Tracking issue https://github.com/tellor-io/TellorCore/issues/101
 func (mgr *MiningMgr) currentReward() (*big.Int, error) {
-	timeOfLastNewValue, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("timeOfLastNewValue")))
+	timeOfLastNewValue, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
 	if err != nil {
-		return nil, errors.New("getting timeOfLastNewValue")
+		return nil, errors.New("getting _TIME_OF_LAST_NEW_VALUE")
 	}
-	currentTotalTips, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("currentTotalTips")))
+	totalTips, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_CURRENT_TOTAL_TIPS")))
 	if err != nil {
-		return nil, errors.New("getting currentTotalTips")
+		return nil, errors.New("getting _CURRENT_TOTAL_TIPS")
 	}
 
 	timeDiff := big.NewInt(time.Now().Unix() - timeOfLastNewValue.Int64())
@@ -300,7 +300,7 @@ func (mgr *MiningMgr) currentReward() (*big.Int, error) {
 	rewardPerSec := big.NewInt(0).Div(trb, big.NewInt(300)) // 1 TRB every 5 minutes so total reward is timeDiff multiplied by reward per second.
 	rewardTRB := big.NewInt(0).Mul(rewardPerSec, timeDiff)
 
-	singleMinerTip := big.NewInt(0).Div(currentTotalTips, big.NewInt(10)) // Half of the tips are burned(remain in the contract) to reduce inflation.
+	singleMinerTip := big.NewInt(0).Div(totalTips, big.NewInt(10)) // Half of the tips are burned(remain in the contract) to reduce inflation.
 	rewardWithTips := big.NewInt(0).Add(singleMinerTip, rewardTRB)
 
 	if rewardWithTips == big.NewInt(0) {
@@ -332,9 +332,9 @@ func (mgr *MiningMgr) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
 }
 
 func (mgr *MiningMgr) gasUsed() (*big.Int, *big.Int, error) {
-	slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
+	slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting slotProgress")
+		return nil, nil, errors.Wrap(err, "getting _SLOT_PROGRESS")
 	}
 	// This is the price for the last transaction so increment +1
 	// to get the price for next slot transaction.
@@ -359,10 +359,10 @@ func (mgr *MiningMgr) gasUsed() (*big.Int, *big.Int, error) {
 // as soon as the transaction passes and
 // saves it in the database for profit calculations.
 // TODO[Krasi] To be more detirministic and simplify this
-// should get the `slotProgress` and `gasUsed` from the `NonceSubmitted` event.
+// should get the `_SLOT_PROGRESS` and `gasUsed` from the `NonceSubmitted` event.
 // At the moment there is a slight chance of a race condition if
 // another transaction has passed between checking the transaction cost and
-// checking the `slotProgress`
+// checking the `_SLOT_PROGRESS`
 // Tracking issue https://github.com/tellor-io/TellorCore/issues/101
 func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 	go func(tx *types.Transaction) {
@@ -377,9 +377,9 @@ func (mgr *MiningMgr) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		}
 
 		gasUsed := big.NewInt(int64(receipt.GasUsed))
-		slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("slotProgress")))
+		slotNum, err := mgr.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
 		if err != nil {
-			level.Error(mgr.logger).Log("msg", "getting slotProgress for calculating transaction cost", "err", err)
+			level.Error(mgr.logger).Log("msg", "getting _SLOT_PROGRESS for calculating transaction cost", "err", err)
 		}
 
 		txID := tellorCommon.PriceTXs + slotNum.String()

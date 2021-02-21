@@ -19,7 +19,9 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 const (
@@ -43,20 +45,23 @@ const (
  */
 
 type MiningTasker struct {
-	logger        log.Logger
-	proxy         db.DataServerProxy
-	pubKey        string
-	currChallenge *MiningChallenge
-	cfg           *config.Config
+	logger                        log.Logger
+	proxy                         db.DataServerProxy
+	pubKey                        string
+	currChallenge                 *MiningChallenge
+	cfg                           *config.Config
+	contractInstance              *contracts.ITellor
+	instantSubmitSentForThisBlock bool
 }
 
-func CreateTasker(logger log.Logger, cfg *config.Config, proxy db.DataServerProxy) *MiningTasker {
+func CreateTasker(logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor, proxy db.DataServerProxy) *MiningTasker {
 
 	return &MiningTasker{
-		proxy:  proxy,
-		pubKey: "0x" + cfg.PublicAddress,
-		logger: log.With(logger, "component", ComponentName),
-		cfg:    cfg,
+		proxy:            proxy,
+		pubKey:           cfg.PublicAddress,
+		logger:           log.With(logger, "component", ComponentName),
+		cfg:              cfg,
+		contractInstance: contractInstance,
 	}
 }
 
@@ -73,18 +78,16 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		db.RequestIdKey4,
 		db.LastNewValueKey,
 		dispKey,
-		db.LastSubmissionKey,
 	}
 
 	m, err := mt.proxy.BatchGet(keys)
 	if err != nil {
-		level.Error(mt.logger).Log("msg", "get data from data proxy, cannot continue at all")
+		level.Error(mt.logger).Log("msg", "get data from data proxy, cannot continue")
 		return nil, false
 	}
 
-	level.Debug(mt.logger).Log("msg", "received data", "data", m)
-
 	if mt.checkDispute(m[dispKey]) == statusWaitNext {
+		level.Info(mt.logger).Log("msg", "no dispute results from data server, waiting for next cycle", "key", dispKey)
 		return nil, false
 	}
 	diff, stat := mt.getInt(m[db.DifficultyKey])
@@ -93,12 +96,17 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 	}
 	var reqIDs [5]*big.Int
 
-	l, _ := mt.getInt(m[db.LastNewValueKey])
 	instantSubmit := false
 
+	timeOfLastNewValue, err := mt.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
+	if err != nil {
+		level.Debug(mt.logger).Log("msg", "getting last submitted data in the oracle", "err", err)
+		return nil, false
+	}
+
 	now := time.Now()
-	tm := time.Unix(l.Int64(), 0)
-	level.Debug(mt.logger).Log("msg", "since last value", "time", now.Sub(tm))
+	tm := time.Unix(timeOfLastNewValue.Int64(), 0)
+	level.Debug(mt.logger).Log("msg", "last submitted data in the oracle", "time", now.Sub(tm))
 	if now.Sub(tm) >= time.Duration(15)*time.Minute {
 		instantSubmit = true
 	}
@@ -179,20 +187,36 @@ func (mt *MiningTasker) GetWork() (*Work, bool) {
 		RequestIDs: reqIDs,
 	}
 
-	// If this chalange is already sent out, don't do it again.
-	if mt.currChallenge != nil && !instantSubmit && bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
+	// If this challenge is already sent out, don't do it again.
+	if mt.currChallenge != nil &&
+		(!instantSubmit || (instantSubmit && mt.instantSubmitSentForThisBlock)) && // Not instanst submit or instant submit but already has been sent out.
+		bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) { // This a new oracle block so a new challenge.
 		return nil, false
 	}
+
+	// When it is a new challenge reset the instant submit status.
+	if mt.currChallenge != nil && !bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
+		mt.instantSubmitSentForThisBlock = false
+	}
+
+	if instantSubmit {
+		mt.instantSubmitSentForThisBlock = true
+	}
+
+	level.Debug(mt.logger).Log("msg", "new challenge for mining",
+		"hex", fmt.Sprintf("%x", m[db.CurrentChallengeKey]),
+		"difficulty", diff,
+		"requestIDs", fmt.Sprintf("%+v", reqIDs),
+		"instantSubmit", instantSubmit,
+	)
+
 	mt.currChallenge = newChallenge
-	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey[2:], Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
+	return &Work{Challenge: newChallenge, PublicAddr: mt.pubKey, Start: uint64(rand.Int63()), N: math.MaxInt64}, instantSubmit
 }
 
 func (mt *MiningTasker) checkDispute(disp []byte) int {
 	disputed, stat := mt.getInt(disp)
 	if stat == statusWaitNext || stat == statusFailure {
-		if stat == statusWaitNext {
-			level.Info(mt.logger).Log("msg", "no dispute results from data server, waiting for next cycle")
-		}
 		return stat
 	}
 

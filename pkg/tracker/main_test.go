@@ -18,13 +18,13 @@ import (
 
 // TODO: Set threshold low and test the  "out of range" failure.
 var configJSON = `{
-    "publicAddress": "92f91500e105e3051f3cf94616831b58f6bce1e8",
-	"trackers": {"names":{}},
-    "dbFile": "/tellorDB",
-	"logger": {"db.Db":"DEBUG"},
-    "envFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `",
-    "apiFile": "` + filepath.Join("..", "..", "configs", "api.json") + `",
-    "manualDataFile": "` + filepath.Join("..", "..", "configs", "manualData.json") + `"
+    "PublicAddress": "0x92f91500e105e3051f3cf94616831b58f6bce1e8",
+	"Trackers": {"names":{}},
+    "DbFile": "/tellorDB",
+	"Logger": {"db.Db":"DEBUG"},
+    "EnvFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `",
+    "ApiFile": "` + filepath.Join("..", "..", "configs", "api.json") + `",
+    "ManualDataFile": "` + filepath.Join("..", "..", "configs", "manualData.json") + `"
 }
 `
 

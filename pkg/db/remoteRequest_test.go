@@ -7,11 +7,9 @@ import (
 	"bytes"
 
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/testutil"
@@ -121,7 +119,6 @@ func TestRequestForData(t *testing.T) {
 
 func TestRequestPut(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
 
 	logger := logging.NewLogger()
 
@@ -130,12 +127,7 @@ func TestRequestPut(t *testing.T) {
 	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
-	_fromAddress := cfg.PublicAddress
-
-	// Convert to address
-	fromAddress := common.HexToAddress(_fromAddress)
-	pubKey := strings.ToLower(fromAddress.Hex())
-	dbKey := pubKey + "-" + CurrentChallengeKey
+	dbKey := cfg.PublicAddress + "-" + CurrentChallengeKey
 	vals := make([][]byte, 1)
 	vals[0] = []byte("TEST_CHALLENGE")
 	req, err := createRequest(logger, []string{dbKey}, vals, remote.(*remoteImpl))

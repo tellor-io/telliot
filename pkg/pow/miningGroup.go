@@ -52,7 +52,7 @@ type MiningChallenge struct {
 }
 
 func NewHashSettings(challenge *MiningChallenge, publicAddr string) *HashSettings {
-	_string := fmt.Sprintf("%x", challenge.Challenge) + publicAddr
+	_string := fmt.Sprintf("%x", challenge.Challenge) + publicAddr[2:]
 	hashPrefix := decodeHex(_string)
 	return &HashSettings{
 		prefix:     hashPrefix,

@@ -15,10 +15,6 @@ import (
 // CreateTracker a tracker instance by its well-known name.
 func createTracker(logger log.Logger, name string, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, account *rpc.Account) ([]Tracker, error) {
 	switch name {
-	case "timeOut":
-		{
-			return []Tracker{NewTimeOutTracker(logger, config, db, contract, account)}, nil
-		}
 	case "balance":
 		{
 			return []Tracker{NewBalanceTracker(logger, db, client, account)}, nil
