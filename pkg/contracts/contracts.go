@@ -77,9 +77,9 @@ func getContractAddress(client ETHClient) (string, error) {
 	}
 	switch networkID.Int64() {
 	case 1:
-		return config.TellorMainnetAddress, nil
+		return config.TellorAddress, nil
 	case 4:
-		return config.TellorRinkebyAddress, nil
+		return config.TellorAddress, nil
 	default:
 		return "", errors.New("contract address for current network id not found")
 	}
