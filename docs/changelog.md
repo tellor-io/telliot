@@ -38,9 +38,9 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 * [\#386](https://github.com/tellor-io/telliot/pull/386) Removed the logLevel flag. Now all logging setup is in the config file. See the example at `configs/config.json`.
 
 ### Added
-* Added onchain trackers for Uniswap and Balancer.[\#347](https://github.com/tellor-io/telliot/pull/347)
+* [\#347](https://github.com/tellor-io/telliot/pull/347) Added onchain trackers for Uniswap and Balancer.
 
-* Added a new psr for Defi Market cap, for id 58. Miners will need to create a free api key in CoinMarketCap pro to be able to read the apis.[\#385](https://github.com/tellor-io/telliot/pull/385)
+* [\#385](https://github.com/tellor-io/telliot/pull/385) Added a new psr for Defi Market cap, for id 58. Miners will need to create a free api key in CoinMarketCap pro to be able to read the apis.
 
 
 ### Fixed
