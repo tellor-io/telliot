@@ -67,7 +67,7 @@ func PSRValueForTime(requestID int, at time.Time, trackersInterval float64) (flo
 		values[symbol] = val
 	}
 
-	return PSRs[requestID].ValueAt(values, at), trackersInterval, nil
+	return PSRs[requestID].ValueAt(values, at), minConfidence, nil
 }
 
 func UpdatePSRs(ctx context.Context, cfg *config.Config, DB db.DataServerProxy, updatedSymbols []string) error {
