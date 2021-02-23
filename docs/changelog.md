@@ -28,6 +28,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ### Fixed
 * [\#410](https://github.com/tellor-io/telliot/pull/410) Fixed all most submit races, causing fewer submission errors. More effort will be dedicated to completely removing them in the next release.
+
 ## [v5.6.0](https://github.com/tellor-io/telliot/releases/tag/v5.6.0) - 2021.02.08
 
 ### Changed
