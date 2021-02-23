@@ -10,6 +10,18 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ## Unreleased
 
+## [v5.7.0](https://github.com/tellor-io/telliot/releases/tag/v5.7.0) - 2021.02.23
+
+### Changed
+ 
+* [\#403](https://github.com/tellor-io/telliot/pull/403) The config file now has fields separated by commands(eg. Dataserve, mine,etc) where all the command specific configuration goes. It now uses strict parsing, meaning that unused fields throw an error. See the `configs/config.json` for an example.
+  
+### Added
+* [\#406](https://github.com/tellor-io/telliot/pull/406) Added new command  `migrate` to migrate old tokens for the new one.
+
+
+### Fixed
+
 ## [v5.6.0](https://github.com/tellor-io/telliot/releases/tag/v5.6.0) - 2021.02.08
 
 ### Changed
