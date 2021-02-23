@@ -8,20 +8,26 @@ NOTE: As semantic versioning states all 0.y.z releases can contain breaking chan
 
 We use _breaking :warning:_ to mark changes that are not backward compatible \(relates only to v0.y.z releases.\)
 
-## Unreleased
-
 ## [v5.7.0](https://github.com/tellor-io/telliot/releases/tag/v5.7.0) - 2021.02.23
 
 ### Changed
  
-* [\#403](https://github.com/tellor-io/telliot/pull/403) The config file now has fields separated by commands(eg. Dataserve, mine,etc) where all the command specific configuration goes. It now uses strict parsing, meaning that unused fields throw an error. See the `configs/config.json` for an example.
+* [\#403](https://github.com/tellor-io/telliot/pull/403) The config file now has fields separated by commands(eg. Dataserve, mine,etc) where all the command specific configuration goes. It now uses strict parsing, meaning that unused fields throw an error, which will likely happen to a lot of users. For a clear view of the conifg, please take a look at the [config file](https://github.com/tellor-io/telliot/blob/master/pkg/config/config.go#L105)
+
+* [\#403](https://github.com/tellor-io/telliot/pull/403) Renamed `indexes.json` to `api.json`.
+
+* [\#403](https://github.com/tellor-io/telliot/pull/403) Removed the configs folder and now user should use  apiFile and manualDataFile.
+
+* [\#410](https://github.com/tellor-io/telliot/pull/410) Public addresses should be prefixed with `0x`.
+
+* [\#410](https://github.com/tellor-io/telliot/pull/410) Integration and testing to use the newer contracts.
   
 ### Added
 * [\#406](https://github.com/tellor-io/telliot/pull/406) Added new command  `migrate` to migrate old tokens for the new one.
 
 
 ### Fixed
-
+* [\#410](https://github.com/tellor-io/telliot/pull/410) Fixed all most submit races, causing fewer submission errors. More effort will be dedicated to completely removing them in the next release.
 ## [v5.6.0](https://github.com/tellor-io/telliot/releases/tag/v5.6.0) - 2021.02.08
 
 ### Changed
