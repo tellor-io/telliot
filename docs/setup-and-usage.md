@@ -190,7 +190,7 @@ The following example shows request ID 4, inputting a value of 9000 with a 1,000
 ### Start mining.
 
 ```bash
-telliot --config=./configs/config.json mine
+telliot mine --config=./configs/config.json
 ```
 
 ## deposit - Deposit or withdraw a stake
@@ -204,19 +204,19 @@ You will need 500 TRB to run your own server for mining. Your stake is locked fo
 Run the following command to deposit your stake:
 
 ```bash
-tellor --config=./configs/config.json stake deposit
+tellor stake deposit --config=./configs/config.json
 ```
 
 To unstake your tokens, you need to request a withdraw:
 
 ```bash
-telliot --config=./configs/config.json stake request
+telliot stake request --config=./configs/config.json
 ```
 
 One week after the request, the tokens are free to move at your discretion after running the command:
 
 ```bash
-telliot --config=./configs/config.json stake withdraw
+telliot stake withdraw --config=./configs/config.json
 ```
 
 ## dispute - monitor submitted values
@@ -265,7 +265,7 @@ The data server pulls data from the internet, the 5 staked miners pull data from
 ```bash
 wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.json
 cp config.json config1.json
-telliot --config=config1.json dataServer
+telliot dataServer --config=config1.json
 ```
 
 Edit `config1.json` to include the following:
@@ -358,12 +358,12 @@ You can do this in 6 separate terminals locally. Run each of the command in each
 
 | Terminal \# | Command | Description |
 | :--- | :--- | :--- |
-| 1 | ./telliot --config=config-dataserver.json dataserver | Data Server |
-| 2 | ./telliot --config=config1.json mine -r | Staked Miner 1 |
-| 3 | ./telliot --config=config2.json mine -r | Staked Miner 2 |
-| 4 | ./telliot --config=config3.json mine -r | Staked Miner 3 |
-| 5 | ./telliot --config=config4.json mine -r | Staked Miner 4 |
-| 6 | ./telliot --config=config5.json mine -r | Staked Miner 5 |
+| 1 | ./telliot dataserver --config=config-dataserver.json | Data Server |
+| 2 | ./telliot mine -r --config=config1.json | Staked Miner 1 |
+| 3 | ./telliot mine -r --config=config2.json | Staked Miner 2 |
+| 4 | ./telliot mine -r --config=config3.json | Staked Miner 3 |
+| 5 | ./telliot mine -r --config=config4.json | Staked Miner 4 |
+| 6 | ./telliot mine -r --config=config5.json | Staked Miner 5 |
 
 #### Conclusion
 
