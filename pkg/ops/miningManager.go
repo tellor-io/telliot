@@ -193,7 +193,7 @@ func (mgr *MiningMgr) Start(ctx context.Context) {
 					level.Error(mgr.logger).Log("msg", "submit solution profit check", "err", err)
 					continue
 				}
-				if profitPercent != -1 && profitPercent < int64(mgr.cfg.Mine.ProfitThreshold) {
+				if profitPercent < int64(mgr.cfg.Mine.ProfitThreshold) {
 					level.Debug(mgr.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
 					continue
 				}
@@ -403,7 +403,7 @@ func (mgr *MiningMgr) profit() (int64, error) {
 	}
 	if gasUsed.Int64() == 0 {
 		level.Debug(mgr.logger).Log("msg", "profit checking:no data for gas used", "slot", slotNum)
-		return -1, nil
+		return -100, nil
 	}
 	gasPrice, err := mgr.ethClient.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -416,7 +416,8 @@ func (mgr *MiningMgr) profit() (int64, error) {
 
 	txCost := gasPrice.Mul(gasPrice, gasUsed)
 	profit := big.NewInt(0).Sub(reward, txCost)
-	profitPercent := big.NewInt(0).Div(profit, txCost).Int64() * 100
+	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
+	profitPercent := int64(profitPercentFloat)
 	level.Debug(mgr.logger).Log(
 		"msg", "profit checking",
 		"reward", fmt.Sprintf("%.2e", float64(reward.Int64())),
