@@ -3960,9 +3960,9 @@ func (_ITellor *ITellorFilterer) ParseTipAdded(log types.Log) (*ITellorTipAdded,
 	return event, nil
 }
 
-// ITellorTransferedIterator is returned from FilterTransfered and is used to iterate over the raw logs and unpacked data for Transfered events raised by the ITellor contract.
-type ITellorTransferedIterator struct {
-	Event *ITellorTransfered // Event containing the contract specifics and raw log
+// ITellorTransferredIterator is returned from FilterTransferred and is used to iterate over the raw logs and unpacked data for Transferred events raised by the ITellor contract.
+type ITellorTransferredIterator struct {
+	Event *ITellorTransferred // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3976,7 +3976,7 @@ type ITellorTransferedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ITellorTransferedIterator) Next() bool {
+func (it *ITellorTransferredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3985,7 +3985,7 @@ func (it *ITellorTransferedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ITellorTransfered)
+			it.Event = new(ITellorTransferred)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -4000,7 +4000,7 @@ func (it *ITellorTransferedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ITellorTransfered)
+		it.Event = new(ITellorTransferred)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -4016,29 +4016,29 @@ func (it *ITellorTransferedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ITellorTransferedIterator) Error() error {
+func (it *ITellorTransferredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ITellorTransferedIterator) Close() error {
+func (it *ITellorTransferredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ITellorTransfered represents a Transfered event raised by the ITellor contract.
-type ITellorTransfered struct {
+// ITellorTransferred represents a Transferred event raised by the ITellor contract.
+type ITellorTransferred struct {
 	From  common.Address
 	To    common.Address
 	Value *big.Int
 	Raw   types.Log // Blockchain specific contextual infos
 }
 
-// FilterTransfered is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// FilterTransferred is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed _from, address indexed _to, uint256 _value)
-func (_ITellor *ITellorFilterer) FilterTransfered(opts *bind.FilterOpts, _from []common.Address, _to []common.Address) (*ITellorTransferedIterator, error) {
+func (_ITellor *ITellorFilterer) FilterTransferred(opts *bind.FilterOpts, _from []common.Address, _to []common.Address) (*ITellorTransferredIterator, error) {
 
 	var _fromRule []interface{}
 	for _, _fromItem := range _from {
@@ -4053,13 +4053,13 @@ func (_ITellor *ITellorFilterer) FilterTransfered(opts *bind.FilterOpts, _from [
 	if err != nil {
 		return nil, err
 	}
-	return &ITellorTransferedIterator{contract: _ITellor.contract, event: "Transfer", logs: logs, sub: sub}, nil
+	return &ITellorTransferredIterator{contract: _ITellor.contract, event: "Transfer", logs: logs, sub: sub}, nil
 }
 
-// WatchTransfered is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// WatchTransferred is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed _from, address indexed _to, uint256 _value)
-func (_ITellor *ITellorFilterer) WatchTransfered(opts *bind.WatchOpts, sink chan<- *ITellorTransfered, _from []common.Address, _to []common.Address) (event.Subscription, error) {
+func (_ITellor *ITellorFilterer) WatchTransferred(opts *bind.WatchOpts, sink chan<- *ITellorTransferred, _from []common.Address, _to []common.Address) (event.Subscription, error) {
 
 	var _fromRule []interface{}
 	for _, _fromItem := range _from {
@@ -4080,7 +4080,7 @@ func (_ITellor *ITellorFilterer) WatchTransfered(opts *bind.WatchOpts, sink chan
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ITellorTransfered)
+				event := new(ITellorTransferred)
 				if err := _ITellor.contract.UnpackLog(event, "Transfer", log); err != nil {
 					return err
 				}
@@ -4102,11 +4102,11 @@ func (_ITellor *ITellorFilterer) WatchTransfered(opts *bind.WatchOpts, sink chan
 	}), nil
 }
 
-// ParseTransfered is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// ParseTransferred is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed _from, address indexed _to, uint256 _value)
-func (_ITellor *ITellorFilterer) ParseTransfered(log types.Log) (*ITellorTransfered, error) {
-	event := new(ITellorTransfered)
+func (_ITellor *ITellorFilterer) ParseTransferred(log types.Log) (*ITellorTransferred, error) {
+	event := new(ITellorTransferred)
 	if err := _ITellor.contract.UnpackLog(event, "Transfer", log); err != nil {
 		return nil, err
 	}
@@ -7063,9 +7063,9 @@ func (_Tellor *TellorFilterer) ParseTipAdded(log types.Log) (*TellorTipAdded, er
 	return event, nil
 }
 
-// TellorTransferedIterator is returned from FilterTransfered and is used to iterate over the raw logs and unpacked data for Transfered events raised by the Tellor contract.
-type TellorTransferedIterator struct {
-	Event *TellorTransfered // Event containing the contract specifics and raw log
+// TellorTransferredIterator is returned from FilterTransferred and is used to iterate over the raw logs and unpacked data for Transferred events raised by the Tellor contract.
+type TellorTransferredIterator struct {
+	Event *TellorTransferred // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -7079,7 +7079,7 @@ type TellorTransferedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TellorTransferedIterator) Next() bool {
+func (it *TellorTransferredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -7088,7 +7088,7 @@ func (it *TellorTransferedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TellorTransfered)
+			it.Event = new(TellorTransferred)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -7103,7 +7103,7 @@ func (it *TellorTransferedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TellorTransfered)
+		it.Event = new(TellorTransferred)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -7119,29 +7119,29 @@ func (it *TellorTransferedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorTransferedIterator) Error() error {
+func (it *TellorTransferredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TellorTransferedIterator) Close() error {
+func (it *TellorTransferredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TellorTransfered represents a Transfered event raised by the Tellor contract.
-type TellorTransfered struct {
+// TellorTransferred represents a Transferred event raised by the Tellor contract.
+type TellorTransferred struct {
 	From  common.Address
 	To    common.Address
 	Value *big.Int
 	Raw   types.Log // Blockchain specific contextual infos
 }
 
-// FilterTransfered is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// FilterTransferred is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_Tellor *TellorFilterer) FilterTransfered(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TellorTransferedIterator, error) {
+func (_Tellor *TellorFilterer) FilterTransferred(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TellorTransferredIterator, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -7156,13 +7156,13 @@ func (_Tellor *TellorFilterer) FilterTransfered(opts *bind.FilterOpts, from []co
 	if err != nil {
 		return nil, err
 	}
-	return &TellorTransferedIterator{contract: _Tellor.contract, event: "Transfer", logs: logs, sub: sub}, nil
+	return &TellorTransferredIterator{contract: _Tellor.contract, event: "Transfer", logs: logs, sub: sub}, nil
 }
 
-// WatchTransfered is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// WatchTransferred is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_Tellor *TellorFilterer) WatchTransfered(opts *bind.WatchOpts, sink chan<- *TellorTransfered, from []common.Address, to []common.Address) (event.Subscription, error) {
+func (_Tellor *TellorFilterer) WatchTransferred(opts *bind.WatchOpts, sink chan<- *TellorTransferred, from []common.Address, to []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -7183,7 +7183,7 @@ func (_Tellor *TellorFilterer) WatchTransfered(opts *bind.WatchOpts, sink chan<-
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TellorTransfered)
+				event := new(TellorTransferred)
 				if err := _Tellor.contract.UnpackLog(event, "Transfer", log); err != nil {
 					return err
 				}
@@ -7205,11 +7205,11 @@ func (_Tellor *TellorFilterer) WatchTransfered(opts *bind.WatchOpts, sink chan<-
 	}), nil
 }
 
-// ParseTransfered is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// ParseTransferred is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_Tellor *TellorFilterer) ParseTransfered(log types.Log) (*TellorTransfered, error) {
-	event := new(TellorTransfered)
+func (_Tellor *TellorFilterer) ParseTransferred(log types.Log) (*TellorTransferred, error) {
+	event := new(TellorTransferred)
 	if err := _Tellor.contract.UnpackLog(event, "Transfer", log); err != nil {
 		return nil, err
 	}
@@ -10914,9 +10914,9 @@ func (_TellorStake *TellorStakeFilterer) ParseStakeWithdrawn(log types.Log) (*Te
 	return event, nil
 }
 
-// TellorStakeTransferedIterator is returned from FilterTransfered and is used to iterate over the raw logs and unpacked data for Transfered events raised by the TellorStake contract.
-type TellorStakeTransferedIterator struct {
-	Event *TellorStakeTransfered // Event containing the contract specifics and raw log
+// TellorStakeTransferredIterator is returned from FilterTransferred and is used to iterate over the raw logs and unpacked data for Transferred events raised by the TellorStake contract.
+type TellorStakeTransferredIterator struct {
+	Event *TellorStakeTransferred // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -10930,7 +10930,7 @@ type TellorStakeTransferedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TellorStakeTransferedIterator) Next() bool {
+func (it *TellorStakeTransferredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -10939,7 +10939,7 @@ func (it *TellorStakeTransferedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TellorStakeTransfered)
+			it.Event = new(TellorStakeTransferred)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -10954,7 +10954,7 @@ func (it *TellorStakeTransferedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TellorStakeTransfered)
+		it.Event = new(TellorStakeTransferred)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -10970,29 +10970,29 @@ func (it *TellorStakeTransferedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorStakeTransferedIterator) Error() error {
+func (it *TellorStakeTransferredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TellorStakeTransferedIterator) Close() error {
+func (it *TellorStakeTransferredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TellorStakeTransfered represents a Transfered event raised by the TellorStake contract.
-type TellorStakeTransfered struct {
+// TellorStakeTransferred represents a Transferred event raised by the TellorStake contract.
+type TellorStakeTransferred struct {
 	From  common.Address
 	To    common.Address
 	Value *big.Int
 	Raw   types.Log // Blockchain specific contextual infos
 }
 
-// FilterTransfered is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// FilterTransferred is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TellorStake *TellorStakeFilterer) FilterTransfered(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TellorStakeTransferedIterator, error) {
+func (_TellorStake *TellorStakeFilterer) FilterTransferred(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TellorStakeTransferredIterator, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -11007,13 +11007,13 @@ func (_TellorStake *TellorStakeFilterer) FilterTransfered(opts *bind.FilterOpts,
 	if err != nil {
 		return nil, err
 	}
-	return &TellorStakeTransferedIterator{contract: _TellorStake.contract, event: "Transfer", logs: logs, sub: sub}, nil
+	return &TellorStakeTransferredIterator{contract: _TellorStake.contract, event: "Transfer", logs: logs, sub: sub}, nil
 }
 
-// WatchTransfered is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// WatchTransferred is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TellorStake *TellorStakeFilterer) WatchTransfered(opts *bind.WatchOpts, sink chan<- *TellorStakeTransfered, from []common.Address, to []common.Address) (event.Subscription, error) {
+func (_TellorStake *TellorStakeFilterer) WatchTransferred(opts *bind.WatchOpts, sink chan<- *TellorStakeTransferred, from []common.Address, to []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -11034,7 +11034,7 @@ func (_TellorStake *TellorStakeFilterer) WatchTransfered(opts *bind.WatchOpts, s
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TellorStakeTransfered)
+				event := new(TellorStakeTransferred)
 				if err := _TellorStake.contract.UnpackLog(event, "Transfer", log); err != nil {
 					return err
 				}
@@ -11056,11 +11056,11 @@ func (_TellorStake *TellorStakeFilterer) WatchTransfered(opts *bind.WatchOpts, s
 	}), nil
 }
 
-// ParseTransfered is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// ParseTransferred is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TellorStake *TellorStakeFilterer) ParseTransfered(log types.Log) (*TellorStakeTransfered, error) {
-	event := new(TellorStakeTransfered)
+func (_TellorStake *TellorStakeFilterer) ParseTransferred(log types.Log) (*TellorStakeTransferred, error) {
+	event := new(TellorStakeTransferred)
 	if err := _TellorStake.contract.UnpackLog(event, "Transfer", log); err != nil {
 		return nil, err
 	}
@@ -12829,9 +12829,9 @@ func (_TellorTransfer *TellorTransferFilterer) ParseApproval(log types.Log) (*Te
 	return event, nil
 }
 
-// TellorTransferTransferedIterator is returned from FilterTransfered and is used to iterate over the raw logs and unpacked data for Transfered events raised by the TellorTransfer contract.
-type TellorTransferTransferedIterator struct {
-	Event *TellorTransferTransfered // Event containing the contract specifics and raw log
+// TellorTransferTransferredIterator is returned from FilterTransferred and is used to iterate over the raw logs and unpacked data for Transferred events raised by the TellorTransfer contract.
+type TellorTransferTransferredIterator struct {
+	Event *TellorTransferTransferred // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -12845,7 +12845,7 @@ type TellorTransferTransferedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TellorTransferTransferedIterator) Next() bool {
+func (it *TellorTransferTransferredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -12854,7 +12854,7 @@ func (it *TellorTransferTransferedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TellorTransferTransfered)
+			it.Event = new(TellorTransferTransferred)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -12869,7 +12869,7 @@ func (it *TellorTransferTransferedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TellorTransferTransfered)
+		it.Event = new(TellorTransferTransferred)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -12885,29 +12885,29 @@ func (it *TellorTransferTransferedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TellorTransferTransferedIterator) Error() error {
+func (it *TellorTransferTransferredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TellorTransferTransferedIterator) Close() error {
+func (it *TellorTransferTransferredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TellorTransferTransfered represents a Transfered event raised by the TellorTransfer contract.
-type TellorTransferTransfered struct {
+// TellorTransferTransferred represents a Transferred event raised by the TellorTransfer contract.
+type TellorTransferTransferred struct {
 	From  common.Address
 	To    common.Address
 	Value *big.Int
 	Raw   types.Log // Blockchain specific contextual infos
 }
 
-// FilterTransfered is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// FilterTransferred is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TellorTransfer *TellorTransferFilterer) FilterTransfered(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TellorTransferTransferedIterator, error) {
+func (_TellorTransfer *TellorTransferFilterer) FilterTransferred(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TellorTransferTransferredIterator, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -12922,13 +12922,13 @@ func (_TellorTransfer *TellorTransferFilterer) FilterTransfered(opts *bind.Filte
 	if err != nil {
 		return nil, err
 	}
-	return &TellorTransferTransferedIterator{contract: _TellorTransfer.contract, event: "Transfer", logs: logs, sub: sub}, nil
+	return &TellorTransferTransferredIterator{contract: _TellorTransfer.contract, event: "Transfer", logs: logs, sub: sub}, nil
 }
 
-// WatchTransfered is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// WatchTransferred is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TellorTransfer *TellorTransferFilterer) WatchTransfered(opts *bind.WatchOpts, sink chan<- *TellorTransferTransfered, from []common.Address, to []common.Address) (event.Subscription, error) {
+func (_TellorTransfer *TellorTransferFilterer) WatchTransferred(opts *bind.WatchOpts, sink chan<- *TellorTransferTransferred, from []common.Address, to []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -12949,7 +12949,7 @@ func (_TellorTransfer *TellorTransferFilterer) WatchTransfered(opts *bind.WatchO
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TellorTransferTransfered)
+				event := new(TellorTransferTransferred)
 				if err := _TellorTransfer.contract.UnpackLog(event, "Transfer", log); err != nil {
 					return err
 				}
@@ -12971,11 +12971,11 @@ func (_TellorTransfer *TellorTransferFilterer) WatchTransfered(opts *bind.WatchO
 	}), nil
 }
 
-// ParseTransfered is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+// ParseTransferred is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TellorTransfer *TellorTransferFilterer) ParseTransfered(log types.Log) (*TellorTransferTransfered, error) {
-	event := new(TellorTransferTransfered)
+func (_TellorTransfer *TellorTransferFilterer) ParseTransferred(log types.Log) (*TellorTransferTransferred, error) {
+	event := new(TellorTransferTransferred)
 	if err := _TellorTransfer.contract.UnpackLog(event, "Transfer", log); err != nil {
 		return nil, err
 	}

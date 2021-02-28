@@ -343,7 +343,7 @@ echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env4
 echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env5
 ```
 
-Finaly, make 1 more copy of the config for the data server and update the `serverHost` address to `0.0.0.0`:
+Finally, make 1 more copy of the config for the data server and update the `serverHost` address to `0.0.0.0`:
 
 ```bash
 cp config1.json config-dataserver.json

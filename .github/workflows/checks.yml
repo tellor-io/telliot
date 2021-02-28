@@ -10,8 +10,6 @@ jobs:
   Linting:
     runs-on: ubuntu-latest
     steps:
-      - name : install dependancies
-        run: sudo apt-get install ocl-icd-opencl-dev
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
@@ -28,8 +26,6 @@ jobs:
   Testing_and_building:
     runs-on: ubuntu-latest
     steps:
-      - name : install dependancies
-        run: sudo apt-get install ocl-icd-opencl-dev
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0 # Fetch all tags as well.
@@ -54,8 +50,6 @@ jobs:
   Coverage:
     runs-on: ubuntu-latest
     steps:
-      - name : install dependancies
-        run: sudo apt-get install ocl-icd-opencl-dev
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:

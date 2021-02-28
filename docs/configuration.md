@@ -19,7 +19,7 @@ Telliot commands and config file options are as the following:
 * `mine -r` \(indicates to mine utilizing a remote server\)
 * `dataserver` \(indicates to run the dataServer \(no mining\)\)
 * `transfer` \(AMOUNT\) \(TOADDRESS\) \(indicates transfer, toAddress is Ethereum address and amount is number of Tributes \(eg. transfer 10 0xea... \(this transfers 10 tokens\)\)\)
-* `approve` \(AMOUNT\) \(TOADDRESS\) \(ammount to approve the toaddress to send this amount of tokens
+* `approve` \(AMOUNT\) \(TOADDRESS\) \(amount to approve the toaddress to send this amount of tokens
 * `stake deposit` \(indicates to deposit tokens in the contract\)
 * `stake request` \(indicates you wish to withdraw your stake\)
 * `stake withdraw` \(withdraws your stake, run 1 week after request\)
