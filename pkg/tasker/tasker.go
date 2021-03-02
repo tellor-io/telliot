@@ -4,15 +4,10 @@
 package tasker
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"math/rand"
-	"os"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
@@ -50,20 +45,19 @@ const ComponentName = "tasker"
  */
 
 type MiningTasker struct {
-	ctx                           context.Context
-	close                         context.CancelFunc
-	logger                        log.Logger
-	proxy                         db.DataServerProxy
-	accounts                      []*rpc.Account
-	currChallenge                 *mining.MiningChallenge
-	contractInstance              *contracts.ITellor
-	instantSubmitSentForThisBlock bool
-	client                        contracts.ETHClient
-	cfg                           *config.Config
-	workSink                      chan *mining.Work
-	Running                       bool
-	done                          chan bool
-	resubscribe                   chan bool
+	ctx              context.Context
+	close            context.CancelFunc
+	logger           log.Logger
+	proxy            db.DataServerProxy
+	accounts         []*rpc.Account
+	currChallenge    *mining.MiningChallenge
+	contractInstance *contracts.ITellor
+	client           contracts.ETHClient
+	cfg              *config.Config
+	workSink         chan *mining.Work
+	Running          bool
+	done             chan bool
+	resubscribe      chan bool
 }
 
 func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*MiningTasker, chan *mining.Work) {
@@ -100,9 +94,14 @@ func (mt *MiningTasker) getCurrentChallenge() (*tellor.ITellorNewChallenge, erro
 
 func (mt *MiningTasker) getNewChallengeChannel() (chan *tellor.ITellorNewChallenge, event.Subscription, error) {
 	sink := make(chan *tellor.ITellorNewChallenge)
-	sub, err := mt.contractInstance.ITellorFilterer.WatchNewChallenge(&bind.WatchOpts{}, sink, nil)
+	var tellorFilterer *tellor.ITellorFilterer
+	tellorFilterer, err := tellor.NewITellorFilterer(mt.contractInstance.Address, mt.client)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "error in getting NewChallenge channel")
+		return nil, nil, errors.Wrap(err, "getting ITellorFilterer instance")
+	}
+	sub, err := tellorFilterer.WatchNewChallenge(&bind.WatchOpts{}, sink, nil)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "getting NewChallenge channel")
 	}
 	return sink, sub, nil
 }
@@ -180,130 +179,18 @@ func (mt *MiningTasker) Stop() {
 }
 
 func (mt *MiningTasker) CreateWork(challenge *tellor.ITellorNewChallenge) *mining.Work {
-	/* TODO: Do we need these anymore?
-	dispKeys := []string{}
-	for _, account := range mt.accounts {
-		dispKeys = append(dispKeys, db.DisputeStatusKeyFor(account.Address))
-
-	}
-	keys := []string{
-		db.RequestIdKey,
-		db.RequestIdKey0,
-		db.RequestIdKey1,
-		db.RequestIdKey2,
-		db.RequestIdKey3,
-		db.RequestIdKey4,
-		db.LastNewValueKey,
-	}
-	keys = append(keys, dispKeys...)
-
-	m, err := mt.proxy.BatchGet(keys)
-	if err != nil {
-		level.Error(mt.logger).Log("msg", "get data from data proxy, cannot continue at all")
-		return nil
-	}
-
-	level.Debug(mt.logger).Log("msg", "received data", "data", m)
-
-	for _, dispKey := range dispKeys {
-		if mt.checkDispute(m[dispKey]) == statusWaitNext {
-			return nil
-		}
-	}*/
-
-	diff := challenge.Difficulty
-	reqIDs := challenge.CurrentRequestId
-	for i := 0; i < 5; i++ {
-		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, reqIDs[i].Uint64())
-		m2, err := mt.proxy.BatchGet([]string{valKey})
-		if err != nil {
-			level.Info(mt.logger).Log(
-				"msg", "retrieve pricing data for current request id",
-				"err ", err,
-			)
-			//return nil, false
-		}
-		val := m2[valKey]
-		if len(val) == 0 {
-			if err != nil {
-				level.Error(mt.logger).Log(
-					"msg", "parsing config",
-					"err ", err,
-				)
-				return nil
-			}
-			jsonFile, err := os.Open(mt.cfg.ManualDataFile)
-			if err != nil {
-				return nil
-			}
-			defer jsonFile.Close()
-			byteValue, _ := ioutil.ReadAll(jsonFile)
-			var result map[string]map[string]uint
-			_ = json.Unmarshal([]byte(byteValue), &result)
-			_id := strconv.FormatUint(reqIDs[i].Uint64(), 10)
-			val := result[_id]["VALUE"]
-			if val == 0 {
-				level.Info(mt.logger).Log(
-					"msg", "pricing data not available for request",
-					"request", reqIDs[i].Uint64(),
-				)
-				return nil
-			}
-			level.Info(mt.logger).Log("msg", "USING MANUALLY ENTERED VALUE!!!! USE CAUTION")
-		}
-	}
-
 	newChallenge := &mining.MiningChallenge{
 		Challenge:  challenge.CurrentChallenge[:],
-		Difficulty: diff,
-		RequestIDs: reqIDs,
-	}
-
-	// If this challenge is already sent out, don't do it again.
-	if mt.currChallenge != nil &&
-		mt.instantSubmitSentForThisBlock && // Not instanst submit or instant submit but already has been sent out.
-		bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) { // This a new oracle block so a new challenge.
-		return nil
-	}
-
-	// When it is a new challenge reset the instant submit status.
-	if mt.currChallenge != nil && !bytes.Equal(newChallenge.Challenge, mt.currChallenge.Challenge) {
-		mt.instantSubmitSentForThisBlock = false
+		Difficulty: challenge.Difficulty,
+		RequestIDs: challenge.CurrentRequestId,
 	}
 
 	level.Debug(mt.logger).Log("msg", "new challenge for mining",
 		"hex", fmt.Sprintf("%x", newChallenge.Challenge),
-		"difficulty", diff,
-		"requestIDs", fmt.Sprintf("%+v", reqIDs),
+		"difficulty", newChallenge.Difficulty,
+		"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
 	)
 
 	mt.currChallenge = newChallenge
 	return &mining.Work{Challenge: newChallenge, PublicAddr: mt.accounts[0].Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
 }
-
-/* func (mt *MiningTasker) checkDispute(disp []byte) int {
-	disputed, stat := mt.getInt(disp)
-	if stat == statusWaitNext || stat == statusFailure {
-		return stat
-	}
-
-	if disputed.Cmp(big.NewInt(1)) != 0 {
-		level.Error(mt.logger).Log("msg", "miner is in dispute, cannot continue")
-		return statusFailure
-	}
-	level.Debug(mt.logger).Log("msg", "miner is not in dispute, continuing")
-	return statusSuccess
-}
-
-func (mt *MiningTasker) getInt(data []byte) (*big.Int, int) {
-	if len(data) == 0 {
-		return nil, statusWaitNext
-	}
-
-	val, err := hexutil.DecodeBig(string(data))
-	if err != nil {
-		level.Error(mt.logger).Log("msg", "decoding int", "err", err)
-		return nil, statusFailure
-	}
-	return val, statusSuccess
-} */

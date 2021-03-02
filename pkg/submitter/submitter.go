@@ -168,70 +168,61 @@ func (s *Submitter) Stop() {
 
 func (s *Submitter) handleSubmit(ctx context.Context, result *mining.Result) {
 	go func(ctx context.Context, result *mining.Result) {
-		var timeToSubmit context.Context
-		var cncl context.CancelFunc
-		lastSubmit, err := s.lastSubmit()
-		if err != nil {
-			level.Error(s.logger).Log("msg", "checking last submit time", "err", err)
-			timeToSubmit, cncl = context.WithTimeout(ctx, 10*time.Second) // Let's try after 10 seconds.
-		} else if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
-			level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
-			timeToSubmit, cncl = context.WithTimeout(ctx, s.cfg.Mine.MinSubmitPeriod.Duration-lastSubmit+10*time.Second) // Adding the 10 seconds penalty to be sure we send the tx in the right time!
-		}
-		defer cncl()
-		select {
-		case <-ctx.Done(): // The context was canceled from the Start loop because new work arrived.
-			return
-		case <-timeToSubmit.Done(): // It is time to submit so start the submit loop
-			for {
-				// There is no new challenge so resend any pending solution.
-				if result == nil {
-					if s.solutionPending == nil {
-						return
-					}
-					result = s.solutionPending
-					var ids []int64
-					for _, id := range s.solutionPending.Work.Challenge.RequestIDs {
-						ids = append(ids, id.Int64())
-					}
-					level.Debug(s.logger).Log("msg", "re-submitting a pending solution", "reqIDs", fmt.Sprintf("%+v", ids))
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(15 * time.Second):
+				level.Debug(s.logger).Log("msg", "retrying submit after 15 seconds")
+				var lastSubmit time.Duration
+				var err error
+				lastSubmit, err = s.lastSubmit()
+				if err != nil {
+					level.Debug(s.logger).Log("msg", "checking last submit time", "err", err)
+					continue
 				}
-				// Set this solution as pending so that if
-				// any of the checks below fail and will be retried
-				// when there is no new challenge.
-				s.solutionPending = result
+				// Initialize.
+				timeToSubmit, cncl := context.WithTimeout(ctx, 0)
+				if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
+					level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
+					timeToSubmit, cncl = context.WithTimeout(ctx, s.cfg.Mine.MinSubmitPeriod.Duration-lastSubmit+10*time.Second) // Adding the 10 seconds penalty to be sure we send the tx in the right time!
+				}
+				defer cncl()
+				select {
+				case <-ctx.Done(): // The context was canceled from the Start loop because new work arrived.
+					return
+				case <-timeToSubmit.Done(): // It is time to submit so start the submit loop
 
-				profitPercent, err := s.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
-				if s.cfg.Mine.ProfitThreshold > 0 {
+					// Set this solution as pending so that if
+					// any of the checks below fail and will be retried
+					// when there is no new challenge.
+					s.solutionPending = result
+
+					profitPercent, err := s.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
 					if err != nil {
 						level.Error(s.logger).Log("msg", "submit solution profit check", "err", err)
-					} else if profitPercent < int64(s.cfg.Mine.ProfitThreshold) {
-						level.Debug(s.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
-					} else { // transaction is profitable.
-						tx, err := s.Submit(s.ctx, result)
-						if err != nil {
-							level.Error(s.logger).Log("msg", "submiting a solution", "err", err, "account", s.account.Address.String())
-							s.submitFailCount.Inc()
+					}
+					if s.cfg.Mine.ProfitThreshold > 0 {
+						if profitPercent < int64(s.cfg.Mine.ProfitThreshold) {
+							level.Debug(s.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
+						} else { // transaction is profitable.
+							tx, err := s.Submit(s.ctx, result)
+							if err != nil {
+								s.submitFailCount.Inc()
+								level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err, "account", s.account.Address.String())
+								continue
+							}
+							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
+							s.saveGasUsed(ctx, tx)
+							s.submitCount.Inc()
+							// A solution has been submitted so the
+							// pending solution doesn't matter here any more so reset it.
+							s.solutionPending = nil
 							return
 						}
-						level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
-						s.saveGasUsed(ctx, tx)
-						s.submitCount.Inc()
-						// A solution has been submitted so the
-						// pending solution doesn't matter here any more so reset it.
-						s.solutionPending = nil
-						return
 					}
 				}
 
-				// At this point it means that profit was not enough so need to retry in some time.
-				level.Debug(s.logger).Log("msg", "profit was not enough, retry in 60 seconds", "account", s.account.Address.String())
-				retryTicker := time.NewTicker(60 * time.Second)
-				select {
-				case <-ctx.Done(): // for any blocking operation always check the main context for an early exit.
-				case <-retryTicker.C:
-					continue // Retry send.
-				}
 			}
 		}
 	}(ctx, result)
@@ -287,13 +278,6 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 		s.currentValues[i] = value
 	}
 
-	lastSubmit, err := s.lastSubmit()
-	if err != nil {
-		level.Error(s.logger).Log("msg", "checking last submit time", "err", err)
-	} else if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
-		level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
-		return nil, errors.New("min transaction submit threshold hasn't passed")
-	}
 	tx, err := s.submitter.Submit(ctx, s.proxy, "submitSolution", s.submit)
 	if err == nil {
 		return tx, nil

@@ -152,6 +152,7 @@ var defaultConfig = Config{
 
 const PrivateKeysEnvName = "ETH_PRIVATE_KEYS"
 const NodeURLEnvName = "NODE_URL"
+const NodeWSURLEnvName = "NODE_WEBSOCKET_URL"
 
 func ParseConfig(path string) (*Config, error) {
 	if path == "" {

@@ -61,7 +61,7 @@ func (c *transferCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -95,7 +95,7 @@ func (c *approveCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -131,7 +131,7 @@ func (a *accountsCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	_, _, accounts, err := createTellorVariables(ctx, logger, cfg)
+	_, _, _, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -157,7 +157,7 @@ func (b *balanceCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, _, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, _, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -191,7 +191,7 @@ func (d depositCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -218,7 +218,7 @@ func (w withdrawCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -250,7 +250,7 @@ func (r requestCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -275,7 +275,7 @@ func (s statusCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -299,21 +299,25 @@ func (s migrateCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
 
-	auth, err := ops.PrepareEthTransaction(ctx, client, account[0])
-	if err != nil {
-		return errors.Wrap(err, "prepare ethereum transaction")
-	}
+	// Do migration for each account.
+	for _, account := range accounts {
+		level.Info(logger).Log("msg", "TRB migration", "account", account.Address.String())
+		auth, err := ops.PrepareEthTransaction(ctx, client, account)
+		if err != nil {
+			return errors.Wrap(err, "prepare ethereum transaction")
+		}
 
-	tx, err := contract.Migrate(auth)
-	if err != nil {
-		return errors.Wrap(err, "contract failed")
+		tx, err := contract.Migrate(auth)
+		if err != nil {
+			return errors.Wrap(err, "contract failed")
+		}
+		level.Info(logger).Log("msg", "TRB migrated", "txHash", tx.Hash().Hex())
 	}
-	level.Info(logger).Log("msg", "TRB migrated", "txHash", tx.Hash().Hex())
 	return nil
 }
 
@@ -334,7 +338,7 @@ func (n newDisputeCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -378,7 +382,7 @@ func (v voteCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -409,7 +413,7 @@ func (s showCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -433,7 +437,7 @@ func (d dataserverCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -485,7 +489,9 @@ func (d dataserverCmd) Run() error {
 		}
 
 	}
+
 	if err := g.Run(); err != nil {
+		level.Info(logger).Log("msg", "main exited with error", "err", err)
 		return err
 	}
 
@@ -505,7 +511,7 @@ func (m mineCmd) Run() error {
 		return errors.Wrapf(err, "creating config")
 	}
 	logger := logging.NewLogger()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, clientWs, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -569,7 +575,7 @@ func (m mineCmd) Run() error {
 		// Run a miner manager for each of the accounts.
 		if true {
 			// Run a tasker instance.
-			tasker, taskerCh := tasker.CreateTasker(ctx, logger, cfg, proxy, client, contract, accounts)
+			tasker, taskerCh := tasker.CreateTasker(ctx, logger, cfg, proxy, clientWs, contract, accounts)
 			g.Add(func() error {
 				return tasker.Start()
 			}, func(error) {
@@ -602,11 +608,13 @@ func (m mineCmd) Run() error {
 
 		}
 	}
+
 	if err := g.Run(); err != nil {
 		level.Info(logger).Log("msg", "main exited with error", "err", err)
 		ds.Stop()
 		return err
 	}
+
 	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
 }
