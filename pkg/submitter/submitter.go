@@ -53,7 +53,6 @@ type Submitter struct {
 	currentValues    [5]*big.Int
 	submitter        tellorCommon.TransactionSubmitter
 	resultCh         chan *mining.Result
-	solutionPending  *mining.Result
 	submitCount      prometheus.Counter
 	submitFailCount  prometheus.Counter
 	submitProfit     *prometheus.GaugeVec
@@ -73,6 +72,7 @@ func CreateSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger,
 		resultCh:  make(chan *mining.Result),
 		account:   account,
 		logger:    logger,
+		tellor:    tellor,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
 			Subsystem:   "mining",
@@ -120,29 +120,6 @@ func CreateSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger,
 }
 
 func (s *Submitter) Start() error {
-	// Check if the staked account is in dispute.
-	var v []byte
-	var dispute bool
-	for i := 0; i < 10; i++ {
-		if v, dispute = s.IsInDispute(); dispute {
-			continue
-		}
-		select {
-		case <-s.ctx.Done(): // Early exit.
-			return nil
-		default:
-		}
-		time.Sleep(1 * time.Second)
-	}
-	if len(v) == 0 {
-		return errors.New("no status result after 10 attempts. this usually means no connection to the DB")
-	}
-
-	status, _ := hexutil.DecodeBig(string(v))
-	if status.Cmp(big.NewInt(1)) != 0 {
-		return errors.New("miner is not able to mine with current status")
-	}
-
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -166,63 +143,79 @@ func (s *Submitter) Stop() {
 	level.Info(s.logger).Log("msg", "submitter shutdown complete")
 }
 
+func (s *Submitter) blockUntilTimeToSubmit(ctx context.Context) {
+	var (
+		lastSubmit time.Duration
+		timestamp  *time.Time
+		err        error
+	)
+	for {
+		select {
+		case <-ctx.Done(): // The context was canceled from the main loop because new work arrived.
+		default:
+		}
+		lastSubmit, timestamp, err = s.lastSubmit()
+		if err != nil {
+			level.Debug(s.logger).Log("msg", "checking last submit time", "err", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		break
+	}
+	var (
+		timeToSubmit context.Context
+		cncl         context.CancelFunc
+	)
+	if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
+		level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
+		timeToSubmit, cncl = context.WithDeadline(ctx, timestamp.Add(15*time.Minute))
+		defer cncl()
+	}
+	select {
+	case <-ctx.Done(): // The context was canceled from the main loop because new work arrived.
+	case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
+	}
+}
+
 func (s *Submitter) handleSubmit(ctx context.Context, result *mining.Result) {
 	go func(ctx context.Context, result *mining.Result) {
+		ticker := time.NewTicker(15 * time.Second)
 		for {
 			select {
-			case <-ctx.Done():
+			case <-ctx.Done(): // The context was canceled from the main loop because new work arrived.
 				return
-			case <-time.After(15 * time.Second):
-				level.Debug(s.logger).Log("msg", "retrying submit after 15 seconds")
-				var lastSubmit time.Duration
-				var err error
-				lastSubmit, err = s.lastSubmit()
+			default:
+				profitPercent, err := s.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
 				if err != nil {
-					level.Debug(s.logger).Log("msg", "checking last submit time", "err", err)
+					level.Error(s.logger).Log("msg", "submit solution profit check", "err", err)
+					<-ticker.C
 					continue
 				}
-				// Initialize.
-				timeToSubmit, cncl := context.WithTimeout(ctx, 0)
-				if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
-					level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
-					timeToSubmit, cncl = context.WithTimeout(ctx, s.cfg.Mine.MinSubmitPeriod.Duration-lastSubmit+10*time.Second) // Adding the 10 seconds penalty to be sure we send the tx in the right time!
-				}
-				defer cncl()
-				select {
-				case <-ctx.Done(): // The context was canceled from the Start loop because new work arrived.
-					return
-				case <-timeToSubmit.Done(): // It is time to submit so start the submit loop
-
-					// Set this solution as pending so that if
-					// any of the checks below fail and will be retried
-					// when there is no new challenge.
-					s.solutionPending = result
-
-					profitPercent, err := s.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
-					if err != nil {
-						level.Error(s.logger).Log("msg", "submit solution profit check", "err", err)
-					}
-					if s.cfg.Mine.ProfitThreshold > 0 {
-						if profitPercent < int64(s.cfg.Mine.ProfitThreshold) {
-							level.Debug(s.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
-						} else { // transaction is profitable.
-							tx, err := s.Submit(s.ctx, result)
-							if err != nil {
-								s.submitFailCount.Inc()
-								level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err, "account", s.account.Address.String())
-								continue
-							}
-							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
-							s.saveGasUsed(ctx, tx)
-							s.submitCount.Inc()
-							// A solution has been submitted so the
-							// pending solution doesn't matter here any more so reset it.
-							s.solutionPending = nil
-							return
+				if s.cfg.Mine.ProfitThreshold > 0 {
+					if profitPercent < int64(s.cfg.Mine.ProfitThreshold) {
+						level.Debug(s.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
+						<-ticker.C
+						continue
+					} else { // Transaction is profitable.
+						if statusID := s.getMinerStatus(); statusID != 1 { // I think status ID 3 was the status that allows to submit, but not sure need to double check the contract.
+							level.Error(s.logger).Log("msg", "miner is not in a status that can submit", "statusID", statusID)
+							<-ticker.C
+							continue
 						}
+						s.blockUntilTimeToSubmit(s.ctx)
+						tx, err := s.Submit(s.ctx, result)
+						if err != nil {
+							s.submitFailCount.Inc()
+							level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err, "account", s.account.Address.String())
+							<-ticker.C
+							continue
+						}
+						level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
+						s.saveGasUsed(ctx, tx)
+						s.submitCount.Inc()
+						return
 					}
 				}
-
 			}
 		}
 	}(ctx, result)
@@ -278,12 +271,28 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 		s.currentValues[i] = value
 	}
 
+	// Submit the solution.
 	tx, err := s.submitter.Submit(ctx, s.proxy, "submitSolution", s.submit)
 	if err == nil {
 		return tx, nil
 	}
 	level.Error(s.logger).Log("msg", "submit solution", "pubkey", s.submitter.Address().String())
 	return nil, errors.New("submitting solution txn by any account")
+}
+
+func (s *Submitter) getMinerStatus() int64 {
+	// Check if the staked account is in dispute before sending a transaction.
+	v, dispute := s.IsInDispute()
+	if dispute {
+		return -1
+	}
+	if len(v) == 0 {
+		level.Error(s.logger).Log("msg", "no status result. this usually means no connection to the DB")
+		return -1
+	}
+
+	status, _ := hexutil.DecodeBig(string(v))
+	return status.Int64()
 }
 
 func (s *Submitter) submit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
@@ -299,16 +308,16 @@ func (s *Submitter) submit(ctx context.Context, contract tellorCommon.ContractIn
 	return txn, err
 }
 
-func (s *Submitter) lastSubmit() (time.Duration, error) {
+func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
 	address := "000000000000000000000000" + s.account.Address.Hex()
 	decoded, err := hex.DecodeString(address)
 	if err != nil {
-		return 0, errors.Wrapf(err, "decoding address")
+		return 0, nil, errors.Wrapf(err, "decoding address")
 	}
 	last, err := s.tellor.GetUintVar(nil, rpc.Keccak256(decoded))
 
 	if err != nil {
-		return 0, errors.Wrapf(err, "getting last submit time for:%v", s.account.Address.String())
+		return 0, nil, errors.Wrapf(err, "getting last submit time for:%v", s.account.Address.String())
 	}
 	// The Miner has never submitted so put a timestamp at the beginning of unix time.
 	if last.Int64() == 0 {
@@ -318,12 +327,13 @@ func (s *Submitter) lastSubmit() (time.Duration, error) {
 	lastInt := last.Int64()
 	now := time.Now()
 	var lastSubmit time.Duration
+	var tm time.Time
 	if lastInt > 0 {
-		tm := time.Unix(lastInt, 0)
+		tm = time.Unix(lastInt, 0)
 		lastSubmit = now.Sub(tm)
 	}
 
-	return lastSubmit, nil
+	return lastSubmit, &tm, nil
 }
 
 func (s *Submitter) IsInDispute() ([]byte, bool) {

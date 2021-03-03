@@ -15,13 +15,13 @@ import (
 
 const NumProcessors = 1
 
-func SetupMiningGroup(ctx context.Context, close context.CancelFunc, logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+func SetupMiningGroup(ctx context.Context, logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	var hashers []Hasher
 	level.Info(logger).Log("msg", "starting CPU mining", "threads", NumProcessors)
 	for i := 0; i < NumProcessors; i++ {
-		hashers = append(hashers, NewCpuMiner(int64(i), contractInstance))
+		hashers = append(hashers, NewCpuMiner(int64(i)))
 	}
-	miningGrp, err := NewMiningGroup(logger, cfg, hashers, ctx, close)
+	miningGrp, err := NewMiningGroup(ctx, logger, cfg, hashers, contractInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating new mining group")
 	}

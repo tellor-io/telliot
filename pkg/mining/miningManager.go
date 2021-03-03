@@ -54,8 +54,7 @@ func CreateMiningManager(
 	contractInstance *contracts.ITellor,
 	taskerCh chan *Work,
 ) (*MiningMgr, error) {
-	ctx, close := context.WithCancel(ctx)
-	group, err := SetupMiningGroup(ctx, close, logger, cfg, contractInstance)
+	group, err := SetupMiningGroup(ctx, logger, cfg, contractInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup miners")
 	}
@@ -70,6 +69,7 @@ func CreateMiningManager(
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
+	ctx, close := context.WithCancel(ctx)
 	mng := &MiningMgr{
 		ctx:              ctx,
 		close:            close,
@@ -118,8 +118,8 @@ func (mgr *MiningMgr) Subscribe(submitCh chan *Result) {
 	mgr.submitters = append(mgr.submitters, submitCh)
 }
 
-// Stop will take care of stopping the dataserver component.
+// Stop will take care of stopping the miner component.
 func (mgr *MiningMgr) Stop() {
 	mgr.close()
-	level.Info(mgr.logger).Log("msg", "data server shutdown complete")
+	level.Info(mgr.logger).Log("msg", "miner shutdown complete")
 }

@@ -89,7 +89,7 @@ func open(logger log.Logger, cfg *config.Config, localDB DB, isRemote bool) (Dat
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
-	// TODO: is this a desirable behavior?
+
 	firstPKey := strings.TrimSpace(strings.Split(os.Getenv(config.PrivateKeysEnvName), ",")[0])
 	privateKey, err := crypto.HexToECDSA(firstPKey)
 	if err != nil {

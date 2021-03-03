@@ -54,8 +54,19 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	cfg := config.OpenTestConfig(t)
-	ctx, close := context.WithCancel(context.Background())
-	group, err := NewMiningGroup(logging.NewLogger(), cfg, []Hasher{impl}, ctx, close)
+	opts := &rpc.MockOptions{
+		Nonce:         1,
+		GasPrice:      big.NewInt(700000000),
+		TokenBalance:  big.NewInt(0),
+		Top50Requests: []*big.Int{},
+		DisputeStatus: big.NewInt(1),
+	}
+	client := rpc.NewMockClientWithValues(opts)
+	contract, err := contracts.NewITellor(client)
+	if err != nil {
+		testutil.Ok(t, errors.Wrap(err, "creating new contract instance"))
+	}
+	group, err := NewMiningGroup(context.Background(), logging.NewLogger(), cfg, []Hasher{impl}, contract)
 	if err != nil {
 		testutil.Ok(t, errors.Wrap(err, "creating new mining group"))
 	}
@@ -100,17 +111,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 }
 
 func TestCpuMiner(t *testing.T) {
-	opts := &rpc.MockOptions{
-		Nonce:         1,
-		GasPrice:      big.NewInt(700000000),
-		TokenBalance:  big.NewInt(0),
-		Top50Requests: []*big.Int{},
-		DisputeStatus: big.NewInt(1),
-	}
-	client := rpc.NewMockClientWithValues(opts)
-	contract, err := contracts.NewITellor(client)
-	testutil.Ok(t, err)
-	impl := NewCpuMiner(0, contract)
+	impl := NewCpuMiner(0)
 	DoCompleteMiningLoop(t, impl, 100)
 }
 
@@ -132,12 +133,11 @@ func TestMulti(t *testing.T) {
 
 	var hashers []Hasher
 	for i := 0; i < 4; i++ {
-		hashers = append(hashers, NewCpuMiner(int64(i), contract))
+		hashers = append(hashers, NewCpuMiner(int64(i)))
 	}
 
 	fmt.Printf("Using %d hashers\n", len(hashers))
-	ctx, close := context.WithCancel(context.Background())
-	group, err := NewMiningGroup(logging.NewLogger(), cfg, hashers, ctx, close)
+	group, err := NewMiningGroup(context.Background(), logging.NewLogger(), cfg, hashers, contract)
 	if err != nil {
 		testutil.NotOk(t, errors.Wrap(err, "creating new mining group"))
 	}

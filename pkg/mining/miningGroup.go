@@ -14,7 +14,9 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -30,7 +32,7 @@ type Hasher interface {
 	//base is a 52 byte slice containing the challenge and public address
 	// the guessed nonce is appended to this slice and used as input to the first hash fn
 	// returns a valid nonce, or empty string if none was found
-	CheckRange(hash *HashSettings, start uint64, n uint64) (string, uint64, error)
+	CheckRange(deadlineCtx context.Context, hash *HashSettings, start uint64, n uint64) (string, uint64, error)
 
 	//number of hashes this backend checks at a time
 	StepSize() uint64
@@ -43,6 +45,8 @@ type Backend struct {
 	TotalHashes      uint64
 	HashSincePrint   uint64
 	HashRateEstimate float64
+	contractInstance *contracts.ITellor
+	logger           log.Logger
 }
 
 // MiningChallenge holds information about a PoW challenge.
@@ -78,11 +82,12 @@ type MiningGroup struct {
 	cfg         *config.Config
 }
 
-func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, ctx context.Context, close context.CancelFunc) (*MiningGroup, error) {
+func NewMiningGroup(parentContext context.Context, logger log.Logger, cfg *config.Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
+	ctx, close := context.WithCancel(parentContext)
 	group := &MiningGroup{
 		Backends: make([]*Backend, len(hashers)),
 		ctx:      ctx,
@@ -92,7 +97,7 @@ func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, ctx
 	}
 	for i, hasher := range hashers {
 		//start with a small estimate for hash rate, much faster to increase the gusses rather than decrease
-		group.Backends[i] = &Backend{Hasher: hasher, HashRateEstimate: rateInitialGuess}
+		group.Backends[i] = &Backend{Hasher: hasher, HashRateEstimate: rateInitialGuess, contractInstance: contractInstance, logger: logger}
 	}
 	return group, nil
 }
@@ -108,9 +113,10 @@ type backendResult struct {
 }
 
 // do some work and write the result back to a channel.
-func (b *Backend) doWork(hash *HashSettings, start uint64, n uint64, resultCh chan *backendResult) {
+func (b *Backend) doWork(deadlineCtx context.Context, close context.CancelFunc, hash *HashSettings, start uint64, n uint64, resultCh chan *backendResult) {
+	defer close()
 	timeStarted := time.Now()
-	sol, nchecked, err := b.CheckRange(hash, start, n)
+	sol, nchecked, err := b.CheckRange(deadlineCtx, hash, start, n)
 	if err != nil {
 		resultCh <- &backendResult{err: err}
 		return
@@ -191,7 +197,7 @@ type Result struct {
 }
 
 // dispatches a chunk and returns the number of hashes chosen.
-func (b *Backend) dispatchWork(hash *HashSettings, start uint64, resultCh chan *backendResult) uint64 {
+func (b *Backend) dispatchWork(parentCtx context.Context, hash *HashSettings, start uint64, resultCh chan *backendResult) uint64 {
 	target := b.HashRateEstimate * targetChunkTime.Seconds()
 	step := b.StepSize()
 	nsteps := uint64(math.Round(target / float64(step)))
@@ -199,7 +205,32 @@ func (b *Backend) dispatchWork(hash *HashSettings, start uint64, resultCh chan *
 		nsteps = 1
 	}
 	n := nsteps * step
-	go b.doWork(hash, start, n, resultCh)
+
+	var err error
+	var timeOfLastNewValue *big.Int
+	var retriesCount int
+	for {
+		// checks the last submit value in the oracle and set a timeout of 15min - (now-lastSubmit).
+		// This is because 15min after the last submit any solution will work.
+		timeOfLastNewValue, err = b.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
+		if err == nil {
+			break
+		}
+		retriesCount++
+		level.Error(b.logger).Log("msg", "getting time of last new value from oracle, retrying in a second", "err", err, "numRetry", retriesCount)
+		if retriesCount == 10 {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	if retriesCount == 10 {
+		// TODO: do work and return any solution?
+		return 0
+	}
+	tm := time.Unix(timeOfLastNewValue.Int64(), 0)
+	deadlineCtx, close := context.WithDeadline(parentCtx, tm.Add(15*time.Minute))
+	go b.doWork(deadlineCtx, close, hash, start, n, resultCh)
 	return n
 }
 
@@ -237,6 +268,9 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			nextHeartbeat = elapsed + g.cfg.Mine.Heartbeat.Duration
 		}
 		select {
+		case <-g.ctx.Done():
+			level.Debug(g.logger).Log("msg", "mining group shutdown complete")
+			return
 		// Read in a new work block.
 		case work := <-input:
 			if work == nil {
@@ -291,7 +325,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		if currWork != nil {
 			for sent < currWork.N && len(idleWorkers) > 0 {
 				worker := <-idleWorkers
-				sent += worker.dispatchWork(currHashSettings, currWork.Start+sent, resultChannel)
+				sent += worker.dispatchWork(g.ctx, currHashSettings, currWork.Start+sent, resultChannel)
 			}
 		}
 	}
