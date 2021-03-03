@@ -24,25 +24,6 @@ import (
 
 const ComponentName = "tasker"
 
-/* const (
-	statusWaitNext = iota + 1
-	statusFailure
-	statusSuccess
-) */
-
-/**
- * Tasker role is to pull challenge and other information from the data server
- * and push either new challenges to an output channel or boolean values to a
- * cancel channel. It doesn't know anything about the mining loop so that we
- * can operate in isolation and only evaluate incoming information based on a
- * set of simple rules. Here are the rules:
- *
- * - If the new challenge is zero, issue cancel
- * - If the miner address is in dispute, end program entirely
- * - If there is a pending txn for the miner address, issue cancel
- * - If there is no price data available for the current request, issue cancel
- * - Otherwise, push new challenge to output channel
- */
 
 type MiningTasker struct {
 	ctx              context.Context
