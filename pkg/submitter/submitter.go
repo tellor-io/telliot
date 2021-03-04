@@ -199,27 +199,28 @@ func (s *Submitter) handleSubmit(ctxNewChallenge context.Context, result *mining
 				}
 				if s.cfg.Mine.ProfitThreshold > 0 {
 					if profitPercent < int64(s.cfg.Mine.ProfitThreshold) {
-						level.Debug(s.logger).Log("msg", "transaction not profitable, so will wait for the next cycle")
 						<-ticker.C
 						continue
 					} else { // Transaction is profitable.
-						if statusID := s.getMinerStatus(); statusID != 1 { // I think status ID 3 was the status that allows to submit, but not sure need to double check the contract.
-							level.Error(s.logger).Log("msg", "miner is not in a status that can submit", "statusID", statusID)
-							<-ticker.C
-							continue
+						for {
+							if statusID := s.getMinerStatus(); statusID != 1 { // I think status ID 3 was the status that allows to submit, but not sure need to double check the contract.
+								level.Error(s.logger).Log("msg", "miner is not in a status that can submit", "statusID", statusID)
+								<-ticker.C
+								continue
+							}
+							s.blockUntilTimeToSubmit(ctxNewChallenge)
+							tx, err := s.Submit(ctxNewChallenge, result)
+							if err != nil {
+								s.submitFailCount.Inc()
+								level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err, "account", s.account.Address.String())
+								<-ticker.C
+								continue
+							}
+							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
+							s.saveGasUsed(ctxNewChallenge, tx)
+							s.submitCount.Inc()
+							return
 						}
-						s.blockUntilTimeToSubmit(ctxNewChallenge)
-						tx, err := s.Submit(ctxNewChallenge, result)
-						if err != nil {
-							s.submitFailCount.Inc()
-							level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err, "account", s.account.Address.String())
-							<-ticker.C
-							continue
-						}
-						level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
-						s.saveGasUsed(ctxNewChallenge, tx)
-						s.submitCount.Inc()
-						return
 					}
 				}
 			}
