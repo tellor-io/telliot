@@ -64,6 +64,7 @@ type Submitter struct {
 func CreateSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, client contracts.ETHClient, tellor *contracts.ITellor, account *rpc.Account, txSubmitter tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) (*Submitter, chan *mining.Result) {
 	ctx, close := context.WithCancel(ctx)
 	submitter := &Submitter{
+		client:    client,
 		ctx:       ctx,
 		close:     close,
 		proxy:     proxy,
@@ -130,6 +131,11 @@ func (s *Submitter) Start() error {
 			}
 			var ctx context.Context
 			ctx, s.lastSubmitCncl = context.WithCancel(s.ctx)
+			level.Info(s.logger).Log("msg", "received a solution",
+				"work", fmt.Sprintf("%+v", *result.Work),
+				"IDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
+				"difficulty", fmt.Sprintf("%+v", result.Work.Challenge.Difficulty.Int64()),
+			)
 			s.handleSubmit(ctx, result)
 		}
 	}
@@ -143,7 +149,7 @@ func (s *Submitter) Stop() {
 	level.Info(s.logger).Log("msg", "submitter shutdown complete")
 }
 
-func (s *Submitter) blockUntilTimeToSubmit(ctx context.Context) {
+func (s *Submitter) blockUntilTimeToSubmit(ctxNewChallenge context.Context) {
 	var (
 		lastSubmit time.Duration
 		timestamp  *time.Time
@@ -151,7 +157,7 @@ func (s *Submitter) blockUntilTimeToSubmit(ctx context.Context) {
 	)
 	for {
 		select {
-		case <-ctx.Done(): // The context was canceled from the main loop because new work arrived.
+		case <-ctxNewChallenge.Done(): // The context was canceled from the main loop because new work arrived.
 		default:
 		}
 		lastSubmit, timestamp, err = s.lastSubmit()
@@ -162,27 +168,25 @@ func (s *Submitter) blockUntilTimeToSubmit(ctx context.Context) {
 		}
 		break
 	}
-	var (
-		timeToSubmit context.Context
-		cncl         context.CancelFunc
-	)
 	if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
 		level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
-		timeToSubmit, cncl = context.WithDeadline(ctx, timestamp.Add(15*time.Minute))
+		timeToSubmit, cncl := context.WithDeadline(ctxNewChallenge, timestamp.Add(15*time.Minute))
 		defer cncl()
+		select {
+		case <-ctxNewChallenge.Done(): // The context was canceled from the main loop because new work arrived.
+		case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
+		}
 	}
-	select {
-	case <-ctx.Done(): // The context was canceled from the main loop because new work arrived.
-	case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
-	}
+
 }
 
-func (s *Submitter) handleSubmit(ctx context.Context, result *mining.Result) {
-	go func(ctx context.Context, result *mining.Result) {
+func (s *Submitter) handleSubmit(ctxNewChallenge context.Context, result *mining.Result) {
+	go func(ctxNewChallenge context.Context, result *mining.Result) {
 		ticker := time.NewTicker(15 * time.Second)
 		for {
 			select {
-			case <-ctx.Done(): // The context was canceled from the main loop because new work arrived.
+			case <-ctxNewChallenge.Done(): // The context was canceled from the main loop because new work arrived.
+				level.Info(s.logger).Log("msg", "canceled submit as new challenge arrived")
 				return
 			default:
 				profitPercent, err := s.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
@@ -202,8 +206,8 @@ func (s *Submitter) handleSubmit(ctx context.Context, result *mining.Result) {
 							<-ticker.C
 							continue
 						}
-						s.blockUntilTimeToSubmit(s.ctx)
-						tx, err := s.Submit(s.ctx, result)
+						s.blockUntilTimeToSubmit(ctxNewChallenge)
+						tx, err := s.Submit(ctxNewChallenge, result)
 						if err != nil {
 							s.submitFailCount.Inc()
 							level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err, "account", s.account.Address.String())
@@ -211,14 +215,14 @@ func (s *Submitter) handleSubmit(ctx context.Context, result *mining.Result) {
 							continue
 						}
 						level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
-						s.saveGasUsed(ctx, tx)
+						s.saveGasUsed(ctxNewChallenge, tx)
 						s.submitCount.Inc()
 						return
 					}
 				}
 			}
 		}
-	}(ctx, result)
+	}(ctxNewChallenge, result)
 }
 
 func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.Transaction, error) {
@@ -309,7 +313,7 @@ func (s *Submitter) submit(ctx context.Context, contract tellorCommon.ContractIn
 }
 
 func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
-	address := "000000000000000000000000" + s.account.Address.Hex()
+	address := "000000000000000000000000" + s.account.Address.Hex()[2:]
 	decoded, err := hex.DecodeString(address)
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "decoding address")
@@ -451,6 +455,7 @@ func (s *Submitter) gasUsed() (*big.Int, *big.Int, error) {
 	if err != nil {
 		return nil, nil, errors.New("getting the tx eth cost from the db")
 	}
+
 	// No price record in the db yet.
 	if gas == nil {
 		return big.NewInt(0), slotNum, nil
