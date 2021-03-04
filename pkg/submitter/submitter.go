@@ -309,7 +309,7 @@ func (s *Submitter) submit(ctx context.Context, contract tellorCommon.ContractIn
 }
 
 func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
-	address := "000000000000000000000000" + s.account.Address.Hex()
+	address := "000000000000000000000000" + s.account.Address.Hex()[2:]
 	decoded, err := hex.DecodeString(address)
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "decoding address")
