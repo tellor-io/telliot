@@ -162,18 +162,14 @@ func (s *Submitter) blockUntilTimeToSubmit(ctx context.Context) {
 		}
 		break
 	}
-	var (
-		timeToSubmit context.Context
-		cncl         context.CancelFunc
-	)
 	if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
 		level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
-		timeToSubmit, cncl = context.WithDeadline(ctx, timestamp.Add(15*time.Minute))
+		timeToSubmit, cncl := context.WithDeadline(ctxNewChallenge, timestamp.Add(15*time.Minute))
 		defer cncl()
-	}
-	select {
-	case <-ctx.Done(): // The context was canceled from the main loop because new work arrived.
-	case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
+		select {
+		case <-ctxNewChallenge.Done(): // The context was canceled from the main loop because new work arrived.
+		case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
+		}
 	}
 }
 
