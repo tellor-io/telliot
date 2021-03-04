@@ -141,12 +141,17 @@ func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 		RequestIDs: challenge.CurrentRequestId,
 	}
 
-	level.Info(mt.logger).Log("msg", "sending new challenge to the miner manager",
-		"challenge", fmt.Sprintf("%x", newChallenge.Challenge),
-		"difficulty", newChallenge.Difficulty,
-		"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
-	)
-	mt.workSink <- &mining.Work{Challenge: newChallenge, PublicAddr: mt.accounts[0].Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
+	for _, acc := range mt.accounts {
+		level.Info(mt.logger).Log("msg", "sending new challenge to the miner manager",
+			"addr", acc.Address.String(),
+			"challenge", fmt.Sprintf("%x", newChallenge.Challenge),
+			"difficulty", newChallenge.Difficulty,
+			"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
+		)
+		mt.workSink <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
+
+	}
+
 }
 
 func (mt *Tasker) Start() error {

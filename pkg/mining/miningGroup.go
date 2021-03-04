@@ -317,7 +317,8 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			// Did it finish the job?
 			recv += result.n
 			if result.nonce != "" || recv >= currWork.N {
-				level.Info(g.logger).Log("msg", "sent new chalenge to the mining group",
+				level.Info(g.logger).Log("msg", "found solution and sending the result",
+					"addr", currWork.PublicAddr,
 					"challenge", fmt.Sprintf("%x", currWork.Challenge.Challenge),
 					"solution", result.nonce,
 					"difficulty", currWork.Challenge.Difficulty,

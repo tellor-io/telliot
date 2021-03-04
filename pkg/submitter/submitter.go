@@ -132,6 +132,7 @@ func (s *Submitter) Start() error {
 			var ctx context.Context
 			ctx, s.lastSubmitCncl = context.WithCancel(s.ctx)
 			level.Info(s.logger).Log("msg", "received a solution",
+				"addr", result.Work.PublicAddr,
 				"challenge", fmt.Sprintf("%x", result.Work.Challenge),
 				"solution", result.Nonce,
 				"difficulty", result.Work.Challenge.Difficulty,

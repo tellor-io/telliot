@@ -111,6 +111,7 @@ func (mgr *MiningMgr) Start() error {
 			}
 			mgr.toMineInput <- work
 			level.Info(mgr.logger).Log("msg", "sent new chalenge to the mining group",
+				"addr", work.PublicAddr,
 				"challenge", fmt.Sprintf("%x", work.Challenge.Challenge),
 				"difficulty", work.Challenge.Difficulty,
 				"requestIDs", fmt.Sprintf("%+v", work.Challenge.RequestIDs),
