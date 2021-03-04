@@ -44,6 +44,7 @@ func TestZeroBalance(t *testing.T) {
 }
 
 func TestNegativeBalance(t *testing.T) {
+	logger := logging.NewLogger()
 	cfg := config.OpenTestConfig(t)
 	startBal := big.NewInt(-753)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
@@ -55,15 +56,17 @@ func TestNegativeBalance(t *testing.T) {
 	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
 
-	logger := logging.NewLogger()
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
-	tracker := NewBalanceTracker(logger, proxy, client, &account)
-	err = tracker.Exec(context.Background())
-	testutil.NotOk(t, err, "should have error")
+	for _, account := range accounts {
+		tracker := NewBalanceTracker(logger, proxy, client, account)
+		err = tracker.Exec(context.Background())
+		testutil.NotOk(t, err, "should have error")
+	}
 }
 
 func dbBalanceTest(startBal *big.Int, t *testing.T) {
+	logger := logging.NewLogger()
 	cfg := config.OpenTestConfig(t)
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
@@ -73,19 +76,21 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 	defer t.Cleanup(cleanup)
 	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
-	logger := logging.NewLogger()
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := rpc.NewAccounts(cfg)
 	testutil.Ok(t, err)
-	tracker := NewBalanceTracker(logger, proxy, client, &account)
-	err = tracker.Exec(context.Background())
-	testutil.Ok(t, err)
-	v, err := DB.Get(db.BalanceKey)
-	testutil.Ok(t, err)
-	b, err := hexutil.DecodeBig(string(v))
-	testutil.Ok(t, err)
-	t.Logf("Balance stored: %v\n", string(v))
-	if b.Cmp(startBal) != 0 {
-		testutil.Ok(t, errors.Errorf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
+	for _, account := range accounts {
+		tracker := NewBalanceTracker(logger, proxy, client, account)
+		err = tracker.Exec(context.Background())
+		testutil.Ok(t, err)
+		v, err := DB.Get(db.BalancePrefix + account.Address.String())
+		testutil.Ok(t, err)
+		b, err := hexutil.DecodeBig(string(v))
+		testutil.Ok(t, err)
+		t.Logf("Balance stored: %v\n", string(v))
+		if b.Cmp(startBal) != 0 {
+			testutil.Ok(t, errors.Errorf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
+		}
 	}
+
 	DB.Close()
 }

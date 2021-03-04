@@ -31,6 +31,20 @@ func (b *DisputeTracker) String() string {
 	return DisputeTrackerName
 }
 
+func NewDisputeTrackers(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.ITellor, accounts []*rpc.Account) []Tracker {
+	trackers := make([]Tracker, len(accounts))
+	for i, account := range accounts {
+		trackers[i] = &DisputeTracker{
+			config:   config,
+			db:       db,
+			contract: contract,
+			account:  account,
+			logger:   log.With(logger, "component", "dispute tracker"),
+		}
+	}
+	return trackers
+}
+
 func NewDisputeTracker(logger log.Logger, config *config.Config, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *DisputeTracker {
 	return &DisputeTracker{
 		config:   config,
@@ -49,8 +63,9 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 		return errors.Wrap(err, "getting staker info")
 	}
 	enc := hexutil.EncodeBig(status)
-	level.Debug(b.logger).Log("msg", "storing miner status", "key", db.DisputeStatusKey, "status", enc)
-	err = b.db.Put(db.DisputeStatusKey, []byte(enc))
+	dbKey := db.DisputeStatusKeyFor(b.account.Address)
+	level.Debug(b.logger).Log("msg", "storing miner status", "key", dbKey, "status", enc)
+	err = b.db.Put(dbKey, []byte(enc))
 	if err != nil {
 		return errors.Wrap(err, "storing dispute")
 	}
@@ -67,8 +82,8 @@ func (b *DisputeTracker) Exec(ctx context.Context) error {
 		if err != nil {
 			level.Error(b.logger).Log("msg", "getting staker dispute status for miner", "address", addr, "err", err)
 		}
-		dbKey := addr + "-" + db.DisputeStatusKey
-		level.Debug(b.logger).Log("msg", "storing whitelisted miner status", "key", dbKey, "status", status)
+		dbKey := db.DisputeStatusKeyFor(address)
+		// level.Debug(b.logger).Log("msg", "storing whitelisted miner status", "key", dbKey, "status", status)
 		err = b.db.Put(dbKey, []byte(hexutil.EncodeBig(status)))
 		if err != nil {
 			level.Error(b.logger).Log("msg", "storing staker dispute status", "err", err)

@@ -1,15 +1,17 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package pow
+package mining
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/crypto"
+
 	// nolint:staticcheck
 	"golang.org/x/crypto/ripemd160"
 )
@@ -26,18 +28,23 @@ func (c *CpuMiner) StepSize() uint64 {
 }
 
 func (c *CpuMiner) Name() string {
-	return fmt.Sprintf("CPU %d", *c)
+	return fmt.Sprintf("CPU %d", c)
 }
 
-func (c *CpuMiner) CheckRange(hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
+func (c *CpuMiner) CheckRange(deadlineCtx context.Context, hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
 	baseLen := len(hash.prefix)
 	hashInput := make([]byte, len(hash.prefix))
 	copy(hashInput, hash.prefix)
 
 	x := new(big.Int)
 	compareZero := big.NewInt(0)
-
 	for i := start; i < (start + n); i++ {
+		select {
+		case <-deadlineCtx.Done():
+			// Return any solution when context deadline exceeded.
+			return "", n, nil
+		default:
+		}
 		nn := strconv.FormatUint(i, 10)
 		hashInput = hashInput[:baseLen]
 		hashInput = append(hashInput, []byte(nn)...)

@@ -4,6 +4,7 @@
 package rpc
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -393,6 +394,12 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	// Balancer related.
 	case getUintVarFN:
 		{
+			// Return 10 minutes ago time for the _TIME_OF_LAST_NEW_VALUE key.
+			inputdata := call.Data[4:]
+			timeOfLastValueData := Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE"))
+			if bytes.Equal(inputdata, timeOfLastValueData[:]) {
+				return meth.Outputs.Pack(big.NewInt(time.Now().Unix() - 10*60))
+			}
 			return meth.Outputs.Pack(big.NewInt(1))
 		}
 	case getCurentTokensFN:

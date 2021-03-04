@@ -13,15 +13,15 @@ import (
 )
 
 // CreateTracker a tracker instance by its well-known name.
-func createTracker(logger log.Logger, name string, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, account *rpc.Account) ([]Tracker, error) {
+func createTracker(name string, logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) ([]Tracker, error) {
 	switch name {
 	case "balance":
 		{
-			return []Tracker{NewBalanceTracker(logger, db, client, account)}, nil
+			return NewBalanceTrackers(logger, db, client, accounts), nil
 		}
 	case "disputeStatus":
 		{
-			return []Tracker{NewDisputeTracker(logger, config, db, contract, account)}, nil
+			return NewDisputeTrackers(logger, config, db, contract, accounts), nil
 		}
 	case "gas":
 		{
@@ -29,11 +29,11 @@ func createTracker(logger log.Logger, name string, config *config.Config, db db.
 		}
 	case "currentVariables":
 		{
-			return []Tracker{NewCurrentVariablesTracker(logger, db, contract, account)}, nil
+			return NewCurrentVariablesTrackers(logger, db, contract, accounts), nil
 		}
 	case "tributeBalance":
 		{
-			return []Tracker{NewTributeTracker(logger, db, contract, account)}, nil
+			return NewTributeTrackers(logger, db, contract, accounts), nil
 		}
 	case "indexers":
 		{

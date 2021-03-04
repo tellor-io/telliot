@@ -1,11 +1,12 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package ops
+package submitter
 
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
@@ -43,4 +44,9 @@ func NewSubmitter(
 // Submit relies on rpc package to prepare and submit transactions.
 func (s TxnSubmitter) Submit(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
 	return rpc.SubmitContractTxn(ctx, s.logger, s.cfg, proxy, s.client, s.contract, s.account, ctxName, callback)
+}
+
+// Address returns the public key address of the account.
+func (s TxnSubmitter) Address() common.Address {
+	return s.account.Address
 }

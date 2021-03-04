@@ -30,34 +30,40 @@ func parseConfig(path string) (*config.Config, error) {
 	return cfg, nil
 }
 
-func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, *rpc.Account, error) {
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, contracts.ETHClient, *contracts.ITellor, []*rpc.Account, error) {
 
 	// Create an rpc client
 	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
+		return nil, nil, nil, nil, errors.Wrap(err, "create rpc client instance")
+	}
+
+	// Create an websocker client for watch events.
+	clientWs, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeWSURLEnvName))
+	if err != nil {
+		return nil, nil, nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
 
 	contract, err := contracts.NewITellor(client)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
+		return nil, nil, nil, nil, errors.Wrap(err, "create tellor master instance")
 	}
 
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := rpc.NewAccounts(cfg)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "getting private key to ECDSA")
+		return nil, nil, nil, nil, errors.Wrap(err, "getting private key to ECDSA")
 	}
 
 	// Issue #55, halt if client is still syncing with Ethereum network
 	s, err := client.IsSyncing(ctx)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
+		return nil, nil, nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
 	}
 	if s {
-		return nil, nil, nil, errors.New("ethereum node is still syncing with the network")
+		return nil, nil, nil, nil, errors.New("ethereum node is still syncing with the network")
 	}
 
-	return client, contract, &account, nil
+	return client, clientWs, contract, accounts, nil
 }
 
 // migrateAndOpenDB migrates the tx costs and deletes the db.
@@ -101,6 +107,7 @@ var cli struct {
 	Migrate  migrateCmd  `cmd:"" help:"Migrate funds from the old oracle contract"`
 	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
 	Approve  approveCmd  `cmd:"" help:"Approve tokens"`
+	Accounts accountsCmd `cmd:"" help:"Show accounts"`
 	Balance  balanceCmd  `cmd:"" help:"Check the balance of an address"`
 	Stake    struct {
 		Deposit  depositCmd  `cmd:"" help:"deposit a stake"`

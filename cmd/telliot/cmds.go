@@ -6,21 +6,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"math/big"
 	"net/http"
-	"os"
-	"os/signal"
-	"time"
+	"syscall"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log/level"
+	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/tellor-io/telliot/pkg/dataServer"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/ops"
-	"github.com/tellor-io/telliot/pkg/rest"
+	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/submitter"
+	"github.com/tellor-io/telliot/pkg/tasker"
 )
 
 var GitTag string
@@ -47,6 +47,7 @@ type tokenCmd struct {
 	Config  configPath `type:"existingfile" help:"path to config file"`
 	Address string     `arg:""`
 	Amount  string     `arg:""`
+	Account int        `arg:"" optional:""`
 }
 
 type transferCmd tokenCmd
@@ -60,7 +61,7 @@ func (c *transferCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -75,7 +76,12 @@ func (c *transferCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing amount argument")
 	}
+	account, err := getAccountFor(accounts, c.Account)
+	if err != nil {
+		return err
+	}
 	return ops.Transfer(ctx, logger, client, contract, account, address.addr, amount.Int)
+
 }
 
 type approveCmd tokenCmd
@@ -89,7 +95,7 @@ func (c *approveCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -104,7 +110,37 @@ func (c *approveCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing amount argument")
 	}
+	account, err := getAccountFor(accounts, c.Account)
+	if err != nil {
+		return err
+	}
+
 	return ops.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
+}
+
+type accountsCmd struct {
+	Config configPath `type:"existingfile" help:"path to config file"`
+}
+
+func (a *accountsCmd) Run() error {
+	cfg, err := parseConfig(string(a.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
+
+	logger := logging.NewLogger()
+
+	ctx := context.Background()
+	_, _, _, accounts, err := createTellorVariables(ctx, logger, cfg)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
+
+	for i, account := range accounts {
+		level.Info(logger).Log("msg", "account", "no", i, "address", account.Address.String())
+	}
+
+	return nil
 }
 
 type balanceCmd struct {
@@ -121,7 +157,7 @@ func (b *balanceCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, _, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, _, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -142,7 +178,8 @@ func (b *balanceCmd) Run() error {
 }
 
 type depositCmd struct {
-	Config configPath `type:"existingfile" help:"path to config file"`
+	Config  configPath `type:"existingfile" help:"path to config file"`
+	Account int        `arg:"" optional:""`
 }
 
 func (d depositCmd) Run() error {
@@ -154,15 +191,22 @@ func (d depositCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
+	account, err := getAccountFor(accounts, d.Account)
+	if err != nil {
+		return err
+	}
 	return ops.Deposit(ctx, logger, client, contract, account)
+
 }
 
 type withdrawCmd struct {
-	Config configPath `type:"existingfile" help:"path to config file"`
+	Config  configPath `type:"existingfile" help:"path to config file"`
+	Address string     `arg:"" required:""`
+	Account int        `arg:"" optional:""`
 }
 
 func (w withdrawCmd) Run() error {
@@ -174,15 +218,27 @@ func (w withdrawCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
+
+	addr := ETHAddress{}
+	err = addr.Set(w.Address)
+	if err != nil {
+		return errors.Wrapf(err, "parsing argument")
+	}
+	account, err := getAccountFor(accounts, w.Account)
+	if err != nil {
+		return err
+	}
 	return ops.WithdrawStake(ctx, logger, client, contract, account)
+
 }
 
 type requestCmd struct {
-	Config configPath `type:"existingfile" help:"path to config file"`
+	Config  configPath `type:"existingfile" help:"path to config file"`
+	Account int        `arg:"" optional:""`
 }
 
 func (r requestCmd) Run() error {
@@ -194,15 +250,20 @@ func (r requestCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
+	}
+	account, err := getAccountFor(accounts, r.Account)
+	if err != nil {
+		return err
 	}
 	return ops.RequestStakingWithdraw(ctx, logger, client, contract, account)
 }
 
 type statusCmd struct {
-	Config configPath `type:"existingfile" help:"path to config file"`
+	Config  configPath `type:"existingfile" help:"path to config file"`
+	Account int        `arg:"" optional:""`
 }
 
 func (s statusCmd) Run() error {
@@ -214,9 +275,13 @@ func (s statusCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
+	}
+	account, err := getAccountFor(accounts, s.Account)
+	if err != nil {
+		return err
 	}
 	return ops.ShowStatus(ctx, logger, client, contract, account)
 }
@@ -234,21 +299,25 @@ func (s migrateCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
 
-	auth, err := ops.PrepareEthTransaction(ctx, client, account)
-	if err != nil {
-		return errors.Wrap(err, "prepare ethereum transaction")
-	}
+	// Do migration for each account.
+	for _, account := range accounts {
+		level.Info(logger).Log("msg", "TRB migration", "account", account.Address.String())
+		auth, err := ops.PrepareEthTransaction(ctx, client, account)
+		if err != nil {
+			return errors.Wrap(err, "prepare ethereum transaction")
+		}
 
-	tx, err := contract.Migrate(auth)
-	if err != nil {
-		return errors.Wrap(err, "contract failed")
+		tx, err := contract.Migrate(auth)
+		if err != nil {
+			return errors.Wrap(err, "contract failed")
+		}
+		level.Info(logger).Log("msg", "TRB migrated", "txHash", tx.Hash().Hex())
 	}
-	level.Info(logger).Log("msg", "TRB migrated", "txHash", tx.Hash().Hex())
 	return nil
 }
 
@@ -257,6 +326,7 @@ type newDisputeCmd struct {
 	requestId  string     `arg:""  help:"the request id to dispute it"`
 	timestamp  string     `arg:""  help:"the submitted timestamp to dispute"`
 	minerIndex string     `arg:""  help:"the miner index to dispute"`
+	Account    int        `arg:"" optional:""`
 }
 
 func (n newDisputeCmd) Run() error {
@@ -268,7 +338,7 @@ func (n newDisputeCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -288,13 +358,19 @@ func (n newDisputeCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing argument")
 	}
+	account, err := getAccountFor(accounts, n.Account)
+	if err != nil {
+		return err
+	}
 	return ops.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
+
 }
 
 type voteCmd struct {
 	Config    configPath `type:"existingfile" help:"path to config file"`
 	disputeId string     `arg:""  help:"the dispute id"`
 	support   bool       `arg:""  help:"true or false"`
+	Account   int        `arg:"" optional:""`
 }
 
 func (v voteCmd) Run() error {
@@ -306,7 +382,7 @@ func (v voteCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -316,11 +392,16 @@ func (v voteCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing argument")
 	}
+	account, err := getAccountFor(accounts, v.Account)
+	if err != nil {
+		return err
+	}
 	return ops.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
 }
 
 type showCmd struct {
-	Config configPath `type:"existingfile" help:"path to config file"`
+	Config  configPath `type:"existingfile" help:"path to config file"`
+	Account int        `arg:"" optional:""`
 }
 
 func (s showCmd) Run() error {
@@ -332,9 +413,13 @@ func (s showCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
+	}
+	account, err := getAccountFor(accounts, s.Account)
+	if err != nil {
+		return err
 	}
 	return ops.List(ctx, cfg, logger, client, contract, account)
 }
@@ -352,14 +437,10 @@ func (d dataserverCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, _, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
-
-	// Create os kill sig listener.
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
 
 	DB, err := migrateAndOpenDB(logger, cfg)
 	if err != nil {
@@ -369,48 +450,51 @@ func (d dataserverCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "open remote DB instance")
 	}
-	ch := make(chan os.Signal)
-	ds, err := ops.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, account, ch)
+	ds, err := dataServer.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
 	if err != nil {
 		return errors.Wrapf(err, "creating data server")
 	}
-	// Start and wait for it to be ready
-	if err := ds.Start(ctx); err != nil {
-		return errors.Wrapf(err, "starting data server")
-	}
-	<-ds.Ready()
 
-	http.Handle("/metrics", promhttp.Handler())
-	srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
-	if err != nil {
-		return errors.Wrapf(err, "creating http data server")
-	}
-	srv.Start()
+	// We define our run groups here.
+	var g run.Group
+	// Run groups.
+	{
+		// Handle interupts.
+		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
 
-	// Wait for kill sig.
-	<-c
-	// Notify exit channels.
-	ch <- os.Interrupt
-
-	cnt := 0
-	start := time.Now()
-	for {
-		cnt++
-		dsStopped := false
-
-		if ds != nil {
-			dsStopped = !ds.Running
-		} else {
-			dsStopped = true
+		{
+			// Start and wait for it to be ready.
+			g.Add(func() error {
+				return errors.Wrapf(ds.Start(), "starting data server")
+			}, func(error) {
+				ds.Stop()
+			})
 		}
 
-		if !dsStopped && cnt > 60 {
-			level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
-		} else if dsStopped {
-			break
+		// Metrics server.
+		{
+			http.Handle("/metrics", promhttp.Handler())
+			srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.Mine.ListenHost, cfg.Mine.ListenPort)}
+			g.Add(func() error {
+				level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
+				// returns ErrServerClosed on graceful close
+				var err error
+				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
+					err = errors.Wrapf(err, "ListenAndServe")
+				}
+				return err
+			}, func(error) {
+				srv.Close()
+			})
 		}
-		time.Sleep(500 * time.Millisecond)
+
 	}
+
+	if err := g.Run(); err != nil {
+		level.Info(logger).Log("msg", "main exited with error", "err", err)
+		return err
+	}
+
 	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
 }
@@ -420,44 +504,26 @@ type mineCmd struct {
 }
 
 func (m mineCmd) Run() error {
+	// Defining a global context for starting and stopping of components.
+	ctx := context.Background()
 	cfg, err := parseConfig(string(m.Config))
 	if err != nil {
 		return errors.Wrapf(err, "creating config")
 	}
-
 	logger := logging.NewLogger()
-
-	ctx := context.Background()
-	client, contract, account, err := createTellorVariables(ctx, logger, cfg)
+	client, clientWs, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
-	// Create os kill sig listener.
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	exitChannels := make([]*chan os.Signal, 0)
 
-	http.Handle("/metrics", promhttp.Handler())
-	srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.Mine.ListenHost, cfg.Mine.ListenPort)}
-	go func() {
-		level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
-		// returns ErrServerClosed on graceful close
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatalf("ListenAndServe(): %s", err)
-		}
-	}()
-	defer srv.Close()
+	// DataServer is the Telliot data server.
+	var proxy db.DataServerProxy
 
-	var ds *ops.DataServerOps
+	var ds *dataServer.DataServerOps
 	DB, err := migrateAndOpenDB(logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
 	}
-
-	ch1 := make(chan os.Signal)
-	exitChannels = append(exitChannels, &ch1)
-
-	var proxy db.DataServerProxy
 	if cfg.Mine.RemoteDBHost != "" {
 		proxy, err = db.OpenRemote(logger, cfg, DB)
 	} else {
@@ -470,84 +536,92 @@ func (m mineCmd) Run() error {
 
 	// Not using a remote DB so need to start the trackers.
 	if cfg.Mine.RemoteDBHost == "" {
-		ds, err = ops.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, account, ch1)
+		ds, err = dataServer.CreateDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
 		if err != nil {
 			return errors.Wrapf(err, "creating data server")
 		}
 		// Start and wait for it to be ready.
-		if err := ds.Start(ctx); err != nil {
-			return errors.Wrapf(err, "starting data server")
+		if err := ds.Start(); err != nil {
+			return errors.Wrap(err, "starting data server")
 		}
+		// We need to wait until the DataServer instance is ready.
 		<-ds.Ready()
 	}
 
-	var v []byte
-	for i := 0; i < 10; i++ {
-		// Start miner
-		v, err = proxy.Get(db.DisputeStatusKey)
-		if err != nil {
-			level.Warn(logger).Log("msg", "getting dispute status. Check if staked", "err", err)
-		}
-		if len(v) != 0 {
-			break
-		}
-		select {
-		case <-c: // Early exit from os.Interrupt
-			return nil
-		default:
-		}
-		time.Sleep(1 * time.Second)
-	}
-	if len(v) == 0 {
-		return errors.New("no status result after 10 attempts. this usually means no connection to the DB")
-	}
+	// We define our run groups here.
+	var g run.Group
+	// Run groups.
+	{
+		// Handle interupts.
+		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
 
-	status, _ := hexutil.DecodeBig(string(v))
-	if status.Cmp(big.NewInt(1)) != 0 {
-		return errors.New("miner is not able to mine with current status")
-	}
-	ch2 := make(chan os.Signal)
-	exitChannels = append(exitChannels, &ch2)
-	miner, err := ops.CreateMiningManager(logger, ch2, cfg, proxy, contract, account)
-	if err != nil {
-		return errors.Wrapf(err, "creating miner")
-	}
-	go func() {
-		miner.Start(ctx)
-	}()
-
-	// Wait for kill sig.
-	<-c
-	// Then notify exit channels.
-	for _, ch := range exitChannels {
-		*ch <- os.Interrupt
-	}
-	cnt := 0
-	start := time.Now()
-	for {
-		cnt++
-		dsStopped := false
-		minerStopped := false
-
-		if ds != nil {
-			dsStopped = !ds.Running
-		} else {
-			dsStopped = true
+		// Metrics server.
+		{
+			http.Handle("/metrics", promhttp.Handler())
+			srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.Mine.ListenHost, cfg.Mine.ListenPort)}
+			g.Add(func() error {
+				level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
+				// returns ErrServerClosed on graceful close
+				var err error
+				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
+					err = errors.Wrapf(err, "ListenAndServe")
+				}
+				return err
+			}, func(error) {
+				srv.Close()
+			})
 		}
 
-		if miner != nil {
-			minerStopped = !miner.Running
-		} else {
-			minerStopped = true
-		}
+		// Run a miner manager for each of the accounts.
+		if true {
+			// Run a tasker instance.
+			tasker, taskerCh := tasker.CreateTasker(ctx, logger, cfg, proxy, clientWs, contract, accounts)
+			g.Add(func() error {
+				return tasker.Start()
+			}, func(error) {
+				tasker.Stop()
+			})
 
-		if !dsStopped && !minerStopped && cnt > 60 {
-			level.Warn(logger).Log("msg", "taking longer than expected to stop operations", "waited", time.Since(start))
-		} else if dsStopped && minerStopped {
-			break
+			// the Miner component.
+			miner, err := mining.CreateMiningManager(logger, ctx, cfg, proxy, contract, taskerCh)
+			if err != nil {
+				return errors.Wrapf(err, "creating miner")
+			}
+			g.Add(func() error {
+				return miner.Start()
+			}, func(error) {
+				miner.Stop()
+			})
+
+			// Add a submitter for each account.
+			for _, account := range accounts {
+				// Get a channel on which it listens for new data to submit.
+				txSubmitter := submitter.NewSubmitter(logger, cfg, client, contract, account)
+				submitter, submitCh := submitter.CreateSubmitter(ctx, cfg, logger, client, contract, account, txSubmitter, proxy)
+				g.Add(func() error {
+					return submitter.Start()
+				}, func(error) {
+					submitter.Stop()
+				})
+				miner.Subscribe(submitCh)
+			}
+
 		}
-		time.Sleep(500 * time.Millisecond)
 	}
+
+	if err := g.Run(); err != nil {
+		level.Info(logger).Log("msg", "main exited with error", "err", err)
+		ds.Stop()
+		return err
+	}
+
 	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
+}
+
+func getAccountFor(accounts []*rpc.Account, accountNo int) (*rpc.Account, error) {
+	if accountNo < 0 || accountNo >= len(accounts) {
+		return nil, errors.New("account not found")
+	}
+	return accounts[accountNo], nil
 }

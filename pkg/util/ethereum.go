@@ -4,6 +4,7 @@
 package util
 
 import (
+	"encoding/hex"
 	"regexp"
 	"strings"
 
@@ -50,4 +51,13 @@ func GetAddressForNetwork(addresses string, networkID int64) (string, error) {
 	default:
 		return "", errors.New("unhandled network id")
 	}
+}
+
+func DecodeHex(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+
+	return b
 }

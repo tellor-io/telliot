@@ -27,6 +27,19 @@ func (b *CurrentVariablesTracker) String() string {
 	return "CurrentVariablesTracker"
 }
 
+func NewCurrentVariablesTrackers(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, accounts []*rpc.Account) []Tracker {
+	trackers := make([]Tracker, len(accounts))
+	for i, account := range accounts {
+		trackers[i] = &CurrentVariablesTracker{
+			db:       db,
+			contract: contract,
+			account:  account,
+			logger:   log.With(logger, "component", "CurrentVariablesTracker"),
+		}
+	}
+	return trackers
+}
+
 func NewCurrentVariablesTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *CurrentVariablesTracker {
 	return &CurrentVariablesTracker{
 		db:       db,

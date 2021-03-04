@@ -153,12 +153,15 @@ func SubmitContractTxn(
 
 			delay := 15 * time.Second
 			level.Debug(logger).Log("msg", "will retry a send", "retryDelay", delay)
-			time.Sleep(delay)
-			continue
+			select {
+			case <-ctx.Done(): // Submit was canceled, because new work arrived.
+				return nil, errors.New("the submit context was canceled")
+			case <-time.After(delay):
+				continue
+			}
 		}
 		return tx, nil
 	}
-
 	return nil, errors.Wrapf(finalError, "submit txn after 5 attempts ctx:%v", ctxName)
 }
 
