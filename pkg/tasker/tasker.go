@@ -36,7 +36,6 @@ type Tasker struct {
 	workSink         chan *mining.Work
 	Running          bool
 	done             chan bool
-	resubscribe      chan bool
 }
 
 func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, chan *mining.Work) {
@@ -49,7 +48,6 @@ func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, pr
 		contractInstance: contract,
 		workSink:         make(chan *mining.Work, 1),
 		done:             make(chan bool),
-		resubscribe:      make(chan bool, 1),
 		logger:           log.With(logger, "component", ComponentName),
 		cfg:              cfg,
 		client:           client,
@@ -92,11 +90,15 @@ func (mt *Tasker) subscribeToNewChallenge() error {
 	var failedSubscriptionCount int
 
 	// Initial subscription.
-	sink, sub, err = mt.getNewChallengeChannel()
-	if err != nil {
-		level.Error(mt.logger).Log("msg", "initial subscribing to NewChallenge events failed")
-		mt.resubscribe <- true
+	for i := 0; i < 10; i++ {
+		sink, sub, err = mt.getNewChallengeChannel()
+		if err != nil {
+			level.Error(mt.logger).Log("msg", "initial subscribing to NewChallenge events failed")
+			continue
+		}
+		break
 	}
+
 	for {
 		select {
 		case <-mt.done:
@@ -112,19 +114,15 @@ func (mt *Tasker) subscribeToNewChallenge() error {
 					"new challenge subscription error",
 					"err", err)
 			}
-			mt.resubscribe <- true
-		case <-mt.resubscribe:
-			if failedSubscriptionCount == 10 {
-				return errors.New("failed to subscribe to NewChallenge events after 10 retries")
+
+			for i := 0; i < 10; i++ {
+				sink, sub, err = mt.getNewChallengeChannel()
+				if err != nil {
+					level.Error(mt.logger).Log("msg", "re-subscribing to NewChallenge events failed", "retry", failedSubscriptionCount)
+					continue
+				}
+				break
 			}
-			sink, sub, err = mt.getNewChallengeChannel()
-			if err != nil {
-				failedSubscriptionCount++
-				level.Error(mt.logger).Log("msg", "subscribing to NewChallenge events failed", "retry", failedSubscriptionCount)
-				mt.resubscribe <- true
-				continue
-			}
-			failedSubscriptionCount = 0
 			level.Info(mt.logger).Log("msg", "subscribed to NewChallenge events")
 		case vLog := <-sink:
 			mt.sendWork(vLog)
