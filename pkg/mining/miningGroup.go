@@ -317,6 +317,13 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			// Did it finish the job?
 			recv += result.n
 			if result.nonce != "" || recv >= currWork.N {
+				level.Info(g.logger).Log("msg", "sent new chalenge to the mining group",
+					"challenge", fmt.Sprintf("%x", currWork.Challenge.Challenge),
+					"solution", result.nonce,
+					"difficulty", currWork.Challenge.Difficulty,
+					"requestIDs", fmt.Sprintf("%+v", currWork.Challenge.RequestIDs),
+				)
+
 				output <- &Result{Work: currWork, Nonce: result.nonce}
 				currWork = nil
 				currHashSettings = nil

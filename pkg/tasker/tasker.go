@@ -143,8 +143,8 @@ func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 		RequestIDs: challenge.CurrentRequestId,
 	}
 
-	level.Debug(mt.logger).Log("msg", "new challenge for mining",
-		"hex", fmt.Sprintf("%x", newChallenge.Challenge),
+	level.Info(mt.logger).Log("msg", "sending new challenge to the miner manager",
+		"challenge", fmt.Sprintf("%x", newChallenge.Challenge),
 		"difficulty", newChallenge.Difficulty,
 		"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
 	)

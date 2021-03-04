@@ -132,9 +132,10 @@ func (s *Submitter) Start() error {
 			var ctx context.Context
 			ctx, s.lastSubmitCncl = context.WithCancel(s.ctx)
 			level.Info(s.logger).Log("msg", "received a solution",
-				"work", fmt.Sprintf("%+v", *result.Work),
-				"IDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
-				"difficulty", fmt.Sprintf("%+v", result.Work.Challenge.Difficulty.Int64()),
+				"challenge", fmt.Sprintf("%x", result.Work.Challenge),
+				"solution", result.Nonce,
+				"difficulty", result.Work.Challenge.Difficulty,
+				"requestIDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
 			)
 			s.handleSubmit(ctx, result)
 		}
@@ -186,7 +187,7 @@ func (s *Submitter) handleSubmit(ctxNewChallenge context.Context, result *mining
 		for {
 			select {
 			case <-ctxNewChallenge.Done(): // The context was canceled from the main loop because new work arrived.
-				level.Info(s.logger).Log("msg", "canceled submit as new challenge arrived")
+				level.Info(s.logger).Log("msg", "canceled submit")
 				return
 			default:
 				profitPercent, err := s.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
