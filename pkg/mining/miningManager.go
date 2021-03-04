@@ -105,10 +105,6 @@ func (mgr *MiningMgr) Start() error {
 			level.Info(mgr.logger).Log("msg", "sent solution to all subscribed submitters")
 		// Listen for new work from the tasker and send for mining.
 		case work := <-mgr.taskerCh:
-			var ids []int64
-			for _, id := range work.Challenge.RequestIDs {
-				ids = append(ids, id.Int64())
-			}
 			mgr.toMineInput <- work
 			level.Info(mgr.logger).Log("msg", "sent new chalenge to the mining group",
 				"addr", work.PublicAddr,

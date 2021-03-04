@@ -87,7 +87,6 @@ func (mt *Tasker) subscribeToNewChallenge() error {
 	var sink chan *tellor.ITellorNewChallenge
 	var err error
 	var sub event.Subscription
-	var failedSubscriptionCount int
 
 	// Initial subscription.
 	for i := 0; i < 10; i++ {
@@ -118,12 +117,12 @@ func (mt *Tasker) subscribeToNewChallenge() error {
 			for i := 0; i < 10; i++ {
 				sink, sub, err = mt.getNewChallengeChannel()
 				if err != nil {
-					level.Error(mt.logger).Log("msg", "re-subscribing to NewChallenge events failed", "retry", failedSubscriptionCount)
+					level.Error(mt.logger).Log("msg", "re-subscribing to NewChallenge events failed")
 					continue
 				}
 				break
 			}
-			level.Info(mt.logger).Log("msg", "subscribed to NewChallenge events")
+			level.Info(mt.logger).Log("msg", "re-subscribed to NewChallenge events")
 		case vLog := <-sink:
 			mt.sendWork(vLog)
 		}
@@ -142,7 +141,7 @@ func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 	}
 
 	for _, acc := range mt.accounts {
-		level.Info(mt.logger).Log("msg", "sending new challenge to the miner manager",
+		level.Info(mt.logger).Log("msg", "new challenge",
 			"addr", acc.Address.String(),
 			"challenge", fmt.Sprintf("%x", newChallenge.Challenge),
 			"difficulty", newChallenge.Difficulty,

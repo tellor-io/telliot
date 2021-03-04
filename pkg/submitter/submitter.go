@@ -131,6 +131,7 @@ func (s *Submitter) Start() error {
 			}
 			var ctx context.Context
 			ctx, s.lastSubmitCncl = context.WithCancel(s.ctx)
+
 			level.Info(s.logger).Log("msg", "received a solution",
 				"addr", result.Work.PublicAddr,
 				"challenge", fmt.Sprintf("%x", result.Work.Challenge),
@@ -151,7 +152,7 @@ func (s *Submitter) Stop() {
 	level.Info(s.logger).Log("msg", "submitter shutdown complete")
 }
 
-func (s *Submitter) blockUntilTimeToSubmit(ctxNewChallenge context.Context) {
+func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) {
 	var (
 		lastSubmit time.Duration
 		timestamp  *time.Time
@@ -159,7 +160,7 @@ func (s *Submitter) blockUntilTimeToSubmit(ctxNewChallenge context.Context) {
 	)
 	for {
 		select {
-		case <-ctxNewChallenge.Done(): // The context was canceled from the main loop because new work arrived.
+		case <-newChallengeReplace.Done(): // The context was canceled from the main loop because new work arrived.
 		default:
 		}
 		lastSubmit, timestamp, err = s.lastSubmit()
@@ -172,22 +173,22 @@ func (s *Submitter) blockUntilTimeToSubmit(ctxNewChallenge context.Context) {
 	}
 	if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
 		level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
-		timeToSubmit, cncl := context.WithDeadline(ctxNewChallenge, timestamp.Add(15*time.Minute))
+		timeToSubmit, cncl := context.WithDeadline(newChallengeReplace, timestamp.Add(15*time.Minute))
 		defer cncl()
 		select {
-		case <-ctxNewChallenge.Done(): // The context was canceled from the main loop because new work arrived.
+		case <-newChallengeReplace.Done(): // The context was canceled from the main loop because new work arrived.
 		case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
 		}
 	}
 
 }
 
-func (s *Submitter) handleSubmit(ctxNewChallenge context.Context, result *mining.Result) {
-	go func(ctxNewChallenge context.Context, result *mining.Result) {
-		ticker := time.NewTicker(15 * time.Second)
+func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mining.Result) {
+	go func(newChallengeReplace context.Context, result *mining.Result) {
+		ticker := time.NewTicker(1 * time.Second)
 		for {
 			select {
-			case <-ctxNewChallenge.Done(): // The context was canceled from the main loop because new work arrived.
+			case <-newChallengeReplace.Done(): // The context was canceled from the main loop because new work arrived.
 				level.Info(s.logger).Log("msg", "canceled submit")
 				return
 			default:
@@ -208,8 +209,8 @@ func (s *Submitter) handleSubmit(ctxNewChallenge context.Context, result *mining
 								<-ticker.C
 								continue
 							}
-							s.blockUntilTimeToSubmit(ctxNewChallenge)
-							tx, err := s.Submit(ctxNewChallenge, result)
+							s.blockUntilTimeToSubmit(newChallengeReplace)
+							tx, err := s.Submit(newChallengeReplace, result)
 							if err != nil {
 								s.submitFailCount.Inc()
 								level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err, "account", s.account.Address.String())
@@ -217,7 +218,7 @@ func (s *Submitter) handleSubmit(ctxNewChallenge context.Context, result *mining
 								continue
 							}
 							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
-							s.saveGasUsed(ctxNewChallenge, tx)
+							s.saveGasUsed(newChallengeReplace, tx)
 							s.submitCount.Inc()
 							return
 						}
@@ -225,7 +226,7 @@ func (s *Submitter) handleSubmit(ctxNewChallenge context.Context, result *mining
 				}
 			}
 		}
-	}(ctxNewChallenge, result)
+	}(newChallengeReplace, result)
 }
 
 func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.Transaction, error) {

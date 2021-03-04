@@ -31,7 +31,7 @@ func (c *CpuMiner) Name() string {
 	return fmt.Sprintf("CPU %d", c)
 }
 
-func (c *CpuMiner) CheckRange(deadlineCtx context.Context, hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
+func (c *CpuMiner) CheckRange(anySolution context.Context, hash *HashSettings, start uint64, n uint64) (string, uint64, error) {
 	baseLen := len(hash.prefix)
 	hashInput := make([]byte, len(hash.prefix))
 	copy(hashInput, hash.prefix)
@@ -40,9 +40,8 @@ func (c *CpuMiner) CheckRange(deadlineCtx context.Context, hash *HashSettings, s
 	compareZero := big.NewInt(0)
 	for i := start; i < (start + n); i++ {
 		select {
-		case <-deadlineCtx.Done():
-			// Return any solution when context deadline exceeded.
-			return "", n, nil
+		case <-anySolution.Done():
+			return "any solution", n, nil
 		default:
 		}
 		nn := strconv.FormatUint(i, 10)
