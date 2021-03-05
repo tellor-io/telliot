@@ -51,7 +51,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 
 	accounts, err := rpc.NewAccounts(cfg)
 	if err != nil {
-		return nil, nil, nil, nil, errors.Wrap(err, "getting private key to ECDSA")
+		return nil, nil, nil, nil, errors.Wrap(err, "creating accounts")
 	}
 
 	// Issue #55, halt if client is still syncing with Ethereum network

@@ -180,7 +180,6 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 		case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
 		}
 	}
-
 }
 
 func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mining.Result) {
@@ -264,7 +263,7 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 			if err != nil {
 				if challenge.RequestIDs[i].Uint64() > tracker.MaxPSRID() {
 					level.Error(s.logger).Log(
-						"msg", "decoding price value prior to submitt ing solution",
+						"msg", "decoding price value prior to submiting solution",
 						"err", err,
 					)
 					if len(val) == 0 {

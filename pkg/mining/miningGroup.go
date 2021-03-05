@@ -210,7 +210,7 @@ func (b *Backend) dispatchWork(parentCtx context.Context, hash *HashSettings, st
 	var timeOfLastNewValue *big.Int
 	var retriesCount int
 	for {
-		// checks the last submit value in the oracle and set a timeout of 15min - (now-lastSubmit).
+		// Checks the last submit value in the oracle and set a timeout of 15min - (now-lastSubmit).
 		// This is because 15min after the last submit any solution will work.
 		timeOfLastNewValue, err = b.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
 		if err == nil {
