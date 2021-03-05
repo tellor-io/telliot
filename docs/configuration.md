@@ -52,6 +52,7 @@ Telliot commands and config file options are as the following:
 * `disputeTimeDelta` - how far back to store values for min/max range - default 5 \(in minutes\)
 * `disputeThreshold` - percentage of acceptable range outside min/max for dispute checking - default
 * `psrFolder` - folder location holding your psr.json file, default working directory
+* `ProfitThreshold` - Solutions will only be submitted when the estimated profit margin is greater than the `ProfitThreshold` setting.  The estimated profit margin (%) is defined as `100*(EstimatedRewards - EstimatedTransactionCosts)/EstimatedTransaction Costs`.  Setting a ProfitThreshold of 0 will submit solutions if the transaction is estimated to break even `(EstimatedRewards = EstimatedTransactionCosts)`.   Values are estimates only.  There is no guarantee on the estimated values or making a profit.
 
 ### LogConfig file options
 
@@ -70,4 +71,3 @@ INFO - logs most information about the mining operation
 WARN - logs all warnings and errors
 
 ERROR - logs only serious errors
-

@@ -13,7 +13,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 )
 
-const NumProcessors = 1
+const NumProcessors = 7
 
 func SetupMiningGroup(ctx context.Context, logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	var hashers []Hasher
