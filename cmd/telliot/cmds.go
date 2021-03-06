@@ -114,7 +114,6 @@ func (c *approveCmd) Run() error {
 	if err != nil {
 		return err
 	}
-
 	return ops.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
 
@@ -569,49 +568,54 @@ func (m mineCmd) Run() error {
 				return err
 			}, func(error) {
 				srv.Close()
+				level.Info(logger).Log("msg", "metrics server shutdown complete")
 			})
 		}
 
 		// Run a miner manager for each of the accounts.
 		if true {
-			// Run a tasker instance.
-			tasker, taskerCh := tasker.CreateTasker(ctx, logger, cfg, proxy, clientWs, contract, accounts)
-			g.Add(func() error {
-				return tasker.Start()
-			}, func(error) {
-				tasker.Stop()
-			})
-
-			// the Miner component.
-			miner, err := mining.CreateMiningManager(logger, ctx, cfg, proxy, contract, taskerCh)
-			if err != nil {
-				return errors.Wrapf(err, "creating miner")
-			}
-			g.Add(func() error {
-				return miner.Start()
-			}, func(error) {
-				miner.Stop()
-			})
+			// Create a tasker intance.
+			tasker, taskerChs := tasker.CreateTasker(ctx, logger, cfg, proxy, clientWs, contract, accounts)
 
 			// Add a submitter for each account.
 			for _, account := range accounts {
 				// Get a channel on which it listens for new data to submit.
-				txSubmitter := submitter.NewSubmitter(logger, cfg, client, contract, account)
-				submitter, submitCh := submitter.CreateSubmitter(ctx, cfg, logger, client, contract, account, txSubmitter, proxy)
+				submitter, submitterCh, err := submitter.CreateSubmitter(ctx, cfg, logger, client, contract, account, proxy)
+				if err != nil {
+					return errors.Wrapf(err, "creating submitter")
+				}
 				g.Add(func() error {
 					return submitter.Start()
 				}, func(error) {
 					submitter.Stop()
 				})
-				miner.Subscribe(submitCh)
+
+				// the Miner component.
+				miner, err := mining.CreateMiningManager(logger, ctx, cfg, proxy, contract, taskerChs[account.Address.String()], submitterCh, account)
+				if err != nil {
+					return errors.Wrapf(err, "creating miner")
+				}
+				g.Add(func() error {
+					return miner.Start()
+				}, func(error) {
+					miner.Stop()
+				})
 			}
+
+			// Run the tasker.
+			g.Add(func() error {
+				return tasker.Start()
+			}, func(error) {
+				tasker.Stop()
+				// Stopping the dataserver.
+				ds.Stop()
+			})
 
 		}
 	}
 
 	if err := g.Run(); err != nil {
 		level.Info(logger).Log("msg", "main exited with error", "err", err)
-		ds.Stop()
 		return err
 	}
 

@@ -23,6 +23,21 @@ type SolutionSink interface {
 	Submit(context.Context, *Result) (*types.Transaction, error)
 }
 
+const NumProcessors = 1
+
+func SetupMiningGroup(ctx context.Context, logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+	var hashers []Hasher
+	level.Info(logger).Log("msg", "starting CPU mining", "threads", NumProcessors)
+	for i := 0; i < NumProcessors; i++ {
+		hashers = append(hashers, NewCpuMiner(int64(i)))
+	}
+	miningGrp, err := NewMiningGroup(ctx, logger, cfg, hashers, contractInstance)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating new mining group")
+	}
+	return miningGrp, nil
+}
+
 // MiningMgr manages mining, submiting a solution and requesting data.
 // In the tellor contract a solution is saved in slots where a value is valid only when it has 5 confirmed slots.
 // The manager tracks tx costs and profitThreshold is set it skips any transactions below the profit threshold.
@@ -36,7 +51,7 @@ type MiningMgr struct {
 	ethClient        contracts.ETHClient
 	group            *MiningGroup
 	taskerCh         chan *Work
-	submitters       []chan *Result
+	submitterCh      chan *Result
 	database         db.DataServerProxy
 	contractInstance *contracts.ITellor
 	cfg              *config.Config
@@ -53,10 +68,14 @@ func CreateMiningManager(
 	database db.DataServerProxy,
 	contractInstance *contracts.ITellor,
 	taskerCh chan *Work,
+	submitterCh chan *Result,
+	account *rpc.Account,
 ) (*MiningMgr, error) {
+
+	// Setup a MiningGroup for each account.
 	group, err := SetupMiningGroup(ctx, logger, cfg, contractInstance)
 	if err != nil {
-		return nil, errors.Wrap(err, "setup miners")
+		return nil, errors.Wrap(err, "setup MiningGroup")
 	}
 
 	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
@@ -73,10 +92,10 @@ func CreateMiningManager(
 	mng := &MiningMgr{
 		ctx:              ctx,
 		close:            close,
-		logger:           log.With(logger, "component", ComponentName),
+		logger:           log.With(logger, "component", ComponentName, "pubKey", account.Address.String()[:6]),
 		group:            group,
 		taskerCh:         taskerCh,
-		submitters:       []chan *Result{},
+		submitterCh:      make(chan *Result),
 		contractInstance: contractInstance,
 		cfg:              cfg,
 		database:         database,
@@ -99,10 +118,7 @@ func (mgr *MiningMgr) Start() error {
 			return nil
 		// Found a solution.
 		case solution := <-mgr.solutionOutput:
-			for _, submitter := range mgr.submitters {
-				submitter <- solution
-			}
-			level.Info(mgr.logger).Log("msg", "sent solution to all subscribed submitters")
+			mgr.submitterCh <- solution
 		// Listen for new work from the tasker and send for mining.
 		case work := <-mgr.taskerCh:
 			mgr.toMineInput <- work
@@ -114,10 +130,6 @@ func (mgr *MiningMgr) Start() error {
 			)
 		}
 	}
-}
-
-func (mgr *MiningMgr) Subscribe(submitCh chan *Result) {
-	mgr.submitters = append(mgr.submitters, submitCh)
 }
 
 // Stop will take care of stopping the miner component.

@@ -57,7 +57,7 @@ func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, 
 }
 
 // Start will kick off the runner until the given exit channel selects.
-func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
+func (r *Runner) Start(ctx context.Context) error {
 	var trackers []Tracker
 	for name, activated := range r.config.Trackers.Names {
 		if activated {
@@ -73,7 +73,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		// Set as ready and listen the exit channel to not block.
 		r.readyChannel <- true
 		go func() {
-			<-exitCh
+			<-ctx.Done()
 		}()
 		return nil
 	}
@@ -96,7 +96,7 @@ func (r *Runner) Start(ctx context.Context, exitCh chan int) error {
 		i := 0
 		for {
 			select {
-			case <-exitCh:
+			case <-ctx.Done():
 				{
 					level.Info(r.logger).Log("msg", "exiting run loop")
 					ticker.Stop()

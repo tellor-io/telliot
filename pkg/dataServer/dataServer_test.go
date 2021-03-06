@@ -30,7 +30,6 @@ func TestDataServer(t *testing.T) {
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
 
-	done := make(chan bool)
 	startBal := big.NewInt(356000)
 	opts := &rpc.MockOptions{
 		ETHBalance:    startBal,
@@ -51,7 +50,8 @@ func TestDataServer(t *testing.T) {
 	// We need to unregister prometheus counter.
 	ds, err := CreateServer(logger, cfg, proxy, client, contract, accounts)
 	testutil.Ok(t, err, "creating server in test")
-	testutil.Ok(t, ds.Start(context.Background(), done), "starting server")
+	ctx, close := context.WithCancel(context.Background())
+	testutil.Ok(t, ds.Start(ctx), "starting server")
 
 	srv, err := rest.Create(logger, cfg, context.Background(), proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
 	testutil.Ok(t, err)
@@ -61,8 +61,8 @@ func TestDataServer(t *testing.T) {
 	resp, err := http.Get("http://" + cfg.DataServer.ListenHost + ":" + strconv.Itoa(int(cfg.DataServer.ListenPort)) + "/balance")
 	testutil.Ok(t, err)
 	defer resp.Body.Close()
+	close()
 	level.Info(logger).Log("response finished", "resp", resp)
-	done <- true
 	time.Sleep(1 * time.Second)
 	testutil.Assert(t, ds.Stopped, "Did not stop server")
 }

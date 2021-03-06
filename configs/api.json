@@ -186,7 +186,7 @@
             "param": "$[-1:].totalLiquidityUSD"
         },
         {
-            "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData?api-key=${DEFIPULSE_KEY}",
+            "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
             "param": "$.All.total",
             "interval": 3600
         }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/event"
@@ -33,26 +34,29 @@ type Tasker struct {
 	contractInstance *contracts.ITellor
 	client           contracts.ETHClient
 	cfg              *config.Config
-	workSink         chan *mining.Work
-	Running          bool
+	workSinks        map[string]chan *mining.Work
 	done             chan bool
 }
 
-func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, chan *mining.Work) {
+func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, map[string]chan *mining.Work) {
 	ctx, close := context.WithCancel(ctx)
+	workSinks := make(map[string]chan *mining.Work)
+	for _, acc := range accounts {
+		workSinks[acc.Address.String()] = make(chan *mining.Work, 1)
+	}
 	tasker := &Tasker{
 		ctx:              ctx,
 		close:            close,
 		proxy:            proxy,
 		accounts:         accounts,
 		contractInstance: contract,
-		workSink:         make(chan *mining.Work, 1),
+		workSinks:        workSinks,
 		done:             make(chan bool),
 		logger:           log.With(logger, "component", ComponentName),
 		cfg:              cfg,
 		client:           client,
 	}
-	return tasker, tasker.workSink
+	return tasker, tasker.workSinks
 }
 
 func (mt *Tasker) getCurrentChallenge() (*tellor.ITellorNewChallenge, error) {
@@ -83,16 +87,52 @@ func (mt *Tasker) getNewChallengeChannel() (chan *tellor.ITellorNewChallenge, ev
 	return sink, sub, nil
 }
 
-func (mt *Tasker) subscribeToNewChallenge() error {
-	var sink chan *tellor.ITellorNewChallenge
+func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
+	if challenge.CurrentRequestId[0].Int64() > int64(100) || challenge.CurrentRequestId[0].Int64() == 0 {
+		level.Warn(mt.logger).Log("msg", "new current variables request ID not correct - contract about to be upgraded")
+		return
+	}
+	newChallenge := &mining.MiningChallenge{
+		Challenge:  challenge.CurrentChallenge[:],
+		Difficulty: challenge.Difficulty,
+		RequestIDs: challenge.CurrentRequestId,
+	}
+
+	for _, acc := range mt.accounts {
+		level.Info(mt.logger).Log("msg", "new challenge",
+			"addr", acc.Address.String(),
+			"challenge", fmt.Sprintf("%x", newChallenge.Challenge),
+			"difficulty", newChallenge.Difficulty,
+			"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
+		)
+		mt.workSinks[acc.Address.String()] <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
+
+	}
+
+}
+
+func (mt *Tasker) Start() error {
 	var err error
+	level.Info(mt.logger).Log("msg", "tasker has been started")
+	currentChallenge, err := mt.getCurrentChallenge()
+
+	if err != nil {
+		return errors.Wrap(err, "tasker getting the current challenge")
+	}
+
+	level.Info(mt.logger).Log("msg", "tasker is sending the initial challenge to the miner")
+	mt.sendWork(currentChallenge)
+
+	// Subscribe and wait until the context cancellation event.
+	var sink chan *tellor.ITellorNewChallenge
 	var sub event.Subscription
 
 	// Initial subscription.
-	for i := 0; i < 10; i++ {
+	for {
 		sink, sub, err = mt.getNewChallengeChannel()
 		if err != nil {
 			level.Error(mt.logger).Log("msg", "initial subscribing to NewChallenge events failed")
+			time.Sleep(1 * time.Second)
 			continue
 		}
 		break
@@ -114,10 +154,12 @@ func (mt *Tasker) subscribeToNewChallenge() error {
 					"err", err)
 			}
 
-			for i := 0; i < 10; i++ {
+			// Trying to resubscribe until it succeeds.
+			for {
 				sink, sub, err = mt.getNewChallengeChannel()
 				if err != nil {
 					level.Error(mt.logger).Log("msg", "re-subscribing to NewChallenge events failed")
+					time.Sleep(1 * time.Second)
 					continue
 				}
 				break
@@ -127,42 +169,6 @@ func (mt *Tasker) subscribeToNewChallenge() error {
 			mt.sendWork(vLog)
 		}
 	}
-}
-
-func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
-	if challenge.CurrentRequestId[0].Int64() > int64(100) || challenge.CurrentRequestId[0].Int64() == 0 {
-		level.Warn(mt.logger).Log("msg", "new current variables request ID not correct - contract about to be upgraded")
-		return
-	}
-	newChallenge := &mining.MiningChallenge{
-		Challenge:  challenge.CurrentChallenge[:],
-		Difficulty: challenge.Difficulty,
-		RequestIDs: challenge.CurrentRequestId,
-	}
-
-	for _, acc := range mt.accounts {
-		level.Info(mt.logger).Log("msg", "new challenge",
-			"addr", acc.Address.String(),
-			"challenge", fmt.Sprintf("%x", newChallenge.Challenge),
-			"difficulty", newChallenge.Difficulty,
-			"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
-		)
-		mt.workSink <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
-
-	}
-
-}
-
-func (mt *Tasker) Start() error {
-	level.Info(mt.logger).Log("msg", "tasker has been started")
-	currentChallenge, err := mt.getCurrentChallenge()
-	if err != nil {
-		return errors.Wrap(err, "tasker getting the current challenge")
-	}
-	level.Info(mt.logger).Log("msg", "tasker is sending the initial challenge to the miner")
-	mt.sendWork(currentChallenge)
-	// Subscribe and wait until the context cancellation event.
-	return mt.subscribeToNewChallenge()
 }
 
 func (mt *Tasker) Stop() {

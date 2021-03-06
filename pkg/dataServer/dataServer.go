@@ -25,7 +25,6 @@ type DataServer struct {
 	DB           db.DataServerProxy
 	runner       *tracker.Runner
 	ethClient    contracts.ETHClient
-	runnerExitCh chan int
 	Stopped      bool
 	readyChannel chan bool
 	logger       log.Logger
@@ -57,18 +56,18 @@ func CreateServer(
 		runner:       run,
 		ethClient:    client,
 		Stopped:      true,
-		runnerExitCh: nil,
 		readyChannel: ready,
 		logger:       log.With(logger, "component", ComponentName)}, nil
 
 }
 
 // Start the data server and all underlying resources.
-func (ds *DataServer) Start(ctx context.Context, done chan bool) error {
-	ds.runnerExitCh = make(chan int)
+func (ds *DataServer) Start(ctx context.Context) error {
 	ds.Stopped = false
-	err := ds.runner.Start(ctx, ds.runnerExitCh)
+	runnerCtx, runnercCloser := context.WithCancel(ctx)
+	err := ds.runner.Start(runnerCtx)
 	if err != nil {
+		runnercCloser()
 		return errors.Wrap(err, "starting runner data server")
 	}
 
@@ -77,8 +76,9 @@ func (ds *DataServer) Start(ctx context.Context, done chan bool) error {
 		level.Info(ds.logger).Log("msg", "runner signaled it is ready")
 		ds.readyChannel <- true
 		level.Info(ds.logger).Log("msg", "dataServer ready for use")
-		<-done
+		<-ctx.Done()
 		level.Info(ds.logger).Log("msg", "dataServer received signal to stop")
+		runnercCloser()
 		if err := ds.stop(); err != nil {
 			level.Info(ds.logger).Log("msg", "stopping the data server", "err", err)
 		}
@@ -93,8 +93,6 @@ func (ds *DataServer) Ready() chan bool {
 
 func (ds *DataServer) stop() error {
 	var final error
-	// Stop tracker run loop.
-	ds.runnerExitCh <- 1
 
 	// Stop the DB.
 	if err := ds.DB.Close(); err != nil {

@@ -61,7 +61,7 @@ func TestRunner(t *testing.T) {
 	runner, _ := NewRunner(logger, cfg, proxy, client, contract, accounts)
 
 	runner.Ready()
-	if err := runner.Start(context.Background(), exitCh); err != nil {
+	if err := runner.Start(context.Background()); err != nil {
 		testutil.Ok(t, err)
 	}
 	level.Info(logger).Log("msg", "runner done")

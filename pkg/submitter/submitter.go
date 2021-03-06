@@ -26,6 +26,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
@@ -47,7 +48,7 @@ type Submitter struct {
 	proxy            db.DataServerProxy
 	account          *rpc.Account
 	client           contracts.ETHClient
-	tellor           *contracts.ITellor
+	contractInstance *contracts.ITellor
 	currentChallenge *mining.MiningChallenge
 	currentNonce     string
 	currentValues    [5]*big.Int
@@ -61,19 +62,22 @@ type Submitter struct {
 	lastSubmitCncl   context.CancelFunc
 }
 
-func CreateSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, client contracts.ETHClient, tellor *contracts.ITellor, account *rpc.Account, txSubmitter tellorCommon.TransactionSubmitter, proxy db.DataServerProxy) (*Submitter, chan *mining.Result) {
+func CreateSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, client contracts.ETHClient, contractInstance *contracts.ITellor, account *rpc.Account, proxy db.DataServerProxy) (*Submitter, chan *mining.Result, error) {
+	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "apply filter logger")
+	}
 	ctx, close := context.WithCancel(ctx)
 	submitter := &Submitter{
-		client:    client,
-		ctx:       ctx,
-		close:     close,
-		proxy:     proxy,
-		submitter: txSubmitter,
-		cfg:       cfg,
-		resultCh:  make(chan *mining.Result),
-		account:   account,
-		logger:    logger,
-		tellor:    tellor,
+		ctx:              ctx,
+		close:            close,
+		client:           client,
+		proxy:            proxy,
+		cfg:              cfg,
+		resultCh:         make(chan *mining.Result),
+		account:          account,
+		logger:           log.With(filterLog, "component", ComponentName, "pubKey", account.Address.String()[:6]),
+		contractInstance: contractInstance,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
 			Subsystem:   "mining",
@@ -117,7 +121,7 @@ func CreateSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger,
 		),
 	}
 
-	return submitter, submitter.resultCh
+	return submitter, submitter.resultCh, nil
 }
 
 func (s *Submitter) Start() error {
@@ -139,6 +143,7 @@ func (s *Submitter) Start() error {
 				"difficulty", result.Work.Challenge.Difficulty,
 				"requestIDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
 			)
+			s.blockUntilTimeToSubmit(ctx)
 			s.handleSubmit(ctx, result)
 		}
 	}
@@ -187,7 +192,7 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 		ticker := time.NewTicker(1 * time.Second)
 		for {
 			select {
-			case <-newChallengeReplace.Done(): // The context was canceled from the main loop because new work arrived.
+			case <-newChallengeReplace.Done():
 				level.Info(s.logger).Log("msg", "canceled submit")
 				return
 			default:
@@ -203,8 +208,8 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 						continue
 					} else { // Transaction is profitable.
 						for {
-							if statusID := s.getMinerStatus(); statusID != 1 { // I think status ID 3 was the status that allows to submit, but not sure need to double check the contract.
-								level.Error(s.logger).Log("msg", "miner is not in a status that can submit", "statusID", statusID)
+							if statusID := s.getMinerStatus(); statusID != 1 {
+								level.Error(s.logger).Log("msg", "miner is not in a status that can submit", "status", minerStatusName(statusID))
 								<-ticker.C
 								continue
 							}
@@ -287,19 +292,19 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 	return nil, errors.New("submitting solution txn by any account")
 }
 
+// SubmitTxn relies on rpc package to prepare and submit transactions.
+func (s *Submitter) SubmitTxn(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
+	return rpc.SubmitContractTxn(ctx, s.logger, s.cfg, proxy, s.client, s.contractInstance, s.account, ctxName, callback)
+}
+
 func (s *Submitter) getMinerStatus() int64 {
 	// Check if the staked account is in dispute before sending a transaction.
-	v, dispute := s.IsInDispute()
-	if dispute {
+	statusID, _, err := s.contractInstance.GetStakerInfo(&bind.CallOpts{}, s.account.Address)
+	if err != nil {
+		level.Error(s.logger).Log("msg", "getting staker info from contract", "pubkey", s.account.Address.String())
 		return -1
 	}
-	if len(v) == 0 {
-		level.Error(s.logger).Log("msg", "no status result. this usually means no connection to the DB")
-		return -1
-	}
-
-	status, _ := hexutil.DecodeBig(string(v))
-	return status.Int64()
+	return statusID.Int64()
 }
 
 func (s *Submitter) submit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
@@ -321,7 +326,7 @@ func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "decoding address")
 	}
-	last, err := s.tellor.GetUintVar(nil, rpc.Keccak256(decoded))
+	last, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256(decoded))
 
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "getting last submit time for:%v", s.account.Address.String())
@@ -379,7 +384,7 @@ func (s *Submitter) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		}
 
 		gasUsed := big.NewInt(int64(receipt.GasUsed))
-		slotNum, err := s.tellor.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
+		slotNum, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
 		if err != nil {
 			level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for calculating transaction cost", "err", err)
 		}
@@ -398,11 +403,11 @@ func (s *Submitter) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 // Should add `currentReward` func to the contract to avoid this code duplication.
 // Tracking issue https://github.com/tellor-io/TellorCore/issues/101
 func (s *Submitter) currentReward() (*big.Int, error) {
-	timeOfLastNewValue, err := s.tellor.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
+	timeOfLastNewValue, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
 	if err != nil {
 		return nil, errors.New("getting _TIME_OF_LAST_NEW_VALUE")
 	}
-	totalTips, err := s.tellor.GetUintVar(nil, rpc.Keccak256([]byte("_CURRENT_TOTAL_TIPS")))
+	totalTips, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_CURRENT_TOTAL_TIPS")))
 	if err != nil {
 		return nil, errors.New("getting _CURRENT_TOTAL_TIPS")
 	}
@@ -444,7 +449,7 @@ func (s *Submitter) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
 }
 
 func (s *Submitter) gasUsed() (*big.Int, *big.Int, error) {
-	slotNum, err := s.tellor.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
+	slotNum, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting _SLOT_PROGRESS")
 	}
@@ -509,4 +514,24 @@ func (s *Submitter) profit() (int64, error) {
 	s.submitReward.With(prometheus.Labels{"slot": strconv.Itoa(int(slotNum.Int64()))}).(prometheus.Gauge).Set(float64(reward.Int64()))
 
 	return profitPercent, nil
+}
+
+func minerStatusName(statusID int64) string {
+	// From https://github.com/tellor-io/tellor3/blob/7c2f38a0e3f96631fb0f96e0d0a9f73e7b355766/contracts/TellorStorage.sol#L41
+	switch statusID {
+	case 0:
+		return "Not staked"
+	case 1:
+		return "Staked"
+	case 2:
+		return "LockedForWithdraw"
+	case 3:
+		return "OnDispute"
+	case 4:
+		return "ReadyForUnlocking"
+	case 5:
+		return "ReadyForUnlocking"
+	default:
+		return "Unknown"
+	}
 }

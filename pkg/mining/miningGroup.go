@@ -45,8 +45,6 @@ type Backend struct {
 	TotalHashes      uint64
 	HashSincePrint   uint64
 	HashRateEstimate float64
-	contractInstance *contracts.ITellor
-	logger           log.Logger
 }
 
 // MiningChallenge holds information about a PoW challenge.
@@ -74,12 +72,13 @@ const targetChunkTime = 200 * time.Millisecond
 const rateInitialGuess = 100e3
 
 type MiningGroup struct {
-	Backends    []*Backend
-	LastPrinted time.Time
-	ctx         context.Context
-	close       context.CancelFunc
-	logger      log.Logger
-	cfg         *config.Config
+	Backends         []*Backend
+	LastPrinted      time.Time
+	ctx              context.Context
+	close            context.CancelFunc
+	logger           log.Logger
+	cfg              *config.Config
+	contractInstance *contracts.ITellor
 }
 
 func NewMiningGroup(parentContext context.Context, logger log.Logger, cfg *config.Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
@@ -89,15 +88,16 @@ func NewMiningGroup(parentContext context.Context, logger log.Logger, cfg *confi
 	}
 	ctx, close := context.WithCancel(parentContext)
 	group := &MiningGroup{
-		Backends: make([]*Backend, len(hashers)),
-		ctx:      ctx,
-		close:    close,
-		logger:   log.With(filterLog, "component", ComponentName),
-		cfg:      cfg,
+		Backends:         make([]*Backend, len(hashers)),
+		ctx:              ctx,
+		close:            close,
+		logger:           log.With(filterLog, "component", ComponentName),
+		cfg:              cfg,
+		contractInstance: contractInstance,
 	}
 	for i, hasher := range hashers {
 		//start with a small estimate for hash rate, much faster to increase the gusses rather than decrease
-		group.Backends[i] = &Backend{Hasher: hasher, HashRateEstimate: rateInitialGuess, contractInstance: contractInstance, logger: logger}
+		group.Backends[i] = &Backend{Hasher: hasher, HashRateEstimate: rateInitialGuess}
 	}
 	return group, nil
 }
@@ -113,10 +113,10 @@ type backendResult struct {
 }
 
 // do some work and write the result back to a channel.
-func (b *Backend) doWork(deadlineCtx context.Context, close context.CancelFunc, hash *HashSettings, start uint64, n uint64, resultCh chan *backendResult) {
+func (b *Backend) doWork(anySolution context.Context, close context.CancelFunc, hash *HashSettings, start uint64, n uint64, resultCh chan *backendResult) {
 	defer close()
 	timeStarted := time.Now()
-	sol, nchecked, err := b.CheckRange(deadlineCtx, hash, start, n)
+	sol, nchecked, err := b.CheckRange(anySolution, hash, start, n)
 	if err != nil {
 		resultCh <- &backendResult{err: err}
 		return
@@ -197,7 +197,7 @@ type Result struct {
 }
 
 // dispatches a chunk and returns the number of hashes chosen.
-func (b *Backend) dispatchWork(parentCtx context.Context, hash *HashSettings, start uint64, resultCh chan *backendResult) uint64 {
+func (b *Backend) dispatchWork(parentCtx context.Context, timeOfLastNewValue *big.Int, hash *HashSettings, start uint64, resultCh chan *backendResult) uint64 {
 	target := b.HashRateEstimate * targetChunkTime.Seconds()
 	step := b.StepSize()
 	nsteps := uint64(math.Round(target / float64(step)))
@@ -205,33 +205,27 @@ func (b *Backend) dispatchWork(parentCtx context.Context, hash *HashSettings, st
 		nsteps = 1
 	}
 	n := nsteps * step
+	tm := time.Unix(timeOfLastNewValue.Int64(), 0)
+	anySolution, close := context.WithDeadline(parentCtx, tm.Add(15*time.Minute))
+	go b.doWork(anySolution, close, hash, start, n, resultCh)
+	return n
+}
 
+func (g *MiningGroup) getTimeOfLastNewValue() (*big.Int, error) {
 	var err error
 	var timeOfLastNewValue *big.Int
-	var retriesCount int
 	for {
 		// Checks the last submit value in the oracle and set a timeout of 15min - (now-lastSubmit).
 		// This is because 15min after the last submit any solution will work.
-		timeOfLastNewValue, err = b.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
+		timeOfLastNewValue, err = g.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
 		if err == nil {
 			break
 		}
-		retriesCount++
-		level.Error(b.logger).Log("msg", "getting time of last new value from oracle, retrying in a second", "err", err, "numRetry", retriesCount)
-		if retriesCount == 10 {
-			break
-		}
+		level.Error(g.logger).Log("msg", "getting time of last new value from oracle, retrying in a second", "err", err)
 		time.Sleep(1 * time.Second)
 	}
 
-	if retriesCount == 10 {
-		// TODO: do work and return any solution?
-		return 0
-	}
-	tm := time.Unix(timeOfLastNewValue.Int64(), 0)
-	deadlineCtx, close := context.WithDeadline(parentCtx, tm.Add(15*time.Minute))
-	go b.doWork(deadlineCtx, close, hash, start, n, resultCh)
-	return n
+	return timeOfLastNewValue, nil
 }
 
 func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
@@ -273,12 +267,6 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			return
 		// Read in a new work block.
 		case work := <-input:
-			if work == nil {
-				shouldRun = false
-				currWork = nil
-				currHashSettings = nil
-				break
-			}
 			sent = 0
 			recv = 0
 			currWork = work
@@ -333,7 +321,12 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		if currWork != nil {
 			for sent < currWork.N && len(idleWorkers) > 0 {
 				worker := <-idleWorkers
-				sent += worker.dispatchWork(g.ctx, currHashSettings, currWork.Start+sent, resultChannel)
+				timeOfLastNewValue, err := g.getTimeOfLastNewValue()
+				if err != nil {
+					level.Error(g.logger).Log("msg", "failed to get timeOfLastNewValue from the contract", "err", err)
+					g.close()
+				}
+				sent += worker.dispatchWork(g.ctx, timeOfLastNewValue, currHashSettings, currWork.Start+sent, resultChannel)
 			}
 		}
 	}

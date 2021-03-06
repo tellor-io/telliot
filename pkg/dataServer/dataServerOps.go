@@ -20,10 +20,10 @@ import (
 // It is the operational database component. Its purpose is to monitor/track various
 // values and cache those values in a local data store for faster retrieval from a miner.
 type DataServerOps struct {
-	ctx              context.Context
-	server           *DataServer
-	logger           log.Logger
-	dataServerExitCh chan bool
+	ctx    context.Context
+	close  context.CancelFunc
+	server *DataServer
+	logger log.Logger
 }
 
 // CreateDataServerOps creates a data server instance for runtime.
@@ -44,11 +44,12 @@ func CreateDataServerOps(
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
+	ctx, close := context.WithCancel(ctx)
 	ops := &DataServerOps{
-		ctx:              ctx,
-		server:           ds,
-		logger:           log.With(logger, "component", ComponentName),
-		dataServerExitCh: make(chan bool),
+		ctx:    ctx,
+		close:  close,
+		server: ds,
+		logger: log.With(logger, "component", ComponentName),
 	}
 
 	return ops, nil
@@ -56,7 +57,7 @@ func CreateDataServerOps(
 
 // Start the data server.
 func (ops *DataServerOps) Start() error {
-	if err := ops.server.Start(ops.ctx, ops.dataServerExitCh); err != nil {
+	if err := ops.server.Start(ops.ctx); err != nil {
 		return err
 	}
 	return nil
@@ -70,6 +71,6 @@ func (ops *DataServerOps) Ready() chan bool {
 
 // Stop will take care of stopping the dataserver component.
 func (ops *DataServerOps) Stop() {
-	ops.dataServerExitCh <- true
+	ops.close()
 	level.Info(ops.logger).Log("msg", "data server shutdown complete")
 }
