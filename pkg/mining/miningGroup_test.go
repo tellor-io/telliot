@@ -66,7 +66,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	if err != nil {
 		testutil.Ok(t, errors.Wrap(err, "creating new contract instance"))
 	}
-	group, err := NewMiningGroup(context.Background(), logging.NewLogger(), cfg, []Hasher{impl}, contract)
+	group, err := NewMiningGroup(logging.NewLogger(), cfg, []Hasher{impl}, contract)
 	if err != nil {
 		testutil.Ok(t, errors.Wrap(err, "creating new mining group"))
 	}
@@ -76,7 +76,8 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	input := make(chan *Work)
 	output := make(chan *Result)
 
-	go group.Mine(input, output)
+	ctx, close := context.WithCancel(context.Background())
+	go group.Mine(ctx, input, output)
 
 	testVectors := []int{19, 133, 8, 442, 1231}
 	for _, v := range testVectors {
@@ -97,7 +98,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 		}
 	}
 	// Tell the mining group to close.
-	input <- nil
+	close()
 
 	// Wait for it to close.
 	select {
@@ -137,18 +138,19 @@ func TestMulti(t *testing.T) {
 	}
 
 	fmt.Printf("Using %d hashers\n", len(hashers))
-	group, err := NewMiningGroup(context.Background(), logging.NewLogger(), cfg, hashers, contract)
+	group, err := NewMiningGroup(logging.NewLogger(), cfg, hashers, contract)
 	if err != nil {
 		testutil.NotOk(t, errors.Wrap(err, "creating new mining group"))
 	}
 	input := make(chan *Work)
 	output := make(chan *Result)
-	go group.Mine(input, output)
+	ctx, close := context.WithCancel(context.Background())
+	go group.Mine(ctx, input, output)
 
 	challenge := createChallenge(0, math.MaxInt64)
 	input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
 	time.Sleep(1 * time.Second)
-	input <- nil
+	close()
 	timeout := 500 * time.Millisecond
 	select {
 	case <-output:

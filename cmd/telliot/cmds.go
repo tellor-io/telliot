@@ -565,18 +565,26 @@ func (m mineCmd) Run() error {
 				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
 					err = errors.Wrapf(err, "ListenAndServe")
 				}
+				level.Info(logger).Log("msg", "metrics server is closing")
 				return err
 			}, func(error) {
 				srv.Close()
-				level.Info(logger).Log("msg", "metrics server shutdown complete")
 			})
 		}
 
 		// Run a miner manager for each of the accounts.
-		if true {
+		{
 			// Create a tasker intance.
 			tasker, taskerChs := tasker.CreateTasker(ctx, logger, cfg, proxy, clientWs, contract, accounts)
 
+			// Run the tasker.
+			g.Add(func() error {
+				return tasker.Start()
+			}, func(error) {
+				tasker.Stop()
+				// Stopping the dataserver.
+				ds.Stop()
+			})
 			// Add a submitter for each account.
 			for _, account := range accounts {
 				// Get a channel on which it listens for new data to submit.
@@ -601,16 +609,6 @@ func (m mineCmd) Run() error {
 					miner.Stop()
 				})
 			}
-
-			// Run the tasker.
-			g.Add(func() error {
-				return tasker.Start()
-			}, func(error) {
-				tasker.Stop()
-				// Stopping the dataserver.
-				ds.Stop()
-			})
-
 		}
 	}
 

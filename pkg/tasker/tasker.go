@@ -35,14 +35,13 @@ type Tasker struct {
 	client           contracts.ETHClient
 	cfg              *config.Config
 	workSinks        map[string]chan *mining.Work
-	done             chan bool
 }
 
 func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, map[string]chan *mining.Work) {
 	ctx, close := context.WithCancel(ctx)
 	workSinks := make(map[string]chan *mining.Work)
 	for _, acc := range accounts {
-		workSinks[acc.Address.String()] = make(chan *mining.Work, 1)
+		workSinks[acc.Address.String()] = make(chan *mining.Work)
 	}
 	tasker := &Tasker{
 		ctx:              ctx,
@@ -51,7 +50,6 @@ func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, pr
 		accounts:         accounts,
 		contractInstance: contract,
 		workSinks:        workSinks,
-		done:             make(chan bool),
 		logger:           log.With(logger, "component", ComponentName),
 		cfg:              cfg,
 		client:           client,
@@ -97,7 +95,6 @@ func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 		Difficulty: challenge.Difficulty,
 		RequestIDs: challenge.CurrentRequestId,
 	}
-
 	for _, acc := range mt.accounts {
 		level.Info(mt.logger).Log("msg", "new challenge",
 			"addr", acc.Address.String(),
@@ -105,8 +102,9 @@ func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 			"difficulty", newChallenge.Difficulty,
 			"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
 		)
-		mt.workSinks[acc.Address.String()] <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
-
+		go func(acc *rpc.Account) {
+			mt.workSinks[acc.Address.String()] <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
+		}(acc)
 	}
 
 }
@@ -140,12 +138,17 @@ func (mt *Tasker) Start() error {
 
 	for {
 		select {
-		case <-mt.done:
+		case <-mt.ctx.Done():
+			level.Info(mt.logger).Log("msg", "unsubscribing from NewChallenge events")
 			if sub != nil {
 				sub.Unsubscribe()
 			}
-			level.Info(mt.logger).Log("msg", "unsubscribed to NewChallenge events")
-			return nil
+			level.Info(mt.logger).Log("msg", "closing the tasker channels")
+			for _, ch := range mt.workSinks {
+				close(ch)
+			}
+			level.Info(mt.logger).Log("msg", "tasker shutdown complete")
+			return mt.ctx.Err()
 		case err := <-sub.Err():
 			if err != nil {
 				level.Error(mt.logger).Log(
@@ -173,5 +176,4 @@ func (mt *Tasker) Start() error {
 
 func (mt *Tasker) Stop() {
 	mt.close()
-	level.Info(mt.logger).Log("msg", "tasker shutdown complete")
 }

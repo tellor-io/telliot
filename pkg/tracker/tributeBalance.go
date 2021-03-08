@@ -62,7 +62,7 @@ func (b *TributeTracker) Exec(ctx context.Context) error {
 		balanceH = balanceH.Quo(balanceH, decimals)
 	}
 
-	level.Info(b.logger).Log("msg", "TRB balance", "amount", balanceH)
+	level.Debug(b.logger).Log("msg", "TRB balance", "amount", balanceH)
 
 	enc := hexutil.EncodeBig(balance)
 	return b.db.Put(db.TributeBalanceKeyFor(b.account.Address), []byte(enc))

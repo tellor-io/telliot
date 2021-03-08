@@ -69,7 +69,7 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	if decimals != nil {
 		balanceH = balanceH.Quo(balanceH, decimals)
 	}
-	level.Info(b.logger).Log("msg", "ETH balance", "amount", balanceH)
+	level.Debug(b.logger).Log("msg", "ETH balance", "amount", balanceH)
 
 	enc := hexutil.EncodeBig(balance)
 	return b.db.Put(db.BalancePrefix+b.account.Address.String(), []byte(enc))

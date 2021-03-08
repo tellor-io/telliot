@@ -25,13 +25,13 @@ type SolutionSink interface {
 
 const NumProcessors = 1
 
-func SetupMiningGroup(ctx context.Context, logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+func SetupMiningGroup(logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	var hashers []Hasher
 	level.Info(logger).Log("msg", "starting CPU mining", "threads", NumProcessors)
 	for i := 0; i < NumProcessors; i++ {
 		hashers = append(hashers, NewCpuMiner(int64(i)))
 	}
-	miningGrp, err := NewMiningGroup(ctx, logger, cfg, hashers, contractInstance)
+	miningGrp, err := NewMiningGroup(logger, cfg, hashers, contractInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating new mining group")
 	}
@@ -55,9 +55,8 @@ type MiningMgr struct {
 	database         db.DataServerProxy
 	contractInstance *contracts.ITellor
 	cfg              *config.Config
-
-	toMineInput    chan *Work
-	solutionOutput chan *Result
+	toMineInput      chan *Work
+	solutionOutput   chan *Result
 }
 
 // CreateMiningManager is the MiningMgr constructor.
@@ -71,9 +70,8 @@ func CreateMiningManager(
 	submitterCh chan *Result,
 	account *rpc.Account,
 ) (*MiningMgr, error) {
-
 	// Setup a MiningGroup for each account.
-	group, err := SetupMiningGroup(ctx, logger, cfg, contractInstance)
+	group, err := SetupMiningGroup(logger, cfg, contractInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup MiningGroup")
 	}
@@ -95,7 +93,7 @@ func CreateMiningManager(
 		logger:           log.With(logger, "component", ComponentName, "pubKey", account.Address.String()[:6]),
 		group:            group,
 		taskerCh:         taskerCh,
-		submitterCh:      make(chan *Result),
+		submitterCh:      submitterCh,
 		contractInstance: contractInstance,
 		cfg:              cfg,
 		database:         database,
@@ -109,16 +107,25 @@ func CreateMiningManager(
 // Start will start the mining run loop.
 func (mgr *MiningMgr) Start() error {
 	// Start the mining group.
-	go mgr.group.Mine(mgr.toMineInput, mgr.solutionOutput)
+	miningGroupCtx, miningGroupCloser := context.WithCancel(mgr.ctx)
+	go mgr.group.Mine(miningGroupCtx, mgr.toMineInput, mgr.solutionOutput)
 
 	for {
 		select {
+
 		// Boss wants us to quit for the day.
 		case <-mgr.ctx.Done():
-			return nil
+			// Stopping the mining group.
+			level.Info(mgr.logger).Log("msg", "stopping the miner group")
+			miningGroupCloser()
+			level.Info(mgr.logger).Log("msg", "miner shutdown complete")
+			return mgr.ctx.Err()
+
 		// Found a solution.
 		case solution := <-mgr.solutionOutput:
 			mgr.submitterCh <- solution
+			level.Info(mgr.logger).Log("msg", "submitting the solution")
+
 		// Listen for new work from the tasker and send for mining.
 		case work := <-mgr.taskerCh:
 			mgr.toMineInput <- work
@@ -130,10 +137,10 @@ func (mgr *MiningMgr) Start() error {
 			)
 		}
 	}
+
 }
 
 // Stop will take care of stopping the miner component.
 func (mgr *MiningMgr) Stop() {
 	mgr.close()
-	level.Info(mgr.logger).Log("msg", "miner shutdown complete")
 }

@@ -74,23 +74,18 @@ const rateInitialGuess = 100e3
 type MiningGroup struct {
 	Backends         []*Backend
 	LastPrinted      time.Time
-	ctx              context.Context
-	close            context.CancelFunc
 	logger           log.Logger
 	cfg              *config.Config
 	contractInstance *contracts.ITellor
 }
 
-func NewMiningGroup(parentContext context.Context, logger log.Logger, cfg *config.Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
-	ctx, close := context.WithCancel(parentContext)
 	group := &MiningGroup{
 		Backends:         make([]*Backend, len(hashers)),
-		ctx:              ctx,
-		close:            close,
 		logger:           log.With(filterLog, "component", ComponentName),
 		cfg:              cfg,
 		contractInstance: contractInstance,
@@ -211,7 +206,7 @@ func (b *Backend) dispatchWork(parentCtx context.Context, timeOfLastNewValue *bi
 	return n
 }
 
-func (g *MiningGroup) getTimeOfLastNewValue() (*big.Int, error) {
+func (g *MiningGroup) getTimeOfLastNewValue() *big.Int {
 	var err error
 	var timeOfLastNewValue *big.Int
 	for {
@@ -225,10 +220,10 @@ func (g *MiningGroup) getTimeOfLastNewValue() (*big.Int, error) {
 		time.Sleep(1 * time.Second)
 	}
 
-	return timeOfLastNewValue, nil
+	return timeOfLastNewValue
 }
 
-func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
+func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *Result) {
 	sent := uint64(0)
 	recv := uint64(0)
 	timeStarted := time.Now()
@@ -250,7 +245,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 	var currHashSettings *HashSettings
 	var currWork *Work
 
-	// Mine until a null challenge is received.
+	// Mine until context is done.
 	// Each time a hasher finishes a chunk, give it a new one to work on.
 	// Always waits for all miners to finish their chunks before returning.
 	// EXCEPT in the case of an error, but then the app is almost certainly just quitting anyways!
@@ -262,9 +257,10 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 			nextHeartbeat = elapsed + g.cfg.Mine.Heartbeat.Duration
 		}
 		select {
-		case <-g.ctx.Done():
+		case <-ctx.Done():
+			shouldRun = false
 			level.Debug(g.logger).Log("msg", "mining group shutdown complete")
-			return
+			break
 		// Read in a new work block.
 		case work := <-input:
 			sent = 0
@@ -276,7 +272,7 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		case result := <-resultChannel:
 			if result.err != nil {
 				level.Error(g.logger).Log("msg", "hasher failed", "err", result.err)
-				g.close()
+				return
 			}
 			idleWorkers <- result.backend
 
@@ -321,12 +317,8 @@ func (g *MiningGroup) Mine(input chan *Work, output chan *Result) {
 		if currWork != nil {
 			for sent < currWork.N && len(idleWorkers) > 0 {
 				worker := <-idleWorkers
-				timeOfLastNewValue, err := g.getTimeOfLastNewValue()
-				if err != nil {
-					level.Error(g.logger).Log("msg", "failed to get timeOfLastNewValue from the contract", "err", err)
-					g.close()
-				}
-				sent += worker.dispatchWork(g.ctx, timeOfLastNewValue, currHashSettings, currWork.Start+sent, resultChannel)
+				timeOfLastNewValue := g.getTimeOfLastNewValue()
+				sent += worker.dispatchWork(ctx, timeOfLastNewValue, currHashSettings, currWork.Start+sent, resultChannel)
 			}
 		}
 	}

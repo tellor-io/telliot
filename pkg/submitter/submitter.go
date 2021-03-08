@@ -128,7 +128,14 @@ func (s *Submitter) Start() error {
 	for {
 		select {
 		case <-s.ctx.Done():
-			return nil
+			if s.resultCh != nil {
+				close(s.resultCh)
+			}
+			if s.lastSubmitCncl != nil {
+				s.lastSubmitCncl()
+			}
+			level.Info(s.logger).Log("msg", "submitter shutdown complete")
+			return s.ctx.Err()
 		case result := <-s.resultCh:
 			if s.lastSubmitCncl != nil {
 				s.lastSubmitCncl()
@@ -150,11 +157,7 @@ func (s *Submitter) Start() error {
 }
 
 func (s *Submitter) Stop() {
-	if s.lastSubmitCncl != nil {
-		s.lastSubmitCncl()
-	}
 	s.close()
-	level.Info(s.logger).Log("msg", "submitter shutdown complete")
 }
 
 func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) {
@@ -348,19 +351,6 @@ func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
 	return lastSubmit, &tm, nil
 }
 
-func (s *Submitter) IsInDispute() ([]byte, bool) {
-	// Start the miner.
-	var err error
-	v, err := s.proxy.Get(db.DisputeStatusKeyFor(s.account.Address))
-	if err != nil {
-		level.Warn(s.logger).Log("msg", "getting dispute status. Check if staked", "err", err)
-	}
-	if len(v) != 0 {
-		return v, false
-	}
-	return v, true
-}
-
 // saveGasUsed calculates the price for a given slot.
 // Since the transaction doesn't include the slot number it gets the slot number
 // as soon as the transaction passes and
@@ -395,7 +385,49 @@ func (s *Submitter) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 			level.Error(s.logger).Log("msg", "saving transaction cost", "err", err)
 		}
 		level.Debug(s.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slotNum.Int64())
+
+		amount, err := s.getETHBalance()
+		if err != nil {
+			level.Error(s.logger).Log("msg", "getting ETH balance", "err", err)
+		} else {
+			level.Info(s.logger).Log("msg", "ETH balance", "amount", amount)
+
+		}
+
+		amountTRB, err := s.getTRBBalance()
+		if err != nil {
+			level.Error(s.logger).Log("msg", "getting TRB balance", "err", err)
+		} else {
+			level.Info(s.logger).Log("msg", "TRB balance", "amount", amountTRB)
+		}
+
 	}(tx)
+}
+
+func (s *Submitter) getTRBBalance() (string, error) {
+	balance, err := s.contractInstance.BalanceOf(nil, s.account.Address)
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving trb balance")
+	}
+	balanceH, _ := big.NewFloat(1).SetString(balance.String())
+	decimals, _ := big.NewFloat(1).SetString("1000000000000000000")
+	if decimals != nil {
+		balanceH = balanceH.Quo(balanceH, decimals)
+	}
+	return balanceH.String(), nil
+}
+
+func (s *Submitter) getETHBalance() (string, error) {
+	balance, err := s.client.BalanceAt(s.ctx, s.account.Address, nil)
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving balance")
+	}
+	balanceH, _ := big.NewFloat(1).SetString(balance.String())
+	decimals, _ := big.NewFloat(1).SetString("1000000000000000000")
+	if decimals != nil {
+		balanceH = balanceH.Quo(balanceH, decimals)
+	}
+	return balanceH.String(), nil
 }
 
 // currentReward returns the current TRB rewards converted to ETH.
