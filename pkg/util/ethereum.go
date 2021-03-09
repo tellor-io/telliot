@@ -4,11 +4,17 @@
 package util
 
 import (
+	"context"
+	"crypto/ecdsa"
 	"encoding/hex"
+	"math/big"
 	"regexp"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/contracts"
 )
 
 var ethAddressRE *regexp.Regexp = regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
@@ -60,4 +66,52 @@ func DecodeHex(s string) []byte {
 	}
 
 	return b
+}
+
+type Account interface {
+	GetAddress() common.Address
+	GetPrivateKey() *ecdsa.PrivateKey
+}
+
+func PrepareEthTransaction(
+	ctx context.Context,
+	client contracts.ETHClient,
+	account Account,
+) (*bind.TransactOpts, error) {
+
+	nonce, err := client.PendingNonceAt(ctx, account.GetAddress())
+	if err != nil {
+		return nil, errors.Wrap(err, "getting pending nonce")
+	}
+
+	gasPrice, err := client.SuggestGasPrice(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting gas price")
+	}
+
+	ethBalance, err := client.BalanceAt(ctx, account.GetAddress(), nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting balance")
+	}
+
+	cost := new(big.Int)
+	cost.Mul(gasPrice, big.NewInt(700000))
+	if ethBalance.Cmp(cost) < 0 {
+		return nil, errors.Errorf("insufficient ethereum to send a transaction: %v < %v", ethBalance, cost)
+	}
+
+	netID, err := client.NetworkID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting network id")
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(account.GetPrivateKey(), netID)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating transactor")
+	}
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)      // in wei
+	auth.GasLimit = uint64(3000000) // in units
+	auth.GasPrice = gasPrice
+	return auth, nil
 }

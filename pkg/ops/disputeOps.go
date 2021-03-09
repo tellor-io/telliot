@@ -63,7 +63,7 @@ func Dispute(
 			util.FormatERC20Balance(disputeCost))
 	}
 
-	auth, err := PrepareEthTransaction(ctx, client, account)
+	auth, err := util.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
@@ -95,7 +95,7 @@ func Vote(
 		return nil
 	}
 
-	auth, err := PrepareEthTransaction(ctx, client, account)
+	auth, err := util.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}

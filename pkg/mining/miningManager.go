@@ -6,7 +6,6 @@ package mining
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
@@ -69,28 +68,27 @@ func CreateMiningManager(
 	taskerCh chan *Work,
 	submitterCh chan *Result,
 	account *rpc.Account,
+	client contracts.ETHClient,
 ) (*MiningMgr, error) {
+
+	//ops logging
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
+	logger = log.With(logger, "component", ComponentName, "pubKey", account.Address.String()[:6])
+
 	// Setup a MiningGroup for each account.
 	group, err := SetupMiningGroup(logger, cfg, contractInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup MiningGroup")
 	}
 
-	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
-	if err != nil {
-		return nil, errors.Wrap(err, "creating client")
-	}
-
-	//ops logging
-	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
-	if err != nil {
-		return nil, errors.Wrap(err, "apply filter logger")
-	}
 	ctx, close := context.WithCancel(ctx)
 	mng := &MiningMgr{
 		ctx:              ctx,
 		close:            close,
-		logger:           log.With(logger, "component", ComponentName, "pubKey", account.Address.String()[:6]),
+		logger:           logger,
 		group:            group,
 		taskerCh:         taskerCh,
 		submitterCh:      submitterCh,
@@ -107,30 +105,24 @@ func CreateMiningManager(
 // Start will start the mining run loop.
 func (mgr *MiningMgr) Start() error {
 	// Start the mining group.
-	miningGroupCtx, miningGroupCloser := context.WithCancel(mgr.ctx)
-	go mgr.group.Mine(miningGroupCtx, mgr.toMineInput, mgr.solutionOutput)
+	go mgr.group.Mine(mgr.ctx, mgr.toMineInput, mgr.solutionOutput)
 
 	for {
 		select {
 
 		// Boss wants us to quit for the day.
 		case <-mgr.ctx.Done():
-			// Stopping the mining group.
-			level.Info(mgr.logger).Log("msg", "stopping the miner group")
-			miningGroupCloser()
-			level.Info(mgr.logger).Log("msg", "miner shutdown complete")
 			return mgr.ctx.Err()
 
 		// Found a solution.
 		case solution := <-mgr.solutionOutput:
-			mgr.submitterCh <- solution
 			level.Info(mgr.logger).Log("msg", "submitting the solution")
+			mgr.submitterCh <- solution
 
 		// Listen for new work from the tasker and send for mining.
 		case work := <-mgr.taskerCh:
 			mgr.toMineInput <- work
 			level.Info(mgr.logger).Log("msg", "sent new chalenge to the mining group",
-				"addr", work.PublicAddr,
 				"challenge", fmt.Sprintf("%x", work.Challenge.Challenge),
 				"difficulty", work.Challenge.Difficulty,
 				"requestIDs", fmt.Sprintf("%+v", work.Challenge.RequestIDs),

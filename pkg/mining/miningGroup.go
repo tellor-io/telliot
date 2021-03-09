@@ -32,7 +32,7 @@ type Hasher interface {
 	//base is a 52 byte slice containing the challenge and public address
 	// the guessed nonce is appended to this slice and used as input to the first hash fn
 	// returns a valid nonce, or empty string if none was found
-	CheckRange(deadlineCtx context.Context, hash *HashSettings, start uint64, n uint64) (string, uint64, error)
+	CheckRange(anySolution context.Context, hash *HashSettings, start uint64, n uint64) (string, uint64, error)
 
 	//number of hashes this backend checks at a time
 	StepSize() uint64
@@ -258,9 +258,8 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 		}
 		select {
 		case <-ctx.Done():
-			shouldRun = false
 			level.Debug(g.logger).Log("msg", "mining group shutdown complete")
-			break
+			return
 		// Read in a new work block.
 		case work := <-input:
 			sent = 0
@@ -302,7 +301,6 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 			recv += result.n
 			if result.nonce != "" || recv >= currWork.N {
 				level.Info(g.logger).Log("msg", "found solution and sending the result",
-					"addr", currWork.PublicAddr,
 					"challenge", fmt.Sprintf("%x", currWork.Challenge.Challenge),
 					"solution", result.nonce,
 					"difficulty", currWork.Challenge.Difficulty,
@@ -322,6 +320,4 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 			}
 		}
 	}
-	// Send a nil value to signal that it is done.
-	output <- nil
 }

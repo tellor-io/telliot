@@ -52,7 +52,6 @@ type Submitter struct {
 	currentChallenge *mining.MiningChallenge
 	currentNonce     string
 	currentValues    [5]*big.Int
-	submitter        tellorCommon.TransactionSubmitter
 	resultCh         chan *mining.Result
 	submitCount      prometheus.Counter
 	submitFailCount  prometheus.Counter
@@ -62,7 +61,7 @@ type Submitter struct {
 	lastSubmitCncl   context.CancelFunc
 }
 
-func CreateSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, client contracts.ETHClient, contractInstance *contracts.ITellor, account *rpc.Account, proxy db.DataServerProxy) (*Submitter, chan *mining.Result, error) {
+func NewSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, client contracts.ETHClient, contractInstance *contracts.ITellor, account *rpc.Account, proxy db.DataServerProxy) (*Submitter, chan *mining.Result, error) {
 	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "apply filter logger")
@@ -144,7 +143,6 @@ func (s *Submitter) Start() error {
 			ctx, s.lastSubmitCncl = context.WithCancel(s.ctx)
 
 			level.Info(s.logger).Log("msg", "received a solution",
-				"addr", result.Work.PublicAddr,
 				"challenge", fmt.Sprintf("%x", result.Work.Challenge),
 				"solution", result.Nonce,
 				"difficulty", result.Work.Challenge.Difficulty,
@@ -153,6 +151,12 @@ func (s *Submitter) Start() error {
 			s.blockUntilTimeToSubmit(ctx)
 			s.handleSubmit(ctx, result)
 		}
+	}
+}
+
+func (s *Submitter) CancelPendingSubmit() {
+	if s.lastSubmitCncl != nil {
+		s.lastSubmitCncl()
 	}
 }
 
@@ -168,7 +172,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 	)
 	for {
 		select {
-		case <-newChallengeReplace.Done(): // The context was canceled from the main loop because new work arrived.
+		case <-newChallengeReplace.Done():
 		default:
 		}
 		lastSubmit, timestamp, err = s.lastSubmit()
@@ -180,11 +184,11 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 		break
 	}
 	if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
-		level.Debug(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
+		level.Info(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
 		timeToSubmit, cncl := context.WithDeadline(newChallengeReplace, timestamp.Add(15*time.Minute))
 		defer cncl()
 		select {
-		case <-newChallengeReplace.Done(): // The context was canceled from the main loop because new work arrived.
+		case <-newChallengeReplace.Done():
 		case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
 		}
 	}
@@ -211,6 +215,12 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 						continue
 					} else { // Transaction is profitable.
 						for {
+							select {
+							case <-newChallengeReplace.Done():
+								level.Info(s.logger).Log("msg", "canceled submit")
+								return
+							default:
+							}
 							if statusID := s.getMinerStatus(); statusID != 1 {
 								level.Error(s.logger).Log("msg", "miner is not in a status that can submit", "status", minerStatusName(statusID))
 								<-ticker.C
@@ -220,11 +230,11 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 							tx, err := s.Submit(newChallengeReplace, result)
 							if err != nil {
 								s.submitFailCount.Inc()
-								level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err, "account", s.account.Address.String())
+								level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err)
 								<-ticker.C
 								continue
 							}
-							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String(), "account", s.account.Address.String())
+							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
 							s.saveGasUsed(newChallengeReplace, tx)
 							s.submitCount.Inc()
 							return
@@ -247,7 +257,7 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[i].Uint64())
 		m, err := s.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			return nil, errors.Wrapf(err, "retrieve pricing data for current request id")
+			return nil, errors.Wrapf(err, "retrieve pricing for data id:%v", challenge.RequestIDs[i].Uint64())
 		}
 		val := m[valKey]
 		var value *big.Int
@@ -287,17 +297,11 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 	}
 
 	// Submit the solution.
-	tx, err := s.submitter.Submit(ctx, s.proxy, "submitSolution", s.submit)
+	tx, err := rpc.SubmitContractTxn(ctx, s.logger, s.cfg, s.proxy, s.client, s.contractInstance, s.account, "submitSolution", s.submit)
 	if err == nil {
 		return tx, nil
 	}
-	level.Error(s.logger).Log("msg", "submit solution", "pubkey", s.submitter.Address().String())
-	return nil, errors.New("submitting solution txn by any account")
-}
-
-// SubmitTxn relies on rpc package to prepare and submit transactions.
-func (s *Submitter) SubmitTxn(ctx context.Context, proxy db.DataServerProxy, ctxName string, callback tellorCommon.TransactionGeneratorFN) (*types.Transaction, error) {
-	return rpc.SubmitContractTxn(ctx, s.logger, s.cfg, proxy, s.client, s.contractInstance, s.account, ctxName, callback)
+	return nil, err
 }
 
 func (s *Submitter) getMinerStatus() int64 {
@@ -384,7 +388,7 @@ func (s *Submitter) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		if err != nil {
 			level.Error(s.logger).Log("msg", "saving transaction cost", "err", err)
 		}
-		level.Debug(s.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slotNum.Int64())
+		level.Info(s.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slotNum.Int64())
 
 		amount, err := s.getETHBalance()
 		if err != nil {

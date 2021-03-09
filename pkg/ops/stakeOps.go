@@ -83,7 +83,7 @@ func Deposit(
 			util.FormatERC20Balance(stakeAmt))
 	}
 
-	auth, err := PrepareEthTransaction(ctx, client, account)
+	auth, err := util.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
@@ -129,7 +129,7 @@ func RequestStakingWithdraw(
 		return nil
 	}
 
-	auth, err := PrepareEthTransaction(ctx, client, account)
+	auth, err := util.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
@@ -160,7 +160,7 @@ func WithdrawStake(
 		return nil
 	}
 
-	auth, err := PrepareEthTransaction(ctx, client, account)
+	auth, err := util.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}

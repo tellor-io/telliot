@@ -40,7 +40,7 @@ func prepareTransfer(
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(amt))
 	}
-	auth, err := PrepareEthTransaction(ctx, client, account)
+	auth, err := util.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return nil, errors.Wrap(err, "preparing ethereum transaction")
 	}

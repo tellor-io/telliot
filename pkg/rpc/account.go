@@ -19,6 +19,14 @@ type Account struct {
 	PrivateKey *ecdsa.PrivateKey
 }
 
+func (a *Account) GetAddress() common.Address {
+	return a.Address
+}
+
+func (a *Account) GetPrivateKey() *ecdsa.PrivateKey {
+	return a.PrivateKey
+}
+
 // NewAccounts returns a slice of Account from private keys in
 // PrivateKeysEnvName environment variable.
 func NewAccounts(cfg *config.Config) ([]*Account, error) {

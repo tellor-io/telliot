@@ -21,6 +21,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var GitTag string
@@ -306,7 +307,7 @@ func (s migrateCmd) Run() error {
 	// Do migration for each account.
 	for _, account := range accounts {
 		level.Info(logger).Log("msg", "TRB migration", "account", account.Address.String())
-		auth, err := ops.PrepareEthTransaction(ctx, client, account)
+		auth, err := util.PrepareEthTransaction(ctx, client, account)
 		if err != nil {
 			return errors.Wrap(err, "prepare ethereum transaction")
 		}
@@ -575,8 +576,10 @@ func (m mineCmd) Run() error {
 		// Run a miner manager for each of the accounts.
 		{
 			// Create a tasker intance.
-			tasker, taskerChs := tasker.CreateTasker(ctx, logger, cfg, proxy, clientWs, contract, accounts)
-
+			tasker, taskerChs, err := tasker.CreateTasker(ctx, logger, cfg, proxy, clientWs, contract, accounts)
+			if err != nil {
+				return errors.Wrapf(err, "creating tasker")
+			}
 			// Run the tasker.
 			g.Add(func() error {
 				return tasker.Start()
@@ -588,7 +591,7 @@ func (m mineCmd) Run() error {
 			// Add a submitter for each account.
 			for _, account := range accounts {
 				// Get a channel on which it listens for new data to submit.
-				submitter, submitterCh, err := submitter.CreateSubmitter(ctx, cfg, logger, client, contract, account, proxy)
+				submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy)
 				if err != nil {
 					return errors.Wrapf(err, "creating submitter")
 				}
@@ -598,14 +601,18 @@ func (m mineCmd) Run() error {
 					submitter.Stop()
 				})
 
+				// Will be used to cancel pending submissions.
+				tasker.AddSubmissionCanceler(submitter)
+
 				// the Miner component.
-				miner, err := mining.CreateMiningManager(logger, ctx, cfg, proxy, contract, taskerChs[account.Address.String()], submitterCh, account)
+				miner, err := mining.CreateMiningManager(logger, ctx, cfg, proxy, contract, taskerChs[account.Address.String()], submitterCh, account, client)
 				if err != nil {
 					return errors.Wrapf(err, "creating miner")
 				}
 				g.Add(func() error {
 					return miner.Start()
 				}, func(error) {
+					level.Info(logger).Log("msg", "miner shutdown complete")
 					miner.Stop()
 				})
 			}

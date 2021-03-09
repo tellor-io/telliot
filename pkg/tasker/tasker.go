@@ -19,42 +19,59 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 const ComponentName = "tasker"
 
-type Tasker struct {
-	ctx              context.Context
-	close            context.CancelFunc
-	logger           log.Logger
-	proxy            db.DataServerProxy
-	accounts         []*rpc.Account
-	contractInstance *contracts.ITellor
-	client           contracts.ETHClient
-	cfg              *config.Config
-	workSinks        map[string]chan *mining.Work
+// SubmissionCanceler will be used to cancel current submits when new challenge has been arrived.
+type SubmissionCanceler interface {
+	CancelPendingSubmit()
 }
 
-func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, map[string]chan *mining.Work) {
+type Tasker struct {
+	ctx                 context.Context
+	close               context.CancelFunc
+	logger              log.Logger
+	proxy               db.DataServerProxy
+	accounts            []*rpc.Account
+	contractInstance    *contracts.ITellor
+	client              contracts.ETHClient
+	cfg                 *config.Config
+	workSinks           map[string]chan *mining.Work
+	SubmissionCancelers []SubmissionCanceler
+}
+
+func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, map[string]chan *mining.Work, error) {
 	ctx, close := context.WithCancel(ctx)
 	workSinks := make(map[string]chan *mining.Work)
 	for _, acc := range accounts {
 		workSinks[acc.Address.String()] = make(chan *mining.Work)
 	}
-	tasker := &Tasker{
-		ctx:              ctx,
-		close:            close,
-		proxy:            proxy,
-		accounts:         accounts,
-		contractInstance: contract,
-		workSinks:        workSinks,
-		logger:           log.With(logger, "component", ComponentName),
-		cfg:              cfg,
-		client:           client,
+	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		close()
+		return nil, nil, errors.Wrap(err, "apply filter logger")
 	}
-	return tasker, tasker.workSinks
+	tasker := &Tasker{
+		ctx:                 ctx,
+		close:               close,
+		proxy:               proxy,
+		accounts:            accounts,
+		contractInstance:    contract,
+		workSinks:           workSinks,
+		logger:              log.With(filterLog, "component", ComponentName),
+		cfg:                 cfg,
+		client:              client,
+		SubmissionCancelers: make([]SubmissionCanceler, 0),
+	}
+	return tasker, tasker.workSinks, nil
+}
+
+func (mt *Tasker) AddSubmissionCanceler(submissionCanceler SubmissionCanceler) {
+	mt.SubmissionCancelers = append(mt.SubmissionCancelers, submissionCanceler)
 }
 
 func (mt *Tasker) getCurrentChallenge() (*tellor.ITellorNewChallenge, error) {
@@ -102,9 +119,7 @@ func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 			"difficulty", newChallenge.Difficulty,
 			"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
 		)
-		go func(acc *rpc.Account) {
-			mt.workSinks[acc.Address.String()] <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
-		}(acc)
+		mt.workSinks[acc.Address.String()] <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
 	}
 
 }
@@ -143,10 +158,6 @@ func (mt *Tasker) Start() error {
 			if sub != nil {
 				sub.Unsubscribe()
 			}
-			level.Info(mt.logger).Log("msg", "closing the tasker channels")
-			for _, ch := range mt.workSinks {
-				close(ch)
-			}
 			level.Info(mt.logger).Log("msg", "tasker shutdown complete")
 			return mt.ctx.Err()
 		case err := <-sub.Err():
@@ -169,6 +180,10 @@ func (mt *Tasker) Start() error {
 			}
 			level.Info(mt.logger).Log("msg", "re-subscribed to NewChallenge events")
 		case vLog := <-sink:
+			level.Info(mt.logger).Log("msg", "new challenge arrived, canceling current pending submissions")
+			for _, canceler := range mt.SubmissionCancelers {
+				canceler.CancelPendingSubmit()
+			}
 			mt.sendWork(vLog)
 		}
 	}
