@@ -31,7 +31,7 @@ type DataServer struct {
 }
 
 // CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data.
-func CreateServer(
+func NewServer(
 	logger log.Logger,
 	config *config.Config,
 	DB db.DataServerProxy,

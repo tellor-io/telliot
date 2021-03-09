@@ -44,7 +44,7 @@ type Tasker struct {
 	SubmissionCancelers []SubmissionCanceler
 }
 
-func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, map[string]chan *mining.Work, error) {
+func NewTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, map[string]chan *mining.Work, error) {
 	ctx, close := context.WithCancel(ctx)
 	workSinks := make(map[string]chan *mining.Work)
 	for _, acc := range accounts {
@@ -72,20 +72,6 @@ func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, pr
 
 func (mt *Tasker) AddSubmitCanceler(submissionCanceler SubmissionCanceler) {
 	mt.SubmissionCancelers = append(mt.SubmissionCancelers, submissionCanceler)
-}
-
-func (mt *Tasker) getCurrentChallenge() (*tellor.ITellorNewChallenge, error) {
-	newVariables, err := mt.contractInstance.GetNewCurrentVariables(nil)
-	if err != nil {
-		level.Warn(mt.logger).Log("msg", "new current variables retrieval - contract might not be upgraded", "err", err)
-		return nil, err
-	}
-	return &tellor.ITellorNewChallenge{
-		CurrentChallenge: newVariables.Challenge,
-		Difficulty:       newVariables.Difficutly,
-		CurrentRequestId: newVariables.RequestIds,
-		TotalTips:        newVariables.Tip,
-	}, err
 }
 
 func (mt *Tasker) getNewChallengeChannel() (chan *tellor.ITellorNewChallenge, event.Subscription, error) {
@@ -127,13 +113,25 @@ func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 func (mt *Tasker) Start() error {
 	var err error
 	level.Info(mt.logger).Log("msg", "tasker has been started")
-	currentChallenge, err := mt.getCurrentChallenge()
 
+	// Getting current challenge from the contract.
+	newVariables, err := mt.contractInstance.GetNewCurrentVariables(nil)
 	if err != nil {
-		return errors.Wrap(err, "tasker getting the current challenge")
+		level.Warn(mt.logger).Log("msg", "new current variables retrieval - contract might not be upgraded", "err", err)
+		return err
 	}
 
-	level.Info(mt.logger).Log("msg", "tasker is sending the initial challenge to the miner")
+	currentChallenge := &tellor.ITellorNewChallenge{
+		CurrentChallenge: newVariables.Challenge,
+		Difficulty:       newVariables.Difficutly,
+		CurrentRequestId: newVariables.RequestIds,
+		TotalTips:        newVariables.Tip,
+	}
+	if err != nil {
+		return errors.Wrap(err, "getting the current challenge")
+	}
+
+	level.Info(mt.logger).Log("msg", "sending the initial challenge to the miner")
 	mt.sendWork(currentChallenge)
 
 	// Subscribe and wait until the context cancellation event.

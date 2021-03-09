@@ -173,6 +173,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 	for {
 		select {
 		case <-newChallengeReplace.Done():
+			level.Info(s.logger).Log("msg", "canceled pending submit while gettting last submit time")
 		default:
 		}
 		lastSubmit, timestamp, err = s.lastSubmit()
@@ -193,6 +194,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 		defer cncl()
 		select {
 		case <-newChallengeReplace.Done():
+			level.Info(s.logger).Log("msg", "canceled pending submit while waiting for the time to submit")
 		case <-timeToSubmit.Done(): // 15min since last submit has passed so can unblock.
 		}
 	}
@@ -204,7 +206,7 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 		for {
 			select {
 			case <-newChallengeReplace.Done():
-				level.Info(s.logger).Log("msg", "canceled submit")
+				level.Info(s.logger).Log("msg", "pending submit canceled")
 				return
 			default:
 				profitPercent, err := s.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
@@ -221,7 +223,7 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 						for {
 							select {
 							case <-newChallengeReplace.Done():
-								level.Info(s.logger).Log("msg", "canceled submit")
+								level.Info(s.logger).Log("msg", "canceled pending submit")
 								return
 							default:
 							}
@@ -239,7 +241,7 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 								continue
 							}
 							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
-							s.saveGasUsed(newChallengeReplace, tx)
+							s.saveGasUsed(s.ctx, tx)
 							s.submitCount.Inc()
 							return
 						}

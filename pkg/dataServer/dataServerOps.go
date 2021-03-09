@@ -26,8 +26,8 @@ type DataServerOps struct {
 	logger log.Logger
 }
 
-// CreateDataServerOps creates a data server instance for runtime.
-func CreateDataServerOps(
+// NewDataServerOps creates a data server instance for runtime.
+func NewDataServerOps(
 	ctx context.Context,
 	logger log.Logger,
 	config *config.Config,
@@ -36,7 +36,7 @@ func CreateDataServerOps(
 	contract *contracts.ITellor,
 	accounts []*rpc.Account,
 ) (*DataServerOps, error) {
-	ds, err := CreateServer(logger, config, DB, client, contract, accounts)
+	ds, err := NewServer(logger, config, DB, client, contract, accounts)
 	if err != nil {
 		return nil, err
 	}

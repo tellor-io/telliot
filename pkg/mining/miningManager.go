@@ -58,8 +58,8 @@ type MiningMgr struct {
 	solutionOutput   chan *Result
 }
 
-// CreateMiningManager is the MiningMgr constructor.
-func CreateMiningManager(
+// NewMiningManager is the MiningMgr constructor.
+func NewMiningManager(
 	logger log.Logger,
 	ctx context.Context,
 	cfg *config.Config,
@@ -70,15 +70,12 @@ func CreateMiningManager(
 	account *rpc.Account,
 	client contracts.ETHClient,
 ) (*MiningMgr, error) {
-
-	//ops logging
 	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 	logger = log.With(logger, "component", ComponentName, "pubKey", account.Address.String()[:6])
 
-	// Setup a MiningGroup for each account.
 	group, err := SetupMiningGroup(logger, cfg, contractInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup MiningGroup")

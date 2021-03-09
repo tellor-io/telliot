@@ -48,7 +48,7 @@ func TestDataServer(t *testing.T) {
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
 	// We need to unregister prometheus counter.
-	ds, err := CreateServer(logger, cfg, proxy, client, contract, accounts)
+	ds, err := NewServer(logger, cfg, proxy, client, contract, accounts)
 	testutil.Ok(t, err, "creating server in test")
 	ctx, close := context.WithCancel(context.Background())
 	testutil.Ok(t, ds.Start(ctx), "starting server")
