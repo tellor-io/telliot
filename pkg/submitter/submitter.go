@@ -189,7 +189,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 		defer cncl()
 		select {
 		case <-newChallengeReplace.Done():
-		case <-timeToSubmit.Done(): // 15min since last submit has passed to can unblock.
+		case <-timeToSubmit.Done(): // 15min since last submit has passed so can unblock.
 		}
 	}
 }
