@@ -374,6 +374,7 @@ func (s *Submitter) saveGasUsed(ctx context.Context, tx *types.Transaction) {
 		receipt, err := bind.WaitMined(ctx, s.client, tx)
 		if err != nil {
 			level.Error(s.logger).Log("msg", "transaction result for calculating transaction cost", "err", err)
+			return
 		}
 		if receipt.Status != 1 {
 			s.submitFailCount.Inc()
