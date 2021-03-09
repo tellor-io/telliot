@@ -31,25 +31,21 @@ func parseConfig(path string) (*config.Config, error) {
 }
 
 func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, []*rpc.Account, error) {
-
-	// Create an websocker client for watch events.
-	clientWs, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeWSURLEnvName))
+	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
-
-	contract, err := contracts.NewITellor(clientWs)
+	contract, err := contracts.NewITellor(client)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
 	}
-
 	accounts, err := rpc.NewAccounts(cfg)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "creating accounts")
 	}
 
 	// Issue #55, halt if client is still syncing with Ethereum network
-	s, err := clientWs.IsSyncing(ctx)
+	s, err := client.IsSyncing(ctx)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
 	}
@@ -57,7 +53,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 		return nil, nil, nil, errors.New("ethereum node is still syncing with the network")
 	}
 
-	return clientWs, contract, accounts, nil
+	return client, contract, accounts, nil
 }
 
 // migrateAndOpenDB migrates the tx costs and deletes the db.

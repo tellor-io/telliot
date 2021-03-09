@@ -454,6 +454,12 @@ func (d dataserverCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "creating data server")
 	}
+	// Start and wait for it to be ready.
+	if err := ds.Start(); err != nil {
+		return errors.Wrap(err, "starting data server")
+	}
+	// We need to wait until the DataServer instance is ready.
+	<-ds.Ready()
 
 	// We define our run groups here.
 	var g run.Group
@@ -461,15 +467,6 @@ func (d dataserverCmd) Run() error {
 	{
 		// Handle interupts.
 		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
-
-		{
-			// Start and wait for it to be ready.
-			g.Add(func() error {
-				return errors.Wrapf(ds.Start(), "starting data server")
-			}, func(error) {
-				ds.Stop()
-			})
-		}
 
 		// Metrics server.
 		{
@@ -482,6 +479,7 @@ func (d dataserverCmd) Run() error {
 				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
 					err = errors.Wrapf(err, "ListenAndServe")
 				}
+				level.Info(logger).Log("msg", "metrics server shutdown complete")
 				return err
 			}, func(error) {
 				srv.Close()
@@ -490,6 +488,8 @@ func (d dataserverCmd) Run() error {
 
 	}
 
+	// Stopping the dataserver.
+	defer ds.Stop()
 	if err := g.Run(); err != nil {
 		level.Info(logger).Log("msg", "main exited with error", "err", err)
 		return err
@@ -566,7 +566,7 @@ func (m mineCmd) Run() error {
 				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
 					err = errors.Wrapf(err, "ListenAndServe")
 				}
-				level.Info(logger).Log("msg", "metrics server is closing")
+				level.Info(logger).Log("msg", "metrics server shutdown complete")
 				return err
 			}, func(error) {
 				srv.Close()

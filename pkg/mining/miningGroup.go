@@ -250,7 +250,7 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 	// Always waits for all miners to finish their chunks before returning.
 	// EXCEPT in the case of an error, but then the app is almost certainly just quitting anyways!
 
-	for len(idleWorkers) < len(g.Backends) {
+	for {
 		elapsed := time.Since(timeStarted)
 		if elapsed > nextHeartbeat {
 			g.PrintHashRateSummary()

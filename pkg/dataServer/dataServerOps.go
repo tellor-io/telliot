@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
@@ -72,5 +71,4 @@ func (ops *DataServerOps) Ready() chan bool {
 // Stop will take care of stopping the dataserver component.
 func (ops *DataServerOps) Stop() {
 	ops.close()
-	level.Info(ops.logger).Log("msg", "data server shutdown complete")
 }
