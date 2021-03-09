@@ -239,7 +239,7 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 								continue
 							}
 							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
-							s.saveGasUsed(newChallengeReplace, tx)
+							s.saveGasUsed(s.ctx, tx)
 							s.submitCount.Inc()
 							return
 						}
