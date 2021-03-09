@@ -70,7 +70,7 @@ func CreateTasker(ctx context.Context, logger log.Logger, cfg *config.Config, pr
 	return tasker, tasker.workSinks, nil
 }
 
-func (mt *Tasker) AddSubmissionCanceler(submissionCanceler SubmissionCanceler) {
+func (mt *Tasker) AddSubmitCanceler(submissionCanceler SubmissionCanceler) {
 	mt.SubmissionCancelers = append(mt.SubmissionCancelers, submissionCanceler)
 }
 
