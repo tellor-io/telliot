@@ -184,7 +184,11 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 		break
 	}
 	if lastSubmit < s.cfg.Mine.MinSubmitPeriod.Duration {
-		level.Info(s.logger).Log("msg", "min transaction submit threshold hasn't passed", "minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod, "lastSubmit", lastSubmit)
+		level.Info(s.logger).Log("msg", "min transaction submit threshold hasn't passed",
+			"nextSubmit", time.Duration(s.cfg.Mine.MinSubmitPeriod.Nanoseconds())-lastSubmit,
+			"lastSubmit", lastSubmit,
+			"minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod,
+		)
 		timeToSubmit, cncl := context.WithDeadline(newChallengeReplace, timestamp.Add(15*time.Minute))
 		defer cncl()
 		select {
