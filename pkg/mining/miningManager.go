@@ -116,7 +116,7 @@ func (mgr *MiningMgr) Start() error {
 
 		// Found a solution.
 		case solution := <-mgr.solutionOutput:
-			level.Info(mgr.logger).Log("msg", "submitting the solution")
+			level.Info(mgr.logger).Log("msg", "sending the solution to the submitter")
 			mgr.submitterCh <- solution
 
 		// Listen for new work from the tasker and send for mining.
