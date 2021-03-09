@@ -180,7 +180,6 @@ func (mt *Tasker) Start() error {
 			}
 			level.Info(mt.logger).Log("msg", "re-subscribed to NewChallenge events")
 		case vLog := <-sink:
-			level.Info(mt.logger).Log("msg", "new challenge arrived, canceling current pending submissions")
 			for _, canceler := range mt.SubmissionCancelers {
 				canceler.CancelPendingSubmit()
 			}
