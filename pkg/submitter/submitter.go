@@ -302,12 +302,7 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 		s.currentValues[i] = value
 	}
 
-	// Submit the solution.
-	tx, err := rpc.SubmitContractTxn(ctx, s.logger, s.cfg, s.proxy, s.client, s.contractInstance, s.account, "submitSolution", s.submit)
-	if err == nil {
-		return tx, nil
-	}
-	return nil, err
+	return rpc.SubmitContractTxn(ctx, s.logger, s.cfg, s.proxy, s.client, s.contractInstance, s.account, "submitSolution", s.submit)
 }
 
 func (s *Submitter) getMinerStatus() int64 {
