@@ -88,7 +88,7 @@ func (mt *Tasker) getNewChallengeChannel() (chan *tellor.ITellorNewChallenge, ev
 	return sink, sub, nil
 }
 
-func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
+func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge, delay time.Duration) {
 	if challenge.CurrentRequestId[0].Int64() > int64(100) || challenge.CurrentRequestId[0].Int64() == 0 {
 		level.Warn(mt.logger).Log("msg", "new current variables request ID not correct - contract about to be upgraded")
 		return
@@ -106,6 +106,12 @@ func (mt *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 			"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
 		)
 		mt.workSinks[acc.Address.String()] <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
+		select {
+		case <-mt.ctx.Done():
+			return
+		case <-time.After(delay):
+			continue
+		}
 	}
 
 }
@@ -132,7 +138,7 @@ func (mt *Tasker) Start() error {
 	}
 
 	level.Info(mt.logger).Log("msg", "sending the initial challenge to the miner")
-	mt.sendWork(currentChallenge)
+	mt.sendWork(currentChallenge, 5*time.Second)
 
 	// Subscribe and wait until the context cancellation event.
 	var sink chan *tellor.ITellorNewChallenge
@@ -181,7 +187,7 @@ func (mt *Tasker) Start() error {
 			for _, canceler := range mt.SubmissionCancelers {
 				canceler.CancelPendingSubmit()
 			}
-			mt.sendWork(vLog)
+			mt.sendWork(vLog, 0)
 		}
 	}
 }

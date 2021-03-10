@@ -5,6 +5,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -135,8 +136,6 @@ func SubmitContractTxn(
 			auth.GasPrice = maxGasPrice
 		}
 
-		level.Info(logger).Log("msg", "gas price", "value", gasPrice)
-
 		wrapper := contractWrapper{auth, account.Address, tellor}
 		tx, err := callback(ctx, wrapper)
 		if err != nil {
@@ -160,6 +159,13 @@ func SubmitContractTxn(
 				continue
 			}
 		}
+		level.Info(logger).Log("msg", "sent txn on-chain",
+			"pubKey", account.Address.String()[:6],
+			"nonce", tx.Nonce(),
+			"gasPrice", tx.GasPrice(),
+			"data", fmt.Sprintf("%x", tx.Data()),
+			"value", tx.Value(),
+		)
 		return tx, nil
 	}
 	return nil, errors.Wrapf(finalError, "submit txn after 5 attempts ctx:%v", ctxName)

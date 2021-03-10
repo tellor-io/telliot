@@ -40,11 +40,6 @@ spec:
         - name: db
           mountPath: "/db"
         env:
-        - name: NODE_URL
-          valueFrom:
-            secretKeyRef:
-              name: telliot-main
-              key: NODE_URL
         - name: NODE_WEBSOCKET_URL
           valueFrom:
             secretKeyRef:

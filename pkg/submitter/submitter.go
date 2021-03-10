@@ -148,7 +148,6 @@ func (s *Submitter) Start() error {
 				"difficulty", result.Work.Challenge.Difficulty,
 				"requestIDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
 			)
-			s.blockUntilTimeToSubmit(ctx)
 			s.handleSubmit(ctx, result)
 		}
 	}
@@ -188,9 +187,10 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 		level.Info(s.logger).Log("msg", "min transaction submit threshold hasn't passed",
 			"nextSubmit", time.Duration(s.cfg.Mine.MinSubmitPeriod.Nanoseconds())-lastSubmit,
 			"lastSubmit", lastSubmit,
+			"lastSubmitTimestamp", timestamp.Format("2006-01-02 15:04:05.000000"),
 			"minSubmitPeriod", s.cfg.Mine.MinSubmitPeriod,
 		)
-		timeToSubmit, cncl := context.WithDeadline(newChallengeReplace, timestamp.Add(15*time.Minute))
+		timeToSubmit, cncl := context.WithDeadline(newChallengeReplace, timestamp.Add(s.cfg.Mine.MinSubmitPeriod.Duration))
 		defer cncl()
 		select {
 		case <-newChallengeReplace.Done():
@@ -198,6 +198,25 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 		case <-timeToSubmit.Done(): // 15min since last submit has passed so can unblock.
 		}
 	}
+}
+
+func (s *Submitter) canSubmit() error {
+	profitPercent, err := s.profit()    // Call it regardless of whether we use so that is sets the exposed metrics.
+	if s.cfg.Mine.ProfitThreshold > 0 { // Profit check is enabled.
+		if _, ok := err.(errNoDataForSlot); ok {
+			level.Warn(s.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
+		} else if err != nil {
+			return errors.Wrapf(err, "submit solution profit check")
+		} else if profitPercent < int64(s.cfg.Mine.ProfitThreshold) {
+			return errors.Errorf("profit:%v lower then the profit threshold:%v", profitPercent, s.cfg.Mine.ProfitThreshold)
+		}
+	}
+
+	if statusID := s.getMinerStatus(); statusID != 1 {
+		return errors.Errorf("miner is not in a status that can submit:%v", minerStatusName(statusID))
+	}
+
+	return nil
 }
 
 func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mining.Result) {
@@ -209,43 +228,30 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 				level.Info(s.logger).Log("msg", "pending submit canceled")
 				return
 			default:
-				profitPercent, err := s.profit() // Call it regardless of whether we use so that is sets the exposed metrics.
-				if err != nil {
-					level.Error(s.logger).Log("msg", "submit solution profit check", "err", err)
+				s.blockUntilTimeToSubmit(newChallengeReplace)
+				if err := s.canSubmit(); err != nil {
+					level.Info(s.logger).Log("msg", "can't submit and will retry later", "reason", err)
 					<-ticker.C
 					continue
 				}
-				if s.cfg.Mine.ProfitThreshold > 0 {
-					if profitPercent < int64(s.cfg.Mine.ProfitThreshold) {
+				for {
+					select {
+					case <-newChallengeReplace.Done():
+						level.Info(s.logger).Log("msg", "canceled pending submit")
+						return
+					default:
+					}
+					tx, err := s.Submit(newChallengeReplace, result)
+					if err != nil {
+						s.submitFailCount.Inc()
+						level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err)
 						<-ticker.C
 						continue
-					} else { // Transaction is profitable.
-						for {
-							select {
-							case <-newChallengeReplace.Done():
-								level.Info(s.logger).Log("msg", "canceled pending submit")
-								return
-							default:
-							}
-							if statusID := s.getMinerStatus(); statusID != 1 {
-								level.Error(s.logger).Log("msg", "miner is not in a status that can submit", "status", minerStatusName(statusID))
-								<-ticker.C
-								continue
-							}
-							s.blockUntilTimeToSubmit(newChallengeReplace)
-							tx, err := s.Submit(newChallengeReplace, result)
-							if err != nil {
-								s.submitFailCount.Inc()
-								level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err)
-								<-ticker.C
-								continue
-							}
-							level.Debug(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
-							s.saveGasUsed(s.ctx, tx)
-							s.submitCount.Inc()
-							return
-						}
 					}
+					level.Info(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
+					s.saveGasUsed(s.ctx, tx)
+					s.submitCount.Inc()
+					return
 				}
 			}
 		}
@@ -510,6 +516,14 @@ func (s *Submitter) gasUsed() (*big.Int, *big.Int, error) {
 	return big.NewInt(0).SetBytes(gas), slotNum, nil
 }
 
+type errNoDataForSlot struct {
+	slot string
+}
+
+func (e errNoDataForSlot) Error() string {
+	return "no data for gas used for slot:" + e.slot
+}
+
 // profit returns the profit in percents.
 // When the transaction cost is unknown it returns -1 so
 // that the caller can decide how to handle.
@@ -521,8 +535,7 @@ func (s *Submitter) profit() (int64, error) {
 		return 0, errors.Wrap(err, "getting TX cost")
 	}
 	if gasUsed.Int64() == 0 {
-		level.Debug(s.logger).Log("msg", "profit checking:no data for gas used", "slot", slotNum)
-		return -100, nil
+		return 0, errNoDataForSlot{slot: slotNum.String()}
 	}
 	gasPrice, err := s.client.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -537,7 +550,7 @@ func (s *Submitter) profit() (int64, error) {
 	profit := big.NewInt(0).Sub(reward, txCost)
 	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
 	profitPercent := int64(profitPercentFloat)
-	level.Debug(s.logger).Log(
+	level.Info(s.logger).Log(
 		"msg", "profit checking",
 		"reward", fmt.Sprintf("%.2e", float64(reward.Int64())),
 		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
@@ -568,7 +581,7 @@ func minerStatusName(statusID int64) string {
 	case 4:
 		return "ReadyForUnlocking"
 	case 5:
-		return "ReadyForUnlocking"
+		return "Unlocked"
 	default:
 		return "Unknown"
 	}

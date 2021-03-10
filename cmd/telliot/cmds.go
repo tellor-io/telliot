@@ -573,7 +573,7 @@ func (m mineCmd) Run() error {
 			})
 		}
 
-		// Run a miner manager for each of the accounts.
+		// Miner components.
 		{
 			// Create a tasker intance.
 			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg, proxy, client, contract, accounts)

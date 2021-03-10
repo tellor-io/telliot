@@ -15,13 +15,14 @@
         "ListenPort": 5000
     },
     "Logger": {
-        "db": "info",
-        "rpc": "info",
+        "apiOracle": "info",
         "dataServer": "info",
-        "tracker": "info",
-        "pow:": "info",
-        "ops": "info",
-        "rest": "info",
-        "apiOracle": "info"
+        "db": "info",
+        "miner": "info",
+        "rest:": "info",
+        "rpc": "info",
+        "submitter": "info",
+        "tasker": "info",
+        "tracker": "info"
     }
 }

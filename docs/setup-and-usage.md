@@ -336,11 +336,11 @@ echo "ETH_PRIVATE_KEYS=4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a43
 echo "ETH_PRIVATE_KEYS=78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14" > .env5
 
 
-echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env1
-echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env2
-echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env3
-echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env4
-echo "NODE_URL=https://mainnet.infura.io/v3/xxxxxxxxxxxxx" >> .env5
+echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env1
+echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env2
+echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env3
+echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env4
+echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env5
 ```
 
 Finaly, make 1 more copy of the config for the data server and update the `serverHost` address to `0.0.0.0`:
