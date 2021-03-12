@@ -119,7 +119,7 @@ Open config.json and update the following values:
 
 ### Create .env file
 
-Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config. Make a copy of the `env.example` and edit with your secrets.  
+Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config. Make a copy of the `env.example` and edit with your secrets.
 For a working setup it is required to at least add one private key in your `"ETH_PRIVATE_KEYS"` environment variable. all of public addresses can be determined from your private keys.
 
 ## mine - Become a Miner

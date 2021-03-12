@@ -110,7 +110,9 @@ var defaultConfig = Config{
 		ListenPort:                   9090,
 		Heartbeat:                    Duration{15 * time.Second},
 		MiningInterruptCheckInterval: Duration{15 * time.Second},
-		MinSubmitPeriod:              Duration{15*time.Minute + 1*time.Second},
+		// MinSubmitPeriod is the time limit between each submit for a staked miner.
+		// We added a 1 second delay here as a workaround to prevent failed transactions.
+		MinSubmitPeriod: Duration{15*time.Minute + 1*time.Second},
 	},
 	DataServer: DataServer{
 		ListenHost: "localhost",

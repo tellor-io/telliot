@@ -5,7 +5,6 @@ package rpc
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -153,19 +152,12 @@ func SubmitContractTxn(
 			delay := 15 * time.Second
 			level.Debug(logger).Log("msg", "will retry a send", "retryDelay", delay)
 			select {
-			case <-ctx.Done(): // Submit was canceled, because new work arrived.
+			case <-ctx.Done():
 				return nil, errors.New("the submit context was canceled")
 			case <-time.After(delay):
 				continue
 			}
 		}
-		level.Info(logger).Log("msg", "sent txn on-chain",
-			"pubKey", account.Address.String()[:6],
-			"nonce", tx.Nonce(),
-			"gasPrice", tx.GasPrice(),
-			"data", fmt.Sprintf("%x", tx.Data()),
-			"value", tx.Value(),
-		)
 		return tx, nil
 	}
 	return nil, errors.Wrapf(finalError, "submit txn after 5 attempts ctx:%v", ctxName)

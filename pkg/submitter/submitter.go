@@ -248,7 +248,13 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 						<-ticker.C
 						continue
 					}
-					level.Info(s.logger).Log("msg", "submited a solution", "txHash", tx.Hash().String())
+					level.Info(s.logger).Log("msg", "submited a solution",
+						"txHash", tx.Hash().String(),
+						"nonce", tx.Nonce(),
+						"gasPrice", tx.GasPrice(),
+						"data", fmt.Sprintf("%x", tx.Data()),
+						"value", tx.Value(),
+					)
 					s.saveGasUsed(s.ctx, tx)
 					s.submitCount.Inc()
 					return
