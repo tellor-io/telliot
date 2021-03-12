@@ -119,7 +119,8 @@ Open config.json and update the following values:
 
 ### Create .env file
 
-Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config. Make a copy of the `env.example` and edit with your secrets.
+Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config. Make a copy of the `env.example` and edit with your secrets.  
+For a working setup it is required to at least add one private key in your `"ETH_PRIVATE_KEYS"` environment variable. all of public addresses can be determined from your private keys.
 
 ## mine - Become a Miner
 
@@ -242,22 +243,22 @@ Where 5 and .01 are the defaults, the variables are the amount of time in minute
 
 If the disputer is successful and finds a submitted outside of your acceptable range, a text file containing pertinent information will be created in your working directory \(the one you're running the miner out of\) in the format: `"possible-dispute-(blocktime).txt"`
 
-## dataServer - connect more than one miner to work together.
+## dataServer - have a dataserver running all the time.
 
 {% hint style="info" %}
 Advanced usage! If you are setting up a Tellor miner for the first time, it might be a good idea to skip this section and come back after you're up and running with one miner.
 {% endhint %}
 
-If you are running multiple miners, there is no reason to run multiple databases \(the values you will submit should be identical\). In addition, querying the same API from multiple processes can lead to rate limits on the public APIs. To get around this, you can utilize a system where you run one.
+It is recommended to have a dataserver running all the time so data could be saved and also it is needed as some prices need 24h averages.
 
-In this example will 5 miners connected to a single data server. These 5 miners will start the mining process and the 1 data server will be how each of the 5 miners fetch data from the internet. The network topology of this setup is as follow:
+In this example will a miner connected to a data server. This miner will start the mining process using multiple keys and the 1 data server will fetch required data from the internet. The network topology of this setup is as follow:
 
 ```bash
-           <-> Miner (0xE037) <->
-           <-> Miner (0xcdd8) <->
-Tellor     <-> Miner (0xb9dD) <-> Data Server <-> Internet
-(on chain) <-> Miner (0x2305) <->
-           <-> Miner (0x3233) <->
+                            /(0xE037)\
+                Miner      | (0xcdd8) |
+Tellor     <-> (multiple   | (0xb9dD) | <-> Data Server <-> Internet
+(on chain)      keys)      | (0x2305) |
+                            \(0x3233)/
 ```
 
 The data server pulls data from the internet, the 5 staked miners pull data from the data server and submit on-chain to the Tellor Core smart contracts. The following instructions cover setting this up locally.
@@ -272,7 +273,6 @@ Edit `config1.json` to include the following:
 
 ```bash
 {
-    "publicAddress": "0xE037EC8EC9ec423826750853899394dE7F024fee",
     "databaseURL":"http://localhost7545",
     "serverWhitelist": [
                 "0xE037EC8EC9ec423826750853899394dE7F024fee",
@@ -302,45 +302,20 @@ Edit `config1.json` to include the following:
 }
 ```
 
-After saving this `config1.json` file. Create 4 copies of this file and edit the `dbFile`, `publicAddress`, `envFile` location for each of the files to include the other 5 staked miner addresses \(the command below do this for you with `cp` and `sed`\):
+After saving this `config1.json` file. Create a copy of this file and edit the `envFile` location to include the 5 staked miner addresses \(the command below do this for you with `cp` and `sed`\):
 
 ```bash
 cp config1.json config2.json
-cp config1.json config3.json
-cp config1.json config4.json
-cp config1.json config5.json
-
 sed -i -e 's/.env1/.env2/' config2.json
-sed -i -e 's/.env1/.env3/' config3.json
-sed -i -e 's/.env1/.env4/' config4.json
-sed -i -e 's/.env1/.env5/' config5.json
-
 sed -i -e 's/tellorDB/tellorDB2/' config2.json
-sed -i -e 's/tellorDB/tellorDB3/' config3.json
-sed -i -e 's/tellorDB/tellorDB4/' config4.json
-sed -i -e 's/tellorDB/tellorDB5/' config5.json
-
-sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826750853899394dE7F024fee/0xcdd8FA31AF8475574B8909F135d510579a8087d3/' config2.json
-sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826750853899394dE7F024fee/0xb9dD5AfD86547Df817DA2d0Fb89334A6F8eDd891/' config3.json
-sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826750853899394dE7F024fee/0x230570cD052f40E14C14a81038c6f3aa685d712B/' config4.json
-sed -i -e '1,/0xE037EC8EC9ec423826750853899394dE7F024fee/ s/0xE037EC8EC9ec423826750853899394dE7F024fee/0x3233afA02644CCd048587F8ba6e99b3C00A34DcC/' config5.json
 ```
 
-Create `.env` file with the private keys for each miner (if there are more than one private keys, must be seperated by `,`).
+Create `.env` file with the private keys for the miner (if there are more than one private keys, must be seperated by `,`).
 
 ```bash
-echo "ETH_PRIVATE_KEYS=4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16" > .env1
-echo "ETH_PRIVATE_KEYS=d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env2
-echo "ETH_PRIVATE_KEYS=d13dc98a245bd29193d5b41203a1d3a4ae564257d60e00d6f68d120ef6b796c5" > .env3
-echo "ETH_PRIVATE_KEYS=4beaa6653cdcacc36e3c400ce286f2aefd59e2642c2f7f29804708a434dd7dbe" > .env4
-echo "ETH_PRIVATE_KEYS=78c1c7e40057ea22a36a0185380ce04ba4f333919d1c5e2effaf0ae8d6431f14" > .env5
-
+echo "ETH_PRIVATE_KEYS=4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16,d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env1
 
 echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env1
-echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env2
-echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env3
-echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env4
-echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env5
 ```
 
 Finaly, make 1 more copy of the config for the data server and update the `serverHost` address to `0.0.0.0`:
@@ -350,7 +325,7 @@ cp config1.json config-dataserver.json
 sed -i -e 's/\"serverHost\": \"localhost\"/\"serverHost\": \"0.0.0.0\"/' config-dataserver.json
 ```
 
-The stakes have already been deposited for these Addresses so you can now move on to starting up each of the miners.
+The stakes have already been deposited for these Addresses so you can now move on to starting up the miner using multiple staked keys.
 
 #### Starting the Miners and Data Server
 
@@ -359,15 +334,11 @@ You can do this in 6 separate terminals locally. Run each of the command in each
 | Terminal \# | Command | Description |
 | :--- | :--- | :--- |
 | 1 | ./telliot dataserver --config=config-dataserver.json | Data Server |
-| 2 | ./telliot mine -r --config=config1.json | Staked Miner 1 |
-| 3 | ./telliot mine -r --config=config2.json | Staked Miner 2 |
-| 4 | ./telliot mine -r --config=config3.json | Staked Miner 3 |
-| 5 | ./telliot mine -r --config=config4.json | Staked Miner 4 |
-| 6 | ./telliot mine -r --config=config5.json | Staked Miner 5 |
+| 2 | ./telliot mine -r --config=config1.json | Miner 1 (Multiple staked keys) |
 
 #### Conclusion
 
-At this point, you will have 7 terminals running: 6 terminals for the `telliot` and 1 terminal for running Ganache. You should see your miners are submitting transactions and if you want to check that the network difficulty is rising, you can use Truffle's console again and run the following commands:
+At this point, you will have 3 terminals running: 2 terminals for the `telliot` and 1 terminal for running Ganache. You should see your miner are submitting transactions using multiple staked keys and if you want to check that the network difficulty is rising, you can use Truffle's console again and run the following commands:
 
 ```bash
 let difficulty = await oracle.getUintVar("0xb12aff7664b16cb99339be399b863feecd64d14817be7e1f042f97e3f358e64e")

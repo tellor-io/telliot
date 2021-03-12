@@ -110,7 +110,7 @@ var defaultConfig = Config{
 		ListenPort:                   9090,
 		Heartbeat:                    Duration{15 * time.Second},
 		MiningInterruptCheckInterval: Duration{15 * time.Second},
-		MinSubmitPeriod:              Duration{15 * time.Minute},
+		MinSubmitPeriod:              Duration{15*time.Minute + 1*time.Second},
 	},
 	DataServer: DataServer{
 		ListenHost: "localhost",
