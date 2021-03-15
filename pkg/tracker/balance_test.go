@@ -56,7 +56,7 @@ func TestNegativeBalance(t *testing.T) {
 	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
 
-	accounts, err := rpc.NewAccounts(cfg)
+	accounts, err := rpc.GetAccounts()
 	testutil.Ok(t, err)
 	for _, account := range accounts {
 		tracker := NewBalanceTracker(logger, proxy, client, account)
@@ -76,7 +76,7 @@ func dbBalanceTest(startBal *big.Int, t *testing.T) {
 	defer t.Cleanup(cleanup)
 	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
-	accounts, err := rpc.NewAccounts(cfg)
+	accounts, err := rpc.GetAccounts()
 	testutil.Ok(t, err)
 	for _, account := range accounts {
 		tracker := NewBalanceTracker(logger, proxy, client, account)

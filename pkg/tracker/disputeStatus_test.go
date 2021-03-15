@@ -45,7 +45,7 @@ func TestDisputeStatus(t *testing.T) {
 	logger := logging.NewLogger()
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	accounts, err := rpc.NewAccounts(cfg)
+	accounts, err := rpc.GetAccounts()
 	testutil.Ok(t, err)
 	for _, account := range accounts {
 		tracker := NewDisputeTracker(logger, cfg, proxy, contract, account)
@@ -75,7 +75,7 @@ func TestDisputeStatusNegativeBalance(t *testing.T) {
 	logger := logging.NewLogger()
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	accounts, err := rpc.NewAccounts(cfg)
+	accounts, err := rpc.GetAccounts()
 	testutil.Ok(t, err)
 	for _, account := range accounts {
 		tracker := NewDisputeTracker(logger, cfg, proxy, contract, account)

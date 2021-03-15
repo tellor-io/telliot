@@ -88,7 +88,6 @@ type Config struct {
 	Mine             Mine
 	DataServer       DataServer
 	Trackers         Trackers
-	PublicAddress    string
 	EthClientTimeout uint
 	DBFile           string
 	GasMultiplier    float32
@@ -193,10 +192,6 @@ func ParseConfig(path string) (*Config, error) {
 		return nil, errors.Wrap(err, "validate config")
 	}
 
-	if len(cfg.ServerWhitelist) == 0 {
-		cfg.ServerWhitelist = append(cfg.ServerWhitelist, cfg.PublicAddress)
-	}
-
 	err = godotenv.Load(cfg.EnvFile)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "loading env vars from env file")
@@ -206,10 +201,22 @@ func ParseConfig(path string) (*Config, error) {
 }
 
 func validate(cfg *Config) error {
-	if !strings.Contains(cfg.PublicAddress, "0x") {
-		return errors.New("public key should start with 0x")
-	}
-
 	return nil
+}
 
+func ValidateDataServerConfig(cfg *Config) error {
+	if len(cfg.ServerWhitelist) == 0 {
+		return errors.New("ServerWhitelist shouldn't be empty while running as dataserver")
+	}
+	return nil
+}
+
+func ValidateMinerConfig(cfg *Config) error {
+	_privateKeys := os.Getenv(PrivateKeysEnvName)
+	privateKeys := strings.Split(_privateKeys, ",")
+
+	if len(privateKeys) == 0 {
+		return errors.New("PrivateKeysEnvName env shouldn't be empty while running as miner")
+	}
+	return nil
 }

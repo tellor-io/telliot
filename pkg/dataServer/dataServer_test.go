@@ -43,7 +43,7 @@ func TestDataServer(t *testing.T) {
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 
-	accounts, err := rpc.NewAccounts(cfg)
+	accounts, err := rpc.GetAccounts()
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
@@ -55,8 +55,7 @@ func TestDataServer(t *testing.T) {
 
 	srv, err := rest.Create(logger, cfg, context.Background(), proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
 	testutil.Ok(t, err)
-	srv.Start()
-
+	go srv.Start()
 	time.Sleep(2 * time.Second)
 	resp, err := http.Get("http://" + cfg.DataServer.ListenHost + ":" + strconv.Itoa(int(cfg.DataServer.ListenPort)) + "/balance")
 	testutil.Ok(t, err)

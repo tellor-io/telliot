@@ -148,7 +148,7 @@ func (s *Submitter) Start() error {
 				"difficulty", result.Work.Challenge.Difficulty,
 				"requestIDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
 			)
-			s.handleSubmit(ctx, result)
+			s.Submit(ctx, result)
 		}
 	}
 }
@@ -219,7 +219,7 @@ func (s *Submitter) canSubmit() error {
 	return nil
 }
 
-func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mining.Result) {
+func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {
 	go func(newChallengeReplace context.Context, result *mining.Result) {
 		ticker := time.NewTicker(1 * time.Second)
 		for {
@@ -241,7 +241,13 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 						return
 					default:
 					}
-					tx, err := s.Submit(newChallengeReplace, result)
+					err := s.addRequestIds(result)
+					if err != nil {
+						level.Error(s.logger).Log("msg", "adding the request ids, retrying", "err", err)
+						<-ticker.C
+						continue
+					}
+					tx, err := rpc.SubmitContractTxn(newChallengeReplace, s.logger, s.cfg, s.proxy, s.client, s.contractInstance, s.account, "submitSolution", s.submit)
 					if err != nil {
 						s.submitFailCount.Inc()
 						level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err)
@@ -264,7 +270,7 @@ func (s *Submitter) handleSubmit(newChallengeReplace context.Context, result *mi
 	}(newChallengeReplace, result)
 }
 
-func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.Transaction, error) {
+func (s *Submitter) addRequestIds(result *mining.Result) error {
 	challenge := result.Work.Challenge
 	nonce := result.Nonce
 	s.currentChallenge = challenge
@@ -275,14 +281,14 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[i].Uint64())
 		m, err := s.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			return nil, errors.Wrapf(err, "retrieve pricing for data id:%v", challenge.RequestIDs[i].Uint64())
+			return errors.Wrapf(err, "retrieve pricing for data id:%v", challenge.RequestIDs[i].Uint64())
 		}
 		val := m[valKey]
 		var value *big.Int
 		if len(val) == 0 {
 			jsonFile, err := os.Open(s.cfg.ManualDataFile)
 			if err != nil {
-				return nil, errors.Wrapf(err, "manualData read Error")
+				return errors.Wrapf(err, "manualData read Error")
 			}
 			defer jsonFile.Close()
 			byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -291,7 +297,7 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 			_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
-				return nil, errors.Errorf("retrieve pricing data for current request id")
+				return errors.Errorf("retrieve pricing data for current request id")
 			}
 			value = big.NewInt(int64(val))
 		} else {
@@ -308,13 +314,12 @@ func (s *Submitter) Submit(ctx context.Context, result *mining.Result) (*types.T
 					}
 					continue
 				}
-				return nil, errors.Errorf("no value in database,  reg id:%v", challenge.RequestIDs[i].Uint64())
+				return errors.Errorf("no value in database,  reg id:%v", challenge.RequestIDs[i].Uint64())
 			}
 		}
 		s.currentValues[i] = value
 	}
-
-	return rpc.SubmitContractTxn(ctx, s.logger, s.cfg, s.proxy, s.client, s.contractInstance, s.account, "submitSolution", s.submit)
+	return nil
 }
 
 func (s *Submitter) getMinerStatus() int64 {

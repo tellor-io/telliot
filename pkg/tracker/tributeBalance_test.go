@@ -34,7 +34,7 @@ func TestTributeBalance(t *testing.T) {
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	accounts, err := rpc.NewAccounts(cfg)
+	accounts, err := rpc.GetAccounts()
 	testutil.Ok(t, err)
 	for _, account := range accounts {
 		tracker := NewTributeTracker(logger, proxy, contract, account)

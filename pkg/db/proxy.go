@@ -90,16 +90,19 @@ func open(logger log.Logger, cfg *config.Config, localDB DB, isRemote bool) (Dat
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 
-	firstPKey := strings.TrimSpace(strings.Split(os.Getenv(config.PrivateKeysEnvName), ",")[0])
-	privateKey, err := crypto.HexToECDSA(firstPKey)
+	// Using the public key from the first private key.
+	_privateKeys := os.Getenv(config.PrivateKeysEnvName)
+	privateKeys := strings.Split(_privateKeys, ",")
+	privateKey, err := crypto.HexToECDSA(strings.TrimSpace(privateKeys[0]))
 	if err != nil {
-		return nil, errors.Wrap(err, "decoding private key")
+		return nil, errors.Wrap(err, "getting private key to ECDSA")
 	}
-	//get address from config
-	_fromAddress := cfg.PublicAddress
-
-	//convert to address
-	fromAddress := common.HexToAddress(_fromAddress)
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, errors.New("casting public key to ECDSA")
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
 	whitelist := cfg.ServerWhitelist
 	wlMap := make(map[string]bool)

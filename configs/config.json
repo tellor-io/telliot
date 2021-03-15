@@ -1,5 +1,4 @@
 {
-    "PublicAddress": "0x0000000000000000000000000000000000000000",
     "GasMax": 10,
     "DbFile": "tmp/db",
     "ApiFile": "configs/api.json",

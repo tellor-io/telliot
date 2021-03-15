@@ -55,7 +55,7 @@ func TestRunner(t *testing.T) {
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	accounts, err := rpc.NewAccounts(cfg)
+	accounts, err := rpc.GetAccounts()
 	testutil.Ok(t, err)
 
 	runner, _ := NewRunner(logger, cfg, proxy, client, contract, accounts)

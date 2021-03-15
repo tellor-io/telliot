@@ -113,10 +113,6 @@ kubectl apply -f configs/manifests/monitoring.yml
 wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.json
 ```
 
-Open config.json and update the following values:
-
-* Set `"publicAddress"` to the public key for the Ethereum wallet you plan to use for mining. Remove the 0x prefix at the beginning of the address.
-
 ### Create .env file
 
 Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config. Make a copy of the `env.example` and edit with your secrets.

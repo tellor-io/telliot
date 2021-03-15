@@ -38,8 +38,7 @@ func createChallenge(id int, difficulty int64) *MiningChallenge {
 }
 
 func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
-	cfg := config.OpenTestConfig(t)
-	_string := fmt.Sprintf("%x", challenge.Challenge) + cfg.PublicAddress[2:]
+	_string := fmt.Sprintf("%x", challenge.Challenge) + "0000000000000000000000000000000000000000"
 	hashIn := util.DecodeHex(_string)
 	hashIn = append(hashIn, []byte(nonce)...)
 
@@ -82,7 +81,7 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 	testVectors := []int{19, 133, 8, 442, 1231}
 	for _, v := range testVectors {
 		challenge := createChallenge(v, diff)
-		input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
+		input <- &Work{Challenge: challenge, Start: 0, PublicAddr: "0x0000000000000000000000000000000000000000", N: math.MaxInt64}
 
 		// Wait for a solution to be found.
 		select {
@@ -148,7 +147,7 @@ func TestMulti(t *testing.T) {
 	go group.Mine(ctx, input, output)
 
 	challenge := createChallenge(0, math.MaxInt64)
-	input <- &Work{Challenge: challenge, Start: 0, PublicAddr: cfg.PublicAddress, N: math.MaxInt64}
+	input <- &Work{Challenge: challenge, Start: 0, PublicAddr: "0x0000000000000000000000000000000000000000", N: math.MaxInt64}
 	time.Sleep(1 * time.Second)
 	close()
 	// timeout := 500 * time.Millisecond

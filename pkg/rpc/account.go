@@ -27,9 +27,9 @@ func (a *Account) GetPrivateKey() *ecdsa.PrivateKey {
 	return a.PrivateKey
 }
 
-// NewAccounts returns a slice of Account from private keys in
+// GetAccounts returns a slice of Account from private keys in
 // PrivateKeysEnvName environment variable.
-func NewAccounts(cfg *config.Config) ([]*Account, error) {
+func GetAccounts() ([]*Account, error) {
 	_privateKeys := os.Getenv(config.PrivateKeysEnvName)
 	privateKeys := strings.Split(_privateKeys, ",")
 

@@ -39,7 +39,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
 	}
-	accounts, err := rpc.NewAccounts(cfg)
+	accounts, err := rpc.GetAccounts()
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "creating accounts")
 	}

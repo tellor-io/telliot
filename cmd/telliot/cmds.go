@@ -13,11 +13,13 @@ import (
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/dataServer"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/ops"
+	"github.com/tellor-io/telliot/pkg/rest"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
@@ -433,7 +435,10 @@ func (d dataserverCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "creating config")
 	}
-
+	err = config.ValidateDataServerConfig(cfg)
+	if err != nil {
+		return errors.Wrapf(err, "validating config")
+	}
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
@@ -471,18 +476,24 @@ func (d dataserverCmd) Run() error {
 		// Metrics server.
 		{
 			http.Handle("/metrics", promhttp.Handler())
-			srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.Mine.ListenHost, cfg.Mine.ListenPort)}
+			srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.Mine.ListenHost, cfg.Mine.ListenPort)
+			if err != nil {
+				return errors.Wrapf(err, "creating http data server")
+			}
 			g.Add(func() error {
 				level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
 				// returns ErrServerClosed on graceful close
 				var err error
-				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
+				if err = srv.Start(); err != nil {
 					err = errors.Wrapf(err, "ListenAndServe")
 				}
 				level.Info(logger).Log("msg", "metrics server shutdown complete")
 				return err
 			}, func(error) {
-				srv.Close()
+				err := srv.Stop()
+				if err != nil {
+					level.Error(logger).Log("msg", "shutting down the rest service", "err", err)
+				}
 			})
 		}
 
@@ -510,6 +521,10 @@ func (m mineCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "creating config")
 	}
+	err = config.ValidateMinerConfig(cfg)
+	if err != nil {
+		return errors.Wrapf(err, "validating config")
+	}
 	logger := logging.NewLogger()
 	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
@@ -536,6 +551,10 @@ func (m mineCmd) Run() error {
 
 	// Not using a remote DB so need to start the trackers.
 	if cfg.Mine.RemoteDBHost == "" {
+		err = config.ValidateDataServerConfig(cfg)
+		if err != nil {
+			return errors.Wrapf(err, "validating config")
+		}
 		ds, err = dataServer.NewDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
 		if err != nil {
 			return errors.Wrapf(err, "creating data server")
