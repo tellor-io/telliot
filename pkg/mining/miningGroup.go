@@ -258,7 +258,6 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 		}
 		select {
 		case <-ctx.Done():
-			level.Debug(g.logger).Log("msg", "mining group shutdown complete")
 			return
 		// Read in a new work block.
 		case work := <-input:
