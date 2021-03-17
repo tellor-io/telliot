@@ -557,7 +557,7 @@ func (s *Submitter) profit() (int64, error) {
 		return 0, errors.Wrap(err, "getting current rewards")
 	}
 
-	txCost := big.NewInt(0)(gasPrice, gasUsed)
+	txCost := big.NewInt(0).Mul(gasPrice, gasUsed)
 	profit := big.NewInt(0).Sub(reward, txCost)
 	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
 	profitPercent := int64(profitPercentFloat)
