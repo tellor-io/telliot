@@ -9,27 +9,18 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 // CreateTracker a tracker instance by its well-known name.
-func createTracker(name string, logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) ([]Tracker, error) {
+func createTracker(name string, logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*config.Account) ([]Tracker, error) {
 	switch name {
 	case "balance":
 		{
 			return NewBalanceTrackers(logger, db, client, accounts), nil
 		}
-	case "disputeStatus":
-		{
-			return NewDisputeTrackers(logger, config, db, contract, accounts), nil
-		}
 	case "gas":
 		{
 			return []Tracker{NewGasTracker(logger, db, client)}, nil
-		}
-	case "currentVariables":
-		{
-			return NewCurrentVariablesTrackers(logger, db, contract, accounts), nil
 		}
 	case "tributeBalance":
 		{

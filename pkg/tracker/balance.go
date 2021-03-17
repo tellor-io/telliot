@@ -11,9 +11,9 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 const BalanceTrackerName = "BalanceTracker"
@@ -21,7 +21,7 @@ const BalanceTrackerName = "BalanceTracker"
 type BalanceTracker struct {
 	db      db.DataServerProxy
 	client  contracts.ETHClient
-	account *rpc.Account
+	account *config.Account
 	logger  log.Logger
 }
 
@@ -29,7 +29,7 @@ func (b *BalanceTracker) String() string {
 	return BalanceTrackerName
 }
 
-func NewBalanceTrackers(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, accounts []*rpc.Account) []Tracker {
+func NewBalanceTrackers(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, accounts []*config.Account) []Tracker {
 	balanceTrackers := make([]Tracker, len(accounts))
 	for i, account := range accounts {
 		balanceTrackers[i] = &BalanceTracker{
@@ -43,7 +43,7 @@ func NewBalanceTrackers(logger log.Logger, db db.DataServerProxy, client contrac
 
 }
 
-func NewBalanceTracker(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, account *rpc.Account) *BalanceTracker {
+func NewBalanceTracker(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, account *config.Account) *BalanceTracker {
 	return &BalanceTracker{
 		db:      db,
 		client:  client,

@@ -20,7 +20,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/rest"
-	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -656,7 +655,7 @@ func (m mineCmd) Run() error {
 	return nil
 }
 
-func getAccountFor(accounts []*rpc.Account, accountNo int) (*rpc.Account, error) {
+func getAccountFor(accounts []*config.Account, accountNo int) (*config.Account, error) {
 	if accountNo < 0 || accountNo >= len(accounts) {
 		return nil, errors.New("account not found")
 	}

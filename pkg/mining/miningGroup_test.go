@@ -58,7 +58,6 @@ func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
 		GasPrice:      big.NewInt(700000000),
 		TokenBalance:  big.NewInt(0),
 		Top50Requests: []*big.Int{},
-		DisputeStatus: big.NewInt(1),
 	}
 	client := rpc.NewMockClientWithValues(opts)
 	contract, err := contracts.NewITellor(client)
@@ -125,7 +124,6 @@ func TestMulti(t *testing.T) {
 		GasPrice:      big.NewInt(700000000),
 		TokenBalance:  big.NewInt(0),
 		Top50Requests: []*big.Int{},
-		DisputeStatus: big.NewInt(1),
 	}
 	client := rpc.NewMockClientWithValues(opts)
 	contract, err := contracts.NewITellor(client)

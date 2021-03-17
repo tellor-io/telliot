@@ -50,7 +50,7 @@ func SubmitContractTxn(
 	proxy db.DataServerProxy,
 	client contracts.ETHClient,
 	tellor *contracts.ITellor,
-	account *Account,
+	account *config.Account,
 	ctxName string,
 	callback tellorCommon.TransactionGeneratorFN,
 ) (*types.Transaction, error) {

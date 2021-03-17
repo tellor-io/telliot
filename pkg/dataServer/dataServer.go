@@ -14,7 +14,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
@@ -37,7 +36,7 @@ func NewServer(
 	DB db.DataServerProxy,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	accounts []*rpc.Account,
+	accounts []*config.Account,
 ) (*DataServer, error) {
 	run, err := tracker.NewRunner(logger, config, DB, client, contract, accounts)
 	if err != nil {

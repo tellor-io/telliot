@@ -12,7 +12,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 // DataServerOps is the driver for data server.
@@ -33,7 +32,7 @@ func NewDataServerOps(
 	DB db.DataServerProxy,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	accounts []*rpc.Account,
+	accounts []*config.Account,
 ) (*DataServerOps, error) {
 	ds, err := NewServer(logger, config, DB, client, contract, accounts)
 	if err != nil {

@@ -16,7 +16,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 const ComponentName = "tracker"
@@ -26,7 +25,7 @@ type Runner struct {
 	db           db.DataServerProxy
 	client       contracts.ETHClient
 	contract     *contracts.ITellor
-	accounts     []*rpc.Account
+	accounts     []*config.Account
 	readyChannel chan bool
 	logger       log.Logger
 	config       *config.Config
@@ -34,7 +33,7 @@ type Runner struct {
 }
 
 // NewRunner will create a new runner instance.
-func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Runner, error) {
+func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*config.Account) (*Runner, error) {
 	logger, err := logging.ApplyFilter(*config, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")

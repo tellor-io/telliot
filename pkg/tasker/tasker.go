@@ -21,7 +21,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 const ComponentName = "tasker"
@@ -36,7 +35,7 @@ type Tasker struct {
 	close               context.CancelFunc
 	logger              log.Logger
 	proxy               db.DataServerProxy
-	accounts            []*rpc.Account
+	accounts            []*config.Account
 	contractInstance    *contracts.ITellor
 	client              contracts.ETHClient
 	cfg                 *config.Config
@@ -44,7 +43,7 @@ type Tasker struct {
 	SubmissionCancelers []SubmissionCanceler
 }
 
-func NewTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*rpc.Account) (*Tasker, map[string]chan *mining.Work, error) {
+func NewTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*config.Account) (*Tasker, map[string]chan *mining.Work, error) {
 	ctx, close := context.WithCancel(ctx)
 	workSinks := make(map[string]chan *mining.Work)
 	for _, acc := range accounts {

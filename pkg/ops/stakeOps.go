@@ -12,8 +12,8 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -51,7 +51,7 @@ func Deposit(
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
+	account *config.Account,
 ) error {
 
 	balance, err := contract.BalanceOf(nil, account.Address)
@@ -101,7 +101,7 @@ func ShowStatus(
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
+	account *config.Account,
 ) error {
 	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
 	if err != nil {
@@ -117,7 +117,7 @@ func RequestStakingWithdraw(
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
+	account *config.Account,
 ) error {
 
 	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
@@ -148,7 +148,7 @@ func WithdrawStake(
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
+	account *config.Account,
 ) error {
 	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
 	if err != nil {

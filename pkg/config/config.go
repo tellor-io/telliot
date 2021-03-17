@@ -126,13 +126,11 @@ var defaultConfig = Config{
 		DisputeTimeDelta: Duration{5 * time.Minute},
 		DisputeThreshold: 0.01,
 		Names: map[string]bool{
-			"balance":          true,
-			"currentVariables": true,
-			"disputeStatus":    true,
-			"gas":              true,
-			"tributeBalance":   true,
-			"indexers":         true,
-			"disputeChecker":   false,
+			"balance":        true,
+			"gas":            true,
+			"tributeBalance": true,
+			"indexers":       true,
+			"disputeChecker": false,
 		},
 	},
 	ApiFile:        "configs/api.json",
@@ -197,6 +195,16 @@ func ParseConfig(path string) (*Config, error) {
 		return nil, errors.Wrap(err, "loading env vars from env file")
 	}
 
+	// Parsing private keys and add their public keys to cfg.ServerWhitelist if any.
+	accounts, err := GetAccounts()
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing private keys")
+	}
+	if len(accounts) != 0 {
+		for _, acc := range accounts {
+			cfg.ServerWhitelist = append(cfg.ServerWhitelist, acc.Address.String())
+		}
+	}
 	return cfg, nil
 }
 

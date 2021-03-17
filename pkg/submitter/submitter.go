@@ -46,7 +46,7 @@ type Submitter struct {
 	logger           log.Logger
 	cfg              *config.Config
 	proxy            db.DataServerProxy
-	account          *rpc.Account
+	account          *config.Account
 	client           contracts.ETHClient
 	contractInstance *contracts.ITellor
 	currentChallenge *mining.MiningChallenge
@@ -61,7 +61,7 @@ type Submitter struct {
 	lastSubmitCncl   context.CancelFunc
 }
 
-func NewSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, client contracts.ETHClient, contractInstance *contracts.ITellor, account *rpc.Account, proxy db.DataServerProxy) (*Submitter, chan *mining.Result, error) {
+func NewSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, client contracts.ETHClient, contractInstance *contracts.ITellor, account *config.Account, proxy db.DataServerProxy) (*Submitter, chan *mining.Result, error) {
 	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "apply filter logger")

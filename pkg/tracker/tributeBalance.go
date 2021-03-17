@@ -11,15 +11,15 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 type TributeTracker struct {
 	db       db.DataServerProxy
 	contract *contracts.ITellor
-	account  *rpc.Account
+	account  *config.Account
 	logger   log.Logger
 }
 
@@ -27,7 +27,7 @@ func (b *TributeTracker) String() string {
 	return "TributeTracker"
 }
 
-func NewTributeTrackers(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, accounts []*rpc.Account) []Tracker {
+func NewTributeTrackers(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, accounts []*config.Account) []Tracker {
 	trackers := make([]Tracker, len(accounts))
 	for i, account := range accounts {
 		trackers[i] = &TributeTracker{
@@ -40,7 +40,7 @@ func NewTributeTrackers(logger log.Logger, db db.DataServerProxy, contract *cont
 	return trackers
 }
 
-func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, account *rpc.Account) *TributeTracker {
+func NewTributeTracker(logger log.Logger, db db.DataServerProxy, contract *contracts.ITellor, account *config.Account) *TributeTracker {
 	return &TributeTracker{
 		db:       db,
 		contract: contract,

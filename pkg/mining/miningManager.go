@@ -15,7 +15,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 type SolutionSink interface {
@@ -67,7 +66,7 @@ func NewMiningManager(
 	contractInstance *contracts.ITellor,
 	taskerCh chan *Work,
 	submitterCh chan *Result,
-	account *rpc.Account,
+	account *config.Account,
 	client contracts.ETHClient,
 ) (*MiningMgr, error) {
 	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)

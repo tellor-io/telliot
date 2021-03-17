@@ -24,20 +24,10 @@ func TestCreateTracker(t *testing.T) {
 	client := rpc.NewMockClient()
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
-	accounts := []*rpc.Account{{}}
+	accounts := []*config.Account{{}}
 	balanceTracker, _ := createTracker("balance", logger, cfg, proxy, client, nil, accounts)
 	if balanceTracker[0].String() != BalanceTrackerName {
 		testutil.Ok(t, errors.Errorf("Expected BalanceTracker but got %s", balanceTracker[0].String()))
-	}
-
-	currentVariablesTracker, _ := createTracker("currentVariables", logger, cfg, proxy, client, nil, accounts)
-	if currentVariablesTracker[0].String() != "CurrentVariablesTracker" {
-		testutil.Ok(t, errors.Errorf("Expected CurrentVariablesTracker but got %s", currentVariablesTracker[0].String()))
-	}
-
-	disputeStatusTracker, _ := createTracker("disputeStatus", logger, cfg, proxy, client, nil, accounts)
-	if disputeStatusTracker[0].String() != DisputeTrackerName {
-		testutil.Ok(t, errors.Errorf("Expected DisputeTracker but got %s", disputeStatusTracker[0].String()))
 	}
 
 	gasTracker, _ := createTracker("gas", logger, cfg, proxy, client, nil, accounts)

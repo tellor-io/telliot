@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package rpc
+package config
 
 import (
 	"crypto/ecdsa"
@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 )
 
 type Account struct {
@@ -30,7 +29,7 @@ func (a *Account) GetPrivateKey() *ecdsa.PrivateKey {
 // GetAccounts returns a slice of Account from private keys in
 // PrivateKeysEnvName environment variable.
 func GetAccounts() ([]*Account, error) {
-	_privateKeys := os.Getenv(config.PrivateKeysEnvName)
+	_privateKeys := os.Getenv(PrivateKeysEnvName)
 	privateKeys := strings.Split(_privateKeys, ",")
 
 	// Create an Account instance per private keys.

@@ -30,7 +30,7 @@ func parseConfig(path string) (*config.Config, error) {
 	return cfg, nil
 }
 
-func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, []*rpc.Account, error) {
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, []*config.Account, error) {
 	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
@@ -39,7 +39,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
 	}
-	accounts, err := rpc.GetAccounts()
+	accounts, err := config.GetAccounts()
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "creating accounts")
 	}

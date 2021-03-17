@@ -286,8 +286,6 @@ Edit `config1.json` to include the following:
     "gasMax":10,
     "trackers": [
           "balance",
-          "currentVariables",
-          "disputeStatus",
           "gas",
           "top50",
           "tributeBalance",
