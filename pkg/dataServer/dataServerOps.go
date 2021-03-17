@@ -1,95 +1,63 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package ops
+package dataServer
 
 import (
 	"context"
-	"os"
-	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/dataServer"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
-
-const ComponentName = "ops"
 
 // DataServerOps is the driver for data server.
 // It is the operational database component. Its purpose is to monitor/track various
 // values and cache those values in a local data store for faster retrieval from a miner.
 type DataServerOps struct {
-	exitCh  chan os.Signal
-	done    chan int
-	server  *dataServer.DataServer
-	logger  log.Logger
-	Running bool
+	ctx    context.Context
+	close  context.CancelFunc
+	server *DataServer
+	logger log.Logger
 }
 
-// CreateDataServerOps creates a data server instance for runtime.
-func CreateDataServerOps(
+// NewDataServerOps creates a data server instance for runtime.
+func NewDataServerOps(
 	ctx context.Context,
 	logger log.Logger,
 	config *config.Config,
 	DB db.DataServerProxy,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
-	exitCh chan os.Signal,
+	accounts []*config.Account,
 ) (*DataServerOps, error) {
-	ds, err := dataServer.CreateServer(ctx, logger, config, DB, client, contract, account)
+	ds, err := NewServer(logger, config, DB, client, contract, accounts)
 	if err != nil {
 		return nil, err
 	}
-	done := make(chan int)
-
 	logger, err = logging.ApplyFilter(*config, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
-
+	ctx, close := context.WithCancel(ctx)
 	ops := &DataServerOps{
-		exitCh:  exitCh,
-		server:  ds,
-		logger:  log.With(logger, "component", ComponentName),
-		done:    done,
-		Running: false,
+		ctx:    ctx,
+		close:  close,
+		server: ds,
+		logger: log.With(logger, "component", ComponentName),
 	}
 
 	return ops, nil
 }
 
 // Start the data server.
-func (ops *DataServerOps) Start(ctx context.Context) error {
-	if err := ops.server.Start(ctx, ops.done); err != nil {
+func (ops *DataServerOps) Start() error {
+	if err := ops.server.Start(ops.ctx); err != nil {
 		return err
 	}
-	ops.Running = true
-	go func() {
-		<-ops.exitCh
-		level.Info(ops.logger).Log("msg", "shutting down data server...")
-		ops.done <- 1
-		cnt := 0
-		for {
-			time.Sleep(500 * time.Millisecond)
-			cnt++
-			if ops.server.Stopped {
-				break
-			}
-			if cnt > 60 {
-				level.Warn(ops.logger).Log("msg", "expected data server to stop by now, Giving up...")
-				return
-			}
-		}
-		ops.Running = false
-		level.Info(ops.logger).Log("msg", "data server shutdown complete")
-	}()
 	return nil
 }
 
@@ -97,4 +65,9 @@ func (ops *DataServerOps) Start(ctx context.Context) error {
 // should be ready to use its initial output.
 func (ops *DataServerOps) Ready() chan bool {
 	return ops.server.Ready()
+}
+
+// Stop will take care of stopping the dataserver component.
+func (ops *DataServerOps) Stop() {
+	ops.close()
 }

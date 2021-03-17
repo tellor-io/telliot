@@ -30,22 +30,18 @@ func parseConfig(path string) (*config.Config, error) {
 	return cfg, nil
 }
 
-func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, *rpc.Account, error) {
-
-	// Create an rpc client
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, []*config.Account, error) {
 	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
-
 	contract, err := contracts.NewITellor(client)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
 	}
-
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := config.GetAccounts()
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "getting private key to ECDSA")
+		return nil, nil, nil, errors.Wrap(err, "creating accounts")
 	}
 
 	// Issue #55, halt if client is still syncing with Ethereum network
@@ -57,7 +53,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 		return nil, nil, nil, errors.New("ethereum node is still syncing with the network")
 	}
 
-	return client, contract, &account, nil
+	return client, contract, accounts, nil
 }
 
 // migrateAndOpenDB migrates the tx costs and deletes the db.
@@ -101,6 +97,7 @@ var cli struct {
 	Migrate  migrateCmd  `cmd:"" help:"Migrate funds from the old oracle contract"`
 	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
 	Approve  approveCmd  `cmd:"" help:"Approve tokens"`
+	Accounts accountsCmd `cmd:"" help:"Show accounts"`
 	Balance  balanceCmd  `cmd:"" help:"Check the balance of an address"`
 	Stake    struct {
 		Deposit  depositCmd  `cmd:"" help:"deposit a stake"`

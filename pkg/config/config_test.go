@@ -16,7 +16,7 @@ func createEnvFile(t *testing.T) func() {
 
 	_, err = f.WriteString("ETH_PRIVATE_KEY=\"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"")
 	testutil.Ok(t, err)
-	_, err = f.WriteString("NODE_URL=\"https://mainnet.infura.io/v3/xxxxxxxxxxxxx\"")
+	_, err = f.WriteString("NODE_WEBSOCKET_URL=\"wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx\"")
 	testutil.Ok(t, err)
 	testutil.Ok(t, f.Close())
 

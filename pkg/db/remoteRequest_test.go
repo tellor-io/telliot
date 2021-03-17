@@ -127,7 +127,7 @@ func TestRequestPut(t *testing.T) {
 	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
-	dbKey := cfg.PublicAddress + "-" + CurrentChallengeKey
+	dbKey := "0x0000000000000000000000000000000000000000" + "-" + "TEST_CHALLENGE"
 	vals := make([][]byte, 1)
 	vals[0] = []byte("TEST_CHALLENGE")
 	req, err := createRequest(logger, []string{dbKey}, vals, remote.(*remoteImpl))

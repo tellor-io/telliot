@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log/level"
+	_ "github.com/prometheus/client_golang/prometheus"
+	_ "github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -24,7 +26,6 @@ import (
 
 func TestDataServer(t *testing.T) {
 	cfg := config.OpenTestConfig(t)
-	exitCh := make(chan int)
 	logger := logging.NewLogger()
 	DB, cleanup := db.OpenTestDB(t)
 	defer t.Cleanup(cleanup)
@@ -36,31 +37,33 @@ func TestDataServer(t *testing.T) {
 		GasPrice:      big.NewInt(700000000),
 		TokenBalance:  big.NewInt(0),
 		Top50Requests: []*big.Int{},
-		DisputeStatus: big.NewInt(1),
 	}
 	client := rpc.NewMockClientWithValues(opts)
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 
-	ctx := context.Background()
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := config.GetAccounts()
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	ds, err := CreateServer(ctx, logger, cfg, proxy, client, contract, &account)
+	// We need to unregister prometheus counter.
+	ds, err := NewServer(logger, cfg, proxy, client, contract, accounts)
 	testutil.Ok(t, err, "creating server in test")
-	testutil.Ok(t, ds.Start(ctx, exitCh), "starting server")
+	ctx, close := context.WithCancel(context.Background())
+	testutil.Ok(t, ds.Start(ctx), "starting server")
 
-	srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
+	srv, err := rest.Create(logger, cfg, context.Background(), proxy, cfg.DataServer.ListenHost, cfg.DataServer.ListenPort)
 	testutil.Ok(t, err)
-	srv.Start()
-
+	go func() {
+		err := srv.Start()
+		testutil.Ok(t, err)
+	}()
 	time.Sleep(2 * time.Second)
 	resp, err := http.Get("http://" + cfg.DataServer.ListenHost + ":" + strconv.Itoa(int(cfg.DataServer.ListenPort)) + "/balance")
 	testutil.Ok(t, err)
 	defer resp.Body.Close()
+	close()
 	level.Info(logger).Log("response finished", "resp", resp)
-	exitCh <- 1
 	time.Sleep(1 * time.Second)
 	testutil.Assert(t, ds.Stopped, "Did not stop server")
 }

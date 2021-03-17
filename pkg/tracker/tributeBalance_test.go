@@ -34,17 +34,19 @@ func TestTributeBalance(t *testing.T) {
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := config.GetAccounts()
 	testutil.Ok(t, err)
-	tracker := NewTributeTracker(logger, proxy, contract, &account)
-	err = tracker.Exec(context.Background())
-	testutil.Ok(t, err)
-	v, err := proxy.Get(db.TributeBalanceKey)
-	testutil.Ok(t, err)
-	b, err := hexutil.DecodeBig(string(v))
-	testutil.Ok(t, err)
-	t.Logf("Tribute Balance stored: %v\n", b)
-	if b.Cmp(startBal) != 0 {
-		testutil.Ok(t, errors.Errorf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
+	for _, account := range accounts {
+		tracker := NewTributeTracker(logger, proxy, contract, account)
+		err = tracker.Exec(context.Background())
+		testutil.Ok(t, err)
+		v, err := proxy.Get(db.TributeBalanceKeyFor(account.Address))
+		testutil.Ok(t, err)
+		b, err := hexutil.DecodeBig(string(v))
+		testutil.Ok(t, err)
+		t.Logf("Tribute Balance stored: %v\n", b)
+		if b.Cmp(startBal) != 0 {
+			testutil.Ok(t, errors.Errorf("Balance from client did not match what should have been stored in DB. %s != %s", b, startBal))
+		}
 	}
 }

@@ -22,7 +22,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -36,7 +35,7 @@ func Dispute(
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
+	account *config.Account,
 	requestId *big.Int,
 	timestamp *big.Int,
 	minerIndex *big.Int,
@@ -63,7 +62,7 @@ func Dispute(
 			util.FormatERC20Balance(disputeCost))
 	}
 
-	auth, err := PrepareEthTransaction(ctx, client, account)
+	auth, err := util.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
@@ -81,7 +80,7 @@ func Vote(
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
+	account *config.Account,
 	disputeId *big.Int,
 	supportsDispute bool,
 ) error {
@@ -95,7 +94,7 @@ func Vote(
 		return nil
 	}
 
-	auth, err := PrepareEthTransaction(ctx, client, account)
+	auth, err := util.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
@@ -191,7 +190,7 @@ func List(
 	logger log.Logger,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
+	account *config.Account,
 ) error {
 	abi, err := abi.JSON(strings.NewReader(contracts.ITellorABI))
 	if err != nil {

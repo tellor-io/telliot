@@ -1,5 +1,4 @@
 {
-    "PublicAddress": "0x0000000000000000000000000000000000000000",
     "GasMax": 10,
     "DbFile": "tmp/db",
     "ApiFile": "configs/api.json",
@@ -15,13 +14,14 @@
         "ListenPort": 5000
     },
     "Logger": {
-        "db": "info",
-        "rpc": "info",
+        "apiOracle": "info",
         "dataServer": "info",
-        "tracker": "info",
-        "pow:": "info",
-        "ops": "info",
-        "rest": "info",
-        "apiOracle": "info"
+        "db": "info",
+        "miner": "info",
+        "rest:": "info",
+        "rpc": "info",
+        "submitter": "info",
+        "tasker": "info",
+        "tracker": "info"
     }
 }
