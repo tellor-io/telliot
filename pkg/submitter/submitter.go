@@ -566,6 +566,8 @@ func (s *Submitter) profit() (int64, error) {
 		"reward", fmt.Sprintf("%.2e", float64(reward.Int64())),
 		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
 		"slot", slotNum,
+		"gasUsed", gasUsed,
+		"gasPrice", gasPrice,
 		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
 		"profitMargin", profitPercent,
 		"profitThreshold", s.cfg.Mine.ProfitThreshold,
