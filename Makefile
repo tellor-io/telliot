@@ -58,7 +58,7 @@ generate-check: check-git generate
 
 .PHONY: generate-bindings
 generate-bindings: $(CONTRAGET)
-	@$(CONTRAGET) --addr=0x04b5129735b5d9b1b54109f2c4c06ea23b506a95 --download-dst=tmp --pkg-dst=pkg/contracts --name=tellor --pkg-aliases="Transfer=Transfered"
+	@$(CONTRAGET) --addr=0x04b5129735b5d9b1b54109f2c4c06ea23b506a95 --download-dst=tmp --pkg-dst=pkg/contracts --name=tellor --pkg-aliases="Transfer=Transferred"
 	@sleep 5
 	@$(CONTRAGET) --addr=0x9C84391B443ea3a48788079a5f98e2EaD55c9309 --download-dst=tmp --pkg-dst=pkg/contracts --name=balancer
 	@sleep 5
@@ -117,13 +117,15 @@ lint: go-lint shell-lint
 #      --mem-profile-path string   Path to memory profile output file
 # to debug big allocations during linting.
 .PHONY: go-lint
-go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT)
+go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT) $(MISSPELL)
 	$(call require_clean_work_tree,'detected not clean master before running lint, previous job changed something?')
 	@echo ">> verifying modules being imported"
 	@$(FAILLINT) -paths "errors=github.com/pkg/errors" ./...
 	@$(FAILLINT) -paths "fmt.{Print,Printf,Println,Sprint}" -ignore-tests ./...
 	@echo ">> linting all of the Go files GOGC=${GOGC}"
 	@$(GOLANGCI_LINT) run
+	@echo ">> detecting misspells"
+	@find . -type f | grep -v pkg/contracts/tellor | grep -v go.sum | grep -vE '\./\..*' | xargs $(MISSPELL) -error
 	@echo ">> ensuring Copyright headers"
 	@go run ./scripts/copyright
 	$(call require_clean_work_tree,'detected files without copyright, run make lint and commit changes')

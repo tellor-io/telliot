@@ -41,3 +41,9 @@ $(GOLANGCI_LINT): $(BINGO_DIR)/golangci-lint.mod
 	@echo "(re)installing $(GOBIN)/golangci-lint-v1.31.0"
 	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=golangci-lint.mod -o=$(GOBIN)/golangci-lint-v1.31.0 "github.com/golangci/golangci-lint/cmd/golangci-lint"
 
+MISSPELL := $(GOBIN)/misspell-v0.3.5-0.20180309020325-c0b55c823952
+$(MISSPELL): $(BINGO_DIR)/misspell.mod
+	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
+	@echo "(re)installing $(GOBIN)/misspell-v0.3.5-0.20180309020325-c0b55c823952"
+	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=misspell.mod -o=$(GOBIN)/misspell-v0.3.5-0.20180309020325-c0b55c823952 "github.com/client9/misspell/cmd/misspell"
+
