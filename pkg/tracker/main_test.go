@@ -18,7 +18,6 @@ import (
 
 // TODO: Set threshold low and test the  "out of range" failure.
 var configJSON = `{
-    "PublicAddress": "0x92f91500e105e3051f3cf94616831b58f6bce1e8",
 	"Trackers": {"names":{}},
     "DbFile": "/tellorDB",
 	"Logger": {"db.Db":"DEBUG"},

@@ -4,6 +4,7 @@
 package rpc
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -24,14 +25,13 @@ import (
 )
 
 const (
-	balanceAtFN     = "0x70a08231"
-	top50FN         = "0xb5413029"
-	currentVarsFN   = "0xa22e407a"
-	disputeStatusFN = "0x733bdef0"
-	getRequestVars  = "0xe1eee6d6"
-	didMineFN       = "0x63bb82ad"
-	getUintVarFN    = "0x612c8f7f"
-	decimalsFN      = "0x313ce567"
+	balanceAtFN    = "0x70a08231"
+	top50FN        = "0xb5413029"
+	currentVarsFN  = "0xa22e407a"
+	getRequestVars = "0xe1eee6d6"
+	didMineFN      = "0x63bb82ad"
+	getUintVarFN   = "0x612c8f7f"
+	decimalsFN     = "0x313ce567"
 	// Balancerpool funcs.
 	getCurentTokensFN = "0xcc77828d"
 	getSpotPriceFN    = "0x15e84af9"
@@ -78,7 +78,6 @@ type MockOptions struct {
 	TokenBalance     *big.Int
 	Top50Requests    []*big.Int
 	CurrentChallenge *CurrentChallenge
-	DisputeStatus    *big.Int
 	QueryMetadata    map[uint]*MockQueryMeta
 
 	// Balancer related.
@@ -106,7 +105,6 @@ type mockClient struct {
 	tokenBalance     *big.Int
 	top50Requests    []*big.Int
 	currentChallenge *CurrentChallenge
-	disputeStatus    *big.Int
 	logger           log.Logger
 
 	mockQueryMeta map[uint]*MockQueryMeta
@@ -162,7 +160,6 @@ func NewMockClientWithValues(opts *MockOptions) contracts.ETHClient {
 		tokenBalance:           opts.TokenBalance,
 		top50Requests:          opts.Top50Requests,
 		currentChallenge:       opts.CurrentChallenge,
-		disputeStatus:          opts.DisputeStatus,
 		mockQueryMeta:          opts.QueryMetadata,
 		bPoolContractAddress:   opts.BPoolContractAddress,
 		bPoolCurrentTokens:     opts.BPoolCurrentTokens,
@@ -282,17 +279,6 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 
 		}
 
-	case disputeStatusFN:
-		{
-			return meth.Outputs.Pack(c.disputeStatus, big.NewInt(time.Now().Unix()))
-			/*
-				b := new(bytes.Buffer)
-				b.Write(math.PaddedBigBytes(math.U256(c.disputeStatus), 32))
-				b.Write(math.PaddedBigBytes(math.U256(, 32))
-				return b.Bytes(), nil
-			*/
-		}
-
 	case getRequestVars:
 		{
 			reqIDData := call.Data[4:]
@@ -393,6 +379,12 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	// Balancer related.
 	case getUintVarFN:
 		{
+			// Return 10 minutes ago time for the _TIME_OF_LAST_NEW_VALUE key.
+			inputdata := call.Data[4:]
+			timeOfLastValueData := Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE"))
+			if bytes.Equal(inputdata, timeOfLastValueData[:]) {
+				return meth.Outputs.Pack(big.NewInt(time.Now().Unix() - 10*60))
+			}
 			return meth.Outputs.Pack(big.NewInt(1))
 		}
 	case getCurentTokensFN:

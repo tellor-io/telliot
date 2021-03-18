@@ -14,7 +14,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
@@ -25,24 +24,21 @@ type DataServer struct {
 	DB           db.DataServerProxy
 	runner       *tracker.Runner
 	ethClient    contracts.ETHClient
-	exitCh       chan int
-	runnerExitCh chan int
 	Stopped      bool
 	readyChannel chan bool
 	logger       log.Logger
 }
 
 // CreateServer creates a data server stack and kicks off all go routines to start retrieving and serving data.
-func CreateServer(
-	ctx context.Context,
+func NewServer(
 	logger log.Logger,
 	config *config.Config,
 	DB db.DataServerProxy,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	account *rpc.Account,
+	accounts []*config.Account,
 ) (*DataServer, error) {
-	run, err := tracker.NewRunner(logger, config, DB, client, contract, account)
+	run, err := tracker.NewRunner(logger, config, DB, client, contract, accounts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating data server tracker runner instance")
 	}
@@ -58,21 +54,19 @@ func CreateServer(
 		DB:           DB,
 		runner:       run,
 		ethClient:    client,
-		exitCh:       nil,
 		Stopped:      true,
-		runnerExitCh: nil,
 		readyChannel: ready,
 		logger:       log.With(logger, "component", ComponentName)}, nil
 
 }
 
 // Start the data server and all underlying resources.
-func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
-	ds.exitCh = exitCh
-	ds.runnerExitCh = make(chan int)
+func (ds *DataServer) Start(ctx context.Context) error {
 	ds.Stopped = false
-	err := ds.runner.Start(ctx, ds.runnerExitCh)
+	runnerCtx, runnercCloser := context.WithCancel(ctx)
+	err := ds.runner.Start(runnerCtx)
 	if err != nil {
+		runnercCloser()
 		return errors.Wrap(err, "starting runner data server")
 	}
 
@@ -81,8 +75,9 @@ func (ds *DataServer) Start(ctx context.Context, exitCh chan int) error {
 		level.Info(ds.logger).Log("msg", "runner signaled it is ready")
 		ds.readyChannel <- true
 		level.Info(ds.logger).Log("msg", "dataServer ready for use")
-		<-ds.exitCh
+		<-ctx.Done()
 		level.Info(ds.logger).Log("msg", "dataServer received signal to stop")
+		runnercCloser()
 		if err := ds.stop(); err != nil {
 			level.Info(ds.logger).Log("msg", "stopping the data server", "err", err)
 		}
@@ -97,8 +92,6 @@ func (ds *DataServer) Ready() chan bool {
 
 func (ds *DataServer) stop() error {
 	var final error
-	// Stop tracker run loop.
-	ds.runnerExitCh <- 1
 
 	// Stop the DB.
 	if err := ds.DB.Close(); err != nil {

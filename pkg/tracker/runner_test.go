@@ -46,7 +46,7 @@ func TestRunner(t *testing.T) {
 		Difficulty: big.NewInt(500), QueryString: queryStr,
 		Granularity: big.NewInt(1000), Tip: big.NewInt(0)}
 	opts := &rpc.MockOptions{ETHBalance: startBal, Nonce: 1, GasPrice: big.NewInt(700000000),
-		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: top50, CurrentChallenge: chal, DisputeStatus: big.NewInt(1), QueryMetadata: paramsMap}
+		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: top50, CurrentChallenge: chal, QueryMetadata: paramsMap}
 	client := rpc.NewMockClientWithValues(opts)
 
 	DB, cleanup := db.OpenTestDB(t)
@@ -55,13 +55,13 @@ func TestRunner(t *testing.T) {
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	account, err := rpc.NewAccount(cfg)
+	accounts, err := config.GetAccounts()
 	testutil.Ok(t, err)
 
-	runner, _ := NewRunner(logger, cfg, proxy, client, contract, &account)
+	runner, _ := NewRunner(logger, cfg, proxy, client, contract, accounts)
 
 	runner.Ready()
-	if err := runner.Start(context.Background(), exitCh); err != nil {
+	if err := runner.Start(context.Background()); err != nil {
 		testutil.Ok(t, err)
 	}
 	level.Info(logger).Log("msg", "runner done")

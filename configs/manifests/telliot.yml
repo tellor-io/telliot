@@ -40,16 +40,16 @@ spec:
         - name: db
           mountPath: "/db"
         env:
-        - name: NODE_URL
+        - name: NODE_WEBSOCKET_URL
           valueFrom:
             secretKeyRef:
               name: telliot-main
-              key: NODE_URL
-        - name: ETH_PRIVATE_KEY
+              key: NODE_WEBSOCKET_URL
+        - name: ETH_PRIVATE_KEYS
           valueFrom:
             secretKeyRef:
               name: telliot-main
-              key: ETH_PRIVATE_KEY
+              key: ETH_PRIVATE_KEYS
         - name: VIXEOD_KEY
           valueFrom:
             secretKeyRef:

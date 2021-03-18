@@ -11,7 +11,8 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ## [v5.7.0](https://github.com/tellor-io/telliot/releases/tag/v5.7.0) - 2021.02.23
 
 ### Changed
-
+* [\#399](https://github.com/tellor-io/telliot/pull/399) We no longer use the`"publicAddress"` config in the config file, instead we get public addresses from the `"ETH_PRIVATE_KEYS"` environment variable.
+* [\#399](https://github.com/tellor-io/telliot/pull/399) We changed `"ETH_PRIVATE_KEY"` environment variable to a list of private keys (seperated by `,`) and now it will be defined using `"ETH_PRIVATE_KEYS"` environment variable.
 * [\#403](https://github.com/tellor-io/telliot/pull/403) The config file now has fields separated by commands(eg. Dataserve, mine,etc) where all the command specific configuration goes. It now uses strict parsing, meaning that unused fields throw an error, which will likely happen to a lot of users. For a clear view of the conifg, please take a look at the [config file](https://github.com/tellor-io/telliot/blob/master/pkg/config/config.go#L105)
 
 * [\#403](https://github.com/tellor-io/telliot/pull/403) Renamed `indexes.json` to `api.json`.
