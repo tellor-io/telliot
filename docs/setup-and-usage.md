@@ -44,7 +44,7 @@ gcloud container clusters get-credentials main --zone europe-west2-a --project p
 ```bash
 git clone https://github.com/tellor-io/telliot
 cd telliot
-export NAME=main
+export NAME=latest
 mkdir -p .local/configs/$NAME
 
 # Create the secret file.

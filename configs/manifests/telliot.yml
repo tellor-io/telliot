@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: telliot-main
+  name: telliot-latest
 spec:
   accessModes:
     - ReadWriteOnce
@@ -12,27 +12,27 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: telliot-main
+  name: telliot-latest
   labels:
-    app: telliot-main
+    app: telliot-latest
 spec:
-  serviceName: telliot-main
+  serviceName: telliot-latest
   replicas: 1
   selector:
     matchLabels:
-      app: telliot-main
+      app: telliot-latest
   template:
     metadata:
       labels:
-        app: telliot-main
+        app: telliot-latest
     spec:
       containers:
-      - name: telliot-main
-        image: tellor/telliot:master
+      - name: telliot-latest
+        image: tellor/telliot:latest
         imagePullPolicy: Always
         args: ["mine"]
         ports:
-        - name: telliot-main
+        - name: telliot-latest
           containerPort: 9090
         volumeMounts:
         - name: configs
@@ -43,41 +43,41 @@ spec:
         - name: NODE_WEBSOCKET_URL
           valueFrom:
             secretKeyRef:
-              name: telliot-main
-              key: NODE_WEBSOCKET_URL
-        - name: ETH_PRIVATE_KEYS
+              name: telliot-latest
+              key: NODE_URL
+        - name: ETH_PRIVATE_KEY
           valueFrom:
             secretKeyRef:
-              name: telliot-main
-              key: ETH_PRIVATE_KEYS
+              name: telliot-latest
+              key: ETH_PRIVATE_KEY
         - name: VIXEOD_KEY
           valueFrom:
             secretKeyRef:
-              name: telliot-main
+              name: telliot-latest
               key: VIXEOD_KEY
         - name: CMC_KEY
           valueFrom:
             secretKeyRef:
-              name: telliot-main
+              name: telliot-latest
               key: CMC_KEY
       volumes:
       - name: configs
         configMap:
-          name: telliot-main
+          name: telliot-latest
       - name: db
         persistentVolumeClaim:
-          claimName: telliot-main
+          claimName: telliot-latest
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: telliot-main
+  name: telliot-latest
   labels:
-    app: telliot-main
+    app: telliot-latest
 spec:
   selector:
-    app: telliot-main
+    app: telliot-latest
   ports:
-  - name: telliot-main
+  - name: telliot-latest
     port: 9090
-    targetPort: telliot-main
+    targetPort: telliot-latest
