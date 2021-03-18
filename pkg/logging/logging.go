@@ -16,7 +16,7 @@ import (
 // NewLogger create a new logger.
 func NewLogger() log.Logger {
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	return log.With(logger, "ts", log.TimestampFormat(func() time.Time { return time.Now().UTC() }, "jan 02 15:04:05.00"), "caller", log.DefaultCaller)
+	return log.With(logger, "ts", log.TimestampFormat(func() time.Time { return time.Now().UTC() }, "jan 02 15:04:05.00"), "caller", log.Caller(5))
 }
 
 // ApplyFilter applies a filter to logger based on component name.
