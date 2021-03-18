@@ -50,7 +50,7 @@ func SubmitContractTxn(
 	proxy db.DataServerProxy,
 	client contracts.ETHClient,
 	tellor *contracts.ITellor,
-	account *Account,
+	account *config.Account,
 	ctxName string,
 	callback tellorCommon.TransactionGeneratorFN,
 ) (*types.Transaction, error) {
@@ -135,8 +135,6 @@ func SubmitContractTxn(
 			auth.GasPrice = maxGasPrice
 		}
 
-		level.Info(logger).Log("msg", "gas price", "value", gasPrice)
-
 		wrapper := contractWrapper{auth, account.Address, tellor}
 		tx, err := callback(ctx, wrapper)
 		if err != nil {
@@ -153,12 +151,15 @@ func SubmitContractTxn(
 
 			delay := 15 * time.Second
 			level.Debug(logger).Log("msg", "will retry a send", "retryDelay", delay)
-			time.Sleep(delay)
-			continue
+			select {
+			case <-ctx.Done():
+				return nil, errors.New("the submit context was canceled")
+			case <-time.After(delay):
+				continue
+			}
 		}
 		return tx, nil
 	}
-
 	return nil, errors.Wrapf(finalError, "submit txn after 5 attempts ctx:%v", ctxName)
 }
 

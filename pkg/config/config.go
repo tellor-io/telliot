@@ -88,7 +88,6 @@ type Config struct {
 	Mine             Mine
 	DataServer       DataServer
 	Trackers         Trackers
-	PublicAddress    string
 	EthClientTimeout uint
 	DBFile           string
 	GasMultiplier    float32
@@ -110,7 +109,9 @@ var defaultConfig = Config{
 		ListenPort:                   9090,
 		Heartbeat:                    Duration{15 * time.Second},
 		MiningInterruptCheckInterval: Duration{15 * time.Second},
-		MinSubmitPeriod:              Duration{15 * time.Minute},
+		// MinSubmitPeriod is the time limit between each submit for a staked miner.
+		// We added a 1 second delay here as a workaround to prevent failed transactions.
+		MinSubmitPeriod: Duration{15*time.Minute + 1*time.Second},
 	},
 	DataServer: DataServer{
 		ListenHost: "localhost",
@@ -125,13 +126,11 @@ var defaultConfig = Config{
 		DisputeTimeDelta: Duration{5 * time.Minute},
 		DisputeThreshold: 0.01,
 		Names: map[string]bool{
-			"balance":          true,
-			"currentVariables": true,
-			"disputeStatus":    true,
-			"gas":              true,
-			"tributeBalance":   true,
-			"indexers":         true,
-			"disputeChecker":   false,
+			"balance":        true,
+			"gas":            true,
+			"tributeBalance": true,
+			"indexers":       true,
+			"disputeChecker": false,
 		},
 	},
 	ApiFile:        "configs/api.json",
@@ -150,8 +149,8 @@ var defaultConfig = Config{
 	EnvFile: "configs/.env",
 }
 
-const PrivateKeyEnvName = "ETH_PRIVATE_KEY"
-const NodeURLEnvName = "NODE_URL"
+const PrivateKeysEnvName = "ETH_PRIVATE_KEYS"
+const NodeURLEnvName = "NODE_WEBSOCKET_URL"
 
 func ParseConfig(path string) (*Config, error) {
 	if path == "" {
@@ -191,23 +190,41 @@ func ParseConfig(path string) (*Config, error) {
 		return nil, errors.Wrap(err, "validate config")
 	}
 
-	if len(cfg.ServerWhitelist) == 0 {
-		cfg.ServerWhitelist = append(cfg.ServerWhitelist, cfg.PublicAddress)
-	}
-
 	err = godotenv.Load(cfg.EnvFile)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "loading env vars from env file")
 	}
 
+	// Parsing private keys and add their public keys to cfg.ServerWhitelist if any.
+	accounts, err := GetAccounts()
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing private keys")
+	}
+	if len(accounts) != 0 {
+		for _, acc := range accounts {
+			cfg.ServerWhitelist = append(cfg.ServerWhitelist, acc.Address.String())
+		}
+	}
 	return cfg, nil
 }
 
 func validate(cfg *Config) error {
-	if !strings.Contains(cfg.PublicAddress, "0x") {
-		return errors.New("public key should start with 0x")
-	}
-
 	return nil
+}
 
+func ValidateDataServerConfig(cfg *Config) error {
+	if len(cfg.ServerWhitelist) == 0 {
+		return errors.New("ServerWhitelist shouldn't be empty while running as dataserver")
+	}
+	return nil
+}
+
+func ValidateMinerConfig(cfg *Config) error {
+	_privateKeys := os.Getenv(PrivateKeysEnvName)
+	privateKeys := strings.Split(_privateKeys, ",")
+
+	if len(privateKeys) == 0 {
+		return errors.New("PrivateKeysEnvName env shouldn't be empty while running as miner")
+	}
+	return nil
 }

@@ -28,20 +28,19 @@ Telliot commands and config file options are as the following:
 
 #### .env file options:
 
-* `NODE_URL` \(required\) - node URL \(e.g [https://mainnet.infura.io/bbbb](https://mainnet.infura.io/bbbb) or [https://localhost:8545](https://localhost:8545) if own node\)
-* `ETH_PRIVATE_KEY` \(required\) - privateKey for your address
-* `$PSR$_KEY` - API key for getting a specific api.json api \(required if you use authenticated API's\)
+* `NODE_WEBSOCKET_URL` \(required\) - node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+* `ETH_PRIVATE_KEYS` \(required\) - list of private keys seperated by `,`
+* `$PSR$_KEY` - API key for getting a specific indexes.json api \(required if you use authenticated API's\)
 
 #### Config file options:
 
 * `databaseURL` \(required\) - where you are reading from for the server database \(if hosted\)
-* `publicAddress` \(required\) - public address for your miner \(note, no 0x\)
 * `ethClientTimeout` \(required\) - timeout for making requests from your node
 * `trackerCycle` \(required\) - how often your database updates \(in seconds\)
 * `trackers` \(required\) - which pieces of the database you update
 * `dbFile` \(required\) - where you want to store your local database \(if self-hosting\)
 * `serverHost` \(required\) - location to host server
-* `serverWhitelist` \(required\) - whitelists which publicAddress can access the data server
+* `serverWhitelist` \(required\) - whitelists which public address can access the data server
 * `fetchTimeout` - timeout for requesting data from an API
 * `requestData` - sets wether your miner request data if challenge is 0.  If yes, then you will addTip\(\) to this number.  Enter a uint number representing request id to be requested \(e.g. 2\)
 * `requestDataInterval` - min frequency at which to request data at \(in seconds, default 30\)

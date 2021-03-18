@@ -5,7 +5,6 @@ package rpc
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -101,16 +100,11 @@ func (c *clientInstance) Close() {
 
 func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
-		level.Info(c.logger).Log("msg", "sending txn on-chain",
-			"nonce", tx.Nonce(),
-			"gasPrice", tx.GasPrice(),
-			"data", fmt.Sprintf("%x", tx.Data()),
-			"value", tx.Value(),
-		)
 		return c.ethClient.SendTransaction(*_ctx, tx)
 	})
 	return _err
 }
+
 func (c *clientInstance) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
 	var res []byte
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {

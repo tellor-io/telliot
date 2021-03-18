@@ -11,9 +11,9 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
 const BalanceTrackerName = "BalanceTracker"
@@ -21,7 +21,7 @@ const BalanceTrackerName = "BalanceTracker"
 type BalanceTracker struct {
 	db      db.DataServerProxy
 	client  contracts.ETHClient
-	account *rpc.Account
+	account *config.Account
 	logger  log.Logger
 }
 
@@ -29,7 +29,21 @@ func (b *BalanceTracker) String() string {
 	return BalanceTrackerName
 }
 
-func NewBalanceTracker(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, account *rpc.Account) *BalanceTracker {
+func NewBalanceTrackers(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, accounts []*config.Account) []Tracker {
+	balanceTrackers := make([]Tracker, len(accounts))
+	for i, account := range accounts {
+		balanceTrackers[i] = &BalanceTracker{
+			db:      db,
+			client:  client,
+			account: account,
+			logger:  log.With(logger, "component", "balance tracker"),
+		}
+	}
+	return balanceTrackers
+
+}
+
+func NewBalanceTracker(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient, account *config.Account) *BalanceTracker {
 	return &BalanceTracker{
 		db:      db,
 		client:  client,
@@ -55,8 +69,8 @@ func (b *BalanceTracker) Exec(ctx context.Context) error {
 	if decimals != nil {
 		balanceH = balanceH.Quo(balanceH, decimals)
 	}
-	level.Info(b.logger).Log("msg", "ETH balance", "amount", balanceH)
+	level.Debug(b.logger).Log("msg", "ETH balance", "amount", balanceH)
 
 	enc := hexutil.EncodeBig(balance)
-	return b.db.Put(db.BalanceKey, []byte(enc))
+	return b.db.Put(db.BalancePrefix+b.account.Address.String(), []byte(enc))
 }
