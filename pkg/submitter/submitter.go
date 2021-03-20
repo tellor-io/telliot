@@ -40,6 +40,11 @@ const ComponentName = "submitter"
 * or the the solution's challenge does not match current challenge
  */
 
+// Transactor takes care of sending transactions over the blockchain network.
+type Transactor interface {
+	Transact(context.Context, string, [5]*big.Int, [5]*big.Int) (*types.Transaction, error)
+}
+
 type Submitter struct {
 	ctx              context.Context
 	close            context.CancelFunc
@@ -49,9 +54,6 @@ type Submitter struct {
 	account          *config.Account
 	client           contracts.ETHClient
 	contractInstance *contracts.ITellor
-	currentChallenge *mining.MiningChallenge
-	currentNonce     string
-	currentValues    [5]*big.Int
 	resultCh         chan *mining.Result
 	submitCount      prometheus.Counter
 	submitFailCount  prometheus.Counter
@@ -59,9 +61,19 @@ type Submitter struct {
 	submitCost       *prometheus.GaugeVec
 	submitReward     *prometheus.GaugeVec
 	lastSubmitCncl   context.CancelFunc
+	transactor       Transactor
 }
 
-func NewSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, client contracts.ETHClient, contractInstance *contracts.ITellor, account *config.Account, proxy db.DataServerProxy) (*Submitter, chan *mining.Result, error) {
+func NewSubmitter(
+	ctx context.Context,
+	cfg *config.Config,
+	logger log.Logger,
+	client contracts.ETHClient,
+	contractInstance *contracts.ITellor,
+	account *config.Account,
+	proxy db.DataServerProxy,
+	transactor Transactor,
+) (*Submitter, chan *mining.Result, error) {
 	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "apply filter logger")
@@ -77,6 +89,7 @@ func NewSubmitter(ctx context.Context, cfg *config.Config, logger log.Logger, cl
 		account:          account,
 		logger:           log.With(filterLog, "component", ComponentName, "pubKey", account.Address.String()[:6]),
 		contractInstance: contractInstance,
+		transactor:       transactor,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
 			Subsystem:   "mining",
@@ -241,13 +254,13 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 						return
 					default:
 					}
-					err := s.addRequestIds(result)
+					reqVals, err := s.requestVals(result.Work.Challenge.RequestIDs)
 					if err != nil {
 						level.Error(s.logger).Log("msg", "adding the request ids, retrying", "err", err)
 						<-ticker.C
 						continue
 					}
-					tx, err := rpc.SubmitContractTxn(newChallengeReplace, s.logger, s.cfg, s.proxy, s.client, s.contractInstance, s.account, "submitSolution", s.submit)
+					tx, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
 					if err != nil {
 						s.submitFailCount.Inc()
 						level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err)
@@ -270,56 +283,53 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 	}(newChallengeReplace, result)
 }
 
-func (s *Submitter) addRequestIds(result *mining.Result) error {
-	challenge := result.Work.Challenge
-	nonce := result.Nonce
-	s.currentChallenge = challenge
-	s.currentNonce = nonce
+func (s *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) {
+	var currentValues [5]*big.Int
 
 	// The submit contains values for 5 data IDs so add them here.
 	for i := 0; i < 5; i++ {
-		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, challenge.RequestIDs[i].Uint64())
+		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestIDs[i].Uint64())
 		m, err := s.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			return errors.Wrapf(err, "retrieve pricing for data id:%v", challenge.RequestIDs[i].Uint64())
+			return currentValues, errors.Wrapf(err, "retrieve pricing for data id:%v", requestIDs[i].Uint64())
 		}
 		val := m[valKey]
 		var value *big.Int
 		if len(val) == 0 {
 			jsonFile, err := os.Open(s.cfg.ManualDataFile)
 			if err != nil {
-				return errors.Wrapf(err, "manualData read Error")
+				return currentValues, errors.Wrapf(err, "manualData read Error")
 			}
 			defer jsonFile.Close()
 			byteValue, _ := ioutil.ReadAll(jsonFile)
 			var result map[string]map[string]uint
 			_ = json.Unmarshal([]byte(byteValue), &result)
-			_id := strconv.FormatUint(challenge.RequestIDs[i].Uint64(), 10)
+			_id := strconv.FormatUint(requestIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
-				return errors.Errorf("retrieve pricing data for current request id")
+				return currentValues, errors.Errorf("retrieve pricing data for current request id")
 			}
 			value = big.NewInt(int64(val))
 		} else {
 			value, err = hexutil.DecodeBig(string(val))
 			if err != nil {
-				if challenge.RequestIDs[i].Uint64() > tracker.MaxPSRID() {
+				if requestIDs[i].Uint64() > tracker.MaxPSRID() {
 					level.Error(s.logger).Log(
 						"msg", "decoding price value prior to submiting solution",
 						"err", err,
 					)
 					if len(val) == 0 {
 						level.Error(s.logger).Log("msg", "0 value being submitted")
-						s.currentValues[i] = big.NewInt(0)
+						currentValues[i] = big.NewInt(0)
 					}
 					continue
 				}
-				return errors.Errorf("no value in database,  reg id:%v", challenge.RequestIDs[i].Uint64())
+				return currentValues, errors.Errorf("no value in database,  reg id:%v", requestIDs[i].Uint64())
 			}
 		}
-		s.currentValues[i] = value
+		currentValues[i] = value
 	}
-	return nil
+	return currentValues, nil
 }
 
 func (s *Submitter) getMinerStatus() int64 {
@@ -330,19 +340,6 @@ func (s *Submitter) getMinerStatus() int64 {
 		return -1
 	}
 	return statusID.Int64()
-}
-
-func (s *Submitter) submit(ctx context.Context, contract tellorCommon.ContractInterface) (*types.Transaction, error) {
-
-	txn, err := contract.SubmitSolution(
-		s.currentNonce,
-		s.currentChallenge.RequestIDs,
-		s.currentValues)
-	if err != nil {
-		return nil, err
-	}
-
-	return txn, err
 }
 
 func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {

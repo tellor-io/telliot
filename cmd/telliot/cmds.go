@@ -22,6 +22,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/rest"
 	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
+	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -608,8 +609,9 @@ func (m mineCmd) Run() error {
 			})
 			// Add a submitter for each account.
 			for _, account := range accounts {
+				transactor := transactor.NewTransactor(logger, cfg, proxy, client, account, contract)
 				// Get a channel on which it listens for new data to submit.
-				submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy)
+				submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy, transactor)
 				if err != nil {
 					return errors.Wrapf(err, "creating submitter")
 				}
