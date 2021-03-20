@@ -304,7 +304,7 @@ sed -i -e 's/.env1/.env2/' config2.json
 sed -i -e 's/tellorDB/tellorDB2/' config2.json
 ```
 
-Create `.env` file with the private keys for the miner (if there are more than one private keys, must be seperated by `,`).
+Create `.env` file with the private keys for the miner (if there are more than one private keys, must be separated by `,`).
 
 ```bash
 echo "ETH_PRIVATE_KEYS=4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16,d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env1
