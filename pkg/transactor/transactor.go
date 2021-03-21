@@ -59,7 +59,7 @@ func (t *Transactor) Transact(ctx context.Context, nonce string, reqIds [5]*big.
 		return nil, nil, errors.Wrap(err, "transaction result for calculating transaction cost")
 	}
 	if receipt.Status != 1 {
-		return nil, nil, errors.New("unsuccessful submitSolution transaction")
+		return nil, nil, errors.New("unsuccessful transaction status")
 	}
 	return tx, receipt, nil
 }
