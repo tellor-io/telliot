@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
 )
@@ -114,4 +115,12 @@ func PrepareEthTransaction(
 	auth.GasLimit = uint64(3000000) // in units
 	auth.GasPrice = gasPrice
 	return auth, nil
+}
+
+func Keccak256(input []byte) [32]byte {
+	hash := crypto.Keccak256(input)
+	var hashed [32]byte
+	copy(hashed[:], hash)
+
+	return hashed
 }
