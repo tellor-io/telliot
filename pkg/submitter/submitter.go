@@ -28,8 +28,8 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
-	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const ComponentName = "submitter"
@@ -42,7 +42,7 @@ const ComponentName = "submitter"
 
 // Transactor takes care of sending transactions over the blockchain network.
 type Transactor interface {
-	Transact(context.Context, string, [5]*big.Int, [5]*big.Int) (*types.Transaction, error)
+	Transact(context.Context, string, [5]*big.Int, [5]*big.Int) (*types.Transaction, *types.Receipt, error)
 }
 
 type Submitter struct {
@@ -260,7 +260,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 						<-ticker.C
 						continue
 					}
-					tx, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
+					tx, recieipt, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
 					if err != nil {
 						s.submitFailCount.Inc()
 						level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err)
@@ -274,7 +274,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 						"data", fmt.Sprintf("%x", tx.Data()),
 						"value", tx.Value(),
 					)
-					s.saveGasUsed(s.ctx, tx)
+					s.saveGasUsed(recieipt)
 					s.submitCount.Inc()
 					return
 				}
@@ -348,7 +348,7 @@ func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "decoding address")
 	}
-	last, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256(decoded))
+	last, err := s.contractInstance.GetUintVar(nil, util.Keccak256(decoded))
 
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "getting last submit time for:%v", s.account.Address.String())
@@ -380,48 +380,36 @@ func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
 // another transaction has passed between checking the transaction cost and
 // checking the `_SLOT_PROGRESS`
 // Tracking issue https://github.com/tellor-io/TellorCore/issues/101
-func (s *Submitter) saveGasUsed(ctx context.Context, tx *types.Transaction) {
-	go func(tx *types.Transaction) {
-		receipt, err := bind.WaitMined(ctx, s.client, tx)
-		if err != nil {
-			level.Error(s.logger).Log("msg", "transaction result for calculating transaction cost", "err", err)
-			return
-		}
-		if receipt.Status != 1 {
-			s.submitFailCount.Inc()
-			level.Error(s.logger).Log("msg", "unsuccessful submitSolution transaction, not saving the tx cost in the db", "txHash", receipt.TxHash.String())
-			return
-		}
+func (s *Submitter) saveGasUsed(receipt *types.Receipt) {
+	gasUsed := big.NewInt(int64(receipt.GasUsed))
 
-		gasUsed := big.NewInt(int64(receipt.GasUsed))
-		slotNum, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
-		if err != nil {
-			level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for calculating transaction cost", "err", err)
-		}
+	slotNum, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_SLOT_PROGRESS")))
+	if err != nil {
+		level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for calculating transaction cost", "err", err)
+	}
 
-		txID := tellorCommon.PriceTXs + slotNum.String()
-		err = s.proxy.Put(txID, gasUsed.Bytes())
-		if err != nil {
-			level.Error(s.logger).Log("msg", "saving transaction cost", "err", err)
-		}
-		level.Info(s.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slotNum.Int64())
+	txID := tellorCommon.PriceTXs + slotNum.String()
+	err = s.proxy.Put(txID, gasUsed.Bytes())
+	if err != nil {
+		level.Error(s.logger).Log("msg", "saving transaction cost", "err", err)
+	}
+	level.Info(s.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slotNum.Int64())
 
-		amount, err := s.getETHBalance()
-		if err != nil {
-			level.Error(s.logger).Log("msg", "getting ETH balance", "err", err)
-		} else {
-			level.Info(s.logger).Log("msg", "ETH balance", "amount", amount)
+	amount, err := s.getETHBalance()
+	if err != nil {
+		level.Error(s.logger).Log("msg", "getting ETH balance", "err", err)
+	} else {
+		level.Info(s.logger).Log("msg", "ETH balance", "amount", amount)
 
-		}
+	}
 
-		amountTRB, err := s.getTRBBalance()
-		if err != nil {
-			level.Error(s.logger).Log("msg", "getting TRB balance", "err", err)
-		} else {
-			level.Info(s.logger).Log("msg", "TRB balance", "amount", amountTRB)
-		}
+	amountTRB, err := s.getTRBBalance()
+	if err != nil {
+		level.Error(s.logger).Log("msg", "getting TRB balance", "err", err)
+	} else {
+		level.Info(s.logger).Log("msg", "TRB balance", "amount", amountTRB)
+	}
 
-	}(tx)
 }
 
 func (s *Submitter) getTRBBalance() (string, error) {
@@ -455,11 +443,11 @@ func (s *Submitter) getETHBalance() (string, error) {
 // Should add `currentReward` func to the contract to avoid this code duplication.
 // Tracking issue https://github.com/tellor-io/TellorCore/issues/101
 func (s *Submitter) currentReward() (*big.Int, error) {
-	timeOfLastNewValue, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
+	timeOfLastNewValue, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
 	if err != nil {
 		return nil, errors.New("getting _TIME_OF_LAST_NEW_VALUE")
 	}
-	totalTips, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_CURRENT_TOTAL_TIPS")))
+	totalTips, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_CURRENT_TOTAL_TIPS")))
 	if err != nil {
 		return nil, errors.New("getting _CURRENT_TOTAL_TIPS")
 	}
@@ -501,7 +489,7 @@ func (s *Submitter) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
 }
 
 func (s *Submitter) gasUsed() (*big.Int, *big.Int, error) {
-	slotNum, err := s.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_SLOT_PROGRESS")))
+	slotNum, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_SLOT_PROGRESS")))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting _SLOT_PROGRESS")
 	}

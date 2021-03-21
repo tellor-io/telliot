@@ -16,7 +16,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -212,7 +211,7 @@ func (g *MiningGroup) getTimeOfLastNewValue() *big.Int {
 	for {
 		// Checks the last submit value in the oracle and set a timeout of 15min - (now-lastSubmit).
 		// This is because 15min after the last submit any solution will work.
-		timeOfLastNewValue, err = g.contractInstance.GetUintVar(nil, rpc.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
+		timeOfLastNewValue, err = g.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
 		if err == nil {
 			break
 		}

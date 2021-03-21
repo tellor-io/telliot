@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const (
@@ -381,7 +382,7 @@ func (c *mockClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		{
 			// Return 10 minutes ago time for the _TIME_OF_LAST_NEW_VALUE key.
 			inputdata := call.Data[4:]
-			timeOfLastValueData := Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE"))
+			timeOfLastValueData := util.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE"))
 			if bytes.Equal(inputdata, timeOfLastValueData[:]) {
 				return meth.Outputs.Pack(big.NewInt(time.Now().Unix() - 10*60))
 			}
