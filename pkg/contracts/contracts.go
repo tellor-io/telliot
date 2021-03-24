@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts/balancer"
+	"github.com/tellor-io/telliot/pkg/contracts/lens"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/contracts/uniswap"
 )
@@ -30,6 +31,7 @@ const (
 type ITellor struct {
 	*tellor.ITellor
 	*tellor.ITellorNewDispute
+	*lens.Main
 	Address common.Address
 }
 
@@ -69,33 +71,36 @@ type ETHClient interface {
 	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
 }
 
-// Get hard-coded Tellor contract address per network id.
-func getContractAddress(client ETHClient) (string, error) {
+// getLensAddress returns the Lens contract address where the network id is taken from the client.
+func getLensAddress(client ETHClient) (common.Address, error) {
 	networkID, err := client.NetworkID(context.Background())
 	if err != nil {
-		return "", err
+		return common.Address{}, err
 	}
 	switch networkID.Int64() {
 	case 1:
-		return config.TellorAddress, nil
+		return common.HexToAddress(config.LensAddressMainnet), nil
 	case 4:
-		return config.TellorAddress, nil
+		return common.HexToAddress(config.LensAddressRinkeby), nil
 	default:
-		return "", errors.New("contract address for current network id not found")
+		return common.Address{}, errors.New("contract address for current network id not found")
 	}
 }
 
 func NewITellor(client ETHClient) (*ITellor, error) {
-	_contractAddress, err := getContractAddress(client)
+	tellorInstance, err := tellor.NewITellor(common.HexToAddress(config.TellorAddress), client)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting tellor contract address")
+		return nil, errors.Wrap(err, "creating telllor interface")
 	}
-	contractAddress := common.HexToAddress(_contractAddress)
+	lensAddress, err := getLensAddress(client)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating lens address")
+	}
 
-	contractInterfaceInstance, err := tellor.NewITellor(contractAddress, client)
+	lensInstance, err := lens.NewMain(lensAddress, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating telllor interface")
 	}
 
-	return &ITellor{Address: contractAddress, ITellor: contractInterfaceInstance}, nil
+	return &ITellor{Address: common.HexToAddress(config.TellorAddress), ITellor: tellorInstance, Main: lensInstance}, nil
 }

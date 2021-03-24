@@ -21,8 +21,13 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 )
 
-// Transactor implements the Transactor interface.
-type Transactor struct {
+// Transactor takes care of sending transactions over the blockchain network.
+type Transactor interface {
+	Transact(context.Context, string, [5]*big.Int, [5]*big.Int) (*types.Transaction, *types.Receipt, error)
+}
+
+// TransactorDefault implements the Transactor interface.
+type TransactorDefault struct {
 	logger           log.Logger
 	cfg              *config.Config
 	proxy            db.DataServerProxy
@@ -35,8 +40,8 @@ type Transactor struct {
 }
 
 func NewTransactor(logger log.Logger, cfg *config.Config, proxy db.DataServerProxy,
-	client contracts.ETHClient, account *config.Account, contractInstance *contracts.ITellor) *Transactor {
-	return &Transactor{
+	client contracts.ETHClient, account *config.Account, contractInstance *contracts.ITellor) *TransactorDefault {
+	return &TransactorDefault{
 		logger:           logger,
 		cfg:              cfg,
 		proxy:            proxy,
@@ -46,7 +51,7 @@ func NewTransactor(logger log.Logger, cfg *config.Config, proxy db.DataServerPro
 	}
 }
 
-func (t *Transactor) Transact(ctx context.Context, nonce string, reqIds [5]*big.Int, reqVals [5]*big.Int) (*types.Transaction, *types.Receipt, error) {
+func (t *TransactorDefault) Transact(ctx context.Context, nonce string, reqIds [5]*big.Int, reqVals [5]*big.Int) (*types.Transaction, *types.Receipt, error) {
 	t.nonce = nonce
 	t.reqIds = reqIds
 	t.reqVals = reqVals
@@ -59,12 +64,12 @@ func (t *Transactor) Transact(ctx context.Context, nonce string, reqIds [5]*big.
 		return nil, nil, errors.Wrap(err, "transaction result")
 	}
 	if receipt.Status != 1 {
-		return nil, nil, errors.New("unsuccessful transaction status")
+		return nil, nil, errors.Errorf("unsuccessful transaction status:%v", receipt.Status)
 	}
 	return tx, receipt, nil
 }
 
-func (t *Transactor) submit(ctx context.Context, options *bind.TransactOpts) (*types.Transaction, error) {
+func (t *TransactorDefault) submit(ctx context.Context, options *bind.TransactOpts) (*types.Transaction, error) {
 	txn, err := t.contractInstance.SubmitMiningSolution(options,
 		t.nonce,
 		t.reqIds,
