@@ -39,8 +39,14 @@ type TransactorDefault struct {
 	reqIds           [5]*big.Int
 }
 
-func NewTransactor(logger log.Logger, cfg *config.Config, proxy db.DataServerProxy,
-	client contracts.ETHClient, account *config.Account, contractInstance *contracts.ITellor) *TransactorDefault {
+func NewTransactor(
+	logger log.Logger,
+	cfg *config.Config,
+	proxy db.DataServerProxy,
+	client contracts.ETHClient,
+	account *config.Account,
+	contractInstance *contracts.ITellor,
+) *TransactorDefault {
 	return &TransactorDefault{
 		logger:           logger,
 		cfg:              cfg,

@@ -186,8 +186,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 func (s *Submitter) canSubmit() error {
 	if s.profitChecker != nil { // Profit check is enabled.
 		profitPercent, err := s.profit()
-		_err := errors.Unwrap(err)
-		if _, ok := _err.(profitChecker.ErrNoDataForSlot); ok {
+		if _, ok := err.(profitChecker.ErrNoDataForSlot); ok {
 			level.Warn(s.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
 		} else if err != nil {
 			return errors.Wrapf(err, "submit solution profit check")
@@ -219,12 +218,14 @@ func (s *Submitter) profit() (int64, error) {
 		slot.SetInt64(1)
 	}
 
-	gasP, err := s.proxy.Get(db.GasKey)
+	_gasPrice, err := s.proxy.Get(db.GasKey)
 	if err != nil {
 		return 0, errors.Wrap(err, "getting gas price")
 	}
-	gasPrice := big.NewInt(0).SetBytes(gasP)
-
+	gasPrice, err := hexutil.DecodeBig(string(_gasPrice))
+	if err != nil {
+		return 0, errors.Wrap(err, "decode gas price")
+	}
 	return s.profitChecker.Current(slot, gasPrice)
 }
 
@@ -309,7 +310,7 @@ func (s *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) {
 		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestIDs[i].Uint64())
 		m, err := s.proxy.BatchGet([]string{valKey})
 		if err != nil {
-			return currentValues, errors.Wrapf(err, "retrieve pricing for data id:%v", requestIDs[i].Uint64())
+			return currentValues, errors.Wrapf(err, "retrieve pricing from db for data id:%v", requestIDs[i].Uint64())
 		}
 		val := m[valKey]
 		var value *big.Int
@@ -325,7 +326,7 @@ func (s *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) {
 			_id := strconv.FormatUint(requestIDs[i].Uint64(), 10)
 			val := result[_id]["VALUE"]
 			if val == 0 {
-				return currentValues, errors.Errorf("retrieve pricing data for current request id")
+				return currentValues, errors.Errorf("pricing data not available from db or the manual file for request id:%v", requestIDs[i].Uint64())
 			}
 			value = big.NewInt(int64(val))
 		} else {

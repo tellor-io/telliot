@@ -73,7 +73,7 @@ func NewProfitChecker(
 func (self *ProfitChecker) Current(slot *big.Int, gasPrice *big.Int) (int64, error) {
 	gasUsed, err := self.gasUsed(slot)
 	if err != nil {
-		return 0, errors.Wrap(err, "getting gas used value")
+		return 0, err
 	}
 	reward, err := self.currentReward()
 	if err != nil {
