@@ -67,10 +67,10 @@ func (t *TransactorDefault) Transact(ctx context.Context, nonce string, reqIds [
 	}
 	receipt, err := bind.WaitMined(ctx, t.client, tx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "transaction result")
+		return nil, nil, errors.Wrapf(err, "transaction result tx:%v", tx.Hash())
 	}
-	if receipt.Status != 1 {
-		return nil, nil, errors.Errorf("unsuccessful transaction status:%v", receipt.Status)
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		return nil, nil, errors.Wrapf(err, "unsuccessful transaction status:%v tx:%v", receipt.Status, tx.Hash())
 	}
 	return tx, receipt, nil
 }
