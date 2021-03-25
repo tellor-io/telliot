@@ -183,7 +183,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 func (s *Submitter) canSubmit() error {
 	if s.profitChecker != nil { // Profit check is enabled.
 		profitPercent, err := s.profit()
-		if _, ok := err.(profitChecker.ErrNoDataForSlot); ok {
+		if _, ok := errors.Cause(err).(profitChecker.ErrNoDataForSlot); ok {
 			level.Warn(s.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
 		} else if err != nil {
 			return errors.Wrapf(err, "submit solution profit check")
