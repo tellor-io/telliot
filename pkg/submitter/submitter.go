@@ -110,9 +110,6 @@ func (s *Submitter) Start() error {
 	for {
 		select {
 		case <-s.ctx.Done():
-			if s.resultCh != nil {
-				close(s.resultCh)
-			}
 			if s.lastSubmitCncl != nil {
 				s.lastSubmitCncl()
 			}
