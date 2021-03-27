@@ -207,12 +207,12 @@ func SubmitContractTxn(
 
 func getInt(data []byte) *big.Int {
 	if len(data) == 0 {
-		return nil
+		return big.NewInt(0)
 	}
 
 	val, err := hexutil.DecodeBig(string(data))
 	if err != nil {
-		return nil
+		return big.NewInt(0)
 	}
 	return val
 }
