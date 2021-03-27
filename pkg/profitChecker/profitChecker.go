@@ -16,6 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/tracker"
@@ -37,6 +38,7 @@ func NewProfitChecker(
 	client contracts.ETHClient,
 	contractInstance *contracts.ITellor,
 	proxy db.DataServerProxy,
+	account *config.Account,
 ) *ProfitChecker {
 
 	return &ProfitChecker{
@@ -50,22 +52,27 @@ func NewProfitChecker(
 			Subsystem: "mining",
 			Name:      "submit_profit",
 			Help:      "The current submit profit in percents",
+			// Add an unique label to avoid registration panic
+			// due to  registering the same metric more then once.
+			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		},
 			[]string{"slot"},
 		),
 		submitCost: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "telliot",
-			Subsystem: "mining",
-			Name:      "submit_cost",
-			Help:      "The current submit cost in 1e18 eth",
+			Namespace:   "telliot",
+			Subsystem:   "mining",
+			Name:        "submit_cost",
+			Help:        "The current submit cost in 1e18 eth",
+			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		},
 			[]string{"slot"},
 		),
 		submitReward: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "telliot",
-			Subsystem: "mining",
-			Name:      "submit_reward",
-			Help:      "The current reward in 1e18 eth",
+			Namespace:   "telliot",
+			Subsystem:   "mining",
+			Name:        "submit_reward",
+			Help:        "The current reward in 1e18 eth",
+			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		},
 			[]string{"slot"},
 		),

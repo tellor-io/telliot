@@ -100,7 +100,7 @@ func NewSubmitter(
 	}
 
 	if cfg.Mine.ProfitThreshold > 0 { // Profit check is enabled.
-		submitter.profitChecker = profitChecker.NewProfitChecker(logger, client, contractInstance, proxy)
+		submitter.profitChecker = profitChecker.NewProfitChecker(logger, client, contractInstance, proxy, account)
 	}
 
 	return submitter, submitter.resultCh, nil
