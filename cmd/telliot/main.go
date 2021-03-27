@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -116,6 +117,8 @@ var cli struct {
 }
 
 func main() {
+	//lint:ignore faillint it should print to console
+	fmt.Printf(versionMessage, GitTag, GitHash)
 	ctx := kong.Parse(&cli, kong.Name("Telliot"),
 		kong.Description("The official Tellor cli tool"),
 		kong.UsageOnError())
