@@ -80,7 +80,6 @@ func (r *Runner) Start(ctx context.Context) error {
 	level.Info(r.logger).Log("msg", "starting trackers", "sleepCycle", r.config.Trackers.SleepCycle)
 	ticker := time.NewTicker(r.config.Trackers.SleepCycle.Duration / time.Duration(len(trackers)))
 
-	defer ticker.Stop()
 	// after first run, let others know that tracker output data is ready for use.
 	doneFirstExec := make(chan bool, len(trackers))
 	go func(n int) {
