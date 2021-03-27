@@ -229,6 +229,7 @@ func (s *Submitter) profit() (int64, error) {
 func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {
 	go func(newChallengeReplace context.Context, result *mining.Result) {
 		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-newChallengeReplace.Done():
@@ -254,6 +255,12 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 						<-ticker.C
 						continue
 					}
+					level.Info(s.logger).Log(
+						"msg", "sending solution to the chain",
+						"solutionNonce", result.Nonce,
+						"IDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
+						"vals", fmt.Sprintf("%+v", reqVals),
+					)
 					tx, recieipt, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
 					if err != nil {
 						s.submitFailCount.Inc()
@@ -261,7 +268,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 						<-ticker.C
 						continue
 					}
-					level.Info(s.logger).Log("msg", "submited a solution",
+					level.Info(s.logger).Log("msg", "successfully submited solution",
 						"txHash", tx.Hash().String(),
 						"nonce", tx.Nonce(),
 						"gasPrice", tx.GasPrice(),
