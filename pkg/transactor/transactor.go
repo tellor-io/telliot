@@ -70,7 +70,7 @@ func (t *TransactorDefault) Transact(ctx context.Context, nonce string, reqIds [
 		return nil, nil, errors.Wrapf(err, "transaction result tx:%v", tx.Hash())
 	}
 	if receipt.Status != types.ReceiptStatusSuccessful {
-		return nil, nil, errors.Wrapf(err, "unsuccessful transaction status:%v tx:%v", receipt.Status, tx.Hash())
+		return nil, nil, errors.Errorf("unsuccessful transaction status:%v tx:%v", receipt.Status, tx.Hash())
 	}
 	return tx, receipt, nil
 }
