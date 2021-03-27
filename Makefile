@@ -127,7 +127,7 @@ go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT) $(MISSPELL)
 	@echo ">> linting all of the Go files GOGC=${GOGC}"
 	@$(GOLANGCI_LINT) run
 	@echo ">> detecting misspells"
-	@find . -type f | grep -v pkg/contracts/tellor | grep -v go.sum | grep -vE '\./\..*' | xargs $(MISSPELL) -error
+	@find . -type f | grep -v pkg/contracts/tellor | grep -v pkg/contracts/lens | grep -v tmp | grep -v go.sum | grep -vE '\./\..*' | xargs $(MISSPELL) -error
 	@echo ">> ensuring Copyright headers"
 	@go run ./scripts/copyright
 	$(call require_clean_work_tree,'detected files without copyright, run make lint and commit changes')
