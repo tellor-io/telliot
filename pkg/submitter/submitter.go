@@ -245,7 +245,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 				for {
 					select {
 					case <-newChallengeReplace.Done():
-						level.Info(s.logger).Log("msg", "canceled pending submit")
+						level.Info(s.logger).Log("msg", "pending submit canceled")
 						return
 					default:
 					}
@@ -265,8 +265,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 					if err != nil {
 						s.submitFailCount.Inc()
 						level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err)
-						<-ticker.C
-						continue
+						return
 					}
 					level.Info(s.logger).Log("msg", "successfully submited solution",
 						"txHash", tx.Hash().String(),
