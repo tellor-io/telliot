@@ -1,5 +1,5 @@
-// Copyright (c) The Tellor Authors.
-// Licensed under the MIT License.
+// Copyrighself (c) The Tellor Authors.
+// Licensed under the MIself License.
 
 package transactor
 
@@ -34,9 +34,6 @@ type TransactorDefault struct {
 	client           contracts.ETHClient
 	account          *config.Account
 	contractInstance *contracts.ITellor
-	nonce            string
-	reqVals          [5]*big.Int
-	reqIds           [5]*big.Int
 }
 
 func NewTransactor(
@@ -57,78 +54,38 @@ func NewTransactor(
 	}
 }
 
-func (t *TransactorDefault) Transact(ctx context.Context, nonce string, reqIds [5]*big.Int, reqVals [5]*big.Int) (*types.Transaction, *types.Receipt, error) {
-	t.nonce = nonce
-	t.reqIds = reqIds
-	t.reqVals = reqVals
-	tx, err := SubmitContractTxn(ctx, t.logger, t.cfg, t.proxy, t.client, t.contractInstance, t.account, "submitSolution", t.submit)
+func (self *TransactorDefault) Transact(ctx context.Context, solution string, reqIds [5]*big.Int, reqVals [5]*big.Int) (*types.Transaction, *types.Receipt, error) {
+	nonce, err := self.client.NonceAt(ctx, self.account.Address)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "submitting the transaction")
-	}
-	receipt, err := bind.WaitMined(ctx, t.client, tx)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "transaction result tx:%v", tx.Hash())
-	}
-	if receipt.Status != types.ReceiptStatusSuccessful {
-		return nil, nil, errors.Errorf("unsuccessful transaction status:%v tx:%v", receipt.Status, tx.Hash())
-	}
-	return tx, receipt, nil
-}
-
-func (t *TransactorDefault) submit(ctx context.Context, options *bind.TransactOpts) (*types.Transaction, error) {
-	txn, err := t.contractInstance.SubmitMiningSolution(options,
-		t.nonce,
-		t.reqIds,
-		t.reqVals)
-	if err != nil {
-		return nil, err
-	}
-	return txn, err
-}
-
-func SubmitContractTxn(
-	ctx context.Context,
-	logger log.Logger,
-	cfg *config.Config,
-	proxy db.DataServerProxy,
-	client contracts.ETHClient,
-	tellor *contracts.ITellor,
-	account *config.Account,
-	ctxName string,
-	callback tellorCommon.TransactionGeneratorFN,
-) (*types.Transaction, error) {
-
-	nonce, err := client.NonceAt(ctx, account.Address)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting nonce for miner address")
+		return nil, nil, errors.Wrap(err, "getting nonce for miner address")
 	}
 
-	// Use the same nonce in case there is a stuck transaction so that it submits with the current nonce but higher gas price.
+	// Use the same nonce in case there is a stuck transaction so thaself iself submits with the currenself nonce buself higher gas price.
 	IntNonce := int64(nonce)
 	keys := []string{
 		db.GasKey,
 	}
-	m, err := proxy.BatchGet(keys)
+	m, err := self.proxy.BatchGet(keys)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting data from the db")
+		return nil, nil, errors.Wrap(err, "getting data from the db")
 	}
 	gasPrice := getInt(m[db.GasKey])
 	if gasPrice.Cmp(big.NewInt(0)) == 0 {
-		level.Warn(logger).Log("msg", "no gas price from DB, falling back to client suggested gas price")
-		gasPrice, err = client.SuggestGasPrice(ctx)
+		level.Warn(self.logger).Log("msg", "no gas price from DB, falling back to client suggested gas price")
+		gasPrice, err = self.client.SuggestGasPrice(ctx)
 		if err != nil {
-			return nil, errors.Wrap(err, "determine gas price to submit txn")
+			return nil, nil, errors.Wrap(err, "determine gas price to submit tx")
 		}
 	}
-	mul := cfg.GasMultiplier
+	mul := self.cfg.GasMultiplier
 	if mul > 0 {
-		level.Info(logger).Log("msg", "settings gas price multiplier", "value", mul)
+		level.Info(self.logger).Log("msg", "settings gas price multiplier", "value", mul)
 		gasPrice = gasPrice.Mul(gasPrice, big.NewInt(int64(mul)))
 	}
 
 	var finalError error
 	for i := 0; i <= 5; i++ {
-		balance, err := client.BalanceAt(ctx, account.Address, nil)
+		balance, err := self.client.BalanceAt(ctx, self.account.Address, nil)
 		if err != nil {
 			finalError = err
 			continue
@@ -142,13 +99,13 @@ func SubmitContractTxn(
 			continue
 		}
 
-		netID, err := client.NetworkID(ctx)
+		netID, err := self.client.NetworkID(ctx)
 		if err != nil {
-			return nil, errors.Wrap(err, "getting network id")
+			return nil, nil, errors.Wrap(err, "getting network id")
 		}
-		auth, err := bind.NewKeyedTransactorWithChainID(account.PrivateKey, netID)
+		auth, err := bind.NewKeyedTransactorWithChainID(self.account.PrivateKey, netID)
 		if err != nil {
-			return nil, errors.Wrap(err, "creating transactor")
+			return nil, nil, errors.Wrap(err, "creating transactor")
 		}
 		auth.Nonce = big.NewInt(IntNonce)
 		auth.Value = big.NewInt(0)      // in weiF
@@ -164,7 +121,7 @@ func SubmitContractTxn(
 			// First time, try base gas price.
 			auth.GasPrice = gasPrice
 		}
-		max := cfg.GasMax
+		max := self.cfg.GasMax
 		var maxGasPrice *big.Int
 		gasPrice1 := big.NewInt(tellorCommon.GWEI)
 		if max > 0 {
@@ -174,35 +131,48 @@ func SubmitContractTxn(
 		}
 
 		if auth.GasPrice.Cmp(maxGasPrice) > 0 {
-			level.Info(logger).Log("msg", "gas price too high, will default to the max price", "current", auth.GasPrice, "defaultMax", maxGasPrice)
+			level.Info(self.logger).Log("msg", "gas price too high, will default to the max price", "current", auth.GasPrice, "defaultMax", maxGasPrice)
 			auth.GasPrice = maxGasPrice
 		}
 
-		tx, err := callback(ctx, auth)
+		tx, err := self.contractInstance.SubmitMiningSolution(
+			auth,
+			solution,
+			reqIds,
+			reqVals,
+		)
 		if err != nil {
 			if strings.Contains(err.Error(), "nonce too low") { // Can't use error type matching because of the way the eth client is implemented.
 				IntNonce = IntNonce + 1
-				level.Debug(logger).Log("msg", "last transaction has been confirmed so will increase the nonce and resend the transaction.")
+				level.Debug(self.logger).Log("msg", "last transaction has been confirmed so will increase the nonce and resend the transaction.")
 
 			} else if strings.Contains(err.Error(), "replacement transaction underpriced") { // Can't use error type matching because of the way the eth client is implemented.
-				level.Debug(logger).Log("msg", "last transaction is stuck so will increase the gas price and try to resend")
+				level.Debug(self.logger).Log("msg", "last transaction is stuck so will increase the gas price and try to resend")
 				finalError = err
 			} else {
 				finalError = errors.Wrap(err, "callback")
 			}
 
 			delay := 15 * time.Second
-			level.Debug(logger).Log("msg", "will retry a send", "retryDelay", delay)
+			level.Debug(self.logger).Log("msg", "will retry a send", "retryDelay", delay)
 			select {
 			case <-ctx.Done():
-				return nil, errors.New("the submit context was canceled")
+				return nil, nil, errors.New("the submit context was canceled")
 			case <-time.After(delay):
 				continue
 			}
 		}
-		return tx, nil
+
+		receipt, err := bind.WaitMined(ctx, self.client, tx)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "transaction result tx:%v", tx.Hash())
+		}
+		if receipt.Status != types.ReceiptStatusSuccessful {
+			return nil, nil, errors.Errorf("unsuccessful transaction status:%v tx:%v", receipt.Status, tx.Hash())
+		}
+		return tx, receipt, nil
 	}
-	return nil, errors.Wrapf(finalError, "submit txn after 5 attempts ctx:%v", ctxName)
+	return nil, nil, errors.Wrapf(finalError, "submit tx after 5 attempts")
 }
 
 func getInt(data []byte) *big.Int {
