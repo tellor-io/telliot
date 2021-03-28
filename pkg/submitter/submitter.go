@@ -71,6 +71,7 @@ func NewSubmitter(
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "apply filter logger")
 	}
+	logger = log.With(filterLog, "component", ComponentName, "pubKey", account.Address.String()[:6])
 	ctx, close := context.WithCancel(ctx)
 	submitter := &Submitter{
 		ctx:              ctx,
@@ -80,7 +81,7 @@ func NewSubmitter(
 		cfg:              cfg,
 		resultCh:         make(chan *mining.Result),
 		account:          account,
-		logger:           log.With(filterLog, "component", ComponentName, "pubKey", account.Address.String()[:6]),
+		logger:           logger,
 		contractInstance: contractInstance,
 		transactor:       transactor,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{

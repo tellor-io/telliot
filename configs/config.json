@@ -22,6 +22,8 @@
         "rpc": "info",
         "submitter": "info",
         "tasker": "info",
-        "tracker": "info"
+        "tracker": "info",
+        "transactor": "info",
+        "profitChecker": "info"
     }
 }

@@ -19,7 +19,10 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 )
+
+const ComponentName = "transactor"
 
 // Transactor takes care of sending transactions over the blockchain network.
 type Transactor interface {
@@ -43,15 +46,20 @@ func NewTransactor(
 	client contracts.ETHClient,
 	account *config.Account,
 	contractInstance *contracts.ITellor,
-) *TransactorDefault {
+) (*TransactorDefault, error) {
+	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
+
 	return &TransactorDefault{
-		logger:           logger,
+		logger:           log.With(filterLog, "component", ComponentName, "pubKey", account.Address.String()[:6]),
 		cfg:              cfg,
 		proxy:            proxy,
 		client:           client,
 		account:          account,
 		contractInstance: contractInstance,
-	}
+	}, nil
 }
 
 func (self *TransactorDefault) Transact(ctx context.Context, solution string, reqIds [5]*big.Int, reqVals [5]*big.Int) (*types.Transaction, *types.Receipt, error) {
@@ -144,17 +152,17 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 		if err != nil {
 			if strings.Contains(err.Error(), "nonce too low") { // Can't use error type matching because of the way the eth client is implemented.
 				IntNonce = IntNonce + 1
-				level.Debug(self.logger).Log("msg", "last transaction has been confirmed so will increase the nonce and resend the transaction.")
+				level.Warn(self.logger).Log("msg", "last transaction has been confirmed so will increase the nonce and resend the transaction.")
 
 			} else if strings.Contains(err.Error(), "replacement transaction underpriced") { // Can't use error type matching because of the way the eth client is implemented.
-				level.Debug(self.logger).Log("msg", "last transaction is stuck so will increase the gas price and try to resend")
+				level.Warn(self.logger).Log("msg", "last transaction is stuck so will increase the gas price and try to resend")
 				finalError = err
 			} else {
-				finalError = errors.Wrap(err, "callback")
+				finalError = errors.Wrap(err, "contract call SubmitMiningSolution")
 			}
 
 			delay := 15 * time.Second
-			level.Debug(self.logger).Log("msg", "will retry a send", "retryDelay", delay)
+			level.Info(self.logger).Log("msg", "will retry a send", "retryDelay", delay)
 			select {
 			case <-ctx.Done():
 				return nil, nil, errors.New("the submit context was canceled")
