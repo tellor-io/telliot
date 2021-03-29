@@ -44,12 +44,12 @@ spec:
           valueFrom:
             secretKeyRef:
               name: telliot-latest
-              key: NODE_URL
-        - name: ETH_PRIVATE_KEY
+              key: NODE_WEBSOCKET_URL
+        - name: ETH_PRIVATE_KEYS
           valueFrom:
             secretKeyRef:
               name: telliot-latest
-              key: ETH_PRIVATE_KEY
+              key: ETH_PRIVATE_KEYS
         - name: VIXEOD_KEY
           valueFrom:
             secretKeyRef:

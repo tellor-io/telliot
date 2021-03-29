@@ -609,7 +609,10 @@ func (m mineCmd) Run() error {
 			})
 			// Add a submitter for each account.
 			for _, account := range accounts {
-				transactor := transactor.NewTransactor(logger, cfg, proxy, client, account, contract)
+				transactor, err := transactor.NewTransactor(logger, cfg, proxy, client, account, contract)
+				if err != nil {
+					return errors.Wrapf(err, "creating transactor")
+				}
 				// Get a channel on which it listens for new data to submit.
 				submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy, transactor)
 				if err != nil {
