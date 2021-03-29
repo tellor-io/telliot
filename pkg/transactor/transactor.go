@@ -1,5 +1,5 @@
-// Copyrighself (c) The Tellor Authors.
-// Licensed under the MIself License.
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
 
 package transactor
 
