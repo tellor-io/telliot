@@ -21,8 +21,13 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 )
 
-// Transactor implements the Transactor interface.
-type Transactor struct {
+// Transactor takes care of sending transactions over the blockchain network.
+type Transactor interface {
+	Transact(context.Context, string, [5]*big.Int, [5]*big.Int) (*types.Transaction, *types.Receipt, error)
+}
+
+// TransactorDefault implements the Transactor interface.
+type TransactorDefault struct {
 	logger           log.Logger
 	cfg              *config.Config
 	proxy            db.DataServerProxy
@@ -34,9 +39,15 @@ type Transactor struct {
 	reqIds           [5]*big.Int
 }
 
-func NewTransactor(logger log.Logger, cfg *config.Config, proxy db.DataServerProxy,
-	client contracts.ETHClient, account *config.Account, contractInstance *contracts.ITellor) *Transactor {
-	return &Transactor{
+func NewTransactor(
+	logger log.Logger,
+	cfg *config.Config,
+	proxy db.DataServerProxy,
+	client contracts.ETHClient,
+	account *config.Account,
+	contractInstance *contracts.ITellor,
+) *TransactorDefault {
+	return &TransactorDefault{
 		logger:           logger,
 		cfg:              cfg,
 		proxy:            proxy,
@@ -46,7 +57,7 @@ func NewTransactor(logger log.Logger, cfg *config.Config, proxy db.DataServerPro
 	}
 }
 
-func (t *Transactor) Transact(ctx context.Context, nonce string, reqIds [5]*big.Int, reqVals [5]*big.Int) (*types.Transaction, *types.Receipt, error) {
+func (t *TransactorDefault) Transact(ctx context.Context, nonce string, reqIds [5]*big.Int, reqVals [5]*big.Int) (*types.Transaction, *types.Receipt, error) {
 	t.nonce = nonce
 	t.reqIds = reqIds
 	t.reqVals = reqVals
@@ -56,15 +67,15 @@ func (t *Transactor) Transact(ctx context.Context, nonce string, reqIds [5]*big.
 	}
 	receipt, err := bind.WaitMined(ctx, t.client, tx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "transaction result")
+		return nil, nil, errors.Wrapf(err, "transaction result tx:%v", tx.Hash())
 	}
-	if receipt.Status != 1 {
-		return nil, nil, errors.New("unsuccessful transaction status")
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		return nil, nil, errors.Errorf("unsuccessful transaction status:%v tx:%v", receipt.Status, tx.Hash())
 	}
 	return tx, receipt, nil
 }
 
-func (t *Transactor) submit(ctx context.Context, options *bind.TransactOpts) (*types.Transaction, error) {
+func (t *TransactorDefault) submit(ctx context.Context, options *bind.TransactOpts) (*types.Transaction, error) {
 	txn, err := t.contractInstance.SubmitMiningSolution(options,
 		t.nonce,
 		t.reqIds,
@@ -196,12 +207,12 @@ func SubmitContractTxn(
 
 func getInt(data []byte) *big.Int {
 	if len(data) == 0 {
-		return nil
+		return big.NewInt(0)
 	}
 
 	val, err := hexutil.DecodeBig(string(data))
 	if err != nil {
-		return nil
+		return big.NewInt(0)
 	}
 	return val
 }

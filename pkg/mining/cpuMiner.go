@@ -41,7 +41,7 @@ func (c *CpuMiner) CheckRange(anySolution context.Context, hash *HashSettings, s
 	for i := start; i < (start + n); i++ {
 		select {
 		case <-anySolution.Done():
-			return "any solution", n, nil
+			return "any", n, nil
 		default:
 		}
 		nn := strconv.FormatUint(i, 10)
