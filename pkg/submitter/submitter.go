@@ -66,6 +66,7 @@ func NewSubmitter(
 	account *config.Account,
 	proxy db.DataServerProxy,
 	transactor transactor.Transactor,
+	profitChecker *profitChecker.ProfitChecker,
 ) (*Submitter, chan *mining.Result, error) {
 	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
@@ -101,7 +102,7 @@ func NewSubmitter(
 	}
 
 	if cfg.Mine.ProfitThreshold > 0 { // Profit check is enabled.
-		submitter.profitChecker = profitChecker.NewProfitChecker(logger, client, contractInstance, proxy, account)
+		submitter.profitChecker = profitChecker
 	}
 
 	return submitter, submitter.resultCh, nil

@@ -75,18 +75,17 @@ func (self *Tasker) AddSubmitCanceler(SubmitCanceler SubmitCanceler) {
 	self.SubmitCancelers = append(self.SubmitCancelers, SubmitCanceler)
 }
 
-func (self *Tasker) getNewChallengeChannel() (chan *tellor.ITellorNewChallenge, event.Subscription, error) {
-	sink := make(chan *tellor.ITellorNewChallenge)
+func (self *Tasker) newChallengeSub(output chan *tellor.ITellorNewChallenge) (event.Subscription, error) {
 	var tellorFilterer *tellor.ITellorFilterer
 	tellorFilterer, err := tellor.NewITellorFilterer(self.contractInstance.Address, self.client)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting ITellorFilterer instance")
+		return nil, errors.Wrap(err, "getting ITellorFilterer instance")
 	}
-	sub, err := tellorFilterer.WatchNewChallenge(&bind.WatchOpts{}, sink, nil)
+	sub, err := tellorFilterer.WatchNewChallenge(&bind.WatchOpts{}, output, nil)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting NewChallenge channel")
+		return nil, errors.Wrap(err, "getting NewChallenge channel")
 	}
-	return sink, sub, nil
+	return sub, nil
 }
 
 func (self *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
@@ -138,16 +137,20 @@ func (self *Tasker) Start() error {
 	self.sendWork(currentChallenge)
 
 	// Subscribe and wait until the context cancellation event.
-	var sink chan *tellor.ITellorNewChallenge
+	events := make(chan *tellor.ITellorNewChallenge)
 	var sub event.Subscription
 
 	// Initial subscription.
 	for {
-		sink, sub, err = self.getNewChallengeChannel()
+		sub, err = self.newChallengeSub(events)
 		if err != nil {
 			level.Error(self.logger).Log("msg", "initial subscribing to NewChallenge events failed")
-			time.Sleep(1 * time.Second)
-			continue
+			select {
+			case <-ticker.C:
+				continue
+			case <-self.ctx.Done():
+				return nil
+			}
 		}
 		break
 	}
@@ -166,7 +169,7 @@ func (self *Tasker) Start() error {
 
 			// Trying to resubscribe until it succeeds.
 			for {
-				sink, sub, err = self.getNewChallengeChannel()
+				sub, err = self.newChallengeSub(events)
 				if err != nil {
 					level.Error(self.logger).Log("msg", "re-subscribing to NewChallenge events failed")
 					select {
@@ -179,7 +182,7 @@ func (self *Tasker) Start() error {
 				break
 			}
 			level.Info(self.logger).Log("msg", "re-subscribed to NewChallenge events")
-		case vLog := <-sink:
+		case event := <-events:
 			if self.txPending != nil {
 				self.txPending()
 			}
@@ -187,7 +190,7 @@ func (self *Tasker) Start() error {
 			ctxPending, ctxPendingCncl := context.WithCancel(self.ctx)
 			self.txPending = ctxPendingCncl
 
-			go self.sendWhenConfirmed(ctxPending, vLog)
+			go self.sendWhenConfirmed(ctxPending, event)
 		}
 	}
 }
