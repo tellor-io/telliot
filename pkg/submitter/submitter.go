@@ -266,7 +266,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 					tx, recieipt, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
 					if err != nil {
 						s.submitFailCount.Inc()
-						level.Error(s.logger).Log("msg", "submiting a solution, retrying", "err", err)
+						level.Error(s.logger).Log("msg", "submiting a solution", "err", err)
 						return
 					}
 					level.Info(s.logger).Log("msg", "successfully submited solution",
