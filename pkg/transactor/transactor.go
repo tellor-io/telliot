@@ -47,13 +47,13 @@ func NewTransactor(
 	account *config.Account,
 	contractInstance *contracts.ITellor,
 ) (*TransactorDefault, error) {
-	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 
 	return &TransactorDefault{
-		logger:           log.With(filterLog, "component", ComponentName, "pubKey", account.Address.String()[:6]),
+		logger:           log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6]),
 		cfg:              cfg,
 		proxy:            proxy,
 		client:           client,

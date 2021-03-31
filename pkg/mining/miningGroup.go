@@ -79,13 +79,13 @@ type MiningGroup struct {
 }
 
 func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
-	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 	group := &MiningGroup{
 		Backends:         make([]*Backend, len(hashers)),
-		logger:           log.With(filterLog, "component", ComponentName),
+		logger:           log.With(logger, "component", ComponentName),
 		cfg:              cfg,
 		contractInstance: contractInstance,
 	}

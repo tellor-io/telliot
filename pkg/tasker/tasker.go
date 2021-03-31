@@ -51,7 +51,7 @@ func NewTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy
 	for _, acc := range accounts {
 		workSinks[acc.Address.String()] = make(chan *mining.Work)
 	}
-	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		close()
 		return nil, nil, errors.Wrap(err, "apply filter logger")
@@ -63,7 +63,7 @@ func NewTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy
 		accounts:         accounts,
 		contractInstance: contract,
 		workSinks:        workSinks,
-		logger:           log.With(filterLog, "component", ComponentName),
+		logger:           log.With(logger, "component", ComponentName),
 		cfg:              cfg,
 		client:           client,
 		SubmitCancelers:  make([]SubmitCanceler, 0),
@@ -201,14 +201,17 @@ func (self *Tasker) sendWhenConfirmed(ctx context.Context, vLog *tellor.ITellorN
 	for {
 		// Send the event only when the tx that emitted the event has been confirmed.
 		receipt, err := self.client.TransactionReceipt(ctx, vLog.Raw.TxHash)
-		if receipt != nil && receipt.Status == types.ReceiptStatusSuccessful {
-			// The new event arrives at the same time as the pending TX get confirmed so
-			// add small delay here to avoid race conditions of canceling the pending TXs.
-			time.Sleep(2 * time.Second)
-			for _, canceler := range self.SubmitCancelers {
-				canceler.CancelPendingSubmit()
+		if receipt != nil {
+			// Send it only when the TX ReceiptStatusSuccessful or otherwise ignore.
+			if receipt.Status == types.ReceiptStatusSuccessful {
+				// The new event arrives at the same time as the pending TX get confirmed so
+				// add small delay here to avoid race conditions of canceling the pending TXs.
+				time.Sleep(2 * time.Second)
+				for _, canceler := range self.SubmitCancelers {
+					canceler.CancelPendingSubmit()
+				}
+				self.sendWork(vLog)
 			}
-			self.sendWork(vLog)
 			return
 		}
 		if err != nil {

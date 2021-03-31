@@ -105,6 +105,14 @@ func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transact
 	return _err
 }
 
+func (c *clientInstance) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
+	_ = c.withTimeout(ctx, func(_ctx *context.Context) error {
+		tx, isPending, err = c.ethClient.TransactionByHash(*_ctx, hash)
+		return nil
+	})
+	return
+}
+
 func (c *clientInstance) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
 	var res []byte
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {

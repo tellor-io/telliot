@@ -600,7 +600,10 @@ func (m mineCmd) Run() error {
 		// Miner components.
 		{
 			// Run the profit checker.
-			profitChecker := profitChecker.NewProfitChecker(logger, ctx, client, contract, proxy, accountAddrs)
+			profitChecker, err := profitChecker.NewProfitChecker(logger, ctx, cfg, client, contract, proxy, accountAddrs)
+			if err != nil {
+				return errors.Wrapf(err, "creating profit checker")
+			}
 			g.Add(func() error {
 				err := profitChecker.Start()
 				level.Info(logger).Log("msg", "tasker shutdown complete")
@@ -637,7 +640,7 @@ func (m mineCmd) Run() error {
 			// 	g.Add(func() error {
 			// 		err := submitter.Start()
 			// 		level.Info(logger).Log("msg", "submitter shutdown complete",
-			// 			"pubKey", account.Address.String(),
+			// 			"addr", account.Address.String(),
 			// 		)
 			// 		return err
 			// 	}, func(error) {
@@ -655,7 +658,7 @@ func (m mineCmd) Run() error {
 			// 	g.Add(func() error {
 			// 		err := miner.Start()
 			// 		level.Info(logger).Log("msg", "miner shutdown complete",
-			// 			"pubKey", account.Address.String(),
+			// 			"addr", account.Address.String(),
 			// 		)
 			// 		return err
 			// 	}, func(error) {

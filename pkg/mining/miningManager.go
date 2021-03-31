@@ -73,7 +73,7 @@ func NewMiningManager(
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
-	logger = log.With(logger, "component", ComponentName, "pubKey", account.Address.String()[:6])
+	logger = log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6])
 
 	group, err := SetupMiningGroup(logger, cfg, contractInstance)
 	if err != nil {

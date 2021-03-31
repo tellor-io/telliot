@@ -68,11 +68,11 @@ func NewSubmitter(
 	transactor transactor.Transactor,
 	profitChecker *profitChecker.ProfitChecker,
 ) (*Submitter, chan *mining.Result, error) {
-	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "apply filter logger")
 	}
-	logger = log.With(filterLog, "component", ComponentName, "pubKey", account.Address.String()[:6])
+	logger = log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6])
 	ctx, close := context.WithCancel(ctx)
 	submitter := &Submitter{
 		ctx:              ctx,

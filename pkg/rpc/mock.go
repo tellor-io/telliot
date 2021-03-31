@@ -180,6 +180,10 @@ func (c *mockClient) SetTokenBalance(bal *big.Int) {
 	c.tokenBalance = bal
 }
 
+func (c *mockClient) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
+	return nil, true, nil
+}
+
 func (c *mockClient) Close() {
 	level.Info(c.logger).Log("msg", "closing mock client")
 }

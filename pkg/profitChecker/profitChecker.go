@@ -7,12 +7,10 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
@@ -21,11 +19,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	tellorCommon "github.com/tellor-io/telliot/pkg/common"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/tracker"
 )
+
+const ComponentName = "profitChecker"
 
 type ProfitChecker struct {
 	client           contracts.ETHClient
@@ -43,12 +45,17 @@ type ProfitChecker struct {
 func NewProfitChecker(
 	logger log.Logger,
 	ctx context.Context,
+	cfg *config.Config,
 	client contracts.ETHClient,
 	contractInstance *contracts.ITellor,
 	proxy db.DataServerProxy,
 	addrs []common.Address,
-) *ProfitChecker {
-
+) (*ProfitChecker, error) {
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
+	logger = log.With(logger, "component", ComponentName)
 	ctx, cncl := context.WithCancel(ctx)
 
 	return &ProfitChecker{
@@ -64,7 +71,7 @@ func NewProfitChecker(
 			Namespace: "telliot",
 			Subsystem: "mining",
 			Name:      "submit_profit",
-			Help:      "The current submit profit in percents",
+			Help:      "Accumulated submit profit in ETH",
 		},
 			[]string{"addr"},
 		),
@@ -72,11 +79,11 @@ func NewProfitChecker(
 			Namespace: "telliot",
 			Subsystem: "mining",
 			Name:      "submit_cost",
-			Help:      "The current submit cost in 1e18 eth",
+			Help:      "Accumulated submit cost in ETH",
 		},
 			[]string{"addr"},
 		),
-	}
+	}, nil
 }
 
 // Current returns the profit in percents.
@@ -113,51 +120,6 @@ func (self *ProfitChecker) Start() error {
 	level.Info(self.logger).Log("msg", "starting profit tracker")
 	go self.monitorCost()
 	go self.monitorReward()
-
-	// go func() {
-	// 	defer func() {
-	// 		fmt.Println("stopped")
-	// 	}()
-	// 	ev := make(chan *tellor.ITellorNonceSubmitted)
-	// 	var tellorFilterer *tellor.ITellorFilterer
-	// 	tellorFilterer, err := tellor.NewITellorFilterer(self.contractInstance.Address, self.client)
-	// 	if err != nil {
-	// 		level.Error(self.logger).Log(
-	// 			"msg",
-	// 			"getting ITellorFilterer instance",
-	// 			"err", err)
-	// 		return
-	// 	}
-	// 	sub, err := tellorFilterer.WatchNonceSubmitted(&bind.WatchOpts{}, ev, nil, nil)
-	// 	if err != nil {
-	// 		level.Error(self.logger).Log(
-	// 			"msg",
-	// 			"getting NewChallenge chan",
-	// 			"err", err)
-	// 		return
-	// 	}
-	// 	fmt.Println("noww")
-	// 	for {
-	// 		select {
-	// 		case <-self.ctx.Done():
-	// 			return
-	// 		case err := <-sub.Err():
-	// 			if err != nil {
-	// 				level.Error(self.logger).Log(
-	// 					"msg",
-	// 					"NonceSubmitted subscription error",
-	// 					"err", err)
-	// 				return
-
-	// 			}
-
-	// 		case vLog := <-ev:
-	// 			fmt.Println("vLog cost", vLog)
-	// 			// TODO use only when the tx is confirmed.
-	// 			// self.submitCost.With(prometheus.Labels{"slot": strconv.Itoa(int(slot.Int64()))}).(prometheus.Gauge).Set(float64(txCost.Int64()))
-	// 		}
-	// 	}
-	// }()
 
 	<-self.ctx.Done()
 	return nil
@@ -215,9 +177,79 @@ func (self *ProfitChecker) monitorCost() {
 			}
 			level.Info(self.logger).Log("msg", "re-subscribed to NonceSubmitted events")
 		case event := <-events:
+			logger := log.With(self.logger, "addr", event.Miner.String()[:6], "tx", event.Raw.TxHash)
+			go self.setCostWhenConfirmed(logger, event)
 			fmt.Println("vLog cost", event)
-			// TODO use only when the tx is confirmed.
-			// self.submitCost.With(prometheus.Labels{"slot": strconv.Itoa(int(slot.Int64()))}).(prometheus.Gauge).Set(float64(txCost.Int64()))
+		}
+	}
+}
+
+func (self *ProfitChecker) setCostWhenConfirmed(logger log.Logger, event *tellor.ITellorNonceSubmitted) {
+	if event.Raw.Removed { // Ignore remove events due to reorg.
+		level.Debug(logger).Log("msg", "cost reorg even ignored")
+		return
+	}
+	receipt, err := self.waitMined(logger, event.Raw.TxHash)
+	if err != nil {
+		level.Error(logger).Log("msg", "wait confirmation for cost event", "err", err)
+		return
+	}
+	tx, _, err := self.client.TransactionByHash(self.ctx, event.Raw.TxHash)
+	if err != nil {
+		level.Error(logger).Log("msg", "get transaction by hash", "err", err)
+		return
+	}
+	cost, _ := big.NewFloat(0).Mul(big.NewFloat(float64(tx.GasPrice().Int64())), big.NewFloat(float64(receipt.GasUsed))).Float64()
+	level.Debug(logger).Log("msg", "adding cost", "amount", cost/1e18)
+	self.submitCost.With(prometheus.Labels{"addr": event.Miner.String()[:6]}).(prometheus.Gauge).Add(cost / 1e18)
+}
+
+func (self *ProfitChecker) setProfitWhenConfirmed(logger log.Logger, event *tellor.ITellorTransferred) {
+	if event.Raw.Removed { // Ignore remove events due to reorg.
+		level.Debug(logger).Log("msg", "profit reorg even ignored")
+		return
+	}
+	receipt, err := self.waitMined(logger, event.Raw.TxHash)
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		level.Error(logger).Log("msg", "profit event status not success so no profit added", "status", receipt.Status, "raw", event.Raw.TxHash)
+		return
+	}
+	if err != nil {
+		level.Error(logger).Log("msg", "wait confirmation for profit event", "err", err)
+		return
+	}
+
+	trb, err := self.convertTRBtoETH(event.Value)
+	if err != nil {
+		level.Error(logger).Log("msg", "convert trb to eth", "err", err)
+		return
+	}
+	profit, _ := big.NewFloat(float64(trb.Int64())).Float64()
+	level.Debug(logger).Log("msg", "adding profit", "amount", profit/1e18)
+	self.submitProfit.With(prometheus.Labels{"addr": event.To.String()}).(prometheus.Gauge).Add(profit / 1e18)
+}
+
+func (self *ProfitChecker) waitMined(logger log.Logger, txHash common.Hash) (*types.Receipt, error) {
+	ctx, cncl := context.WithTimeout(self.ctx, 10*time.Minute)
+	defer cncl()
+	queryTicker := time.NewTicker(time.Second)
+	defer queryTicker.Stop()
+
+	for {
+		receipt, err := self.client.TransactionReceipt(ctx, txHash)
+		if receipt != nil {
+			return receipt, nil // Even when the receipt is not success will cost some eth so need to record it.
+		}
+
+		if err != nil {
+			level.Error(logger).Log("msg", "receipt retrieval failed", "err", err)
+		} else {
+			level.Debug(logger).Log("msg", "transaction not yet mined")
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-queryTicker.C:
 		}
 	}
 }
@@ -236,7 +268,6 @@ func (self *ProfitChecker) nonceSubmittedSub(output chan *tellor.ITellorNonceSub
 }
 
 func (self *ProfitChecker) monitorReward() {
-
 	var err error
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -287,9 +318,8 @@ func (self *ProfitChecker) monitorReward() {
 			level.Info(self.logger).Log("msg", "re-subscribed to Transferred events")
 		case event := <-events:
 			fmt.Println("vLog tranfer", event)
-			// TODO use only when the tx is confirmed.
-			// self.submitProfit.With(prometheus.Labels{"addr": strconv.Itoa(int(slot.Int64()))}).(prometheus.Gauge).Set(float64(profitPercent))
-
+			logger := log.With(self.logger, "addr", event.To.String()[:6], "tx", event.Raw.TxHash)
+			go self.setProfitWhenConfirmed(logger, event)
 		}
 	}
 }
@@ -338,17 +368,19 @@ func (self *ProfitChecker) currentReward() (*big.Int, error) {
 }
 
 func (self *ProfitChecker) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
-	val, err := self.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
-	if err != nil {
-		return nil, errors.New("getting the trb price from the db")
-	}
-	if len(val) == 0 {
-		return nil, errors.New("the db doesn't have the trb price")
-	}
-	priceTRB, err := hexutil.DecodeBig(string(val))
-	if err != nil {
-		return nil, errors.New("decoding trb price from the db")
-	}
+	// val, err := self.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
+	// if err != nil {
+	// 	return nil, errors.New("getting the trb price from the db")
+	// }
+	// if len(val) == 0 {
+	// 	return nil, errors.New("the db doesn't have the trb price")
+	// }
+	// priceTRB, err := hexutil.DecodeBig(string(val))
+	// if err != nil {
+	// 	return nil, errors.New("decoding trb price from the db")
+	// }
+
+	priceTRB := big.NewInt(215510)
 	wei := big.NewInt(tellorCommon.WEI)
 	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
 	priceTRB.Mul(priceTRB, precisionUpscale)
