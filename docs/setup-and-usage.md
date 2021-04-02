@@ -105,6 +105,17 @@ kubectl apply -f configs/manifests/monitoring-persist.yml
 kubectl apply -f configs/manifests/monitoring.yml
 ```
 
+* Optionally deploy the alerting manager and get alerts on your Telegram bot. this will use the alertmanager bot. see [here](https://github.com/metalmatze/alertmanager-bot) for more info and available commands.
+
+```bash
+# Create a secret for the telegram authentication.
+kubectl create secret generic alertmanager-bot \
+  --from-literal=admin='<telegram admin>' \
+  --from-literal=token='<telegram token>'
+kubectl apply -f configs/manifests/alerting-persist.yml
+kubectl apply -f configs/manifests/alerting.yml
+```
+
 ### Download and Edit config.json
 
 `config.json` is where you will enter your wallet address and configure the CLI for your machine.
