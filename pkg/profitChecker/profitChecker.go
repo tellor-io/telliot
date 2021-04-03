@@ -7,10 +7,12 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
@@ -86,25 +88,29 @@ func NewProfitChecker(
 	}, nil
 }
 
-// Current returns the profit in percents.
+// Current returns the profit in percents based on the current TRB price.
 func (self *ProfitChecker) Current(slot *big.Int, gasPrice *big.Int) (int64, error) {
 	gasUsed, err := self.gasUsed(slot)
 	if err != nil {
 		return 0, err
 	}
-	reward, err := self.currentReward()
+	reward, err := self.contractInstance.CurrentReward(nil)
 	if err != nil {
-		return 0, errors.Wrap(err, "getting current rewards")
+		return 0, errors.New("getting currentReward from the chain")
+	}
+	rewardEth, err := self.convertTRBtoETH(reward)
+	if err != nil {
+		return 0, errors.Wrap(err, "convert TRB to ETH")
 	}
 
 	txCost := big.NewInt(0).Mul(gasPrice, gasUsed)
-	profit := big.NewInt(0).Sub(reward, txCost)
+	profit := big.NewInt(0).Sub(rewardEth, txCost)
 	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
 	profitPercent := int64(profitPercentFloat)
 
 	level.Debug(self.logger).Log(
 		"msg", "profit checking",
-		"reward", fmt.Sprintf("%.2e", float64(reward.Int64())),
+		"reward", fmt.Sprintf("%.2e", float64(rewardEth.Int64())),
 		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
 		"slot", slot,
 		"gasUsed", gasUsed,
@@ -210,23 +216,18 @@ func (self *ProfitChecker) setProfitWhenConfirmed(logger log.Logger, event *tell
 		return
 	}
 	receipt, err := self.waitMined(logger, event.Raw.TxHash)
-	if receipt.Status != types.ReceiptStatusSuccessful {
-		level.Error(logger).Log("msg", "profit event status not success so no profit added", "status", receipt.Status, "raw", event.Raw.TxHash)
-		return
-	}
 	if err != nil {
 		level.Error(logger).Log("msg", "wait confirmation for profit event", "err", err)
 		return
 	}
-
-	trb, err := self.convertTRBtoETH(event.Value)
-	if err != nil {
-		level.Error(logger).Log("msg", "convert trb to eth", "err", err)
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		level.Error(logger).Log("msg", "profit event status not success so no profit added", "status", receipt.Status, "raw", event.Raw.TxHash)
 		return
 	}
-	profit, _ := big.NewFloat(float64(trb.Int64())).Float64()
-	level.Debug(logger).Log("msg", "adding profit", "amount", profit/1e18)
-	self.submitProfit.With(prometheus.Labels{"addr": event.To.String()}).(prometheus.Gauge).Add(profit / 1e18)
+
+	trb, _ := big.NewFloat(float64(event.Value.Int64())).Float64()
+	level.Debug(logger).Log("msg", "adding profit", "amount", trb/1e18)
+	self.submitProfit.With(prometheus.Labels{"addr": event.To.String()}).(prometheus.Gauge).Add(trb / 1e18)
 }
 
 func (self *ProfitChecker) waitMined(logger log.Logger, txHash common.Hash) (*types.Receipt, error) {
@@ -358,29 +359,19 @@ func (self *ProfitChecker) gasUsed(slot *big.Int) (*big.Int, error) {
 	return big.NewInt(0).SetBytes(gas), nil
 }
 
-// currentReward returns the current TRB rewards converted to ETH.
-func (self *ProfitChecker) currentReward() (*big.Int, error) {
-	reward, err := self.contractInstance.CurrentReward(nil)
-	if err != nil {
-		return nil, errors.New("getting currentReward from the chain")
-	}
-	return self.convertTRBtoETH(reward)
-}
-
 func (self *ProfitChecker) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
-	// val, err := self.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
-	// if err != nil {
-	// 	return nil, errors.New("getting the trb price from the db")
-	// }
-	// if len(val) == 0 {
-	// 	return nil, errors.New("the db doesn't have the trb price")
-	// }
-	// priceTRB, err := hexutil.DecodeBig(string(val))
-	// if err != nil {
-	// 	return nil, errors.New("decoding trb price from the db")
-	// }
+	val, err := self.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
+	if err != nil {
+		return nil, errors.New("getting the trb price from the db")
+	}
+	if len(val) == 0 {
+		return nil, errors.New("the db doesn't have the trb price")
+	}
+	priceTRB, err := hexutil.DecodeBig(string(val))
+	if err != nil {
+		return nil, errors.New("decoding trb price from the db")
+	}
 
-	priceTRB := big.NewInt(215510)
 	wei := big.NewInt(tellorCommon.WEI)
 	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
 	priceTRB.Mul(priceTRB, precisionUpscale)
