@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -205,10 +206,59 @@ func (s *Submitter) canSubmit() error {
 	return nil
 }
 
-func (s *Submitter) profit() (int64, error) {
+// profit returns the profit in percents based on the current TRB price.
+func (self *Submitter) profit() (int64, error) {
+	slot, err := self.slot()
+	if err != nil {
+		return 0, err
+	}
+	gasUsed, err := self.profitChecker.GasUsed(slot)
+	if err != nil {
+		return 0, err
+	}
+	trbAmount, err := self.contractInstance.CurrentReward(nil)
+	if err != nil {
+		return 0, errors.New("getting currentReward from the chain")
+	}
+
+	trbPrice, err := self.trbPrice()
+	if err != nil {
+		return 0, errors.New("getting trb current TRB price")
+	}
+
+	gasPrice, err := self.gasPrice()
+	if err != nil {
+		return 0, errors.New("getting trb current Gas price")
+	}
+
+	rewardEth, err := self.convertTRBtoETH(trbAmount, trbPrice)
+	if err != nil {
+		return 0, errors.Wrap(err, "convert TRB to ETH")
+	}
+
+	txCost := big.NewInt(0).Mul(gasPrice, gasUsed)
+	profit := big.NewInt(0).Sub(rewardEth, txCost)
+	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
+	profitPercent := int64(profitPercentFloat)
+
+	level.Debug(self.logger).Log(
+		"msg", "profit checking",
+		"reward", fmt.Sprintf("%.2e", float64(rewardEth.Int64())),
+		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
+		"slot", slot,
+		"gasUsed", gasUsed,
+		"gasPrice", gasPrice,
+		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
+		"profitMargin", profitPercent,
+	)
+
+	return profitPercent, nil
+}
+
+func (s *Submitter) slot() (*big.Int, error) {
 	slot, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_SLOT_PROGRESS")))
 	if err != nil {
-		return 0, errors.Wrap(err, "getting _SLOT_PROGRESS for calculating profit")
+		return nil, errors.Wrap(err, "getting _SLOT_PROGRESS for calculating profit")
 	}
 	// Need the price for next slot transaction so increment by one.
 	// Slots numbers should be from 1 to 5 so when current slot is 5 next slot is 1.
@@ -216,16 +266,44 @@ func (s *Submitter) profit() (int64, error) {
 	if slot.Int64() == 6 {
 		slot.SetInt64(1)
 	}
+	return slot, nil
+}
 
+func (s *Submitter) gasPrice() (*big.Int, error) {
 	_gasPrice, err := s.proxy.Get(db.GasKey)
 	if err != nil {
-		return 0, errors.Wrap(err, "getting gas price")
+		return nil, errors.Wrap(err, "getting gas price")
 	}
 	gasPrice, err := hexutil.DecodeBig(string(_gasPrice))
 	if err != nil {
-		return 0, errors.Wrap(err, "decode gas price")
+		return nil, errors.Wrap(err, "decode gas price")
 	}
-	return s.profitChecker.Current(slot, gasPrice)
+	return gasPrice, nil
+}
+
+func (s *Submitter) trbPrice() (*big.Int, error) {
+	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
+	if err != nil {
+		return nil, errors.New("getting the trb price from the db")
+	}
+	if len(_trbPrice) == 0 {
+		return nil, errors.New("the db doesn't have the trb price")
+	}
+	trbPrice, err := hexutil.DecodeBig(string(_trbPrice))
+	if err != nil {
+		return nil, errors.New("decoding trb price from the db")
+	}
+	return trbPrice, nil
+}
+
+func (s *Submitter) convertTRBtoETH(trbAmount, trbPrice *big.Int) (*big.Int, error) {
+	wei := big.NewInt(tellorCommon.WEI)
+	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
+	trbPrice.Mul(trbPrice, precisionUpscale)
+
+	eth := big.NewInt(0).Mul(trbPrice, trbAmount)
+	eth.Div(eth, big.NewInt(1e18))
+	return eth, nil
 }
 
 func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {

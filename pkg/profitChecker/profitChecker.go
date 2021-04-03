@@ -7,12 +7,10 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
@@ -26,7 +24,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/tracker"
 )
 
 const ComponentName = "profitChecker"
@@ -73,7 +70,7 @@ func NewProfitChecker(
 			Namespace: "telliot",
 			Subsystem: "mining",
 			Name:      "submit_profit",
-			Help:      "Accumulated submit profit in ETH",
+			Help:      "Accumulated TRB amount from rewards",
 		},
 			[]string{"addr"},
 		),
@@ -81,45 +78,11 @@ func NewProfitChecker(
 			Namespace: "telliot",
 			Subsystem: "mining",
 			Name:      "submit_cost",
-			Help:      "Accumulated submit cost in ETH",
+			Help:      "Accumulated cost in ETH for the submitted TXs",
 		},
 			[]string{"addr"},
 		),
 	}, nil
-}
-
-// Current returns the profit in percents based on the current TRB price.
-func (self *ProfitChecker) Current(slot *big.Int, gasPrice *big.Int) (int64, error) {
-	gasUsed, err := self.gasUsed(slot)
-	if err != nil {
-		return 0, err
-	}
-	reward, err := self.contractInstance.CurrentReward(nil)
-	if err != nil {
-		return 0, errors.New("getting currentReward from the chain")
-	}
-	rewardEth, err := self.convertTRBtoETH(reward)
-	if err != nil {
-		return 0, errors.Wrap(err, "convert TRB to ETH")
-	}
-
-	txCost := big.NewInt(0).Mul(gasPrice, gasUsed)
-	profit := big.NewInt(0).Sub(rewardEth, txCost)
-	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
-	profitPercent := int64(profitPercentFloat)
-
-	level.Debug(self.logger).Log(
-		"msg", "profit checking",
-		"reward", fmt.Sprintf("%.2e", float64(rewardEth.Int64())),
-		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
-		"slot", slot,
-		"gasUsed", gasUsed,
-		"gasPrice", gasPrice,
-		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
-		"profitMargin", profitPercent,
-	)
-
-	return profitPercent, nil
 }
 
 func (self *ProfitChecker) Start() error {
@@ -345,7 +308,7 @@ func (self *ProfitChecker) transferSub(output chan *tellor.ITellorTransferred) (
 	return sub, nil
 }
 
-func (self *ProfitChecker) gasUsed(slot *big.Int) (*big.Int, error) {
+func (self *ProfitChecker) GasUsed(slot *big.Int) (*big.Int, error) {
 	txID := tellorCommon.PriceTXs + slot.String()
 	gas, err := self.proxy.Get(txID)
 	if err != nil {
@@ -357,28 +320,6 @@ func (self *ProfitChecker) gasUsed(slot *big.Int) (*big.Int, error) {
 	}
 
 	return big.NewInt(0).SetBytes(gas), nil
-}
-
-func (self *ProfitChecker) convertTRBtoETH(trb *big.Int) (*big.Int, error) {
-	val, err := self.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
-	if err != nil {
-		return nil, errors.New("getting the trb price from the db")
-	}
-	if len(val) == 0 {
-		return nil, errors.New("the db doesn't have the trb price")
-	}
-	priceTRB, err := hexutil.DecodeBig(string(val))
-	if err != nil {
-		return nil, errors.New("decoding trb price from the db")
-	}
-
-	wei := big.NewInt(tellorCommon.WEI)
-	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
-	priceTRB.Mul(priceTRB, precisionUpscale)
-
-	eth := big.NewInt(0).Mul(priceTRB, trb)
-	eth.Div(eth, big.NewInt(1e18))
-	return eth, nil
 }
 
 type ErrNoDataForSlot struct {
