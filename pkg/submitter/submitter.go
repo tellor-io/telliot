@@ -27,8 +27,8 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
-	"github.com/tellor-io/telliot/pkg/profitChecker"
 	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -55,7 +55,7 @@ type Submitter struct {
 	submitFailCount  prometheus.Counter
 	lastSubmitCncl   context.CancelFunc
 	transactor       transactor.Transactor
-	profitChecker    *profitChecker.ProfitChecker
+	profitChecker    *profit.ProfitTracker
 }
 
 func NewSubmitter(
@@ -67,7 +67,7 @@ func NewSubmitter(
 	account *config.Account,
 	proxy db.DataServerProxy,
 	transactor transactor.Transactor,
-	profitChecker *profitChecker.ProfitChecker,
+	profitChecker *profit.ProfitTracker,
 ) (*Submitter, chan *mining.Result, error) {
 	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
@@ -88,14 +88,14 @@ func NewSubmitter(
 		transactor:       transactor,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
-			Subsystem:   "mining",
+			Subsystem:   ComponentName,
 			Name:        "submit_total",
 			Help:        "The total number of submitted solutions",
 			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		}),
 		submitFailCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
-			Subsystem:   "mining",
+			Subsystem:   ComponentName,
 			Name:        "submit_fails_total",
 			Help:        "The total number of failed submission",
 			ConstLabels: prometheus.Labels{"account": account.Address.String()},
@@ -186,7 +186,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 func (s *Submitter) canSubmit() error {
 	if s.profitChecker != nil { // Profit check is enabled.
 		profitPercent, err := s.profit()
-		if _, ok := errors.Cause(err).(profitChecker.ErrNoDataForSlot); ok {
+		if _, ok := errors.Cause(err).(profit.ErrNoDataForSlot); ok {
 			level.Warn(s.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
 		} else if err != nil {
 			return errors.Wrapf(err, "submit solution profit check")
@@ -363,21 +363,6 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 						s.profitChecker.SaveGasUsed(recieipt, slot)
 					}
 
-					amount, err := s.getETHBalance()
-					if err != nil {
-						level.Error(s.logger).Log("msg", "getting ETH balance", "err", err)
-					} else {
-						level.Info(s.logger).Log("msg", "ETH balance", "amount", amount)
-
-					}
-
-					amountTRB, err := s.getTRBBalance()
-					if err != nil {
-						level.Error(s.logger).Log("msg", "getting TRB balance", "err", err)
-					} else {
-						level.Info(s.logger).Log("msg", "TRB balance", "amount", amountTRB)
-					}
-
 					return
 				}
 			}
@@ -469,32 +454,6 @@ func (s *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
 	}
 
 	return lastSubmit, &tm, nil
-}
-
-func (s *Submitter) getTRBBalance() (string, error) {
-	balance, err := s.contractInstance.BalanceOf(nil, s.account.Address)
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving trb balance")
-	}
-	balanceH, _ := big.NewFloat(1).SetString(balance.String())
-	decimals, _ := big.NewFloat(1).SetString("1000000000000000000")
-	if decimals != nil {
-		balanceH = balanceH.Quo(balanceH, decimals)
-	}
-	return balanceH.String(), nil
-}
-
-func (s *Submitter) getETHBalance() (string, error) {
-	balance, err := s.client.BalanceAt(s.ctx, s.account.Address, nil)
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving balance")
-	}
-	balanceH, _ := big.NewFloat(1).SetString(balance.String())
-	decimals, _ := big.NewFloat(1).SetString("1000000000000000000")
-	if decimals != nil {
-		balanceH = balanceH.Quo(balanceH, decimals)
-	}
-	return balanceH.String(), nil
 }
 
 func minerStatusName(statusID int64) string {

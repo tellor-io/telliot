@@ -6,6 +6,7 @@ require (
 	github.com/alecthomas/kong v0.2.16
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/benbjohnson/clock v1.1.0
+	github.com/bluele/gcache v0.0.2
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
