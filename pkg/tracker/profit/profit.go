@@ -358,12 +358,11 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 }
 
 func (self *ProfitTracker) nonceSubmittedSub(output chan *tellor.TellorNonceSubmitted) (event.Subscription, error) {
-	var tellorFilterer *tellor.TellorFilterer
 	tellorFilterer, err := tellor.NewTellorFilterer(self.contractInstance.Address, self.client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting instance")
 	}
-	sub, err := tellorFilterer.WatchNonceSubmitted(&bind.WatchOpts{}, output, self.addrs, nil)
+	sub, err := tellorFilterer.WatchWatchNonceSubmitted(&bind.WatchOpts{}, output, self.addrs, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting channel")
 	}
@@ -371,7 +370,6 @@ func (self *ProfitTracker) nonceSubmittedSub(output chan *tellor.TellorNonceSubm
 }
 
 func (self *ProfitTracker) transferSub(output chan *tellor.TellorTransferred) (event.Subscription, error) {
-	var tellorFilterer *tellor.TellorFilterer
 	tellorFilterer, err := tellor.NewTellorFilterer(self.contractInstance.Address, self.client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting instance")
