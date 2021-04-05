@@ -541,7 +541,6 @@ func (m mineCmd) Run() error {
 	// DataServer is the Telliot data server.
 	var proxy db.DataServerProxy
 
-	// var ds *dataServer.DataServerOps
 	DB, err := migrateAndOpenDB(logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
@@ -570,7 +569,6 @@ func (m mineCmd) Run() error {
 		if err := ds.Start(); err != nil {
 			return errors.Wrap(err, "starting data server")
 		}
-		// Stopping the dataserver.
 		defer ds.Stop()
 		// We need to wait until the DataServer instance is ready.
 		<-ds.Ready()
