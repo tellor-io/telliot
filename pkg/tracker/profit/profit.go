@@ -42,8 +42,7 @@ type ProfitTracker struct {
 
 	submitProfit *prometheus.GaugeVec
 	submitCost   *prometheus.GaugeVec
-	balanceTRB   *prometheus.GaugeVec
-	balanceETH   *prometheus.GaugeVec
+	balances     *prometheus.GaugeVec
 }
 
 func NewProfitTracker(
@@ -90,21 +89,13 @@ func NewProfitTracker(
 		},
 			[]string{"addr"},
 		),
-		balanceTRB: promauto.NewGaugeVec(prometheus.GaugeOpts{
+		balances: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
-			Name:      "balance_trb",
-			Help:      "Current TRB balance for all registered addresses",
+			Name:      "balances",
+			Help:      "Current token balances for all registered addresses",
 		},
-			[]string{"addr"},
-		),
-		balanceETH: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "telliot",
-			Subsystem: ComponentName,
-			Name:      "balance_eth",
-			Help:      "Current ETH balance for all registered addresses",
-		},
-			[]string{"addr"},
+			[]string{"addr", "token"},
 		),
 	}, nil
 }
@@ -118,7 +109,7 @@ func (self *ProfitTracker) Start() error {
 			level.Error(self.logger).Log("msg", "getting initial TRB balance", "addr", addr.String(), "err", err)
 		}
 		level.Info(self.logger).Log("msg", "initial TRB balance", "addr", addr.String(), "balance", balance)
-		self.balanceTRB.With(prometheus.Labels{"addr": addr.String()}).(prometheus.Gauge).Set(balance)
+		self.balances.With(prometheus.Labels{"addr": addr.String(), "token": "TRB"}).(prometheus.Gauge).Set(balance)
 	}
 
 	for _, addr := range self.addrs {
@@ -127,7 +118,7 @@ func (self *ProfitTracker) Start() error {
 			level.Error(self.logger).Log("msg", "getting initial ETH balance", "addr", addr.String(), "err", err)
 		}
 		level.Info(self.logger).Log("msg", "initial ETH balance", "addr", addr.String(), "balance", balance)
-		self.balanceETH.With(prometheus.Labels{"addr": addr.String()}).(prometheus.Gauge).Set(balance)
+		self.balances.With(prometheus.Labels{"addr": addr.String(), "token": "ETH"}).(prometheus.Gauge).Set(balance)
 	}
 
 	go self.monitorCost()
@@ -308,7 +299,7 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 				return
 			}
 			level.Debug(logger).Log("msg", "new ETH balance", "balance", balance)
-			self.balanceETH.With(prometheus.Labels{"addr": event.Miner.String()}).(prometheus.Gauge).Set(balance)
+			self.balances.With(prometheus.Labels{"addr": event.Miner.String(), "token": "ETH"}).(prometheus.Gauge).Set(balance)
 			return
 		}
 
@@ -351,7 +342,7 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 				return
 			}
 			level.Debug(logger).Log("msg", "new TRB balance", "balance", balance)
-			self.balanceTRB.With(prometheus.Labels{"addr": event.To.String()}).(prometheus.Gauge).Set(balance)
+			self.balances.With(prometheus.Labels{"addr": event.To.String(), "token": "TRB"}).(prometheus.Gauge).Set(balance)
 			return
 		}
 

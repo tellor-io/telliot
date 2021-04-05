@@ -102,7 +102,6 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 		cost := big.NewInt(1)
 		cost = cost.Mul(gasPrice, big.NewInt(200000))
 		if balance.Cmp(cost) < 0 {
-			// FIXME: notify someone that we're out of funds!
 			finalError = errors.Errorf("insufficient funds to send transaction: %v < %v", balance, cost)
 			continue
 		}
