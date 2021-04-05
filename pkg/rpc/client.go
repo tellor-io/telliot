@@ -153,6 +153,10 @@ func (c *clientInstance) SubscribeFilterLogs(ctx context.Context, query ethereum
 	return res, _err
 }
 
+func (c *clientInstance) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
+	return c.ethClient.SubscribeNewHead(ctx, ch)
+}
+
 func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
 	var res []byte
 	level.Debug(c.logger).Log("msg", "getting code at address", "contract", contract)

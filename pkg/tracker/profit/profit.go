@@ -5,10 +5,13 @@ package profit
 
 import (
 	"context"
+	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/bluele/gcache"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -32,6 +35,7 @@ type ProfitTracker struct {
 	client           contracts.ETHClient
 	logger           log.Logger
 	contractInstance *contracts.ITellor
+	abi              abi.ABI
 	proxy            db.DataServerProxy
 	ctx              context.Context
 	stop             context.CancelFunc
@@ -61,10 +65,16 @@ func NewProfitTracker(
 	logger = log.With(logger, "component", ComponentName)
 	ctx, cncl := context.WithCancel(ctx)
 
+	abi, err := abi.JSON(strings.NewReader(tellor.TellorABI))
+	if err != nil {
+		return nil, errors.Wrap(err, "abi read")
+	}
+
 	return &ProfitTracker{
 		client:           client,
 		logger:           logger,
 		contractInstance: contractInstance,
+		abi:              abi,
 		proxy:            proxy,
 		addrs:            addrs,
 		ctx:              ctx,
@@ -123,6 +133,7 @@ func (self *ProfitTracker) Start() error {
 
 	go self.monitorCost()
 	go self.monitorReward()
+	go self.monitorCostFailed()
 
 	<-self.ctx.Done()
 	return nil
@@ -233,7 +244,7 @@ func (self *ProfitTracker) monitorCost() {
 			if err != nil {
 				level.Error(logger).Log(
 					"msg",
-					"Transferred subscription error",
+					"subscription error",
 					"err", err)
 			}
 
@@ -271,13 +282,129 @@ func (self *ProfitTracker) monitorCost() {
 	}
 }
 
+func (self *ProfitTracker) monitorCostFailed() {
+	var err error
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	logger := log.With(self.logger, "event", "NewHead")
+
+	var sub event.Subscription
+	events := make(chan *types.Header)
+
+	for {
+		sub, err = self.headSub(events)
+		if err != nil {
+			level.Error(logger).Log("msg", "initial subscribing to events failed")
+			select {
+			case <-ticker.C:
+				continue
+			case <-self.ctx.Done():
+				return
+			}
+		}
+		break
+	}
+
+	for {
+		select {
+		case <-self.ctx.Done():
+			return
+		case err := <-sub.Err():
+			if err != nil {
+				level.Error(logger).Log(
+					"msg",
+					"subscription error",
+					"err", err)
+			}
+
+			// Trying to resubscribe until it succeeds.
+			for {
+				sub, err = self.headSub(events)
+				if err != nil {
+					level.Error(logger).Log("msg", "re-subscribing to events failed", "err", err)
+					select {
+					case <-ticker.C:
+						continue
+					case <-self.ctx.Done():
+						return
+					}
+				}
+				break
+			}
+			level.Info(logger).Log("msg", "re-subscribed to events")
+		case event := <-events:
+
+			logger := log.With(logger, "parentTx", event.ParentHash, "tx", event.TxHash, "receipt", event.ReceiptHash)
+
+			// fmt.Println("bloom", self.abi.Events["NonceSubmitted"].ID.String(), event.Bloom.Test(self.abi.Events["NonceSubmitted"].ID.Bytes()))
+			if event.Bloom.Test(self.abi.Events["NonceSubmitted"].ID.Bytes()) {
+				fmt.Printf("event %+v\n", event)
+				for i := 1; i < 3; i++ {
+					select {
+					case <-ticker.C:
+					case <-self.ctx.Done():
+						return
+					}
+					receipt, err := self.client.TransactionReceipt(self.ctx, event.TxHash)
+					if err != nil {
+						level.Error(logger).Log("msg", "receipt retrieval", "err", err)
+						continue
+					} else if receipt != nil && receipt.Status == types.ReceiptStatusSuccessful { // Track only the failed TXs. All other TXs are tracked from the emitted logs.
+						tx, _, err := self.client.TransactionByHash(self.ctx, event.TxHash)
+						if err != nil {
+							level.Error(logger).Log("msg", "get transaction by hash", "err", err)
+							break
+						}
+
+						fmt.Printf("tx:%+v \n", tx)
+						fmt.Printf("receipt:%+v \n", receipt)
+						// cost, _ := big.NewFloat(0).Mul(big.NewFloat(float64(tx.GasPrice().Int64())), big.NewFloat(float64(receipt.GasUsed))).Float64()
+						// cost = cost / 1e18
+						// level.Debug(logger).Log("msg", "adding cost", "amount", cost)
+						// self.submitCost.With(prometheus.Labels{"addr": receipt..To().String()}).(prometheus.Gauge).Add(cost)
+
+						// if err := self.cacheTXsCost.Set(txIDNonceSubmit(event), cost); err != nil {
+						// 	level.Error(logger).Log("msg", "adding amount to the cache", "err", err)
+						// }
+
+						// balance, err := self.getETHBalance(event.Miner)
+						// if err != nil {
+						// 	level.Error(logger).Log("msg", "getting ETH balance", "err", err)
+						// 	return
+						// }
+						// level.Debug(logger).Log("msg", "new ETH balance", "balance", balance)
+						// self.balances.With(prometheus.Labels{"addr": event.Miner.String(), "token": "ETH"}).(prometheus.Gauge).Set(balance)
+						break
+					}
+				}
+
+			}
+			// logger := log.With(logger, "addr", event.Miner.String()[:6], "tx", event.Raw.TxHash)
+
+			// if event.Raw.Removed {
+			// 	val, err := self.cacheTXsCost.Get(txIDNonceSubmit(event))
+			// 	if err != nil {
+			// 		level.Error(logger).Log("msg", "getting cache amount for removed event", "err", err)
+			// 		continue
+			// 	}
+			// 	level.Debug(logger).Log("msg", "removed event", "amount", val.(float64))
+			// 	self.submitCost.With(prometheus.Labels{"addr": event.Miner.String()}).(prometheus.Gauge).Sub(val.(float64))
+			// 	continue
+			// }
+
+			// self.setCostWhenConfirmed(logger, event)
+		}
+	}
+}
+
 func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor.TellorNonceSubmitted) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
-			level.Error(logger).Log("msg", "receipt retrieval failed", "err", err)
+			level.Error(logger).Log("msg", "receipt retrieval", "err", err)
 		} else if receipt != nil { // Non need to check TX status as even failed TXs cost ETH and need to be recorded.
 			tx, _, err := self.client.TransactionByHash(self.ctx, event.Raw.TxHash)
 			if err != nil {
@@ -320,7 +447,7 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 	for {
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
-			level.Error(logger).Log("msg", "receipt retrieval failed", "err", err)
+			level.Error(logger).Log("msg", "receipt retrieval", "err", err)
 		} else if receipt != nil {
 			if receipt.Status != types.ReceiptStatusSuccessful {
 				level.Error(logger).Log("msg", "event status not success so no profit added", "status", receipt.Status)
@@ -362,7 +489,7 @@ func (self *ProfitTracker) nonceSubmittedSub(output chan *tellor.TellorNonceSubm
 	if err != nil {
 		return nil, errors.Wrap(err, "getting instance")
 	}
-	sub, err := tellorFilterer.WatchWatchNonceSubmitted(&bind.WatchOpts{}, output, self.addrs, nil)
+	sub, err := tellorFilterer.WatchNonceSubmitted(&bind.WatchOpts{}, output, self.addrs, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting channel")
 	}
@@ -382,6 +509,14 @@ func (self *ProfitTracker) transferSub(output chan *tellor.TellorTransferred) (e
 		},
 		self.addrs,
 	)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting channel")
+	}
+	return sub, nil
+}
+
+func (self *ProfitTracker) headSub(output chan *types.Header) (event.Subscription, error) {
+	sub, err := self.client.SubscribeNewHead(self.ctx, output)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting channel")
 	}

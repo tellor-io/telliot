@@ -174,9 +174,6 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "transaction result tx:%v", tx.Hash())
 		}
-		if receipt.Status != types.ReceiptStatusSuccessful {
-			return nil, nil, errors.Errorf("unsuccessful transaction status:%v tx:%v", receipt.Status, tx.Hash())
-		}
 		return tx, receipt, nil
 	}
 	return nil, nil, errors.Wrapf(finalError, "submit tx after 5 attempts")
