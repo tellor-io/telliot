@@ -285,10 +285,8 @@ Edit `config1.json` to include the following:
     "gasMultiplier": 1,
     "gasMax":10,
     "trackers": [
-          "balance",
           "gas",
           "top50",
-          "tributeBalance",
           "indexers"
     ],
     "dbFile": "./tellorDB"

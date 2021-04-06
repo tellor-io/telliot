@@ -13,7 +13,7 @@ type Ampl struct {
 	granularity float64
 }
 
-func (a Ampl) Require(at time.Time) map[string]IndexProcessor {
+func (a Ampl) Require() map[string]IndexProcessor {
 	return map[string]IndexProcessor{
 		"AMPL/USD":  VolumeWeightedAPIs(TimeWeightedAvg(24*time.Hour, NoDecay)),
 		"AMPL/BTC":  AmpleChained("BTC/USD"),
@@ -22,7 +22,7 @@ func (a Ampl) Require(at time.Time) map[string]IndexProcessor {
 	}
 }
 
-func (a Ampl) ValueAt(vals map[string]apiOracle.PriceInfo, at time.Time) float64 {
+func (a Ampl) ValueAt(vals map[string]apiOracle.PriceInfo) float64 {
 	valSlice := make([]apiOracle.PriceInfo, 0, len(vals))
 	for _, v := range vals {
 		valSlice = append(valSlice, v)
@@ -32,6 +32,10 @@ func (a Ampl) ValueAt(vals map[string]apiOracle.PriceInfo, at time.Time) float64
 
 func (s *Ampl) Granularity() int64 {
 	return int64(s.granularity)
+}
+
+func (s *Ampl) Symbol() string {
+	return "AMPL"
 }
 
 // compute the average ampl price over a 24 hour period using a chained price feed.

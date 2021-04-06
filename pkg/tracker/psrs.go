@@ -4,12 +4,22 @@
 package tracker
 
 import (
+	"context"
+	"fmt"
 	"math"
+	"math/big"
 	"sort"
+	"strconv"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/db"
 )
 
 const RequestID_TRB_ETH int = 43
@@ -256,4 +266,66 @@ func VolumeWeightedAvg(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 		priceSum += val.Price
 	}
 	return apiOracle.PriceInfo{Price: priceSum / float64(len(vals)), Volume: 0}
+}
+
+func NewPsr(logger log.Logger, register *prometheus.GaugeVec) *PSR {
+	return &PSR{
+		values: register,
+		logger: logger,
+	}
+}
+
+type PSR struct {
+	values *prometheus.GaugeVec
+	logger log.Logger
+}
+
+func (self *PSR) UpdatePSRs(ctx context.Context, cfg *config.Config, DB db.DataServerProxy, updatedSymbols []string) error {
+	now := clck.Now()
+	// Generate a set of all affected PSRs.
+	var toUpdate []int
+	for requestID, psr := range PSRs {
+		reqs := psr.Require()
+		for _, symbol := range updatedSymbols {
+			_, ok := reqs[symbol]
+			if ok {
+				toUpdate = append(toUpdate, requestID)
+				break
+			}
+		}
+	}
+
+	// Update all affected PSRs.
+	for _, requestID := range toUpdate {
+		amt, conf, err := PSRValueForTime(requestID, now, cfg.Trackers.SleepCycle.Seconds())
+		if err != nil {
+			return err
+		}
+
+		if conf < cfg.Trackers.MinConfidence || math.IsNaN(amt) {
+			// Confidence in this signal is too low to use.
+			continue
+		}
+
+		// Convert it directly from a float to a bigInt so that there is no risk of overflowing a uint64.
+		bigVal := new(big.Float)
+		bigVal.SetFloat64(amt)
+		bigInt := new(big.Int)
+		bigVal.Int(bigInt)
+		// Encode it and store to DB.
+		enc := hexutil.EncodeBig(bigInt)
+		err = DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
+		if err != nil {
+			return err
+		}
+
+		// Set the metric.
+		p := PSRs[requestID]
+		dataID := strconv.Itoa(requestID) + "-" + p.Symbol()
+		amt = amt / float64(p.Granularity())
+		level.Debug(self.logger).Log("msg", "new value", "dataID", dataID, "value", amt)
+		self.values.With(prometheus.Labels{"dataID": dataID}).(prometheus.Gauge).Set(amt)
+
+	}
+	return nil
 }

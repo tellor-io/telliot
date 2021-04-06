@@ -25,19 +25,10 @@ func TestCreateTracker(t *testing.T) {
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 	accounts := []*config.Account{{}}
-	balanceTracker, _ := createTracker("balance", logger, cfg, proxy, client, nil, accounts)
-	if balanceTracker[0].String() != BalanceTrackerName {
-		testutil.Ok(t, errors.Errorf("Expected BalanceTracker but got %s", balanceTracker[0].String()))
-	}
 
 	gasTracker, _ := createTracker("gas", logger, cfg, proxy, client, nil, accounts)
 	if gasTracker[0].String() != "GasTracker" {
 		testutil.Ok(t, errors.Errorf("Expected GasTracker but got %s", gasTracker[0].String()))
-	}
-
-	tributeBalanceTracker, _ := createTracker("tributeBalance", logger, cfg, proxy, client, nil, accounts)
-	if tributeBalanceTracker[0].String() != "TributeTracker" {
-		testutil.Ok(t, errors.Errorf("Expected TributeTracker but got %s", tributeBalanceTracker[0].String()))
 	}
 
 	indexersTracker, err := createTracker("indexers", logger, cfg, proxy, client, nil, accounts)

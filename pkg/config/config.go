@@ -128,9 +128,7 @@ var defaultConfig = Config{
 		DisputeTimeDelta: Duration{5 * time.Minute},
 		DisputeThreshold: 0.01,
 		Names: map[string]bool{
-			"balance":        true,
 			"gas":            true,
-			"tributeBalance": true,
 			"indexers":       true,
 			"disputeChecker": false,
 		},

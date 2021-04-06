@@ -4,16 +4,10 @@
 package db
 
 import (
-	"fmt"
 	"strings"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
-	// BalanceKey is the key to store/lookup account balance.
-	BalancePrefix = "eth_balance_"
-
 	// CurrentChallengeKey DB key.
 	RequestIdKey    = "current_requestId"
 	RequestIdKey0   = "current_requestId0"
@@ -30,8 +24,6 @@ const (
 	GasKey   = "wei_gas_price"
 	Top50Key = "top_50_requestIds"
 
-	TributeBalancePrefix = "trib_balance_"
-
 	// QueryMetadataPrefix is for RequestID's that are stored with this prefix and the id itself
 	// e.g. "qm_2" represents request ID 2.
 	QueryMetadataPrefix = "qm_"
@@ -44,21 +36,19 @@ var knownKeys map[string]bool
 
 func initKeyLook() {
 	knownKeys = map[string]bool{
-		BalancePrefix:        true,
-		RequestIdKey:         true,
-		RequestIdKey0:        true,
-		RequestIdKey1:        true,
-		RequestIdKey2:        true,
-		RequestIdKey3:        true,
-		RequestIdKey4:        true,
-		DifficultyKey:        true,
-		QueryStringKey:       true,
-		GranularityKey:       true,
-		TotalTipKey:          true,
-		MiningStatusKey:      true,
-		GasKey:               true,
-		Top50Key:             true,
-		TributeBalancePrefix: true,
+		RequestIdKey:    true,
+		RequestIdKey0:   true,
+		RequestIdKey1:   true,
+		RequestIdKey2:   true,
+		RequestIdKey3:   true,
+		RequestIdKey4:   true,
+		DifficultyKey:   true,
+		QueryStringKey:  true,
+		GranularityKey:  true,
+		TotalTipKey:     true,
+		MiningStatusKey: true,
+		GasKey:          true,
+		Top50Key:        true,
 	}
 }
 func isKnownKey(key string) bool {
@@ -72,8 +62,4 @@ func isKnownKey(key string) bool {
 		}
 	}
 	return true
-}
-
-func TributeBalanceKeyFor(address common.Address) string {
-	return fmt.Sprintf("%s%s", TributeBalancePrefix, strings.ToLower(address.String()))
 }
