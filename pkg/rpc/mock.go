@@ -520,3 +520,11 @@ func (c *mockClient) HeaderByNumber(ctx context.Context, num *big.Int) (*types.H
 	header.Time = uint64(time.Now().Unix())
 	return &header, nil
 }
+
+func (c *mockClient) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
+	return nil, nil
+}
+
+func (c *mockClient) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	return nil, nil
+}

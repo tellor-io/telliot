@@ -288,3 +288,23 @@ func (c *clientInstance) HeaderByNumber(ctx context.Context, num *big.Int) (*typ
 	})
 	return res, _err
 }
+
+func (c *clientInstance) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
+	var res *types.Block
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.BlockByHash(*_ctx, hash)
+		res = r
+		return e
+	})
+	return res, _err
+}
+
+func (c *clientInstance) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	var res *types.Block
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.BlockByNumber(*_ctx, number)
+		res = r
+		return e
+	})
+	return res, _err
+}

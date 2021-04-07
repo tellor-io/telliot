@@ -71,6 +71,8 @@ type ETHClient interface {
 	NetworkID(ctx context.Context) (*big.Int, error)
 	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
 	TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
+	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
+	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
 }
 
 // getLensAddress returns the Lens contract address where the network id is taken from the client.
