@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package dispute
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/rpc"
 	"github.com/tellor-io/telliot/pkg/testutil"
+	"github.com/tellor-io/telliot/pkg/tracker/index"
 )
 
 func TestDisputeCheckerInRange(t *testing.T) {
@@ -27,13 +28,13 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
 
-	if _, err := BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
+	if _, err := index.BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
 	ctx := context.Background()
-	ethUSDPairs := indexes["ETH/USD"]
+	ethUSDPairs := index.GetIndexes()["ETH/USD"]
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
@@ -52,10 +53,10 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
 	testutil.Ok(t, err)
 	disputeChecker := NewDisputeChecker(logger, cfg, client, contract, 500)
-	if _, err := BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
+	if _, err := index.BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
 		testutil.Ok(t, err)
 	}
-	ethUSDPairs := indexes["ETH/USD"]
+	ethUSDPairs := index.GetIndexes()["ETH/USD"]
 	ctx := context.Background()
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
@@ -73,7 +74,7 @@ func TestDisputeCheckerOutOfRange(t *testing.T) {
 	}
 }
 
-func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*IndexTracker) {
+func execEthUsdPsrs(ctx context.Context, t *testing.T, psrs []*index.IndexTracker) {
 	for _, psr := range psrs {
 		err := psr.Exec(ctx)
 

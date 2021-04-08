@@ -27,7 +27,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
-	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -282,7 +282,7 @@ func (s *Submitter) gasPrice() (*big.Int, error) {
 }
 
 func (s *Submitter) trbPrice() (*big.Int, error) {
-	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
+	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(index.RequestID_TRB_ETH))
 	if err != nil {
 		return nil, errors.New("getting the trb price from the db")
 	}
@@ -298,7 +298,7 @@ func (s *Submitter) trbPrice() (*big.Int, error) {
 
 func (s *Submitter) convertTRBtoETH(trbAmount, trbPrice *big.Int) (*big.Int, error) {
 	wei := big.NewInt(tellorCommon.WEI)
-	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
+	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(index.PSRs[index.RequestID_TRB_ETH].Granularity()))
 	trbPrice.Mul(trbPrice, precisionUpscale)
 
 	eth := big.NewInt(0).Mul(trbPrice, trbAmount)
@@ -400,7 +400,7 @@ func (s *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) {
 		} else {
 			value, err = hexutil.DecodeBig(string(val))
 			if err != nil {
-				if requestIDs[i].Uint64() > tracker.MaxPSRID() {
+				if requestIDs[i].Uint64() > index.MaxPSRID() {
 					level.Error(s.logger).Log(
 						"msg", "decoding price value prior to submiting solution",
 						"err", err,

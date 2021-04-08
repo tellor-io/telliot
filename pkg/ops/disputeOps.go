@@ -22,7 +22,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -222,12 +222,12 @@ func List(
 
 	level.Info(logger).Log("msg", "get currently open disputes", "open", len(logs))
 	for _, rawDispute := range logs {
-		dispute := contracts.ITellorNewDispute{}
-		err := bar.UnpackLog(&dispute, "NewDispute", rawDispute)
+		disputeI := contracts.ITellorNewDispute{}
+		err := bar.UnpackLog(&disputeI, "NewDispute", rawDispute)
 		if err != nil {
 			return errors.Wrap(err, "unpack dispute event from logs")
 		}
-		_, executed, votePassed, _, reportedAddr, reportingMiner, _, uintVars, currTally, err := contract.GetAllDisputeVars(nil, dispute.DisputeId)
+		_, executed, votePassed, _, reportedAddr, reportingMiner, _, uintVars, currTally, err := contract.GetAllDisputeVars(nil, disputeI.DisputeId)
 		if err != nil {
 			return errors.Wrap(err, "get dispute details")
 		}
@@ -249,15 +249,15 @@ func List(
 
 		level.Info(logger).Log(
 			"msg", "dispute occurred",
-			"disputeId", dispute.DisputeId.String(),
+			"disputeId", disputeI.DisputeId.String(),
 			"reportedAddr", reportedAddr.Hex(),
 			"reportingMiner", reportingMiner.Hex(),
 			"createdTime", createdTime.Format("3:04 PM January 02, 2006 MST"),
 			"fee", util.FormatERC20Balance(uintVars[8]),
-			"requestId", dispute.RequestId.Uint64(),
+			"requestId", disputeI.RequestId.Uint64(),
 		)
 
-		allSubmitted, err := getNonceSubmissions(ctx, client, contract, uintVars[5], &dispute)
+		allSubmitted, err := getNonceSubmissions(ctx, client, contract, uintVars[5], &disputeI)
 		if err != nil {
 			return errors.Wrapf(err, "get the values submitted by other miners for the disputed block")
 		}
@@ -294,7 +294,7 @@ func List(
 			"votes", uintVars[4],
 		)
 
-		result, err := tracker.CheckValueAtTime(cfg, dispute.RequestId.Uint64(), uintVars[2], disputedValTime)
+		result, err := dispute.CheckValueAtTime(cfg, disputeI.RequestId.Uint64(), uintVars[2], disputedValTime)
 		if err != nil {
 			return err
 		} else if result == nil || len(result.Datapoints) < 0 {

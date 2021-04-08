@@ -1,9 +1,10 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"math/big"
@@ -42,9 +43,9 @@ func NewUniswap(pair string, address string, client contracts.ETHClient) *Uniswa
 }
 
 // Get calculates price for the provided pair.
-func (u *Uniswap) Get() ([]byte, error) {
+func (u *Uniswap) Get(ctx context.Context) ([]byte, error) {
 	// Getting price on-chain.
-	price, err := u.getSpotPrice()
+	price, err := u.getSpotPrice(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +53,7 @@ func (u *Uniswap) Get() ([]byte, error) {
 	return json.Marshal([]float64{priceF64})
 }
 
-func (u *Uniswap) getSpotPrice() (*big.Float, error) {
+func (u *Uniswap) getSpotPrice(ctx context.Context) (*big.Float, error) {
 	var pairContract *uniswap.IUniswapV2PairCaller
 	var err error
 	pairContract, err = uniswap.NewIUniswapV2PairCaller(common.HexToAddress(u.address), u.client)
@@ -61,7 +62,7 @@ func (u *Uniswap) getSpotPrice() (*big.Float, error) {
 	}
 
 	// Ensure that there's liquidity in the pair.
-	reserve, err := pairContract.GetReserves(&bind.CallOpts{})
+	reserve, err := pairContract.GetReserves(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return nil, errors.Wrap(err, "getting reserves")
 	}

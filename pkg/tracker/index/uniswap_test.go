@@ -5,9 +5,10 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
+	"context"
 	"encoding/json"
 	"math/big"
 	"testing"
@@ -45,7 +46,7 @@ func TestUniswapPrice(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	tracker := NewUniswap("ETH/AMPL", bPairContract.Hex(), client)
-	priceJSON, err := tracker.Get()
+	priceJSON, err := tracker.Get(context.Background())
 	testutil.Ok(t, err)
 
 	var priceInfo []float64

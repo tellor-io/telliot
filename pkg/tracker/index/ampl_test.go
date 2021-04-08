@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ import (
 )
 
 func TestAmpl(t *testing.T) {
-	util.CreateTestClient(&client, mockAPI)
+	util.CreateTestClient(&http.Client{}, mockAPI)
 	cfg := config.OpenTestConfig(t)
 	DB, cleanup := db.OpenTestDB(t)
 	testClient := rpc.NewMockClient()
@@ -61,7 +61,6 @@ func TestAmpl(t *testing.T) {
 	}
 
 	// reset mocks
-	client = http.Client{}
 	clck = clock.New()
 }
 

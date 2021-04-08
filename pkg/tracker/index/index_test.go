@@ -1,9 +1,10 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,9 +15,37 @@ import (
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
-// TODO: Set threshold low and test the  "out of range" failure.
+type TestCase struct {
+	URL      string
+	Param    string
+	Payload  string
+	Expected []float64
+}
+
+func TestIndexTracker(t *testing.T) {
+	// Load the testdata from test_api.json file.
+	// The testdata is genertaed using indextracker_testdata script.
+	var testdata map[string][]TestCase
+	rawJSON, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "tracker", "testdata", "test_api.json"))
+	testutil.Ok(t, err)
+	err = json.Unmarshal(rawJSON, &testdata)
+	testutil.Ok(t, err)
+
+	// Test jsonpath parsing per test cases.
+	for _, indexers := range testdata {
+		for _, testCase := range indexers {
+			actual, err := (&IndexTracker{Param: testCase.Param}).ParsePayload([]byte(testCase.Payload))
+			if err != nil {
+				testutil.Ok(t, fmt.Errorf("parse payload(URL: %v): %v", testCase.URL, err))
+			}
+			testutil.Equals(t, testCase.Expected, actual)
+		}
+	}
+}
+
 var configJSON = `{
 	"Trackers": {"names":{}},
     "DbFile": "/tellorDB",
@@ -24,8 +53,7 @@ var configJSON = `{
     "EnvFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `",
     "ApiFile": "` + filepath.Join("..", "..", "configs", "api.json") + `",
     "ManualDataFile": "` + filepath.Join("..", "..", "configs", "manualData.json") + `"
-}
-`
+}`
 
 func TestMain(m *testing.M) {
 	mainConfigFile, err := ioutil.TempFile(os.TempDir(), "testing")

@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package gasPrice
 
 import (
 	"context"
@@ -25,7 +25,7 @@ func TestETHGasStation(t *testing.T) {
 	defer t.Cleanup(cleanup)
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
-	tracker := NewGasTracker(logger, proxy, client)
+	tracker := New(logger, proxy, client)
 	err = tracker.Exec(context.Background())
 	testutil.Ok(t, err)
 	v, err := proxy.Get(db.GasKey)
