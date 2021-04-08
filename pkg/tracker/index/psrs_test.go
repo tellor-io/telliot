@@ -15,13 +15,17 @@ import (
 )
 
 func TestMeanAt(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../../../")
+	testutil.Ok(t, err)
 	logger := logging.NewLogger()
-	DB, cleanup := db.OpenTestDB(t)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 	testClient := rpc.NewMockClient()
-	defer t.Cleanup(cleanup)
 	if _, err := BuildIndexTrackers(logger, cfg, proxy, testClient); err != nil {
 		testutil.Ok(t, err)
 	}

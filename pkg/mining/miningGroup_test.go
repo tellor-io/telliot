@@ -52,7 +52,9 @@ func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 }
 
 func DoCompleteMiningLoop(t *testing.T, impl Hasher, diff int64) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
+
 	opts := &rpc.MockOptions{
 		Nonce:         1,
 		GasPrice:      big.NewInt(700000000),
@@ -118,7 +120,9 @@ func TestMulti(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
+
 	opts := &rpc.MockOptions{
 		Nonce:         1,
 		GasPrice:      big.NewInt(700000000),

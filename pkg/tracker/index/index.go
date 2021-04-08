@@ -375,3 +375,21 @@ func (i *IndexTracker) ParsePayload(payload []byte) (vals []float64, err error) 
 	}
 	return
 }
+
+// IndexProcessor consolidates the recorded API values to a single value.
+type IndexProcessor func([]*IndexTracker, time.Time, float64) (apiOracle.PriceInfo, float64, error)
+
+type ValueGenerator interface {
+	// Require reports what a PSR requires to produce a value.
+	Require() map[string]IndexProcessor
+
+	// ValueAt returns the best estimate of a value at a given time, and the confidence
+	// if confidence == 0, the value has no meaning
+	ValueAt(map[string]apiOracle.PriceInfo) float64
+
+	// Granularity returns the currency granularity.
+	Granularity() int64
+
+	// Symbol returns the tracker Symbol.
+	Symbol() string
+}

@@ -6,34 +6,36 @@ package db
 import (
 	"io/ioutil"
 	"os"
-	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
-func OpenTestDB(t *testing.T) (DB, func()) {
+func OpenTestDB(cfg *config.Config) (DB, func() error, error) {
 	tmpdir, err := ioutil.TempDir("", "test")
-	testutil.Ok(t, err)
-
-	cfg := config.OpenTestConfig(t)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	db, err := Open(logging.NewLogger(), cfg, tmpdir)
-	testutil.Ok(t, err)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	cleanup := func() {
+	cleanup := func() error {
 		if err := db.Close(); err != nil {
 			if err != leveldb.ErrClosed {
-				testutil.Ok(t, errors.Wrap(err, "closing the DB"))
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if err := os.RemoveAll(tmpdir); err != nil {
-			testutil.Ok(t, errors.Wrap(err, "removing temp DB dir"))
-
+			return err
 		}
+		return nil
+
 	}
-	return db, cleanup
+	return db, cleanup, nil
 }

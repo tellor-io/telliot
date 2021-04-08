@@ -4,7 +4,8 @@
 package rest
 
 // func TestServer(t *testing.T) {
-// 	cfg := config.OpenTestConfig(t)
+// 	cfg,err := config.OpenTestConfig()
+// testutil.Ok(t, err)
 // 	cfg.ServerWhitelist = []string{"0x053b09e98ede40997546e8bb812cd838f18bb146"}
 
 // 	DB, cleanup := db.OpenTestDB(t)

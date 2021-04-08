@@ -5,11 +5,13 @@ package dispute
 
 import (
 	"context"
+	stdlog "log"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/go-kit/kit/log"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -19,18 +21,38 @@ import (
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 )
 
-func TestDisputeCheckerInRange(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+func TestMain(m *testing.M) {
+
+	cfg, err := config.OpenTestConfig("../../../")
+	if err != nil {
+		stdlog.Fatal(err)
+	}
+
 	logger := logging.NewLogger()
-	DB, cleanup := db.OpenTestDB(t)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	if err != nil {
+		stdlog.Fatal(err)
+	}
 	client := rpc.NewMockClient()
-	defer t.Cleanup(cleanup)
+	defer func() {
+		if err := cleanup(); err != nil {
+			stdlog.Fatal(err)
+		}
+	}()
 	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
-	testutil.Ok(t, err)
+	if err != nil {
+		stdlog.Fatal(err)
+	}
 
 	if _, err := index.BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
-		testutil.Ok(t, err)
+		stdlog.Fatal(err)
 	}
+	os.Exit(m.Run())
+
+}
+
+func TestDisputeCheckerInRange(t *testing.T) {
+	client := rpc.NewMockClient()
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
 	ctx := context.Background()
@@ -38,24 +60,25 @@ func TestDisputeCheckerInRange(t *testing.T) {
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
 	time.Sleep(2 * time.Second)
 	execEthUsdPsrs(ctx, t, ethUSDPairs)
-	disputeChecker := &disputeChecker{lastCheckedBlock: 500, config: cfg, logger: logger, client: client, contract: contract}
+	cfg, err := config.OpenTestConfig("../../../")
+	if err != nil {
+		stdlog.Fatal(err)
+	}
+	disputeChecker := &disputeChecker{lastCheckedBlock: 500, config: cfg, logger: log.NewNopLogger(), client: client, contract: contract}
 	testutil.Ok(t, disputeChecker.Exec(ctx))
 }
 
 func TestDisputeCheckerOutOfRange(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../../../")
+	testutil.Ok(t, err)
+
 	logger := logging.NewLogger()
 	client := rpc.NewMockClient()
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	DB, cleanup := db.OpenTestDB(t)
-	defer t.Cleanup(cleanup)
-	proxy, err := db.OpenLocal(logging.NewLogger(), cfg, DB)
-	testutil.Ok(t, err)
+
 	disputeChecker := NewDisputeChecker(logger, cfg, client, contract, 500)
-	if _, err := index.BuildIndexTrackers(logger, cfg, proxy, client); err != nil {
-		testutil.Ok(t, err)
-	}
+
 	ethUSDPairs := index.GetIndexes()["ETH/USD"]
 	ctx := context.Background()
 	execEthUsdPsrs(ctx, t, ethUSDPairs)

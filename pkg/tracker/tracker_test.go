@@ -22,11 +22,14 @@ import (
 )
 
 func TestCreateTracker(t *testing.T) {
-
 	logger := logging.NewLogger()
-	cfg := config.OpenTestConfig(t)
-	DB, cleanup := db.OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 	client := rpc.NewMockClient()
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
@@ -54,7 +57,8 @@ func TestCreateTracker(t *testing.T) {
 }
 
 func TestRunner(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../../")
+	testutil.Ok(t, err)
 	logger := logging.NewLogger()
 
 	exitCh := make(chan int)
@@ -83,8 +87,12 @@ func TestRunner(t *testing.T) {
 		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: top50, CurrentChallenge: chal, QueryMetadata: paramsMap}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, cleanup := db.OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
+
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)

@@ -25,12 +25,12 @@ const (
 	BTokenABI         = balancer.BTokenABI
 	IERC20ABI         = uniswap.IERC20ABI
 	IUniswapV2PairABI = uniswap.IUniswapV2PairABI
-	ITellorABI        = tellor.TellorABI
+	ITellorABI        = tellor.ITellorABI
 )
 
 type ITellor struct {
 	*tellor.ITellor
-	*tellor.TellorNewDispute
+	*tellor.ITellorNewDispute
 	*lens.Main
 	Address common.Address
 }

@@ -16,13 +16,17 @@ import (
 )
 
 func TestETHGasStation(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../../../")
+	testutil.Ok(t, err)
 	logger := logging.NewLogger()
 	opts := &rpc.MockOptions{ETHBalance: big.NewInt(300000), Nonce: 1, GasPrice: big.NewInt(7000000000),
 		TokenBalance: big.NewInt(0), Top50Requests: []*big.Int{}}
 	client := rpc.NewMockClientWithValues(opts)
-	DB, cleanup := db.OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 	tracker := New(logger, proxy, client)
