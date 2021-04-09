@@ -58,12 +58,12 @@ generate-check: check-git generate
 
 .PHONY: generate-bindings
 generate-bindings: $(CONTRAGET)
-	@$(CONTRAGET) --addr=0x04b5129735b5d9b1b54109f2c4c06ea23b506a95 --download-dst=tmp --pkg-dst=pkg/contracts --name=tellor --pkg-aliases="Transfer=Transferred"
-	@sleep 5
+	@$(CONTRAGET) --addr=0x1d8efc3eabeb33bb44a75eeb967292ac8bf58e03 --download-dst=tmp --pkg-dst=pkg/contracts --name=tellor --pkg-aliases="Transfer=Transferred"
+	@sleep 6
 	@$(CONTRAGET) --addr=0x577417CFaF319a1fAD90aA135E3848D2C00e68CF --download-dst=tmp --network=mainnet --pkg-dst=pkg/contracts --name=lens
-	@sleep 5
+	@sleep 6
 	@$(CONTRAGET) --addr=0x9C84391B443ea3a48788079a5f98e2EaD55c9309 --download-dst=tmp --pkg-dst=pkg/contracts --name=balancer
-	@sleep 5
+	@sleep 6
 	@$(CONTRAGET) --addr=0x03E6c12eF405AC3F642B9184eDed8E1322de1a9e --download-dst=tmp --pkg-dst=pkg/contracts --name=uniswap
 
 .PHONY: generate-testdata
