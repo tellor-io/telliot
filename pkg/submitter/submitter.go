@@ -231,10 +231,7 @@ func (self *Submitter) profit() (int64, error) {
 		return 0, errors.New("getting trb current Gas price")
 	}
 
-	rewardEth, err := self.convertTRBtoETH(trbAmount, trbPrice)
-	if err != nil {
-		return 0, errors.Wrap(err, "convert TRB to ETH")
-	}
+	rewardEth := self.convertTRBtoETH(trbAmount, trbPrice)
 
 	txCost := big.NewInt(0).Mul(gasPrice, gasUsed)
 	profit := big.NewInt(0).Sub(rewardEth, txCost)
@@ -296,14 +293,14 @@ func (s *Submitter) trbPrice() (*big.Int, error) {
 	return trbPrice, nil
 }
 
-func (s *Submitter) convertTRBtoETH(trbAmount, trbPrice *big.Int) (*big.Int, error) {
+func (s *Submitter) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
 	wei := big.NewInt(tellorCommon.WEI)
 	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
 	trbPrice.Mul(trbPrice, precisionUpscale)
 
 	eth := big.NewInt(0).Mul(trbPrice, trbAmount)
 	eth.Div(eth, big.NewInt(1e18))
-	return eth, nil
+	return eth
 }
 
 func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {

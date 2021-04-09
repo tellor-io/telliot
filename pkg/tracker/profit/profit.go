@@ -5,7 +5,6 @@ package profit
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -40,9 +39,12 @@ type ProfitTracker struct {
 	ctx              context.Context
 	stop             context.CancelFunc
 	addrs            []common.Address
+	addrsMap         map[common.Address]struct{} // The same as above but used for quick matching.
 
-	cacheTXsProfit gcache.Cache
-	cacheTXsCost   gcache.Cache
+	cacheTXsProfit     gcache.Cache
+	cacheTXsCost       gcache.Cache
+	cacheTXsCostFailed gcache.Cache
+	lastFailedBlock    int64
 
 	submitProfit *prometheus.GaugeVec
 	submitCost   *prometheus.GaugeVec
@@ -63,13 +65,17 @@ func NewProfitTracker(
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 	logger = log.With(logger, "component", ComponentName)
-	ctx, cncl := context.WithCancel(ctx)
 
 	abi, err := abi.JSON(strings.NewReader(tellor.TellorABI))
 	if err != nil {
 		return nil, errors.Wrap(err, "abi read")
 	}
 
+	addrsMap := make(map[common.Address]struct{})
+	for _, addr := range addrs {
+		addrsMap[addr] = struct{}{}
+	}
+	ctx, cncl := context.WithCancel(ctx)
 	return &ProfitTracker{
 		client:           client,
 		logger:           logger,
@@ -77,11 +83,13 @@ func NewProfitTracker(
 		abi:              abi,
 		proxy:            proxy,
 		addrs:            addrs,
+		addrsMap:         addrsMap,
 		ctx:              ctx,
 		stop:             cncl,
 
-		cacheTXsProfit: gcache.New(50).LRU().Build(),
-		cacheTXsCost:   gcache.New(50).LRU().Build(),
+		cacheTXsProfit:     gcache.New(50).LRU().Build(),
+		cacheTXsCost:       gcache.New(50).LRU().Build(),
+		cacheTXsCostFailed: gcache.New(20).LRU().Build(),
 
 		submitProfit: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
@@ -202,7 +210,7 @@ func (self *ProfitTracker) monitorReward() {
 					level.Error(logger).Log("msg", "getting cache amount for removed event", "err", err)
 					continue
 				}
-				level.Debug(logger).Log("msg", "removed event", "amount", val.(float64))
+				level.Debug(logger).Log("msg", "removing cost from dropped event", "amount", val.(float64))
 				self.submitProfit.With(prometheus.Labels{"addr": event.To.String()}).(prometheus.Gauge).Sub(val.(float64))
 				continue
 			}
@@ -335,65 +343,78 @@ func (self *ProfitTracker) monitorCostFailed() {
 			level.Info(logger).Log("msg", "re-subscribed to events")
 		case event := <-events:
 
-			logger := log.With(logger, "parentTx", event.ParentHash, "tx", event.TxHash, "receipt", event.ReceiptHash)
-
-			// fmt.Println("bloom", self.abi.Events["NonceSubmitted"].ID.String(), event.Bloom.Test(self.abi.Events["NonceSubmitted"].ID.Bytes()))
 			if event.Bloom.Test(self.abi.Events["NonceSubmitted"].ID.Bytes()) {
-				fmt.Printf("event %+v\n", event)
-				for i := 1; i < 3; i++ {
-					select {
-					case <-ticker.C:
-					case <-self.ctx.Done():
-						return
+				select {
+				case <-ticker.C:
+				case <-self.ctx.Done():
+					return
+				}
+
+				logger := log.With(logger, "block", event.Number)
+
+				block, err := self.client.BlockByNumber(self.ctx, event.Number)
+				if err != nil {
+					level.Error(logger).Log("msg", "get block by hash", "err", err)
+					continue
+				}
+
+				level.Debug(logger).Log("msg", "new block")
+
+				for _, tx := range block.Transactions() {
+					logger := log.With(logger, "tx", tx.Hash())
+					level.Debug(logger).Log("msg", "processing TX")
+
+					id, err := self.client.NetworkID(self.ctx)
+					if err != nil {
+						level.Error(logger).Log("msg", "get nerwork ID", "err", err)
+						continue
 					}
-					receipt, err := self.client.TransactionReceipt(self.ctx, event.TxHash)
+
+					addr, err := types.Sender(types.NewEIP155Signer(id), tx)
+					if err != nil {
+						level.Error(logger).Log("msg", "get tx sender", "err", err)
+						continue
+					}
+					if _, ok := self.addrsMap[addr]; !ok {
+						level.Debug(logger).Log("msg", "skipping TX for unregistered address", "addr", addr)
+						continue
+					}
+					receipt, err := self.client.TransactionReceipt(self.ctx, tx.Hash())
 					if err != nil {
 						level.Error(logger).Log("msg", "receipt retrieval", "err", err)
 						continue
-					} else if receipt != nil && receipt.Status == types.ReceiptStatusSuccessful { // Track only the failed TXs. All other TXs are tracked from the emitted logs.
-						tx, _, err := self.client.TransactionByHash(self.ctx, event.TxHash)
-						if err != nil {
-							level.Error(logger).Log("msg", "get transaction by hash", "err", err)
-							break
+					} else if receipt != nil && receipt.Status != types.ReceiptStatusSuccessful { // Track only the failed TXs. All other TXs are tracked from the emitted logs.
+						// When it is a reorg event, remove the cost for the dropped blocks.
+						if self.lastFailedBlock >= event.Number.Int64() {
+							level.Debug(logger).Log("msg", "reorg head")
+							for _cost, cachedBlock := range self.cacheTXsCostFailed.GetALL(false) {
+								if cachedBlock.(int64) >= event.Number.Int64() {
+									cost := _cost.(float64)
+									level.Debug(logger).Log("msg", "removing cost from dropped block", "amount", cost)
+									self.submitCost.With(prometheus.Labels{"addr": addr.String()}).(prometheus.Gauge).Sub(cost)
+								}
+							}
+						}
+						self.lastFailedBlock = event.Number.Int64()
+						cost, _ := big.NewFloat(0).Mul(big.NewFloat(float64(tx.GasPrice().Int64())), big.NewFloat(float64(receipt.GasUsed))).Float64()
+						cost = cost / 1e18
+						level.Debug(logger).Log("msg", "adding cost", "amount", cost)
+						self.submitCost.With(prometheus.Labels{"addr": addr.String()}).(prometheus.Gauge).Add(cost)
+
+						if err := self.cacheTXsCostFailed.Set(event.Number.Int64(), cost); err != nil {
+							level.Error(logger).Log("msg", "adding cost to the cache", "err", err)
 						}
 
-						fmt.Printf("tx:%+v \n", tx)
-						fmt.Printf("receipt:%+v \n", receipt)
-						// cost, _ := big.NewFloat(0).Mul(big.NewFloat(float64(tx.GasPrice().Int64())), big.NewFloat(float64(receipt.GasUsed))).Float64()
-						// cost = cost / 1e18
-						// level.Debug(logger).Log("msg", "adding cost", "amount", cost)
-						// self.submitCost.With(prometheus.Labels{"addr": receipt..To().String()}).(prometheus.Gauge).Add(cost)
-
-						// if err := self.cacheTXsCost.Set(txIDNonceSubmit(event), cost); err != nil {
-						// 	level.Error(logger).Log("msg", "adding amount to the cache", "err", err)
-						// }
-
-						// balance, err := self.getETHBalance(event.Miner)
-						// if err != nil {
-						// 	level.Error(logger).Log("msg", "getting ETH balance", "err", err)
-						// 	return
-						// }
-						// level.Debug(logger).Log("msg", "new ETH balance", "balance", balance)
-						// self.balances.With(prometheus.Labels{"addr": event.Miner.String(), "token": "ETH"}).(prometheus.Gauge).Set(balance)
-						break
+						balance, err := self.getETHBalance(addr)
+						if err != nil {
+							level.Error(logger).Log("msg", "getting ETH balance", "err", err)
+							continue
+						}
+						level.Debug(logger).Log("msg", "new ETH balance", "balance", balance)
+						self.balances.With(prometheus.Labels{"addr": addr.String(), "token": "ETH"}).(prometheus.Gauge).Set(balance)
 					}
 				}
-
 			}
-			// logger := log.With(logger, "addr", event.Miner.String()[:6], "tx", event.Raw.TxHash)
-
-			// if event.Raw.Removed {
-			// 	val, err := self.cacheTXsCost.Get(txIDNonceSubmit(event))
-			// 	if err != nil {
-			// 		level.Error(logger).Log("msg", "getting cache amount for removed event", "err", err)
-			// 		continue
-			// 	}
-			// 	level.Debug(logger).Log("msg", "removed event", "amount", val.(float64))
-			// 	self.submitCost.With(prometheus.Labels{"addr": event.Miner.String()}).(prometheus.Gauge).Sub(val.(float64))
-			// 	continue
-			// }
-
-			// self.setCostWhenConfirmed(logger, event)
 		}
 	}
 }
@@ -405,7 +426,7 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
 			level.Error(logger).Log("msg", "receipt retrieval", "err", err)
-		} else if receipt != nil { // Non need to check TX status as even failed TXs cost ETH and need to be recorded.
+		} else if receipt != nil && receipt.Status == types.ReceiptStatusSuccessful { // Failed transactions cost is monitored in a different process.
 			tx, _, err := self.client.TransactionByHash(self.ctx, event.Raw.TxHash)
 			if err != nil {
 				level.Error(logger).Log("msg", "get transaction by hash", "err", err)
@@ -417,7 +438,7 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 			self.submitCost.With(prometheus.Labels{"addr": event.Miner.String()}).(prometheus.Gauge).Add(cost)
 
 			if err := self.cacheTXsCost.Set(txIDNonceSubmit(event), cost); err != nil {
-				level.Error(logger).Log("msg", "adding amount to the cache", "err", err)
+				level.Error(logger).Log("msg", "adding cost to the cache", "err", err)
 			}
 
 			balance, err := self.getETHBalance(event.Miner)
@@ -523,38 +544,6 @@ func (self *ProfitTracker) headSub(output chan *types.Header) (event.Subscriptio
 	return sub, nil
 }
 
-func (self *ProfitTracker) GasUsed(slot *big.Int) (*big.Int, error) {
-	txID := tellorCommon.PriceTXs + slot.String()
-	gas, err := self.proxy.Get(txID)
-	if err != nil {
-		return nil, errors.New("getting the tx eth cost from the db")
-	}
-	if gas == nil {
-		return nil, ErrNoDataForSlot{slot: slot.String()}
-	}
-	return big.NewInt(0).SetBytes(gas), nil
-}
-
-type ErrNoDataForSlot struct {
-	slot string
-}
-
-func (e ErrNoDataForSlot) Error() string {
-	return "no data for gas used for slot:" + e.slot
-}
-
-// SaveGasUsed calculates the price for a given slot.
-func (self *ProfitTracker) SaveGasUsed(receipt *types.Receipt, slot *big.Int) {
-	gasUsed := big.NewInt(int64(receipt.GasUsed))
-
-	txID := tellorCommon.PriceTXs + slot.String()
-	err := self.proxy.Put(txID, gasUsed.Bytes())
-	if err != nil {
-		level.Error(self.logger).Log("msg", "saving transaction cost", "err", err)
-	}
-	level.Info(self.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slot.Int64())
-}
-
 func (self *ProfitTracker) getTRBBalance(addr common.Address) (float64, error) {
 	balance, err := self.contractInstance.BalanceOf(nil, addr)
 	if err != nil {
@@ -589,4 +578,36 @@ func txIDTransfer(event *tellor.TellorTransferred) string {
 
 func txIDNonceSubmit(event *tellor.TellorNonceSubmitted) string {
 	return event.Raw.TxHash.String() + event.Miner.String()
+}
+
+func (self *ProfitTracker) GasUsed(slot *big.Int) (*big.Int, error) {
+	txID := tellorCommon.PriceTXs + slot.String()
+	gas, err := self.proxy.Get(txID)
+	if err != nil {
+		return nil, errors.New("getting the tx eth cost from the db")
+	}
+	if gas == nil {
+		return nil, ErrNoDataForSlot{slot: slot.String()}
+	}
+	return big.NewInt(0).SetBytes(gas), nil
+}
+
+type ErrNoDataForSlot struct {
+	slot string
+}
+
+func (e ErrNoDataForSlot) Error() string {
+	return "no data for gas used for slot:" + e.slot
+}
+
+// SaveGasUsed calculates the price for a given slot.
+func (self *ProfitTracker) SaveGasUsed(receipt *types.Receipt, slot *big.Int) {
+	gasUsed := big.NewInt(int64(receipt.GasUsed))
+
+	txID := tellorCommon.PriceTXs + slot.String()
+	err := self.proxy.Put(txID, gasUsed.Bytes())
+	if err != nil {
+		level.Error(self.logger).Log("msg", "saving transaction cost", "err", err)
+	}
+	level.Info(self.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slot.Int64())
 }
