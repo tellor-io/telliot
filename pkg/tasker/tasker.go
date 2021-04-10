@@ -19,14 +19,13 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 )
 
-const ComponentName = "tasker"
+const ComponentName = "taskerNewChallenge"
 
-// SubmitCanceler will be used to cancel current submits when new challenge has been arrived.
+// SubmitCanceler will be used to cancel current submits when new event arrives.
 type SubmitCanceler interface {
 	CancelPendingSubmit()
 }
@@ -35,7 +34,6 @@ type Tasker struct {
 	ctx              context.Context
 	close            context.CancelFunc
 	logger           log.Logger
-	proxy            db.DataServerProxy
 	accounts         []*config.Account
 	contractInstance *contracts.ITellor
 	client           contracts.ETHClient
@@ -49,7 +47,6 @@ func NewTasker(
 	ctx context.Context,
 	logger log.Logger,
 	cfg *config.Config,
-	proxy db.DataServerProxy,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
 	accounts []*config.Account,
@@ -67,7 +64,6 @@ func NewTasker(
 	tasker := &Tasker{
 		ctx:              ctx,
 		close:            close,
-		proxy:            proxy,
 		accounts:         accounts,
 		contractInstance: contract,
 		workSinks:        workSinks,
@@ -83,31 +79,27 @@ func (self *Tasker) AddSubmitCanceler(SubmitCanceler SubmitCanceler) {
 	self.SubmitCancelers = append(self.SubmitCancelers, SubmitCanceler)
 }
 
-func (self *Tasker) newChallengeSub(output chan *tellor.ITellorNewChallenge) (event.Subscription, error) {
+func (self *Tasker) newSub(output chan *tellor.ITellorNewChallenge) (event.Subscription, error) {
 	var tellorFilterer *tellor.ITellorFilterer
 	tellorFilterer, err := tellor.NewITellorFilterer(self.contractInstance.Address, self.client)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting ITellorFilterer instance")
+		return nil, errors.Wrap(err, "getting filter instance")
 	}
-	sub, err := tellorFilterer.WatchNewChallenge(&bind.WatchOpts{}, output, nil)
+	sub, err := tellorFilterer.WatchNewChallenge(&bind.WatchOpts{Context: self.ctx}, output, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting NewChallenge channel")
+		return nil, errors.Wrap(err, "getting subscription channel")
 	}
 	return sub, nil
 }
 
 func (self *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
-	if challenge.CurrentRequestId[0].Int64() > int64(100) || challenge.CurrentRequestId[0].Int64() == 0 {
-		level.Warn(self.logger).Log("msg", "new current variables request ID not correct - contract about to be upgraded")
-		return
-	}
 	newChallenge := &mining.MiningChallenge{
 		Challenge:  challenge.CurrentChallenge[:],
 		Difficulty: challenge.Difficulty,
 		RequestIDs: challenge.CurrentRequestId,
 	}
 	for _, acc := range self.accounts {
-		level.Info(self.logger).Log("msg", "new challenge",
+		level.Info(self.logger).Log("msg", "new event",
 			"addr", acc.Address.String(),
 			"challenge", fmt.Sprintf("%x", newChallenge.Challenge),
 			"difficulty", newChallenge.Difficulty,
@@ -122,13 +114,13 @@ func (self *Tasker) Start() error {
 	var err error
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	level.Info(self.logger).Log("msg", "tasker has been started")
+	level.Info(self.logger).Log("msg", "starting")
 
 	// Getting current challenge from the contract.
 	newVariables, err := self.contractInstance.GetNewCurrentVariables(nil)
 	if err != nil {
-		level.Warn(self.logger).Log("msg", "new current variables retrieval - contract might not be upgraded", "err", err)
-		return err
+		level.Warn(self.logger).Log("msg", "getting new current variables", "err", err)
+		return errors.Wrap(err, "getting GetNewCurrentVariables")
 	}
 
 	currentChallenge := &tellor.ITellorNewChallenge{
@@ -137,11 +129,8 @@ func (self *Tasker) Start() error {
 		CurrentRequestId: newVariables.RequestIds,
 		TotalTips:        newVariables.Tip,
 	}
-	if err != nil {
-		return errors.Wrap(err, "getting the current challenge")
-	}
 
-	level.Info(self.logger).Log("msg", "sending the initial challenge to the miner")
+	level.Info(self.logger).Log("msg", "sending the initial event")
 	self.sendWork(currentChallenge)
 
 	// Subscribe and wait until the context cancellation event.
@@ -150,9 +139,9 @@ func (self *Tasker) Start() error {
 
 	// Initial subscription.
 	for {
-		sub, err = self.newChallengeSub(events)
+		sub, err = self.newSub(events)
 		if err != nil {
-			level.Error(self.logger).Log("msg", "initial subscribing to NewChallenge events failed")
+			level.Error(self.logger).Log("msg", "initial subscription to events failed")
 			select {
 			case <-ticker.C:
 				continue
@@ -171,15 +160,15 @@ func (self *Tasker) Start() error {
 			if err != nil {
 				level.Error(self.logger).Log(
 					"msg",
-					"new challenge subscription error",
+					"subscription error",
 					"err", err)
 			}
 
 			// Trying to resubscribe until it succeeds.
 			for {
-				sub, err = self.newChallengeSub(events)
+				sub, err = self.newSub(events)
 				if err != nil {
-					level.Error(self.logger).Log("msg", "re-subscribing to NewChallenge events failed")
+					level.Error(self.logger).Log("msg", "re-subscribing to events failed")
 					select {
 					case <-ticker.C:
 						continue
@@ -189,7 +178,7 @@ func (self *Tasker) Start() error {
 				}
 				break
 			}
-			level.Info(self.logger).Log("msg", "re-subscribed to NewChallenge events")
+			level.Info(self.logger).Log("msg", "re-subscribed to events")
 		case event := <-events:
 			if self.txPending != nil {
 				self.txPending()
@@ -223,7 +212,7 @@ func (self *Tasker) sendWhenConfirmed(ctx context.Context, vLog *tellor.ITellorN
 			return
 		}
 		if err != nil {
-			level.Error(self.logger).Log("msg", "receipt retrieval", "err", err)
+			level.Error(self.logger).Log("msg", "getting TX receipt", "err", err)
 		} else {
 			level.Debug(self.logger).Log("msg", "transaction not yet mined", "tx", vLog.Raw.TxHash)
 		}
