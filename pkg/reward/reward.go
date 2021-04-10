@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -89,15 +88,15 @@ func (e ErrNoDataForSlot) Error() string {
 }
 
 // SaveGasUsed calculates the price for a given slot.
-func (self *Reward) SaveGasUsed(receipt *types.Receipt, slot *big.Int) {
-	gasUsed := big.NewInt(int64(receipt.GasUsed))
+func (self *Reward) SaveGasUsed(_gasUsed uint64, slot *big.Int) {
+	gasUsed := big.NewInt(int64(_gasUsed))
 
 	txID := common.PriceTXs + slot.String()
 	err := self.proxy.Put(txID, gasUsed.Bytes())
 	if err != nil {
 		level.Error(self.logger).Log("msg", "saving transaction cost", "err", err)
 	}
-	level.Info(self.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slot.Int64())
+	level.Info(self.logger).Log("msg", "saved transaction gas used", "amount", gasUsed.Int64(), "slot", slot.Int64())
 }
 
 func (s *Reward) trbPrice() (*big.Int, error) {

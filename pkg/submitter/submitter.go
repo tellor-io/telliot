@@ -280,7 +280,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 					if err != nil {
 						level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
 					} else {
-						s.reward.SaveGasUsed(recieipt, slot)
+						s.reward.SaveGasUsed(recieipt.GasUsed, slot)
 					}
 
 					return
