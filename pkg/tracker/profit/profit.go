@@ -509,7 +509,7 @@ func (self *ProfitTracker) nonceSubmittedSub(output chan *tellor.TellorNonceSubm
 	if err != nil {
 		return nil, errors.Wrap(err, "getting instance")
 	}
-	sub, err := tellorFilterer.WatchNonceSubmitted(&bind.WatchOpts{}, output, self.addrs, nil)
+	sub, err := tellorFilterer.WatchNonceSubmitted(&bind.WatchOpts{Context: self.ctx}, output, self.addrs, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting channel")
 	}
@@ -522,7 +522,7 @@ func (self *ProfitTracker) transferSub(output chan *tellor.TellorTransferred) (e
 		return nil, errors.Wrap(err, "getting instance")
 	}
 	sub, err := tellorFilterer.WatchTransferred(
-		&bind.WatchOpts{},
+		&bind.WatchOpts{Context: self.ctx},
 		output,
 		[]common.Address{
 			common.HexToAddress("0x0000000000000000000000000000000000000000"),
