@@ -635,7 +635,7 @@ func (m mineCmd) Run() error {
 					return errors.Wrapf(err, "creating transactor")
 				}
 				// Get a channel on which it listens for new data to submit.
-				submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy, transactor, profitTracker)
+				submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy, transactor)
 				if err != nil {
 					return errors.Wrapf(err, "creating submitter")
 				}

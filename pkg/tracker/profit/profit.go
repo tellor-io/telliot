@@ -20,7 +20,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
@@ -578,36 +577,4 @@ func txIDTransfer(event *tellor.TellorTransferred) string {
 
 func txIDNonceSubmit(event *tellor.TellorNonceSubmitted) string {
 	return event.Raw.TxHash.String() + event.Miner.String()
-}
-
-func (self *ProfitTracker) GasUsed(slot *big.Int) (*big.Int, error) {
-	txID := tellorCommon.PriceTXs + slot.String()
-	gas, err := self.proxy.Get(txID)
-	if err != nil {
-		return nil, errors.New("getting the tx eth cost from the db")
-	}
-	if gas == nil {
-		return nil, ErrNoDataForSlot{slot: slot.String()}
-	}
-	return big.NewInt(0).SetBytes(gas), nil
-}
-
-type ErrNoDataForSlot struct {
-	slot string
-}
-
-func (e ErrNoDataForSlot) Error() string {
-	return "no data for gas used for slot:" + e.slot
-}
-
-// SaveGasUsed calculates the price for a given slot.
-func (self *ProfitTracker) SaveGasUsed(receipt *types.Receipt, slot *big.Int) {
-	gasUsed := big.NewInt(int64(receipt.GasUsed))
-
-	txID := tellorCommon.PriceTXs + slot.String()
-	err := self.proxy.Put(txID, gasUsed.Bytes())
-	if err != nil {
-		level.Error(self.logger).Log("msg", "saving transaction cost", "err", err)
-	}
-	level.Info(self.logger).Log("msg", "saved transaction gas used", "txHash", receipt.TxHash.String(), "amount", gasUsed.Int64(), "slot", slot.Int64())
 }

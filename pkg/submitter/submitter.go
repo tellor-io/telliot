@@ -21,14 +21,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
+	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/tracker"
-	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -55,7 +54,7 @@ type Submitter struct {
 	submitFailCount  prometheus.Counter
 	lastSubmitCncl   context.CancelFunc
 	transactor       transactor.Transactor
-	profitChecker    *profit.ProfitTracker
+	reward           *reward.Reward
 }
 
 func NewSubmitter(
@@ -67,7 +66,6 @@ func NewSubmitter(
 	account *config.Account,
 	proxy db.DataServerProxy,
 	transactor transactor.Transactor,
-	profitChecker *profit.ProfitTracker,
 ) (*Submitter, chan *mining.Result, error) {
 	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
@@ -103,7 +101,7 @@ func NewSubmitter(
 	}
 
 	if cfg.Mine.ProfitThreshold > 0 { // Profit check is enabled.
-		submitter.profitChecker = profitChecker
+		submitter.reward = reward.NewReward(logger, contractInstance, proxy)
 	}
 
 	return submitter, submitter.resultCh, nil
@@ -184,9 +182,17 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 }
 
 func (s *Submitter) canSubmit() error {
-	if s.profitChecker != nil { // Profit check is enabled.
-		profitPercent, err := s.profit()
-		if _, ok := errors.Cause(err).(profit.ErrNoDataForSlot); ok {
+	if s.reward != nil { // Profit check is enabled.
+		slot, err := s.reward.Slot()
+		if err != nil {
+			return errors.Wrapf(err, "getting current slot")
+		}
+		gasPrice, err := s.reward.GasPrice()
+		if err != nil {
+			return errors.Wrapf(err, "getting current Gas price")
+		}
+		profitPercent, err := s.reward.Current(slot, gasPrice)
+		if _, ok := errors.Cause(err).(reward.ErrNoDataForSlot); ok {
 			level.Warn(s.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
 		} else if err != nil {
 			return errors.Wrapf(err, "submit solution profit check")
@@ -204,103 +210,6 @@ func (s *Submitter) canSubmit() error {
 	}
 
 	return nil
-}
-
-// profit returns the profit in percents based on the current TRB price.
-func (self *Submitter) profit() (int64, error) {
-	slot, err := self.slot()
-	if err != nil {
-		return 0, err
-	}
-	gasUsed, err := self.profitChecker.GasUsed(slot)
-	if err != nil {
-		return 0, err
-	}
-	trbAmount, err := self.contractInstance.CurrentReward(nil)
-	if err != nil {
-		return 0, errors.New("getting currentReward from the chain")
-	}
-
-	trbPrice, err := self.trbPrice()
-	if err != nil {
-		return 0, errors.New("getting trb current TRB price")
-	}
-
-	gasPrice, err := self.gasPrice()
-	if err != nil {
-		return 0, errors.New("getting trb current Gas price")
-	}
-
-	rewardEth := self.convertTRBtoETH(trbAmount, trbPrice)
-
-	txCost := big.NewInt(0).Mul(gasPrice, gasUsed)
-	profit := big.NewInt(0).Sub(rewardEth, txCost)
-	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
-	profitPercent := int64(profitPercentFloat)
-
-	level.Debug(self.logger).Log(
-		"msg", "profit checking",
-		"reward", fmt.Sprintf("%.2e", float64(rewardEth.Int64())),
-		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
-		"slot", slot,
-		"gasUsed", gasUsed,
-		"gasPrice", gasPrice,
-		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
-		"profitMargin", profitPercent,
-	)
-
-	return profitPercent, nil
-}
-
-func (s *Submitter) slot() (*big.Int, error) {
-	slot, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_SLOT_PROGRESS")))
-	if err != nil {
-		return nil, errors.Wrap(err, "getting _SLOT_PROGRESS for calculating profit")
-	}
-	// Need the price for next slot transaction so increment by one.
-	// Slots numbers should be from 1 to 5 so when current slot is 5 next slot is 1.
-	slot.Add(slot, big.NewInt(1))
-	if slot.Int64() == 6 {
-		slot.SetInt64(1)
-	}
-	return slot, nil
-}
-
-func (s *Submitter) gasPrice() (*big.Int, error) {
-	_gasPrice, err := s.proxy.Get(db.GasKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting gas price")
-	}
-	gasPrice, err := hexutil.DecodeBig(string(_gasPrice))
-	if err != nil {
-		return nil, errors.Wrap(err, "decode gas price")
-	}
-	return gasPrice, nil
-}
-
-func (s *Submitter) trbPrice() (*big.Int, error) {
-	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
-	if err != nil {
-		return nil, errors.New("getting the trb price from the db")
-	}
-	if len(_trbPrice) == 0 {
-		return nil, errors.New("the db doesn't have the trb price")
-	}
-	trbPrice, err := hexutil.DecodeBig(string(_trbPrice))
-	if err != nil {
-		return nil, errors.New("decoding trb price from the db")
-	}
-	return trbPrice, nil
-}
-
-func (s *Submitter) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
-	wei := big.NewInt(tellorCommon.WEI)
-	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
-	trbPrice.Mul(trbPrice, precisionUpscale)
-
-	eth := big.NewInt(0).Mul(trbPrice, trbAmount)
-	eth.Div(eth, big.NewInt(1e18))
-	return eth
 }
 
 func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {
@@ -357,7 +266,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 					if err != nil {
 						level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
 					} else {
-						s.profitChecker.SaveGasUsed(recieipt, slot)
+						s.reward.SaveGasUsed(recieipt, slot)
 					}
 
 					return

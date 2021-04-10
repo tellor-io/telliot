@@ -45,7 +45,15 @@ type Tasker struct {
 	txPending        context.CancelFunc
 }
 
-func NewTasker(ctx context.Context, logger log.Logger, cfg *config.Config, proxy db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor, accounts []*config.Account) (*Tasker, map[string]chan *mining.Work, error) {
+func NewTasker(
+	ctx context.Context,
+	logger log.Logger,
+	cfg *config.Config,
+	proxy db.DataServerProxy,
+	client contracts.ETHClient,
+	contract *contracts.ITellor,
+	accounts []*config.Account,
+) (*Tasker, map[string]chan *mining.Work, error) {
 	ctx, close := context.WithCancel(ctx)
 	workSinks := make(map[string]chan *mining.Work)
 	for _, acc := range accounts {
