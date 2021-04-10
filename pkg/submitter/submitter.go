@@ -183,15 +183,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 
 func (s *Submitter) canSubmit() error {
 	if s.reward != nil { // Profit check is enabled.
-		slot, err := s.reward.Slot()
-		if err != nil {
-			return errors.Wrapf(err, "getting current slot")
-		}
-		gasPrice, err := s.reward.GasPrice()
-		if err != nil {
-			return errors.Wrapf(err, "getting current Gas price")
-		}
-		profitPercent, err := s.reward.Current(slot, gasPrice)
+		profitPercent, err := s.profitPercent()
 		if _, ok := errors.Cause(err).(reward.ErrNoDataForSlot); ok {
 			level.Warn(s.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
 		} else if err != nil {
@@ -210,6 +202,28 @@ func (s *Submitter) canSubmit() error {
 	}
 
 	return nil
+}
+
+func (s *Submitter) profitPercent() (int64, error) {
+	slot, err := s.reward.Slot()
+	if err != nil {
+		return 0, errors.Wrapf(err, "getting current slot")
+	}
+	gasPrice, err := s.reward.GasPrice()
+	if err != nil {
+		return 0, errors.Wrapf(err, "getting current Gas price")
+	}
+
+	// Need the price for next slot transaction so increment by one.
+	slot.Add(slot, big.NewInt(1))
+
+	// Slots numbers are from 0 to 4 so
+	// when next slot is 4+1=5 get the price for slot 0.
+	if slot.Int64() == 5 {
+		slot.SetInt64(0)
+	}
+
+	return s.reward.Current(slot, gasPrice)
 }
 
 func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {
@@ -262,7 +276,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 					)
 					s.submitCount.Inc()
 
-					slot, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_SLOT_PROGRESS")))
+					slot, err := s.reward.Slot()
 					if err != nil {
 						level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
 					} else {

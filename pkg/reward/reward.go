@@ -130,12 +130,6 @@ func (s *Reward) Slot() (*big.Int, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting _SLOT_PROGRESS")
 	}
-	// Need the price for next slot transaction so increment by one.
-	// Slots numbers should be from 1 to 5 so when current slot is 5 next slot is 1.
-	slot.Add(slot, big.NewInt(1))
-	if slot.Int64() == 6 {
-		slot.SetInt64(1)
-	}
 	return slot, nil
 }
 
