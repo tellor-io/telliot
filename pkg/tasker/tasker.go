@@ -139,15 +139,16 @@ func (self *Tasker) Start() error {
 
 	// Initial subscription.
 	for {
+		select {
+		case <-self.ctx.Done():
+			return nil
+		default:
+		}
 		sub, err = self.newSub(events)
 		if err != nil {
 			level.Error(self.logger).Log("msg", "initial subscription to events failed")
-			select {
-			case <-ticker.C:
-				continue
-			case <-self.ctx.Done():
-				return nil
-			}
+			<-ticker.C
+			continue
 		}
 		break
 	}
@@ -166,28 +167,32 @@ func (self *Tasker) Start() error {
 
 			// Trying to resubscribe until it succeeds.
 			for {
+				select {
+				case <-self.ctx.Done():
+					return nil
+				default:
+				}
 				sub, err = self.newSub(events)
 				if err != nil {
 					level.Error(self.logger).Log("msg", "re-subscribing to events failed")
-					select {
-					case <-ticker.C:
-						continue
-					case <-self.ctx.Done():
-						return nil
-					}
+					<-ticker.C
+					continue
 				}
 				break
 			}
 			level.Info(self.logger).Log("msg", "re-subscribed to events")
 		case event := <-events:
+			level.Debug(self.logger).Log("msg", "new event", "reorg", event.Raw.Removed)
 			if self.txPending != nil {
 				self.txPending()
+				self.txPending = nil
 			}
 
-			ctxPending, ctxPendingCncl := context.WithCancel(self.ctx)
-			self.txPending = ctxPendingCncl
-
-			go self.sendWhenConfirmed(ctxPending, event)
+			if !event.Raw.Removed { // For reorg events just cancel the old TXs without sending this one.
+				ctxPending, ctxPendingCncl := context.WithCancel(self.ctx)
+				self.txPending = ctxPendingCncl
+				go self.sendWhenConfirmed(ctxPending, event)
+			}
 		}
 	}
 }
@@ -196,14 +201,16 @@ func (self *Tasker) sendWhenConfirmed(ctx context.Context, vLog *tellor.ITellorN
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
 		// Send the event only when the tx that emitted the event has been confirmed.
 		receipt, err := self.client.TransactionReceipt(ctx, vLog.Raw.TxHash)
 		if receipt != nil {
 			// Send it only when the TX ReceiptStatusSuccessful or otherwise ignore.
 			if receipt.Status == types.ReceiptStatusSuccessful {
-				// The new event arrives at the same time as the pending TX get confirmed so
-				// add small delay here to avoid race conditions of canceling the pending TXs.
-				time.Sleep(2 * time.Second)
 				for _, canceler := range self.SubmitCancelers {
 					canceler.CancelPendingSubmit()
 				}
@@ -216,13 +223,9 @@ func (self *Tasker) sendWhenConfirmed(ctx context.Context, vLog *tellor.ITellorN
 		} else {
 			level.Debug(self.logger).Log("msg", "transaction not yet mined", "tx", vLog.Raw.TxHash)
 		}
-		select {
-		case <-ctx.Done():
-			level.Info(self.logger).Log("msg", "tx confirmation check canceled")
-			return
-		case <-ticker.C:
-			continue
-		}
+
+		<-ticker.C
+		continue
 	}
 }
 

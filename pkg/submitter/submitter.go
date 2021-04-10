@@ -16,6 +16,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -236,55 +237,63 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 				level.Info(s.logger).Log("msg", "pending submit canceled")
 				return
 			default:
-				s.blockUntilTimeToSubmit(newChallengeReplace)
-				if err := s.canSubmit(); err != nil {
-					level.Info(s.logger).Log("msg", "can't submit and will retry later", "reason", err)
+			}
+
+			s.blockUntilTimeToSubmit(newChallengeReplace)
+			if err := s.canSubmit(); err != nil {
+				level.Info(s.logger).Log("msg", "can't submit and will retry later", "reason", err)
+				<-ticker.C
+				continue
+			}
+			for {
+				select {
+				case <-newChallengeReplace.Done():
+					level.Info(s.logger).Log("msg", "pending submit canceled")
+					return
+				default:
+				}
+
+				reqVals, err := s.requestVals(result.Work.Challenge.RequestIDs)
+				if err != nil {
+					level.Error(s.logger).Log("msg", "adding the request ids, retrying", "err", err)
 					<-ticker.C
 					continue
 				}
-				for {
-					select {
-					case <-newChallengeReplace.Done():
-						level.Info(s.logger).Log("msg", "pending submit canceled")
-						return
-					default:
-					}
-					reqVals, err := s.requestVals(result.Work.Challenge.RequestIDs)
-					if err != nil {
-						level.Error(s.logger).Log("msg", "adding the request ids, retrying", "err", err)
-						<-ticker.C
-						continue
-					}
-					level.Info(s.logger).Log(
-						"msg", "sending solution to the chain",
-						"solutionNonce", result.Nonce,
-						"IDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
-						"vals", fmt.Sprintf("%+v", reqVals),
-					)
-					tx, recieipt, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
-					if err != nil {
-						s.submitFailCount.Inc()
-						level.Error(s.logger).Log("msg", "submiting a solution", "err", err)
-						return
-					}
-					level.Info(s.logger).Log("msg", "successfully submited solution",
-						"txHash", tx.Hash().String(),
-						"nonce", tx.Nonce(),
-						"gasPrice", tx.GasPrice(),
-						"data", fmt.Sprintf("%x", tx.Data()),
-						"value", tx.Value(),
-					)
-					s.submitCount.Inc()
-
-					slot, err := s.reward.Slot()
-					if err != nil {
-						level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
-					} else {
-						s.reward.SaveGasUsed(recieipt.GasUsed, slot)
-					}
-
+				level.Info(s.logger).Log(
+					"msg", "sending solution to the chain",
+					"solutionNonce", result.Nonce,
+					"IDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
+					"vals", fmt.Sprintf("%+v", reqVals),
+				)
+				tx, recieipt, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
+				if err != nil {
+					s.submitFailCount.Inc()
+					level.Error(s.logger).Log("msg", "submiting a solution", "err", err)
 					return
 				}
+
+				if recieipt.Status != types.ReceiptStatusSuccessful {
+					s.submitFailCount.Inc()
+					level.Error(s.logger).Log("msg", "submiting solution status not success", "status", recieipt.Status)
+					return
+				}
+				level.Info(s.logger).Log("msg", "successfully submited solution",
+					"txHash", tx.Hash().String(),
+					"nonce", tx.Nonce(),
+					"gasPrice", tx.GasPrice(),
+					"data", fmt.Sprintf("%x", tx.Data()),
+					"value", tx.Value(),
+				)
+				s.submitCount.Inc()
+
+				slot, err := s.reward.Slot()
+				if err != nil {
+					level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
+				} else {
+					s.reward.SaveGasUsed(recieipt.GasUsed, slot)
+				}
+
+				return
 			}
 		}
 	}(newChallengeReplace, result)

@@ -160,15 +160,16 @@ func (self *ProfitTracker) monitorReward() {
 	logger := log.With(self.logger, "event", "Transfer")
 
 	for {
+		select {
+		case <-self.ctx.Done():
+			return
+		default:
+		}
 		sub, err = self.transferSub(events)
 		if err != nil {
 			level.Error(logger).Log("msg", "initial subscribing to events", "err", err)
-			select {
-			case <-ticker.C:
-				continue
-			case <-self.ctx.Done():
-				return
-			}
+			<-ticker.C
+			continue
 		}
 		break
 	}
@@ -187,15 +188,16 @@ func (self *ProfitTracker) monitorReward() {
 
 			// Trying to resubscribe until it succeeds.
 			for {
+				select {
+				case <-self.ctx.Done():
+					return
+				default:
+				}
 				sub, err = self.transferSub(events)
 				if err != nil {
 					level.Error(logger).Log("msg", "re-subscribing to events failed")
-					select {
-					case <-ticker.C:
-						continue
-					case <-self.ctx.Done():
-						return
-					}
+					<-ticker.C
+					continue
 				}
 				break
 			}
@@ -230,15 +232,16 @@ func (self *ProfitTracker) monitorCost() {
 	events := make(chan *tellor.TellorNonceSubmitted)
 
 	for {
+		select {
+		case <-self.ctx.Done():
+			return
+		default:
+		}
 		sub, err = self.nonceSubmittedSub(events)
 		if err != nil {
 			level.Error(logger).Log("msg", "initial subscribing to events failed")
-			select {
-			case <-ticker.C:
-				continue
-			case <-self.ctx.Done():
-				return
-			}
+			<-ticker.C
+			continue
 		}
 		break
 	}
@@ -257,15 +260,16 @@ func (self *ProfitTracker) monitorCost() {
 
 			// Trying to resubscribe until it succeeds.
 			for {
+				select {
+				case <-self.ctx.Done():
+					return
+				default:
+				}
 				sub, err = self.nonceSubmittedSub(events)
 				if err != nil {
 					level.Error(logger).Log("msg", "re-subscribing to events failed", "err", err)
-					select {
-					case <-ticker.C:
-						continue
-					case <-self.ctx.Done():
-						return
-					}
+					<-ticker.C
+					continue
 				}
 				break
 			}
@@ -300,15 +304,17 @@ func (self *ProfitTracker) monitorCostFailed() {
 	events := make(chan *types.Header)
 
 	for {
+		select {
+		case <-self.ctx.Done():
+			return
+		default:
+		}
+
 		sub, err = self.headSub(events)
 		if err != nil {
 			level.Error(logger).Log("msg", "initial subscribing to events failed")
-			select {
-			case <-ticker.C:
-				continue
-			case <-self.ctx.Done():
-				return
-			}
+			<-ticker.C
+			continue
 		}
 		break
 	}
@@ -327,15 +333,16 @@ func (self *ProfitTracker) monitorCostFailed() {
 
 			// Trying to resubscribe until it succeeds.
 			for {
+				select {
+				case <-self.ctx.Done():
+					return
+				default:
+				}
 				sub, err = self.headSub(events)
 				if err != nil {
 					level.Error(logger).Log("msg", "re-subscribing to events failed", "err", err)
-					select {
-					case <-ticker.C:
-						continue
-					case <-self.ctx.Done():
-						return
-					}
+					<-ticker.C
+					continue
 				}
 				break
 			}
@@ -343,12 +350,6 @@ func (self *ProfitTracker) monitorCostFailed() {
 		case event := <-events:
 
 			if event.Bloom.Test(self.abi.Events["NonceSubmitted"].ID.Bytes()) {
-				select {
-				case <-ticker.C:
-				case <-self.ctx.Done():
-					return
-				}
-
 				logger := log.With(logger, "block", event.Number)
 
 				block, err := self.client.BlockByNumber(self.ctx, event.Number)
@@ -422,6 +423,12 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
+		select {
+		case <-self.ctx.Done():
+			level.Debug(logger).Log("msg", "transaction confirmation check canceled")
+			return
+		default:
+		}
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
 			level.Error(logger).Log("msg", "receipt retrieval", "err", err)
@@ -452,12 +459,8 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 
 		level.Debug(logger).Log("msg", "transaction not yet mined")
 
-		select {
-		case <-self.ctx.Done():
-			level.Debug(logger).Log("msg", "transaction confirmation check canceled")
-			return
-		case <-ticker.C:
-		}
+		<-ticker.C
+		continue
 	}
 }
 
@@ -465,6 +468,12 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
+		select {
+		case <-self.ctx.Done():
+			level.Debug(logger).Log("msg", "transaction confirmation check canceled")
+			return
+		default:
+		}
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
 			level.Error(logger).Log("msg", "receipt retrieval", "err", err)
@@ -494,13 +503,8 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 		}
 
 		level.Debug(logger).Log("msg", "transaction not yet mined")
-
-		select {
-		case <-self.ctx.Done():
-			level.Debug(logger).Log("msg", "transaction confirmation check canceled")
-			return
-		case <-ticker.C:
-		}
+		<-ticker.C
+		continue
 	}
 }
 
