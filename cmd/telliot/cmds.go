@@ -501,8 +501,6 @@ func (d dataserverCmd) Run() error {
 
 	}
 
-	// Stopping the dataserver.
-	defer ds.Stop()
 	if err := g.Run(); err != nil {
 		level.Info(logger).Log("msg", "main exited with error", "err", err)
 		return err
