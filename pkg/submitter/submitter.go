@@ -16,19 +16,19 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
+	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
-	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -55,7 +55,7 @@ type Submitter struct {
 	submitFailCount  prometheus.Counter
 	lastSubmitCncl   context.CancelFunc
 	transactor       transactor.Transactor
-	profitChecker    *profit.ProfitTracker
+	reward           *reward.Reward
 }
 
 func NewSubmitter(
@@ -67,7 +67,6 @@ func NewSubmitter(
 	account *config.Account,
 	proxy db.DataServerProxy,
 	transactor transactor.Transactor,
-	profitChecker *profit.ProfitTracker,
 ) (*Submitter, chan *mining.Result, error) {
 	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
@@ -103,7 +102,7 @@ func NewSubmitter(
 	}
 
 	if cfg.Mine.ProfitThreshold > 0 { // Profit check is enabled.
-		submitter.profitChecker = profitChecker
+		submitter.reward = reward.NewReward(logger, contractInstance, proxy)
 	}
 
 	return submitter, submitter.resultCh, nil
@@ -184,9 +183,9 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 }
 
 func (s *Submitter) canSubmit() error {
-	if s.profitChecker != nil { // Profit check is enabled.
-		profitPercent, err := s.profit()
-		if _, ok := errors.Cause(err).(profit.ErrNoDataForSlot); ok {
+	if s.reward != nil { // Profit check is enabled.
+		profitPercent, err := s.profitPercent()
+		if _, ok := errors.Cause(err).(reward.ErrNoDataForSlot); ok {
 			level.Warn(s.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
 		} else if err != nil {
 			return errors.Wrapf(err, "submit solution profit check")
@@ -206,104 +205,26 @@ func (s *Submitter) canSubmit() error {
 	return nil
 }
 
-// profit returns the profit in percents based on the current TRB price.
-func (self *Submitter) profit() (int64, error) {
-	slot, err := self.slot()
+func (s *Submitter) profitPercent() (int64, error) {
+	slot, err := s.reward.Slot()
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "getting current slot")
 	}
-	gasUsed, err := self.profitChecker.GasUsed(slot)
+	gasPrice, err := s.reward.GasPrice()
 	if err != nil {
-		return 0, err
-	}
-	trbAmount, err := self.contractInstance.CurrentReward(nil)
-	if err != nil {
-		return 0, errors.New("getting currentReward from the chain")
+		return 0, errors.Wrapf(err, "getting current Gas price")
 	}
 
-	trbPrice, err := self.trbPrice()
-	if err != nil {
-		return 0, errors.New("getting trb current TRB price")
-	}
-
-	gasPrice, err := self.gasPrice()
-	if err != nil {
-		return 0, errors.New("getting trb current Gas price")
-	}
-
-	rewardEth, err := self.convertTRBtoETH(trbAmount, trbPrice)
-	if err != nil {
-		return 0, errors.Wrap(err, "convert TRB to ETH")
-	}
-
-	txCost := big.NewInt(0).Mul(gasPrice, gasUsed)
-	profit := big.NewInt(0).Sub(rewardEth, txCost)
-	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
-	profitPercent := int64(profitPercentFloat)
-
-	level.Debug(self.logger).Log(
-		"msg", "profit checking",
-		"reward", fmt.Sprintf("%.2e", float64(rewardEth.Int64())),
-		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
-		"slot", slot,
-		"gasUsed", gasUsed,
-		"gasPrice", gasPrice,
-		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
-		"profitMargin", profitPercent,
-	)
-
-	return profitPercent, nil
-}
-
-func (s *Submitter) slot() (*big.Int, error) {
-	slot, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_SLOT_PROGRESS")))
-	if err != nil {
-		return nil, errors.Wrap(err, "getting _SLOT_PROGRESS for calculating profit")
-	}
 	// Need the price for next slot transaction so increment by one.
-	// Slots numbers should be from 1 to 5 so when current slot is 5 next slot is 1.
 	slot.Add(slot, big.NewInt(1))
-	if slot.Int64() == 6 {
-		slot.SetInt64(1)
-	}
-	return slot, nil
-}
 
-func (s *Submitter) gasPrice() (*big.Int, error) {
-	_gasPrice, err := s.proxy.Get(db.GasKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting gas price")
+	// Slots numbers are from 0 to 4 so
+	// when next slot is 4+1=5 get the price for slot 0.
+	if slot.Int64() == 5 {
+		slot.SetInt64(0)
 	}
-	gasPrice, err := hexutil.DecodeBig(string(_gasPrice))
-	if err != nil {
-		return nil, errors.Wrap(err, "decode gas price")
-	}
-	return gasPrice, nil
-}
 
-func (s *Submitter) trbPrice() (*big.Int, error) {
-	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(index.RequestID_TRB_ETH))
-	if err != nil {
-		return nil, errors.New("getting the trb price from the db")
-	}
-	if len(_trbPrice) == 0 {
-		return nil, errors.New("the db doesn't have the trb price")
-	}
-	trbPrice, err := hexutil.DecodeBig(string(_trbPrice))
-	if err != nil {
-		return nil, errors.New("decoding trb price from the db")
-	}
-	return trbPrice, nil
-}
-
-func (s *Submitter) convertTRBtoETH(trbAmount, trbPrice *big.Int) (*big.Int, error) {
-	wei := big.NewInt(tellorCommon.WEI)
-	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(index.PSRs[index.RequestID_TRB_ETH].Granularity()))
-	trbPrice.Mul(trbPrice, precisionUpscale)
-
-	eth := big.NewInt(0).Mul(trbPrice, trbAmount)
-	eth.Div(eth, big.NewInt(1e18))
-	return eth, nil
+	return s.reward.Current(slot, gasPrice)
 }
 
 func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {
@@ -316,55 +237,63 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 				level.Info(s.logger).Log("msg", "pending submit canceled")
 				return
 			default:
-				s.blockUntilTimeToSubmit(newChallengeReplace)
-				if err := s.canSubmit(); err != nil {
-					level.Info(s.logger).Log("msg", "can't submit and will retry later", "reason", err)
+			}
+
+			s.blockUntilTimeToSubmit(newChallengeReplace)
+			if err := s.canSubmit(); err != nil {
+				level.Info(s.logger).Log("msg", "can't submit and will retry later", "reason", err)
+				<-ticker.C
+				continue
+			}
+			for {
+				select {
+				case <-newChallengeReplace.Done():
+					level.Info(s.logger).Log("msg", "pending submit canceled")
+					return
+				default:
+				}
+
+				reqVals, err := s.requestVals(result.Work.Challenge.RequestIDs)
+				if err != nil {
+					level.Error(s.logger).Log("msg", "adding the request ids, retrying", "err", err)
 					<-ticker.C
 					continue
 				}
-				for {
-					select {
-					case <-newChallengeReplace.Done():
-						level.Info(s.logger).Log("msg", "pending submit canceled")
-						return
-					default:
-					}
-					reqVals, err := s.requestVals(result.Work.Challenge.RequestIDs)
-					if err != nil {
-						level.Error(s.logger).Log("msg", "adding the request ids, retrying", "err", err)
-						<-ticker.C
-						continue
-					}
-					level.Info(s.logger).Log(
-						"msg", "sending solution to the chain",
-						"solutionNonce", result.Nonce,
-						"IDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
-						"vals", fmt.Sprintf("%+v", reqVals),
-					)
-					tx, recieipt, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
-					if err != nil {
-						s.submitFailCount.Inc()
-						level.Error(s.logger).Log("msg", "submiting a solution", "err", err)
-						return
-					}
-					level.Info(s.logger).Log("msg", "successfully submited solution",
-						"txHash", tx.Hash().String(),
-						"nonce", tx.Nonce(),
-						"gasPrice", tx.GasPrice(),
-						"data", fmt.Sprintf("%x", tx.Data()),
-						"value", tx.Value(),
-					)
-					s.submitCount.Inc()
-
-					slot, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_SLOT_PROGRESS")))
-					if err != nil {
-						level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
-					} else {
-						s.profitChecker.SaveGasUsed(recieipt, slot)
-					}
-
+				level.Info(s.logger).Log(
+					"msg", "sending solution to the chain",
+					"solutionNonce", result.Nonce,
+					"IDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
+					"vals", fmt.Sprintf("%+v", reqVals),
+				)
+				tx, recieipt, err := s.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
+				if err != nil {
+					s.submitFailCount.Inc()
+					level.Error(s.logger).Log("msg", "submiting a solution", "err", err)
 					return
 				}
+
+				if recieipt.Status != types.ReceiptStatusSuccessful {
+					s.submitFailCount.Inc()
+					level.Error(s.logger).Log("msg", "submiting solution status not success", "status", recieipt.Status)
+					return
+				}
+				level.Info(s.logger).Log("msg", "successfully submited solution",
+					"txHash", tx.Hash().String(),
+					"nonce", tx.Nonce(),
+					"gasPrice", tx.GasPrice(),
+					"data", fmt.Sprintf("%x", tx.Data()),
+					"value", tx.Value(),
+				)
+				s.submitCount.Inc()
+
+				slot, err := s.reward.Slot()
+				if err != nil {
+					level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
+				} else {
+					s.reward.SaveGasUsed(recieipt.GasUsed, slot)
+				}
+
+				return
 			}
 		}
 	}(newChallengeReplace, result)
