@@ -26,7 +26,6 @@ const ComponentName = "gasTracker"
 type GasTracker struct {
 	db     db.DataServerProxy
 	client contracts.ETHClient
-	ctx    context.Context
 	logger log.Logger
 }
 

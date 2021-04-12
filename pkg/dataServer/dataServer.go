@@ -38,7 +38,7 @@ func NewServer(
 	contract *contracts.ITellor,
 	accounts []*config.Account,
 ) (*DataServer, error) {
-	run, err := tracker.NewRunner(logger, config, DB, client, contract, accounts)
+	run, err := tracker.NewRunner(logger, config, DB, client, contract)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating data server tracker runner instance")
 	}
