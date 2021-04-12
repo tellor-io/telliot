@@ -613,7 +613,7 @@ func (m mineCmd) Run() error {
 			})
 
 			// Create a tasker intance.
-			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg, proxy, client, contract, accounts)
+			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg, client, contract, accounts)
 			if err != nil {
 				return errors.Wrapf(err, "creating tasker")
 			}
