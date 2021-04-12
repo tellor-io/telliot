@@ -531,11 +531,6 @@ func (m mineCmd) Run() error {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
 
-	var accountAddrs []common.Address
-	for _, acc := range accounts {
-		accountAddrs = append(accountAddrs, acc.Address)
-	}
-
 	// DataServer is the Telliot data server.
 	var proxy db.DataServerProxy
 
@@ -600,6 +595,10 @@ func (m mineCmd) Run() error {
 		// Miner components.
 		{
 			// Run the profit tracker.
+			var accountAddrs []common.Address
+			for _, acc := range accounts {
+				accountAddrs = append(accountAddrs, acc.Address)
+			}
 			profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg, client, contract, proxy, accountAddrs)
 			if err != nil {
 				return errors.Wrapf(err, "creating profit checker")
