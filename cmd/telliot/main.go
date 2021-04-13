@@ -13,10 +13,10 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/rpc"
 )
 
@@ -70,7 +70,7 @@ func migrateAndOpenDB(logger log.Logger, cfg *config.Config) (db.DB, error) {
 
 	var txsGas [][]byte
 	for i := 0; i <= 5; i++ {
-		txID := tellorCommon.PriceTXs + strconv.Itoa(i)
+		txID := reward.PriceTXs + strconv.Itoa(i)
 		txGas, err := DB.Get(txID)
 		if err == nil && len(txGas) > 0 {
 			txsGas = append(txsGas, txGas)
@@ -87,7 +87,7 @@ func migrateAndOpenDB(logger log.Logger, cfg *config.Config) (db.DB, error) {
 	}
 
 	for i, txGas := range txsGas {
-		txID := tellorCommon.PriceTXs + strconv.Itoa(i)
+		txID := reward.PriceTXs + strconv.Itoa(i)
 		_ = DB.Put(txID, txGas)
 	}
 

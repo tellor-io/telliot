@@ -5,21 +5,20 @@ package index
 
 import (
 	"context"
-	"fmt"
 	"math"
-	"math/big"
 	"sort"
 	"strconv"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/pkg/timestamp"
+	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/db"
 )
 
 const RequestID_TRB_ETH int = 43
@@ -105,7 +104,7 @@ func NoDecay(x float64) (float64, float64) {
 }
 
 func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, float64)) IndexProcessor {
-	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
+	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (PriceInfo, float64, error) {
 		sum := 0.0
 		weightSum := 0.0
 		minTime := at
@@ -131,7 +130,7 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 		_, avgWeight := weightFn(0)
 		targetWeight := maxWeight * avgWeight
 
-		var result apiOracle.PriceInfo
+		var result PriceInfo
 		result.Price = sum / weightSum
 
 		// Use the highest volume seen over all values.
@@ -146,13 +145,13 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 }
 
 func VolumeWeightedAPIs(processor IndexProcessor) IndexProcessor {
-	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
-		var results []apiOracle.PriceInfo
+	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (PriceInfo, float64, error) {
+		var results []PriceInfo
 		totalConfidence := 0.0
 		for _, api := range apis {
 			value, confidence, err := processor([]*IndexTracker{api}, at, trackersInterval)
 			if err != nil {
-				return apiOracle.PriceInfo{}, 0, err
+				return PriceInfo{}, 0, err
 			}
 			if confidence > 0 {
 				results = append(results, value)
@@ -163,8 +162,8 @@ func VolumeWeightedAPIs(processor IndexProcessor) IndexProcessor {
 	}
 }
 
-func getLatest(apis []*IndexTracker, at time.Time) ([]apiOracle.PriceInfo, float64) {
-	var values []apiOracle.PriceInfo
+func getLatest(apis []*IndexTracker, at time.Time) ([]PriceInfo, float64) {
+	var values []PriceInfo
 	totalConf := 0.0
 	for _, api := range apis {
 		b, _ := apiOracle.GetNearestTwoRequestValue(api.Identifier, at)
@@ -177,22 +176,22 @@ func getLatest(apis []*IndexTracker, at time.Time) ([]apiOracle.PriceInfo, float
 	return values, totalConf / float64(len(apis))
 }
 
-func MedianAt(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
+func MedianAt(apis []*IndexTracker, at time.Time, trackersInterval float64) (PriceInfo, float64, error) {
 	values, confidence := getLatest(apis, at)
 	if confidence == 0 {
-		return apiOracle.PriceInfo{}, 0, nil
+		return PriceInfo{}, 0, nil
 	}
 	return Median(values), confidence, nil
 }
 
-func ManualEntry(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
+func ManualEntry(apis []*IndexTracker, at time.Time, trackersInterval float64) (PriceInfo, float64, error) {
 	vals, confidence := getLatest(apis, at)
 	if confidence == 0 {
-		return apiOracle.PriceInfo{}, 0, nil
+		return PriceInfo{}, 0, nil
 	}
 	for _, val := range vals {
-		if int64(val.Volume) < clck.Now().Unix() {
-			return apiOracle.PriceInfo{}, 0, errors.New("manual data entry expired, please update")
+		if int64(val.Volume) < time.Now().Unix() {
+			return PriceInfo{}, 0, errors.New("manual data entry expired, please update")
 		}
 	}
 	return Median(vals), confidence, nil
@@ -208,15 +207,15 @@ func MaxPSRID() uint64 {
 	return uint64(maxID)
 }
 
-func MedianAtEOD(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
-	now := clck.Now().UTC()
+func MedianAtEOD(apis []*IndexTracker, at time.Time, trackersInterval float64) (PriceInfo, float64, error) {
+	now := time.Now().UTC()
 	d := 24 * time.Hour
 	eod := now.Truncate(d)
 	return MedianAt(apis, eod, trackersInterval)
 }
 
-func Median(values []apiOracle.PriceInfo) apiOracle.PriceInfo {
-	var result apiOracle.PriceInfo
+func Median(values []PriceInfo) PriceInfo {
+	var result PriceInfo
 	sort.Slice(values, func(i, j int) bool {
 		return values[i].Price < values[j].Price
 	})
@@ -227,16 +226,16 @@ func Median(values []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	return result
 }
 
-func MeanAt(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
+func MeanAt(apis []*IndexTracker, at time.Time, trackersInterval float64) (PriceInfo, float64, error) {
 	values, confidence := getLatest(apis, at)
 	if confidence == 0 {
-		return apiOracle.PriceInfo{}, 0, nil
+		return PriceInfo{}, 0, nil
 	}
 	return Mean(values), confidence, nil
 }
 
-func Mean(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
-	var result apiOracle.PriceInfo
+func Mean(vals []PriceInfo) PriceInfo {
+	var result PriceInfo
 	priceSum := 0.0
 	volSum := 0.0
 	for _, val := range vals {
@@ -248,7 +247,7 @@ func Mean(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 	return result
 }
 
-func VolumeWeightedAvg(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
+func VolumeWeightedAvg(vals []PriceInfo) PriceInfo {
 	priceSum := 0.0
 	volSum := 0.0
 	for _, val := range vals {
@@ -256,30 +255,39 @@ func VolumeWeightedAvg(vals []apiOracle.PriceInfo) apiOracle.PriceInfo {
 		volSum += val.Volume
 	}
 	if volSum > 0 {
-		return apiOracle.PriceInfo{Price: priceSum / volSum, Volume: volSum}
+		return PriceInfo{Price: priceSum / volSum, Volume: volSum}
 	}
 	//if there was no volume data, just do a normal average instead
 	priceSum = 0
 	for _, val := range vals {
 		priceSum += val.Price
 	}
-	return apiOracle.PriceInfo{Price: priceSum / float64(len(vals)), Volume: 0}
+	return PriceInfo{Price: priceSum / float64(len(vals)), Volume: 0}
 }
 
-func NewPsr(logger log.Logger, register *prometheus.GaugeVec) *PSR {
+func NewPsr(logger log.Logger, tsDB *tsdb.DB, price *prometheus.GaugeVec, volume *prometheus.GaugeVec) *PSR {
 	return &PSR{
-		values: register,
+		tsDB:   tsDB,
+		price:  price,
+		volume: volume,
 		logger: logger,
 	}
 }
 
 type PSR struct {
-	values *prometheus.GaugeVec
+	price  *prometheus.GaugeVec
+	volume *prometheus.GaugeVec
+	tsDB   *tsdb.DB
 	logger log.Logger
 }
 
-func (self *PSR) UpdatePSRs(ctx context.Context, cfg *config.Config, DB db.DataServerProxy, updatedSymbols []string) error {
-	now := clck.Now()
+func (self *PSR) UpdatePSRs(ctx context.Context, cfg *config.Config, url string, updatedSymbols []string, vals []float64) error {
+	self.price.With(prometheus.Labels{"id": url}).(prometheus.Gauge).Set(vals[0])
+	if len(vals) > 1 {
+		self.volume.With(prometheus.Labels{"id": url}).(prometheus.Gauge).Set(vals[1])
+	}
+
+	now := time.Now()
 	// Generate a set of all affected PSRs.
 	var toUpdate []int
 	for requestID, psr := range PSRs {
@@ -305,16 +313,10 @@ func (self *PSR) UpdatePSRs(ctx context.Context, cfg *config.Config, DB db.DataS
 			continue
 		}
 
-		// Convert it directly from a float to a bigInt so that there is no risk of overflowing a uint64.
-		bigVal := new(big.Float)
-		bigVal.SetFloat64(amt)
-		bigInt := new(big.Int)
-		bigVal.Int(bigInt)
-		// Encode it and store to DB.
-		enc := hexutil.EncodeBig(bigInt)
-		err = DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
+		appender := self.tsDB.Appender(ctx)
+		_, err = appender.Append(0, labels.Labels{labels.Label{Name: "__name__", Value: strconv.Itoa(requestID)}}, timestamp.FromTime(time.Now().Round(0)), amt)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "append aggregated price to the db")
 		}
 
 		// Set the metric.
@@ -322,7 +324,7 @@ func (self *PSR) UpdatePSRs(ctx context.Context, cfg *config.Config, DB db.DataS
 		dataID := strconv.Itoa(requestID) + "-" + p.Symbol()
 		amt = amt / float64(p.Granularity())
 		level.Debug(self.logger).Log("msg", "new value", "dataID", dataID, "value", amt)
-		self.values.With(prometheus.Labels{"dataID": dataID}).(prometheus.Gauge).Set(amt)
+		self.price.With(prometheus.Labels{"id": dataID}).(prometheus.Gauge).Set(amt)
 	}
 	return nil
 }
@@ -344,7 +346,7 @@ func InitPSRs() error {
 func PSRValueForTime(requestID int, at time.Time, trackersInterval float64) (float64, float64, error) {
 	// Get the requirements.
 	reqs := PSRs[requestID].Require()
-	values := make(map[string]apiOracle.PriceInfo)
+	values := make(map[string]PriceInfo)
 	minConfidence := math.MaxFloat64
 
 	for symbol, fn := range reqs {
@@ -362,4 +364,8 @@ func PSRValueForTime(requestID int, at time.Time, trackersInterval float64) (flo
 	}
 
 	return PSRs[requestID].ValueAt(values), minConfidence, nil
+}
+
+type PriceInfo struct {
+	Price, Volume float64
 }

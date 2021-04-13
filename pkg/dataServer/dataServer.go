@@ -10,6 +10,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -22,6 +23,7 @@ const ComponentName = "dataServer"
 // DataServer holds refs to primary stack of utilities for data retrieval and serving.
 type DataServer struct {
 	DB           db.DataServerProxy
+	tsdbDB       *tsdb.DB
 	runner       *tracker.Runner
 	ethClient    contracts.ETHClient
 	Stopped      bool

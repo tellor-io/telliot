@@ -12,14 +12,14 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	tellorCommon "github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 )
 
 const ComponentName = "transactor"
@@ -33,7 +33,7 @@ type Transactor interface {
 type TransactorDefault struct {
 	logger           log.Logger
 	cfg              *config.Config
-	proxy            db.DataServerProxy
+	gasPriceTracker  *gasPrice.GasTracker
 	client           contracts.ETHClient
 	account          *config.Account
 	contractInstance *contracts.ITellor
@@ -42,7 +42,7 @@ type TransactorDefault struct {
 func NewTransactor(
 	logger log.Logger,
 	cfg *config.Config,
-	proxy db.DataServerProxy,
+	gasPriceTracker *gasPrice.GasTracker,
 	client contracts.ETHClient,
 	account *config.Account,
 	contractInstance *contracts.ITellor,
@@ -55,7 +55,7 @@ func NewTransactor(
 	return &TransactorDefault{
 		logger:           log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6]),
 		cfg:              cfg,
-		proxy:            proxy,
+		gasPriceTracker:  gasPriceTracker,
 		client:           client,
 		account:          account,
 		contractInstance: contractInstance,
@@ -70,21 +70,13 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 
 	// Use the same nonce in case there is a stuck transaction so thaself iself submits with the currenself nonce buself higher gas price.
 	IntNonce := int64(nonce)
-	keys := []string{
-		db.GasKey,
-	}
-	m, err := self.proxy.BatchGet(keys)
+
+	_gasPrice, err := self.gasPriceTracker.Query(ctx, time.Now().Add(-(5 * time.Second)))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting data from the db")
 	}
-	gasPrice := getInt(m[db.GasKey])
-	if gasPrice.Cmp(big.NewInt(0)) == 0 {
-		level.Warn(self.logger).Log("msg", "no gas price from DB, falling back to client suggested gas price")
-		gasPrice, err = self.client.SuggestGasPrice(ctx)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "determine gas price to submit tx")
-		}
-	}
+	gasPrice := big.NewInt(int64(_gasPrice))
+
 	mul := self.cfg.GasMultiplier
 	if mul > 0 {
 		level.Info(self.logger).Log("msg", "settings gas price multiplier", "value", mul)
@@ -130,7 +122,7 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 		}
 		max := self.cfg.GasMax
 		var maxGasPrice *big.Int
-		gasPrice1 := big.NewInt(tellorCommon.GWEI)
+		gasPrice1 := big.NewInt(params.GWei)
 		if max > 0 {
 			maxGasPrice = gasPrice1.Mul(gasPrice1, big.NewInt(int64(max)))
 		} else {

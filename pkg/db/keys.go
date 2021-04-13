@@ -5,7 +5,11 @@ package db
 
 import (
 	"strings"
+
+	"github.com/prometheus/prometheus/pkg/labels"
 )
+
+var GasPriceLabel = labels.Label{Name: "__name__", Value: "gas_price"}
 
 const (
 	// CurrentChallengeKey DB key.
@@ -21,7 +25,6 @@ const (
 	TotalTipKey     = "current_total_tip"
 	MiningStatusKey = "mining_status"
 
-	GasKey   = "wei_gas_price"
 	Top50Key = "top_50_requestIds"
 
 	// QueryMetadataPrefix is for RequestID's that are stored with this prefix and the id itself
@@ -47,7 +50,6 @@ func initKeyLook() {
 		GranularityKey:  true,
 		TotalTipKey:     true,
 		MiningStatusKey: true,
-		GasKey:          true,
 		Top50Key:        true,
 	}
 }

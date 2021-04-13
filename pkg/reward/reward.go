@@ -9,15 +9,19 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/util"
 )
+
+// PriceTXs is the key used to save transactions cost
+// These are used to calculate the profitability when submitting a solution.
+const PriceTXs = "PriceTXSlot"
 
 func NewReward(logger log.Logger, contractInstance *contracts.ITellor, proxy db.DataServerProxy) *Reward {
 	return &Reward{
@@ -71,7 +75,7 @@ func (self *Reward) Current(slot *big.Int, gasPrice *big.Int) (int64, error) {
 }
 
 func (self *Reward) GasUsed(slot *big.Int) (*big.Int, error) {
-	txID := common.PriceTXs + slot.String()
+	txID := PriceTXs + slot.String()
 	gas, err := self.proxy.Get(txID)
 	if err != nil {
 		return nil, errors.New("getting the tx eth cost from the db")
@@ -94,7 +98,7 @@ func (e ErrNoDataForSlot) Error() string {
 func (self *Reward) SaveGasUsed(_gasUsed uint64, slot *big.Int) {
 	gasUsed := big.NewInt(int64(_gasUsed))
 
-	txID := common.PriceTXs + slot.String()
+	txID := PriceTXs + slot.String()
 	err := self.proxy.Put(txID, gasUsed.Bytes())
 	if err != nil {
 		level.Error(self.logger).Log("msg", "saving transaction cost", "err", err)
@@ -118,8 +122,8 @@ func (s *Reward) trbPrice() (*big.Int, error) {
 }
 
 func (s *Reward) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
-	wei := big.NewInt(common.WEI)
-	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(index.PSRs[index.RequestID_TRB_ETH].Granularity()))
+	ether := big.NewInt(params.Ether)
+	precisionUpscale := big.NewInt(0).Div(ether, big.NewInt(index.PSRs[index.RequestID_TRB_ETH].Granularity()))
 	trbPrice.Mul(trbPrice, precisionUpscale)
 
 	eth := big.NewInt(0).Mul(trbPrice, trbAmount)
@@ -133,16 +137,4 @@ func (s *Reward) Slot() (*big.Int, error) {
 		return nil, errors.Wrap(err, "getting _SLOT_PROGRESS")
 	}
 	return slot, nil
-}
-
-func (s *Reward) GasPrice() (*big.Int, error) {
-	_gasPrice, err := s.proxy.Get(db.GasKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting gas price")
-	}
-	gasPrice, err := hexutil.DecodeBig(string(_gasPrice))
-	if err != nil {
-		return nil, errors.Wrap(err, "decode gas price")
-	}
-	return gasPrice, nil
 }

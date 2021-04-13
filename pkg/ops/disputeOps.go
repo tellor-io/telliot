@@ -171,7 +171,7 @@ func getNonceSubmissions(
 
 					timedValues[i] = &apiOracle.PriceStamp{
 						Created:   valTime,
-						PriceInfo: apiOracle.PriceInfo{Price: f},
+						PriceInfo: PriceInfo{Price: f},
 					}
 					found++
 					break

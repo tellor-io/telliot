@@ -34,11 +34,6 @@ func TestCreateTracker(t *testing.T) {
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 
-	gasTracker, _ := createTracker("gas", logger, cfg, proxy, client, nil)
-	if gasTracker[0].String() != "GasTracker" {
-		testutil.Ok(t, errors.Errorf("Expected GasTracker but got %s", gasTracker[0].String()))
-	}
-
 	indexersTracker, err := createTracker("indexers", logger, cfg, proxy, client, nil)
 	testutil.Ok(t, err, "build IndexTracker")
 	if len(indexersTracker) == 0 {

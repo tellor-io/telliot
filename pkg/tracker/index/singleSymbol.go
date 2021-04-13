@@ -3,10 +3,6 @@
 
 package index
 
-import (
-	"github.com/tellor-io/telliot/pkg/apiOracle"
-)
-
 type SingleSymbol struct {
 	symbol      string
 	granularity float64
@@ -19,7 +15,7 @@ func (s SingleSymbol) Require() map[string]IndexProcessor {
 	return r
 }
 
-func (s SingleSymbol) ValueAt(vals map[string]apiOracle.PriceInfo) float64 {
+func (s SingleSymbol) ValueAt(vals map[string]PriceInfo) float64 {
 	return vals[s.symbol].Price * s.granularity
 }
 

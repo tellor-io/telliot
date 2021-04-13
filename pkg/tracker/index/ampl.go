@@ -5,8 +5,6 @@ package index
 
 import (
 	"time"
-
-	"github.com/tellor-io/telliot/pkg/apiOracle"
 )
 
 type Ampl struct {
@@ -22,8 +20,8 @@ func (a Ampl) Require() map[string]IndexProcessor {
 	}
 }
 
-func (a Ampl) ValueAt(vals map[string]apiOracle.PriceInfo) float64 {
-	valSlice := make([]apiOracle.PriceInfo, 0, len(vals))
+func (a Ampl) ValueAt(vals map[string]PriceInfo) float64 {
+	valSlice := make([]PriceInfo, 0, len(vals))
 	for _, v := range vals {
 		valSlice = append(valSlice, v)
 	}
@@ -40,7 +38,7 @@ func (s *Ampl) Symbol() string {
 
 // compute the average ampl price over a 24 hour period using a chained price feed.
 func AmpleChained(chainedPair string) IndexProcessor {
-	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
+	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (PriceInfo, float64, error) {
 
 		eod := clck.Now().UTC()
 		d := 24 * time.Hour
@@ -63,7 +61,7 @@ func AmpleChained(chainedPair string) IndexProcessor {
 			thisTime := eod.Add(time.Duration(-i) * interval)
 			chainedPrice, confidence, err := MedianAt(indexes[chainedPair], thisTime, trackersInterval)
 			if err != nil {
-				return apiOracle.PriceInfo{}, 0, nil
+				return PriceInfo{}, 0, nil
 			}
 			if confidence < 0.01 {
 				//we don't have an accurate estimate of the intermediary price, so we can't convert the AMPL price to USD
@@ -71,7 +69,7 @@ func AmpleChained(chainedPair string) IndexProcessor {
 			}
 			avg, confidence, err := apiFn(apis, thisTime, trackersInterval)
 			if err != nil {
-				return apiOracle.PriceInfo{}, 0, nil
+				return PriceInfo{}, 0, nil
 			}
 
 			if confidence < 0.01 {
@@ -84,7 +82,7 @@ func AmpleChained(chainedPair string) IndexProcessor {
 			}
 			numVals++
 		}
-		var result apiOracle.PriceInfo
+		var result PriceInfo
 		result.Price = sum / float64(numVals)
 		result.Volume = maxVolume
 		if sum > 0 {

@@ -12,12 +12,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/tracker/dispute"
-	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 )
 
@@ -32,16 +32,12 @@ type Tracker interface {
 }
 
 // CreateTracker a tracker instance by its well-known name.
-func createTracker(name string, logger log.Logger, config *config.Config, db db.DataServerProxy, client contracts.ETHClient, contract *contracts.ITellor) ([]Tracker, error) {
+func createTracker(name string, logger log.Logger, config *config.Config, db db.DataServerProxy, tsDB *tsdb.DB, client contracts.ETHClient, contract *contracts.ITellor) ([]Tracker, error) {
 	switch name {
-	case "gas":
-		{
-			return []Tracker{gasPrice.New(logger, db, client)}, nil
-		}
 	case "indexers":
 		{
 			var indexers []Tracker
-			indexes, err := index.BuildIndexTrackers(logger, config, db, client)
+			indexes, err := index.BuildIndexTrackers(logger, config, db, tsDB, client)
 			if err != nil {
 				return nil, err
 			}
@@ -60,6 +56,7 @@ func createTracker(name string, logger log.Logger, config *config.Config, db db.
 // Runner will execute all configured trackers.
 type Runner struct {
 	db           db.DataServerProxy
+	tsDB         *tsdb.DB
 	client       contracts.ETHClient
 	contract     *contracts.ITellor
 	readyChannel chan bool
@@ -96,7 +93,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	for name, activated := range r.config.Trackers.Names {
 		if activated {
 			level.Info(r.logger).Log("msg", "starting tracker", "name", name)
-			t, err := createTracker(name, r.logger, r.config, r.db, r.client, r.contract)
+			t, err := createTracker(name, r.logger, r.config, r.db, r.tsDB, r.client, r.contract)
 			if err != nil {
 				return errors.Wrapf(err, "creating tracker. Name: %s", name)
 			}

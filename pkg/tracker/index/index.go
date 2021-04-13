@@ -16,12 +16,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/go-kit/kit/log"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/pkg/timestamp"
+	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
@@ -33,12 +35,6 @@ import (
 
 const ComponentName = "index"
 
-var clck clock.Clock
-
-func init() {
-	clck = clock.New()
-}
-
 var indexes map[string][]*IndexTracker
 
 // GetIndexes returns indexes for outside package usage.
@@ -47,7 +43,7 @@ func GetIndexes() map[string][]*IndexTracker {
 }
 
 // BuildIndexTrackers creates and initializes a new tracker instance.
-func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerProxy, client contracts.ETHClient) ([]*IndexTracker, error) {
+func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerProxy, tsDB *tsdb.DB, client contracts.ETHClient) ([]*IndexTracker, error) {
 	err := apiOracle.EnsureValueOracle(logger, cfg)
 	if err != nil {
 		return nil, err
@@ -55,7 +51,7 @@ func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerP
 
 	// Load trackers from the index file,
 	// and build a tracker for each unique URL, symbol
-	indexers, symbolsForAPI, err := ParseApiFile(logger, cfg, db, client)
+	indexers, symbolsForAPI, err := ParseApiFile(logger, cfg, db, tsDB, client)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +84,7 @@ func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerP
 // ParseApiFile parses api.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
-func ParseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
+func ParseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, tsDB *tsdb.DB, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
 	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
@@ -110,13 +106,22 @@ func ParseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, 
 
 	psr := NewPsr(
 		logger,
+		tsDB,
 		promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
-			Name:      "values",
-			Help:      "The tracker values",
+			Name:      "price",
+			Help:      "The currency price",
 		},
-			[]string{"dataID"},
+			[]string{"id"},
+		),
+		promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: ComponentName,
+			Name:      "volume",
+			Help:      "The currency trade ammount",
+		},
+			[]string{"id"},
 		),
 	)
 
@@ -197,6 +202,7 @@ func ParseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, 
 					Identifier: api.URL,
 					Source:     source,
 					DB:         DB,
+					tsDB:       tsDB,
 					Interval:   api.Interval.Duration,
 					Param:      api.Param,
 					Type:       api.Type,
@@ -251,6 +257,7 @@ type IndexObject struct {
 
 type IndexTracker struct {
 	DB               db.DataServerProxy
+	tsDB             *tsdb.DB
 	Name             string
 	Identifier       string
 	Symbols          []string
@@ -314,15 +321,20 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 		return err
 	}
 
-	volume := 0.0
+	appender := i.tsDB.Appender(ctx)
+
+	// TODO for manual entries this is broken.
 	if len(vals) >= 2 {
-		volume = vals[1]
+		appender.Append(0, labels.Labels{labels.Label{Name: "__name__", Value: i.Identifier + "_volume"}}, timestamp.FromTime(time.Now().Round(0)), vals[1])
 	}
 
-	//save the value into our local data window (set 0 volume for now)
-	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price: vals[0], Volume: volume})
-	//update all the values that depend on these symbols
-	return i.psr.UpdatePSRs(ctx, i.cfg, i.DB, i.Symbols)
+	appender.Append(0, labels.Labels{labels.Label{Name: "__name__", Value: i.Identifier + "_value"}}, timestamp.FromTime(time.Now().Round(0)), vals[0])
+
+	if err := appender.Commit(); err != nil {
+		return errors.Wrap(err, "commit changes to the db")
+	}
+	// Update all the values that depend on these symbols.
+	return i.psr.UpdatePSRs(ctx, i.cfg, i.Identifier, i.Symbols, vals)
 }
 
 func (i *IndexTracker) String() string {
@@ -377,7 +389,7 @@ func (i *IndexTracker) ParsePayload(payload []byte) (vals []float64, err error) 
 }
 
 // IndexProcessor consolidates the recorded API values to a single value.
-type IndexProcessor func([]*IndexTracker, time.Time, float64) (apiOracle.PriceInfo, float64, error)
+type IndexProcessor func([]*IndexTracker, time.Time, float64) (PriceInfo, float64, error)
 
 type ValueGenerator interface {
 	// Require reports what a PSR requires to produce a value.
@@ -385,7 +397,7 @@ type ValueGenerator interface {
 
 	// ValueAt returns the best estimate of a value at a given time, and the confidence
 	// if confidence == 0, the value has no meaning
-	ValueAt(map[string]apiOracle.PriceInfo) float64
+	ValueAt(map[string]PriceInfo) float64
 
 	// Granularity returns the currency granularity.
 	Granularity() int64
