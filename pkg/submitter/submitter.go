@@ -28,7 +28,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/reward"
-	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -329,7 +329,7 @@ func (s *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) {
 		} else {
 			value, err = hexutil.DecodeBig(string(val))
 			if err != nil {
-				if requestIDs[i].Uint64() > tracker.MaxPSRID() {
+				if requestIDs[i].Uint64() > index.MaxPSRID() {
 					level.Error(s.logger).Log(
 						"msg", "decoding price value prior to submiting solution",
 						"err", err,

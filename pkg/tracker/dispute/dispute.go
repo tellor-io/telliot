@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package dispute
 
 import (
 	"context"
@@ -21,7 +21,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/tracker/index"
 )
+
+const ComponentName = "dispute"
 
 type disputeChecker struct {
 	config           *config.Config
@@ -51,7 +54,7 @@ func CheckValueAtTime(cfg *config.Config, reqID uint64, val *big.Int, at time.Ti
 	var times []time.Time
 	for i := 0; i < 5; i++ {
 		t := at.Add((time.Duration(i) - 2) * cfg.Trackers.DisputeTimeDelta.Duration / 5)
-		fval, confidence, err := PSRValueForTime(int(reqID), t, cfg.Trackers.SleepCycle.Seconds())
+		fval, confidence, err := index.PSRValueForTime(int(reqID), t, cfg.Trackers.SleepCycle.Seconds())
 		if err != nil {
 			return nil, err
 		}

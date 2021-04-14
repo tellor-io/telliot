@@ -1,9 +1,10 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"math/big"
@@ -47,14 +48,14 @@ func NewBalancer(pair, address string, client contracts.ETHClient) *Balancer {
 	}
 }
 
-func (b *Balancer) Get() ([]byte, error) {
+func (b *Balancer) Get(ctx context.Context) ([]byte, error) {
 	// Getting current pair info from input pool.
 	pair, err := b.getPair()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting pair info from balancer pool")
 	}
 	// Use balancer pool own GetSpotPrice to minimize onchain calls.
-	price, err := b.getSpotPrice(pair)
+	price, err := b.getSpotPrice(ctx, pair)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting price info from balancer pool")
 	}
@@ -107,7 +108,7 @@ func (b *Balancer) getPair() (*BalancerPair, error) {
 	return pair, nil
 }
 
-func (b *Balancer) getSpotPrice(pair *BalancerPair) (float64, error) {
+func (b *Balancer) getSpotPrice(ctx context.Context, pair *BalancerPair) (float64, error) {
 	var poolCaller *balancer.BPoolCaller
 	poolCaller, err := balancer.NewBPoolCaller(common.HexToAddress(b.address), b.client)
 	if err != nil {
@@ -115,7 +116,7 @@ func (b *Balancer) getSpotPrice(pair *BalancerPair) (float64, error) {
 	}
 
 	// Getting token1 price per token2.
-	spotPrice, err := poolCaller.GetSpotPrice(&bind.CallOpts{}, pair.token2Address, pair.token1Address)
+	spotPrice, err := poolCaller.GetSpotPrice(&bind.CallOpts{Context: ctx}, pair.token2Address, pair.token1Address)
 	if err != nil {
 		return 0, err
 	}

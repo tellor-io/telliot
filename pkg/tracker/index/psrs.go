@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
 	"context"
@@ -108,7 +108,6 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (apiOracle.PriceInfo, float64, error) {
 		sum := 0.0
 		weightSum := 0.0
-		numVals := 0
 		minTime := at
 		maxVolume := 0.0
 		for _, api := range apis {
@@ -118,7 +117,6 @@ func TimeWeightedAvg(interval time.Duration, weightFn func(float64) (float64, fl
 				weight, _ := weightFn(normDelta)
 				sum += v.Price * weight
 				weightSum += weight
-				numVals += 1
 				if minTime.Sub(v.Created).Seconds() > 0 {
 					minTime = v.Created
 				}
@@ -325,7 +323,43 @@ func (self *PSR) UpdatePSRs(ctx context.Context, cfg *config.Config, DB db.DataS
 		amt = amt / float64(p.Granularity())
 		level.Debug(self.logger).Log("msg", "new value", "dataID", dataID, "value", amt)
 		self.values.With(prometheus.Labels{"dataID": dataID}).(prometheus.Gauge).Set(amt)
-
 	}
 	return nil
+}
+
+func InitPSRs() error {
+	//check that we have all the symbols asked for
+	for requestID, handler := range PSRs {
+		reqs := handler.Require()
+		for symbol := range reqs {
+			_, ok := indexes[symbol]
+			if !ok {
+				return errors.Errorf("requires non-existent symbol: %s on PSR: %d", symbol, requestID)
+			}
+		}
+	}
+	return nil
+}
+
+func PSRValueForTime(requestID int, at time.Time, trackersInterval float64) (float64, float64, error) {
+	// Get the requirements.
+	reqs := PSRs[requestID].Require()
+	values := make(map[string]apiOracle.PriceInfo)
+	minConfidence := math.MaxFloat64
+
+	for symbol, fn := range reqs {
+		val, confidence, err := fn(indexes[symbol], at, trackersInterval)
+		if err != nil {
+			return 0, 0, err
+		}
+		if confidence == 0 {
+			return 0, 0, nil
+		}
+		if confidence < minConfidence {
+			minConfidence = confidence
+		}
+		values[symbol] = val
+	}
+
+	return PSRs[requestID].ValueAt(values), minConfidence, nil
 }

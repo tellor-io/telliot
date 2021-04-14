@@ -11,6 +11,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
+
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -19,8 +21,43 @@ import (
 	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
+func TestCreateTracker(t *testing.T) {
+	logger := logging.NewLogger()
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
+	client := rpc.NewMockClient()
+	proxy, err := db.OpenLocal(logger, cfg, DB)
+	testutil.Ok(t, err)
+
+	gasTracker, _ := createTracker("gas", logger, cfg, proxy, client, nil)
+	if gasTracker[0].String() != "GasTracker" {
+		testutil.Ok(t, errors.Errorf("Expected GasTracker but got %s", gasTracker[0].String()))
+	}
+
+	indexersTracker, err := createTracker("indexers", logger, cfg, proxy, client, nil)
+	testutil.Ok(t, err, "build IndexTracker")
+	if len(indexersTracker) == 0 {
+		testutil.Ok(t, errors.Errorf("build all IndexTrackers: only tracking %d indexes", len(indexersTracker)))
+	}
+
+	disputeChecker, _ := createTracker("disputeChecker", logger, cfg, proxy, client, nil)
+	if disputeChecker[0].String() != "DisputeChecker" {
+		testutil.Ok(t, errors.Errorf("Expected DisputeChecker but got %s", disputeChecker[0].String()))
+	}
+
+	_, err = createTracker("badTracker", logger, cfg, proxy, client, nil)
+	testutil.Assert(t, err != nil, "expected error but instead received tracker")
+
+}
+
 func TestRunner(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../../")
+	testutil.Ok(t, err)
 	logger := logging.NewLogger()
 
 	exitCh := make(chan int)
@@ -49,16 +86,19 @@ func TestRunner(t *testing.T) {
 		TokenBalance: big.NewInt(0), MiningStatus: true, Top50Requests: top50, CurrentChallenge: chal, QueryMetadata: paramsMap}
 	client := rpc.NewMockClientWithValues(opts)
 
-	DB, cleanup := db.OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
+
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 	contract, err := contracts.NewITellor(client)
 	testutil.Ok(t, err)
-	accounts, err := config.GetAccounts()
 	testutil.Ok(t, err)
 
-	runner, _ := NewRunner(logger, cfg, proxy, client, contract, accounts)
+	runner, _ := NewRunner(logger, cfg, proxy, client, contract)
 
 	runner.Ready()
 	if err := runner.Start(context.Background()); err != nil {

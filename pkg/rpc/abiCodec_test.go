@@ -10,13 +10,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 func TestABICodec(t *testing.T) {
-	config.OpenTestConfig(t)
 	codec, err := BuildCodec(logging.NewLogger())
 	if err != nil {
 		testutil.Ok(t, err)

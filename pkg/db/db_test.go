@@ -7,14 +7,19 @@ import (
 	"testing"
 
 	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
 func TestDB(t *testing.T) {
-	config.OpenTestConfig(t)
-	db, cleanup := OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
+	db, cleanup, err := OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 
-	err := db.Put("sample", []byte("sample_value"))
+	err = db.Put("sample", []byte("sample_value"))
 	if err != nil {
 		t.Error(err)
 	}

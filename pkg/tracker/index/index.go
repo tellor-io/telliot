@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
 	"context"
@@ -26,9 +26,12 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/http"
 	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/yalp/jsonpath"
 )
+
+const ComponentName = "index"
 
 var clck clock.Clock
 
@@ -43,10 +46,49 @@ func GetIndexes() map[string][]*IndexTracker {
 	return indexes
 }
 
-// parseApiFile parses api.json file and returns a *IndexTracker,
+// BuildIndexTrackers creates and initializes a new tracker instance.
+func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerProxy, client contracts.ETHClient) ([]*IndexTracker, error) {
+	err := apiOracle.EnsureValueOracle(logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load trackers from the index file,
+	// and build a tracker for each unique URL, symbol
+	indexers, symbolsForAPI, err := ParseApiFile(logger, cfg, db, client)
+	if err != nil {
+		return nil, err
+	}
+
+	var sortedIndexers []string
+	// Set the reverse map.
+	for api, symbols := range symbolsForAPI {
+		indexers[api].Symbols = symbols
+		sortedIndexers = append(sortedIndexers, api)
+	}
+
+	// Sort the Indexer array so we return the same order every time.
+	sort.Strings(sortedIndexers)
+
+	// Make an array of trackers to be sent to Runner.
+	trackers := make([]*IndexTracker, len(indexers))
+	for idx, api := range sortedIndexers {
+		trackers[idx] = indexers[api]
+	}
+
+	// Start the PSR system that will feed from these indexes.
+	err = InitPSRs()
+	if err != nil {
+		return nil, errors.Wrap(err, "initialize PSRs")
+	}
+
+	return trackers, nil
+}
+
+// ParseApiFile parses api.json file and returns a *IndexTracker,
 // for every URL in index file, also a map[string][]string that describes which APIs
 // influence which symbols.
-func parseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
+func ParseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
 
 	// Load index file.
 	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
@@ -104,7 +146,7 @@ func parseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, 
 				switch api.Type {
 				case httpIndexType:
 					{
-						source = &JSONapi{&FetchRequest{queryURL: api.URL, timeout: cfg.Trackers.FetchTimeout.Duration}, logger}
+						source = NewJSONapi(logger, api.URL, cfg.Trackers.FetchTimeout.Duration)
 						u, err := url.Parse(api.URL)
 						if err != nil {
 							return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
@@ -113,7 +155,7 @@ func parseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, 
 					}
 				case fileIndexType:
 					{
-						source = &JSONfile{filepath: api.URL}
+						source = NewJSONfile(api.URL)
 						name = filepath.Base(api.URL)
 					}
 				case ethereumIndexType:
@@ -180,45 +222,6 @@ func parseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, 
 
 }
 
-// BuildIndexTrackers creates and initializes a new tracker instance.
-func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerProxy, client contracts.ETHClient) ([]Tracker, error) {
-	err := apiOracle.EnsureValueOracle(logger, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	// Load trackers from the index file,
-	// and build a tracker for each unique URL, symbol
-	indexers, symbolsForAPI, err := parseApiFile(logger, cfg, db, client)
-	if err != nil {
-		return nil, err
-	}
-
-	var sortedIndexers []string
-	// Set the reverse map.
-	for api, symbols := range symbolsForAPI {
-		indexers[api].Symbols = symbols
-		sortedIndexers = append(sortedIndexers, api)
-	}
-
-	// Sort the Indexer array so we return the same order every time.
-	sort.Strings(sortedIndexers)
-
-	// Make an array of trackers to be sent to Runner.
-	trackers := make([]Tracker, len(indexers))
-	for idx, api := range sortedIndexers {
-		trackers[idx] = indexers[api]
-	}
-
-	// Start the PSR system that will feed from these indexes.
-	err = InitPSRs()
-	if err != nil {
-		return nil, errors.Wrap(err, "initialize PSRs")
-	}
-
-	return trackers, nil
-}
-
 // IndexType -> index type for IndexObject.
 type IndexType string
 
@@ -261,23 +264,36 @@ type IndexTracker struct {
 }
 
 type DataSource interface {
-	Get() ([]byte, error)
+	Get(context.Context) ([]byte, error)
+}
+
+func NewJSONapi(logger log.Logger, url string, retryDelay time.Duration) *JSONapi {
+	return &JSONapi{
+		logger:     logger,
+		url:        url,
+		retryDelay: retryDelay,
+	}
 }
 
 type JSONapi struct {
-	Request *FetchRequest
-	logger  log.Logger
+	url        string
+	logger     log.Logger
+	retryDelay time.Duration
 }
 
-func (j *JSONapi) Get() ([]byte, error) {
-	return fetchWithRetries(j.logger, j.Request)
+func (self *JSONapi) Get(ctx context.Context) ([]byte, error) {
+	return http.Fetch(ctx, self.logger, self.url, self.retryDelay)
+}
+
+func NewJSONfile(filepath string) *JSONfile {
+	return &JSONfile{filepath: filepath}
 }
 
 type JSONfile struct {
 	filepath string
 }
 
-func (j *JSONfile) Get() ([]byte, error) {
+func (j *JSONfile) Get(_ context.Context) ([]byte, error) {
 	return ioutil.ReadFile(j.filepath)
 }
 
@@ -288,7 +304,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	}
 	i.lastRunTimestamp = now
 
-	payload, err := i.Source.Get()
+	payload, err := i.Source.Get(ctx)
 	if err != nil {
 		return err
 	}
@@ -358,4 +374,22 @@ func (i *IndexTracker) ParsePayload(payload []byte) (vals []float64, err error) 
 		vals = append(vals, val)
 	}
 	return
+}
+
+// IndexProcessor consolidates the recorded API values to a single value.
+type IndexProcessor func([]*IndexTracker, time.Time, float64) (apiOracle.PriceInfo, float64, error)
+
+type ValueGenerator interface {
+	// Require reports what a PSR requires to produce a value.
+	Require() map[string]IndexProcessor
+
+	// ValueAt returns the best estimate of a value at a given time, and the confidence
+	// if confidence == 0, the value has no meaning
+	ValueAt(map[string]apiOracle.PriceInfo) float64
+
+	// Granularity returns the currency granularity.
+	Granularity() int64
+
+	// Symbol returns the tracker Symbol.
+	Symbol() string
 }

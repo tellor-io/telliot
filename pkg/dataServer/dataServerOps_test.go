@@ -18,7 +18,8 @@ package dataServer
 // )
 
 // func TestDataServerOps(t *testing.T) {
-// 	cfg := config.OpenTestConfig(t)
+// 	cfg,err := config.OpenTestConfig()
+// testutil.Ok(t, err)
 // 	logger := logging.NewLogger()
 // 	DB, cleanup := db.OpenTestDB(t)
 // 	defer t.Cleanup(cleanup)

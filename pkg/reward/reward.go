@@ -15,7 +15,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -103,7 +103,7 @@ func (self *Reward) SaveGasUsed(_gasUsed uint64, slot *big.Int) {
 }
 
 func (s *Reward) trbPrice() (*big.Int, error) {
-	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(tracker.RequestID_TRB_ETH))
+	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(index.RequestID_TRB_ETH))
 	if err != nil {
 		return nil, errors.New("getting the trb price from the db")
 	}
@@ -119,7 +119,7 @@ func (s *Reward) trbPrice() (*big.Int, error) {
 
 func (s *Reward) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
 	wei := big.NewInt(common.WEI)
-	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(tracker.PSRs[tracker.RequestID_TRB_ETH].Granularity()))
+	precisionUpscale := big.NewInt(0).Div(wei, big.NewInt(index.PSRs[index.RequestID_TRB_ETH].Granularity()))
 	trbPrice.Mul(trbPrice, precisionUpscale)
 
 	eth := big.NewInt(0).Mul(trbPrice, trbAmount)

@@ -4,47 +4,32 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"testing"
 
 	"github.com/phayes/freeport"
 )
 
-var mainConfig = `
-{
-    "DbFile": "/tellorDB",
-    "EnvFile": "` + filepath.Join("..", "..", "configs", ".env.example") + `",
-    "ApiFile": "` + filepath.Join("..", "..", "configs", "api.json") + `",
-    "ManualDataFile": "` + filepath.Join("..", "..", "configs", "manualData.json") + `"
-}`
-
-func OpenTestConfig(t *testing.T) *Config {
-	mainConfigFile, err := ioutil.TempFile(os.TempDir(), "testing")
+func OpenTestConfig(nestedLevel string) (*Config, error) {
+	projectPath, err := os.Getwd()
 	if err != nil {
-		t.Fatal("Cannot create temporary file", err)
+		return nil, err
 	}
-	defer os.Remove(mainConfigFile.Name())
-
-	if _, err = mainConfigFile.Write([]byte(mainConfig)); err != nil {
-		t.Fatal("write the main config file", err)
-	}
-	if err := mainConfigFile.Close(); err != nil {
-		t.Fatal(err)
-	}
-	cfg, err := ParseConfig(mainConfigFile.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	rootDir := filepath.Join(projectPath, nestedLevel)
+	cfg := defaultConfig
 	port, err := freeport.GetFreePort()
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 	cfg.Mine.ListenPort = uint(port)
 	// Don't need any trackers for the tests.
 	cfg.Trackers.Names = make(map[string]bool)
 
-	return cfg
+	cfg.ApiFile = filepath.Join(rootDir, cfg.ApiFile)
+	cfg.EnvFile = filepath.Join(rootDir, cfg.EnvFile+".example")
+	cfg.ManualDataFile = filepath.Join(rootDir, cfg.ManualDataFile)
+	cfg.HistoryFile = filepath.Join(rootDir, cfg.HistoryFile)
+
+	return Populate(&cfg)
+
 }

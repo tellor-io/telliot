@@ -14,6 +14,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/tracker"
+	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -46,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if _, err := tracker.BuildIndexTrackers(&cfg, DB); err != nil {
+	if _, err := index.BuildIndexTrackers(&cfg, DB); err != nil {
 		log.Fatal(err)
 	}
 	indexes := tracker.GetIndexes()

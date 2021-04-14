@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package gasPrice
 
 import (
 	"context"
@@ -16,7 +16,10 @@ import (
 	"github.com/tellor-io/telliot/pkg/common"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/http"
 )
+
+const ComponentName = "gasTracker"
 
 // GasTracker is the struct that maintains the latest gasprices.
 // note the prices are actually stored in the DB.
@@ -37,7 +40,7 @@ func (b *GasTracker) String() string {
 	return "GasTracker"
 }
 
-func NewGasTracker(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient) *GasTracker {
+func New(logger log.Logger, db db.DataServerProxy, client contracts.ETHClient) *GasTracker {
 	return &GasTracker{
 		db:     db,
 		client: client,
@@ -55,9 +58,9 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 	var gasPrice *big.Int
 
 	if big.NewInt(1).Cmp(netID) == 0 {
-		url := "https://ethgasstation.info/json/ethgasAPI.json"
-		req := &FetchRequest{queryURL: url, timeout: time.Duration(15 * time.Second)}
-		payload, err := fetchWithRetries(b.logger, req)
+		ctx, cncl := context.WithTimeout(ctx, 15*time.Second)
+		defer cncl()
+		resp, err := http.Fetch(ctx, b.logger, "https://ethgasstation.info/json/ethgasAPI.json", time.Second)
 		if err != nil {
 			gasPrice, err = b.client.SuggestGasPrice(ctx)
 			if err != nil {
@@ -65,7 +68,7 @@ func (b *GasTracker) Exec(ctx context.Context) error {
 			}
 		} else {
 			gpModel := GasPriceModel{}
-			err = json.Unmarshal(payload, &gpModel)
+			err = json.Unmarshal(resp, &gpModel)
 			if err != nil {
 				level.Warn(b.logger).Log("msg", "eth gas station json", "err", err)
 				gasPrice, err = b.client.SuggestGasPrice(ctx)

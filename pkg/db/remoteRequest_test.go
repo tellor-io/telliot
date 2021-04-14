@@ -16,13 +16,16 @@ import (
 )
 
 func TestRemoteRequestCodec(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
-	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
 
 	logger := logging.NewLogger()
 
-	DB, cleanup := OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	DB, cleanup, err := OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
@@ -46,13 +49,16 @@ func TestRemoteRequestCodec(t *testing.T) {
 }
 
 func TestRequestReplayAttack(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
-	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
 
 	logger := logging.NewLogger()
 
-	DB, cleanup := OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	DB, cleanup, err := OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
@@ -79,13 +85,16 @@ func TestRequestReplayAttack(t *testing.T) {
 }
 
 func TestRequestForData(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
-	cfg.ServerWhitelist = []string{"0x92f91500e105e3051f3cf94616831b58f6bce1e8"}
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
 
 	logger := logging.NewLogger()
 
-	DB, cleanup := OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	DB, cleanup, err := OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 
@@ -118,12 +127,16 @@ func TestRequestForData(t *testing.T) {
 }
 
 func TestRequestPut(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
 
 	logger := logging.NewLogger()
 
-	DB, cleanup := OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	DB, cleanup, err := OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 	remote, err := OpenRemote(logger, cfg, DB)
 	testutil.Ok(t, err)
 

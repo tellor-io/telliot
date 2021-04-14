@@ -25,10 +25,14 @@ import (
 )
 
 func TestDataServer(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../..")
+	testutil.Ok(t, err)
 	logger := logging.NewLogger()
-	DB, cleanup := db.OpenTestDB(t)
-	defer t.Cleanup(cleanup)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 
 	startBal := big.NewInt(356000)
 	opts := &rpc.MockOptions{

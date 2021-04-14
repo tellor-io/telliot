@@ -1,15 +1,20 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/tellor-io/telliot/pkg/apiOracle"
+	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/testutil"
 )
 
@@ -24,7 +29,7 @@ func TestIndexTracker(t *testing.T) {
 	// Load the testdata from test_api.json file.
 	// The testdata is genertaed using indextracker_testdata script.
 	var testdata map[string][]TestCase
-	rawJSON, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "tracker", "testdata", "test_api.json"))
+	rawJSON, err := ioutil.ReadFile(filepath.Join("..", "..", "..", "test", "tracker", "testdata", "test_api.json"))
 	testutil.Ok(t, err)
 	err = json.Unmarshal(rawJSON, &testdata)
 	testutil.Ok(t, err)
@@ -39,4 +44,17 @@ func TestIndexTracker(t *testing.T) {
 			testutil.Equals(t, testCase.Expected, actual)
 		}
 	}
+}
+
+func TestMain(m *testing.M) {
+	cfg, err := config.OpenTestConfig("../../../")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := apiOracle.EnsureValueOracle(logging.NewLogger(), cfg); err != nil {
+		log.Fatal(err)
+	}
+
+	os.Exit(m.Run())
 }

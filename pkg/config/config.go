@@ -186,11 +186,19 @@ func ParseConfig(path string) (*Config, error) {
 
 	}
 
+	return Populate(cfg)
+}
+
+func validate(cfg *Config) error {
+	return nil
+}
+
+func Populate(cfg *Config) (*Config, error) {
 	if err := validate(cfg); err != nil {
 		return nil, errors.Wrap(err, "validate config")
 	}
 
-	err = godotenv.Load(cfg.EnvFile)
+	err := godotenv.Load(cfg.EnvFile)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "loading env vars from env file")
 	}
@@ -206,10 +214,6 @@ func ParseConfig(path string) (*Config, error) {
 		}
 	}
 	return cfg, nil
-}
-
-func validate(cfg *Config) error {
-	return nil
 }
 
 func ValidateDataServerConfig(cfg *Config) error {

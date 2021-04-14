@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tracker
+package index
 
 import (
 	"context"
@@ -15,18 +15,27 @@ import (
 )
 
 func TestMeanAt(t *testing.T) {
-	cfg := config.OpenTestConfig(t)
+	cfg, err := config.OpenTestConfig("../../../")
+	testutil.Ok(t, err)
 	logger := logging.NewLogger()
-	DB, cleanup := db.OpenTestDB(t)
+	DB, cleanup, err := db.OpenTestDB(cfg)
+	testutil.Ok(t, err)
+	defer func() {
+		testutil.Ok(t, cleanup())
+	}()
 	proxy, err := db.OpenLocal(logger, cfg, DB)
 	testutil.Ok(t, err)
 	testClient := rpc.NewMockClient()
-	defer t.Cleanup(cleanup)
 	if _, err := BuildIndexTrackers(logger, cfg, proxy, testClient); err != nil {
 		testutil.Ok(t, err)
 	}
 	ethIndexes := indexes["ETH/USD"]
-	execEthUsdPsrs(context.Background(), t, ethIndexes)
+
+	for _, psr := range ethIndexes {
+		err := psr.Exec(context.Background())
+		testutil.Ok(t, err)
+
+	}
 
 	_, _, err = MeanAt(ethIndexes, clck.Now(), cfg.Trackers.SleepCycle.Seconds())
 	testutil.Ok(t, err)
