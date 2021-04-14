@@ -105,6 +105,14 @@ func (c *clientInstance) SendTransaction(ctx context.Context, tx *types.Transact
 	return _err
 }
 
+func (c *clientInstance) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
+	_ = c.withTimeout(ctx, func(_ctx *context.Context) error {
+		tx, isPending, err = c.ethClient.TransactionByHash(*_ctx, hash)
+		return nil
+	})
+	return
+}
+
 func (c *clientInstance) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
 	var res []byte
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
@@ -143,6 +151,10 @@ func (c *clientInstance) SubscribeFilterLogs(ctx context.Context, query ethereum
 		return e
 	})
 	return res, _err
+}
+
+func (c *clientInstance) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
+	return c.ethClient.SubscribeNewHead(ctx, ch)
 }
 
 func (c *clientInstance) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
@@ -271,6 +283,26 @@ func (c *clientInstance) HeaderByNumber(ctx context.Context, num *big.Int) (*typ
 	var res *types.Header
 	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
 		r, e := c.ethClient.HeaderByNumber(*_ctx, num)
+		res = r
+		return e
+	})
+	return res, _err
+}
+
+func (c *clientInstance) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
+	var res *types.Block
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.BlockByHash(*_ctx, hash)
+		res = r
+		return e
+	})
+	return res, _err
+}
+
+func (c *clientInstance) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	var res *types.Block
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.BlockByNumber(*_ctx, number)
 		res = r
 		return e
 	})

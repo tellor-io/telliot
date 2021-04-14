@@ -48,7 +48,7 @@ func NewRunner(logger log.Logger, config *config.Config, db db.DataServerProxy, 
 		logger:       log.With(logger, "component", ComponentName),
 		trackerErr: promauto.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "telliot",
-			Subsystem: "tracker",
+			Subsystem: ComponentName,
 			Name:      "errors_total",
 			Help:      "The total number of tracker errors. Usually caused by API throtling.",
 		}, []string{"id"}),
@@ -61,7 +61,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	for name, activated := range r.config.Trackers.Names {
 		if activated {
 			level.Info(r.logger).Log("msg", "starting tracker", "name", name)
-			t, err := createTracker(name, r.logger, r.config, r.db, r.client, r.contract, r.accounts)
+			t, err := createTracker(name, r.logger, r.config, r.db, r.client, r.contract)
 			if err != nil {
 				return errors.Wrapf(err, "creating tracker. Name: %s", name)
 			}

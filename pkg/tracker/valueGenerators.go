@@ -4,17 +4,11 @@
 package tracker
 
 import (
-	"context"
-	"fmt"
 	"math"
-	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
-	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/db"
 )
 
 // IndexProcessor consolidates the recorded API values to a single value.
@@ -22,21 +16,23 @@ type IndexProcessor func([]*IndexTracker, time.Time, float64) (apiOracle.PriceIn
 
 type ValueGenerator interface {
 	// Require reports what a PSR requires to produce a value.
-	Require(time.Time) map[string]IndexProcessor
+	Require() map[string]IndexProcessor
 
 	// ValueAt returns the best estimate of a value at a given time, and the confidence
 	// if confidence == 0, the value has no meaning
-	ValueAt(map[string]apiOracle.PriceInfo, time.Time) float64
+	ValueAt(map[string]apiOracle.PriceInfo) float64
 
 	// Granularity returns the currency granularity.
 	Granularity() int64
+
+	// Symbol returns the tracker Symbol.
+	Symbol() string
 }
 
 func InitPSRs() error {
 	//check that we have all the symbols asked for
-	now := clck.Now()
 	for requestID, handler := range PSRs {
-		reqs := handler.Require(now)
+		reqs := handler.Require()
 		for symbol := range reqs {
 			_, ok := indexes[symbol]
 			if !ok {
@@ -49,7 +45,7 @@ func InitPSRs() error {
 
 func PSRValueForTime(requestID int, at time.Time, trackersInterval float64) (float64, float64, error) {
 	// Get the requirements.
-	reqs := PSRs[requestID].Require(at)
+	reqs := PSRs[requestID].Require()
 	values := make(map[string]apiOracle.PriceInfo)
 	minConfidence := math.MaxFloat64
 
@@ -67,47 +63,5 @@ func PSRValueForTime(requestID int, at time.Time, trackersInterval float64) (flo
 		values[symbol] = val
 	}
 
-	return PSRs[requestID].ValueAt(values, at), minConfidence, nil
-}
-
-func UpdatePSRs(ctx context.Context, cfg *config.Config, DB db.DataServerProxy, updatedSymbols []string) error {
-	now := clck.Now()
-	// Generate a set of all affected PSRs.
-	var toUpdate []int
-	for requestID, psr := range PSRs {
-		reqs := psr.Require(now)
-		for _, symbol := range updatedSymbols {
-			_, ok := reqs[symbol]
-			if ok {
-				toUpdate = append(toUpdate, requestID)
-				break
-			}
-		}
-	}
-
-	// Update all affected PSRs.
-	for _, requestID := range toUpdate {
-		amt, conf, err := PSRValueForTime(requestID, now, cfg.Trackers.SleepCycle.Seconds())
-		if err != nil {
-			return err
-		}
-
-		if conf < cfg.Trackers.MinConfidence || math.IsNaN(amt) {
-			// Confidence in this signal is too low to use.
-			continue
-		}
-
-		// Convert it directly from a float to a bigInt so that there is no risk of overflowing a uint64.
-		bigVal := new(big.Float)
-		bigVal.SetFloat64(amt)
-		bigInt := new(big.Int)
-		bigVal.Int(bigInt)
-		// Encode it and store to DB.
-		enc := hexutil.EncodeBig(bigInt)
-		err = DB.Put(fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestID), []byte(enc))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return PSRs[requestID].ValueAt(values), minConfidence, nil
 }

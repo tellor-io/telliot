@@ -47,13 +47,13 @@ func NewTransactor(
 	account *config.Account,
 	contractInstance *contracts.ITellor,
 ) (*TransactorDefault, error) {
-	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 
 	return &TransactorDefault{
-		logger:           log.With(filterLog, "component", ComponentName, "pubKey", account.Address.String()[:6]),
+		logger:           log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6]),
 		cfg:              cfg,
 		proxy:            proxy,
 		client:           client,
@@ -102,7 +102,6 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 		cost := big.NewInt(1)
 		cost = cost.Mul(gasPrice, big.NewInt(200000))
 		if balance.Cmp(cost) < 0 {
-			// FIXME: notify someone that we're out of funds!
 			finalError = errors.Errorf("insufficient funds to send transaction: %v < %v", balance, cost)
 			continue
 		}
@@ -174,9 +173,6 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 		receipt, err := bind.WaitMined(ctx, self.client, tx)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "transaction result tx:%v", tx.Hash())
-		}
-		if receipt.Status != types.ReceiptStatusSuccessful {
-			return nil, nil, errors.Errorf("unsuccessful transaction status:%v tx:%v", receipt.Status, tx.Hash())
 		}
 		return tx, receipt, nil
 	}

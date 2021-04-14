@@ -25,12 +25,12 @@ const (
 	BTokenABI         = balancer.BTokenABI
 	IERC20ABI         = uniswap.IERC20ABI
 	IUniswapV2PairABI = uniswap.IUniswapV2PairABI
-	ITellorABI        = tellor.ITellorABI
+	ITellorABI        = tellor.TellorABI
 )
 
 type ITellor struct {
 	*tellor.ITellor
-	*tellor.ITellorNewDispute
+	*tellor.TellorNewDispute
 	*lens.Main
 	Address common.Address
 }
@@ -64,11 +64,15 @@ type ETHClient interface {
 
 	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
 	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
+	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error)
 	BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error)
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 	IsSyncing(ctx context.Context) (bool, error)
 	NetworkID(ctx context.Context) (*big.Int, error)
 	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
+	TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
+	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
+	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
 }
 
 // getLensAddress returns the Lens contract address where the network id is taken from the client.

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"syscall"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
@@ -22,6 +23,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/rest"
 	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
+	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -499,8 +501,6 @@ func (d dataserverCmd) Run() error {
 
 	}
 
-	// Stopping the dataserver.
-	defer ds.Stop()
 	if err := g.Run(); err != nil {
 		level.Info(logger).Log("msg", "main exited with error", "err", err)
 		return err
@@ -534,7 +534,6 @@ func (m mineCmd) Run() error {
 	// DataServer is the Telliot data server.
 	var proxy db.DataServerProxy
 
-	var ds *dataServer.DataServerOps
 	DB, err := migrateAndOpenDB(logger, cfg)
 	if err != nil {
 		return errors.Wrapf(err, "initializing database")
@@ -555,7 +554,7 @@ func (m mineCmd) Run() error {
 		if err != nil {
 			return errors.Wrapf(err, "validating config")
 		}
-		ds, err = dataServer.NewDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
+		ds, err := dataServer.NewDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
 		if err != nil {
 			return errors.Wrapf(err, "creating data server")
 		}
@@ -563,6 +562,7 @@ func (m mineCmd) Run() error {
 		if err := ds.Start(); err != nil {
 			return errors.Wrap(err, "starting data server")
 		}
+		defer ds.Stop()
 		// We need to wait until the DataServer instance is ready.
 		<-ds.Ready()
 	}
@@ -594,8 +594,25 @@ func (m mineCmd) Run() error {
 
 		// Miner components.
 		{
+			// Run the profit tracker.
+			var accountAddrs []common.Address
+			for _, acc := range accounts {
+				accountAddrs = append(accountAddrs, acc.Address)
+			}
+			profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg, client, contract, proxy, accountAddrs)
+			if err != nil {
+				return errors.Wrapf(err, "creating profit checker")
+			}
+			g.Add(func() error {
+				err := profitTracker.Start()
+				level.Info(logger).Log("msg", "tasker shutdown complete")
+				return err
+			}, func(error) {
+				profitTracker.Stop()
+			})
+
 			// Create a tasker intance.
-			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg, proxy, client, contract, accounts)
+			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg, client, contract, accounts)
 			if err != nil {
 				return errors.Wrapf(err, "creating tasker")
 			}
@@ -607,6 +624,7 @@ func (m mineCmd) Run() error {
 			}, func(error) {
 				tasker.Stop()
 			})
+
 			// Add a submitter for each account.
 			for _, account := range accounts {
 				transactor, err := transactor.NewTransactor(logger, cfg, proxy, client, account, contract)
@@ -621,7 +639,7 @@ func (m mineCmd) Run() error {
 				g.Add(func() error {
 					err := submitter.Start()
 					level.Info(logger).Log("msg", "submitter shutdown complete",
-						"pubKey", account.Address.String(),
+						"addr", account.Address.String(),
 					)
 					return err
 				}, func(error) {
@@ -639,7 +657,7 @@ func (m mineCmd) Run() error {
 				g.Add(func() error {
 					err := miner.Start()
 					level.Info(logger).Log("msg", "miner shutdown complete",
-						"pubKey", account.Address.String(),
+						"addr", account.Address.String(),
 					)
 					return err
 				}, func(error) {
@@ -649,8 +667,6 @@ func (m mineCmd) Run() error {
 		}
 	}
 
-	// Stopping the dataserver.
-	defer ds.Stop()
 	if err := g.Run(); err != nil {
 		level.Info(logger).Log("msg", "main exited with error", "err", err)
 		return err

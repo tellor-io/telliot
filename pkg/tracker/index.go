@@ -20,6 +20,8 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
@@ -63,6 +65,18 @@ func parseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, 
 	trackersPerURL = make(map[string]*IndexTracker)
 	// Keep track of which APIs influence which symbols so we know what to update later.
 	symbolsForAPI = make(map[string][]string)
+
+	psr := NewPsr(
+		logger,
+		promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: ComponentName,
+			Name:      "values",
+			Help:      "The tracker values",
+		},
+			[]string{"dataID"},
+		),
+	)
 
 	for symbol, apis := range baseIndexes {
 		for _, api := range apis {
@@ -145,6 +159,7 @@ func parseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, 
 					Param:      api.Param,
 					Type:       api.Type,
 					cfg:        cfg,
+					psr:        psr,
 				}
 
 				trackersPerURL[api.URL] = current
@@ -242,6 +257,7 @@ type IndexTracker struct {
 	Type             IndexType
 	lastRunTimestamp time.Time
 	cfg              *config.Config
+	psr              *PSR
 }
 
 type DataSource interface {
@@ -290,7 +306,7 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 	//save the value into our local data window (set 0 volume for now)
 	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price: vals[0], Volume: volume})
 	//update all the values that depend on these symbols
-	return UpdatePSRs(ctx, i.cfg, i.DB, i.Symbols)
+	return i.psr.UpdatePSRs(ctx, i.cfg, i.DB, i.Symbols)
 }
 
 func (i *IndexTracker) String() string {

@@ -37,7 +37,7 @@ func Create(logger log.Logger, cfg *config.Config, ctx context.Context, proxy db
 		return nil, errors.Errorf("create a remote proxy")
 	}
 
-	filterLog, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "applying filter to looger")
 	}
@@ -46,7 +46,7 @@ func Create(logger log.Logger, cfg *config.Config, ctx context.Context, proxy db
 	return &Server{
 		server:    srv,
 		dataProxy: proxy,
-		logger:    log.With(filterLog, "component", ComponentName),
+		logger:    log.With(logger, "component", ComponentName),
 	}, nil
 }
 
