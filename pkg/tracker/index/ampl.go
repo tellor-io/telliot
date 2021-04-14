@@ -40,7 +40,7 @@ func (s *Ampl) Symbol() string {
 func AmpleChained(chainedPair string) IndexProcessor {
 	return func(apis []*IndexTracker, at time.Time, trackersInterval float64) (PriceInfo, float64, error) {
 
-		eod := clck.Now().UTC()
+		eod := time.Now().UTC()
 		d := 24 * time.Hour
 		eod = eod.Truncate(d)
 		eod = eod.Add(2 * time.Hour)
