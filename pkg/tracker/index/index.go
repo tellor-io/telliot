@@ -8,227 +8,223 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
-	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/tsdb"
-	"github.com/tellor-io/telliot/pkg/apiOracle"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/http"
 	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/yalp/jsonpath"
 )
 
-const ComponentName = "index"
+const ComponentName = "indexTracker"
 
-var indexes map[string][]*IndexTracker
-
-// GetIndexes returns indexes for outside package usage.
-func GetIndexes() map[string][]*IndexTracker {
-	return indexes
+type Config struct {
+	Interval       util.Duration
+	FetchTimeout   util.Duration
+	ApiFile        string
+	ManualDataFile string
 }
 
-// BuildIndexTrackers creates and initializes a new tracker instance.
-func BuildIndexTrackers(logger log.Logger, cfg *config.Config, db db.DataServerProxy, tsDB *tsdb.DB, client contracts.ETHClient) ([]*IndexTracker, error) {
-	err := apiOracle.EnsureValueOracle(logger, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	// Load trackers from the index file,
-	// and build a tracker for each unique URL, symbol
-	indexers, symbolsForAPI, err := ParseApiFile(logger, cfg, db, tsDB, client)
-	if err != nil {
-		return nil, err
-	}
-
-	var sortedIndexers []string
-	// Set the reverse map.
-	for api, symbols := range symbolsForAPI {
-		indexers[api].Symbols = symbols
-		sortedIndexers = append(sortedIndexers, api)
-	}
-
-	// Sort the Indexer array so we return the same order every time.
-	sort.Strings(sortedIndexers)
-
-	// Make an array of trackers to be sent to Runner.
-	trackers := make([]*IndexTracker, len(indexers))
-	for idx, api := range sortedIndexers {
-		trackers[idx] = indexers[api]
-	}
-
-	// Start the PSR system that will feed from these indexes.
-	err = InitPSRs()
-	if err != nil {
-		return nil, errors.Wrap(err, "initialize PSRs")
-	}
-
-	return trackers, nil
+type IndexTracker struct {
+	logger       log.Logger
+	ctx context.Context
+	stop context.CancelFunc
+	tsDB        *tsdb.DB
+	cfg         *Config
+	dataSources map[string][]DataSource
+	prices      *prometheus.GaugeVec
+	volumes     *prometheus.GaugeVec
+	getErrors   *prometheus.CounterVec
 }
 
-// ParseApiFile parses api.json file and returns a *IndexTracker,
-// for every URL in index file, also a map[string][]string that describes which APIs
-// influence which symbols.
-func ParseApiFile(logger log.Logger, cfg *config.Config, DB db.DataServerProxy, tsDB *tsdb.DB, client contracts.ETHClient) (trackersPerURL map[string]*IndexTracker, symbolsForAPI map[string][]string, err error) {
-
-	// Load index file.
-	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
+func New(
+	logger log.Logger, 
+	ctx context.Context, 
+	cfg *Config, 
+	tsDB *tsdb.DB, 
+	client contracts.ETHClient,
+	) (*IndexTracker, error) {
+	dataSources, err := createDataSources(logger, ctx, cfg, client)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "read index file @ %s", cfg.ApiFile)
+		return nil, errors.Wrap(err, "create data sources")
 	}
-	// Parse to json.
-	baseIndexes := make(map[string][]IndexObject)
-	err = json.Unmarshal(byteValue, &baseIndexes)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "parse index file")
-	}
-	// Keep track of tracker per symbol.
-	indexes = make(map[string][]*IndexTracker)
-	// Build a tracker for each unique URL.
-	trackersPerURL = make(map[string]*IndexTracker)
-	// Keep track of which APIs influence which symbols so we know what to update later.
-	symbolsForAPI = make(map[string][]string)
 
-	psr := NewPsr(
-		logger,
-		tsDB,
-		promauto.NewGaugeVec(prometheus.GaugeOpts{
+	ctx,stop:=context.WithCancel(ctx)
+
+	return &IndexTracker{
+		logger:       log.With(logger, "component", ComponentName),
+		ctx:ctx,
+		stop:stop,
+		dataSources: dataSources,
+		tsDB:        tsDB,
+		cfg:         cfg,
+		getErrors: promauto.NewCounterVec(prometheus.CounterOpts{
+			Namespace: "telliot",
+			Subsystem: ComponentName,
+			Name:      "errors_total",
+			Help:      "The total number of get errors. Usually caused by API throtling.",
+		}, []string{"source"}),
+		prices: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
 			Name:      "price",
 			Help:      "The currency price",
 		},
-			[]string{"id"},
+			[]string{"source"},
 		),
-		promauto.NewGaugeVec(prometheus.GaugeOpts{
+		volumes: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
 			Name:      "volume",
 			Help:      "The currency trade ammount",
 		},
-			[]string{"id"},
+			[]string{"source"},
 		),
-	)
+	}, nil
+}
 
-	for symbol, apis := range baseIndexes {
-		for _, api := range apis {
-			// Tracker for this API already added?
-			_, ok := trackersPerURL[api.URL]
-			if !ok {
-				// Expand any env variables with their values from the .env file.
-				_, err := godotenv.Read(cfg.EnvFile)
-				// Ignore file doesn't exist errors.
-				if err != nil && !os.IsNotExist(err) {
-					return nil, nil, errors.Wrap(err, "reading .env file")
-				}
-				api.URL = os.Expand(api.URL, func(key string) string {
-					return os.Getenv(key)
-				})
-
-				var name string
-				var source DataSource
-
-				// Create an index tracker based on the api type.
-				// Default value for the api type.
-				if api.Type == "" {
-					api.Type = httpIndexType
-				}
-				switch api.Type {
-				case httpIndexType:
-					{
-						source = NewJSONapi(logger, api.URL, cfg.Trackers.FetchTimeout.Duration)
-						u, err := url.Parse(api.URL)
-						if err != nil {
-							return nil, nil, errors.Wrapf(err, "invalid API URL: %s", api.URL)
-						}
-						name = u.Host
-					}
-				case fileIndexType:
-					{
-						source = NewJSONfile(api.URL)
-						name = filepath.Base(api.URL)
-					}
-				case ethereumIndexType:
-					{
-						// Getting current network id from geth node.
-						networkID, err := client.NetworkID(context.Background())
-						if err != nil {
-							return nil, nil, err
-						}
-						// Validate and pick an ethereum address for current network id.
-						address, err := util.GetAddressForNetwork(api.URL, networkID.Int64())
-						if err != nil {
-							return nil, nil, errors.Wrap(err, "getting address for network id")
-						}
-						if api.Parser == uniswapIndexParser {
-							source = NewUniswap(symbol, address, client)
-
-						} else if api.Parser == balancerIndexParser {
-							source = NewBalancer(symbol, address, client)
-						} else {
-							return nil, nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
-						}
-						name = fmt.Sprintf("%s(%s)", api.Type, api.URL)
-					}
-				default:
-					return nil, nil, errors.New("unknown index type for index object")
-				}
-
-				if api.Interval.Duration > 0 && (api.Interval.Duration < cfg.Trackers.SleepCycle.Duration) {
-					return nil, nil, errors.New("api interval can't be smaller than the global tracker cycle")
-				}
-
-				// Default value for the parser.
-				if api.Parser == "" {
-					api.Parser = jsonPathIndexParser
-				}
-				current := &IndexTracker{
-					Name:       name,
-					Identifier: api.URL,
-					Source:     source,
-					DB:         DB,
-					tsDB:       tsDB,
-					Interval:   api.Interval.Duration,
-					Param:      api.Param,
-					Type:       api.Type,
-					cfg:        cfg,
-					psr:        psr,
-				}
-
-				trackersPerURL[api.URL] = current
-			}
-			// Now we definitely have one.
-			thisOne := trackersPerURL[api.URL]
-
-			// Insert add it and it's more specific variant to the symbol -> api map.
-			indexes[symbol] = append(indexes[symbol], thisOne)
-			specificName := fmt.Sprintf("%s~%s", symbol, thisOne.Name)
-			indexes[specificName] = append(indexes[specificName], thisOne)
-
-			// Save this for later so we can build the api->symbol map.
-			symbolsForAPI[api.URL] = append(symbolsForAPI[api.URL], symbol, specificName)
-		}
+func createDataSources(logger log.Logger, ctx context.Context, cfg *Config, client contracts.ETHClient) (map[string][]DataSource, error) {
+	// Load index file.
+	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "read index file path:%s", cfg.ApiFile)
 	}
-	return
+	// Parse to json.
+	indexes := make(map[string][]Api)
+	err = json.Unmarshal(byteValue, &indexes)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse index file")
+	}
+
+	dataSources := make(map[string][]DataSource)
+
+	for symbol, apis := range indexes {
+		for _, api := range apis {
+			api.URL = os.Expand(api.URL, func(key string) string {
+				return os.Getenv(key)
+			})
+
+			var source DataSource
+
+			// Default value for the api type.
+			if api.Type == "" {
+				api.Type = httpIndexType
+			}
+
+			if int64(api.Interval.Duration) != 0 {
+				api.Interval = cfg
+			}
+
+			// Default value for the parser.
+			if api.Parser == "" {
+				api.Parser = jsonPathParser
+			}
+			switch api.Type {
+			case httpIndexType:
+				{
+					source = NewJSONapi(logger, api.Interval, cfg.FetchTimeout.Duration, api.URL, NewParser(api.Parser))
+				}
+			case fileIndexType:
+				{
+					source = NewJSONfile(api.URL, NewParser(api.Parser))
+				}
+			case ethereumIndexType:
+				{
+					// Getting current network id from geth node.
+					networkID, err := client.NetworkID(ctx)
+					if err != nil {
+						return nil, err
+					}
+					// Validate and pick an ethereum address for current network id.
+					address, err := util.GetAddressForNetwork(api.URL, networkID.Int64())
+					if err != nil {
+						return nil, errors.Wrap(err, "getting address for network id")
+					}
+					if api.Parser == uniswapParser {
+						source = NewUniswap(symbol, address,api.Interval, client)
+
+					} else if api.Parser == balancerParser {
+						source = NewBalancer(symbol, address,api.Interval, client)
+					} else {
+						return nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
+					}
+				}
+			default:
+				return nil, errors.New("unknown index type for index object")
+			}
+
+			dataSources[symbol] = append(dataSources[symbol], source)
+		}
+
+	}
+	return dataSources, nil
 
 }
 
-// IndexType -> index type for IndexObject.
+func (self *IndexTracker) Run() error {
+	for symbol,dataSource:= self.dataSources{
+		// Use the default interval when not set.
+		interval := dataSource.Interval.Duration
+		if int64(interval) == 0{
+			interval = self.cfg.Interval
+		}
+
+		go func(symbol string,interval time.Duration,dataSource DataSource){
+			ticker := time.NewTicker(interval)
+
+			logger = log.With(logger, "source", dataSource.Source())
+			for {
+				select{
+				case <-self.ctx.Done():
+					level.Debug(self.logger).Log("msg","data source loop exited","source", dataSource.Source())
+					return
+				default:
+				}
+				appender := self.tsDB.Appender(ctx)
+
+				vals,err:= dataSource.Get(self.ctx)
+				if err!=nil{
+					level.Error(logger).Log("msg","getting values from data source","err",err)
+					self.getErrors.With(prometheus.Labels{"source":dataSource.Source()}).(prometheus.Counter).Inc()
+				}
+				appender.Append(0, labels.Labels{labels.Label{Name: "__name__", Value: symbol + "_value"}}, timestamp.FromTime(time.Now().Round(0)), vals[0])
+				
+				// TODO for manual entries this is broken.
+				// It should return 0 volume.
+				// At the moment it returns the timestamp.
+				appender.Append(0, labels.Labels{labels.Label{Name: "__name__", Value: symbol + "_volume"}}, timestamp.FromTime(time.Now().Round(0)), vals[1])
+
+				if err := appender.Commit(); err != nil {
+					level.Error(logger).Log("msg","adding values to the DB","err",err)
+					continue
+				}
+
+				self.price.With(prometheus.Labels{"source": url}).(prometheus.Gauge).Set(vals[0])
+				self.volume.With(prometheus.Labels{"source": url}).(prometheus.Gauge).Set(vals[1])
+
+				<-ticker.C
+			}
+
+		}(symbol,interval,dataSource)
+	}
+}
+
+func (self *IndexTracker) Stop() {
+	self.stop()
+}
+
+// IndexType -> index type for Api.
 type IndexType string
 
 const (
@@ -237,48 +233,32 @@ const (
 	fileIndexType     IndexType = "file"
 )
 
-// IndexParser -> index parser for IndexObject.
-type IndexParser string
+// ParserType -> index parser for Api.
+type ParserType string
 
 const (
-	jsonPathIndexParser IndexParser = "jsonPath"
-	uniswapIndexParser  IndexParser = "Uniswap"
-	balancerIndexParser IndexParser = "Balancer"
+	fileParser ParserType = "jsonPath"
+	jsonPathParser ParserType = "jsonPath"
+	uniswapParser  ParserType = "Uniswap"
+	balancerParser ParserType = "Balancer"
 )
 
-// IndexObject will be used in parsing index file.
-type IndexObject struct {
+// Api will be used in parsing index file.
+type Api struct {
 	URL      string          `json:"URL"`
 	Type     IndexType       `json:"type"`
-	Parser   IndexParser     `json:"parser"`
+	Parser   ParserType      `json:"parser"`
 	Param    string          `json:"param"`
 	Interval config.Duration `json:"interval"`
 }
 
-type IndexTracker struct {
-	DB               db.DataServerProxy
-	tsDB             *tsdb.DB
-	Name             string
-	Identifier       string
-	Symbols          []string
-	Source           DataSource
-	Interval         time.Duration
-	Param            string
-	Type             IndexType
-	lastRunTimestamp time.Time
-	cfg              *config.Config
-	psr              *PSR
-}
-
-type DataSource interface {
-	Get(context.Context) ([]byte, error)
-}
-
-func NewJSONapi(logger log.Logger, url string, retryDelay time.Duration) *JSONapi {
+func NewJSONapi(logger log.Logger, interval time.Duration, retryDelay time.Duration, url string,parser Parser) *JSONapi {
 	return &JSONapi{
 		logger:     logger,
 		url:        url,
 		retryDelay: retryDelay,
+		interval:   interval,
+		parser: parser,
 	}
 }
 
@@ -286,10 +266,25 @@ type JSONapi struct {
 	url        string
 	logger     log.Logger
 	retryDelay time.Duration
+	interval   time.Duration
+	parser Parser
 }
 
-func (self *JSONapi) Get(ctx context.Context) ([]byte, error) {
-	return http.Fetch(ctx, self.logger, self.url, self.retryDelay)
+func (self *JSONapi) Get(ctx context.Context) (float64, error) {
+	
+	vals,err:= http.Fetch(ctx, self.logger, self.url, self.retryDelay)
+	if err!=nil{
+		return 0,errors.Wrap(err,"fetching data from API")
+	}
+	 return self.Parser(vals)
+}
+
+func (self *JSONapi) Interval() time.Duration {
+	return self.interval
+}
+
+func (self *JSONapi) Source() time.Duration {
+	return self.url
 }
 
 func NewJSONfile(filepath string) *JSONfile {
@@ -300,77 +295,55 @@ type JSONfile struct {
 	filepath string
 }
 
-func (j *JSONfile) Get(_ context.Context) ([]byte, error) {
-	return ioutil.ReadFile(j.filepath)
+func (self *JSONfile) Get(_ context.Context) (float64, error) {
+	return ioutil.ReadFile(self.filepath)
 }
 
-func (i *IndexTracker) Exec(ctx context.Context) error {
-	now := time.Now()
-	if now.Sub(i.lastRunTimestamp) < i.Interval {
-		return nil
-	}
-	i.lastRunTimestamp = now
-
-	payload, err := i.Source.Get(ctx)
-	if err != nil {
-		return err
-	}
-
-	vals, err := i.ParsePayload(payload)
-	if err != nil {
-		return err
-	}
-
-	appender := i.tsDB.Appender(ctx)
-
-	// TODO for manual entries this is broken.
-	if len(vals) >= 2 {
-		appender.Append(0, labels.Labels{labels.Label{Name: "__name__", Value: i.Identifier + "_volume"}}, timestamp.FromTime(time.Now().Round(0)), vals[1])
-	}
-
-	appender.Append(0, labels.Labels{labels.Label{Name: "__name__", Value: i.Identifier + "_value"}}, timestamp.FromTime(time.Now().Round(0)), vals[0])
-
-	if err := appender.Commit(); err != nil {
-		return errors.Wrap(err, "commit changes to the db")
-	}
-	// Update all the values that depend on these symbols.
-	return i.psr.UpdatePSRs(ctx, i.cfg, i.Identifier, i.Symbols, vals)
+func (self *JSONfile) Interval() time.Duration {
+	return 0
 }
 
-func (i *IndexTracker) String() string {
-	return fmt.Sprintf("%s on %s", strings.Join(i.Symbols, ","), i.Name)
+func (self *JSONapi) Source() time.Duration {
+	return self.filepath
 }
 
-// ParsePayload parses the input JSON payload to a slice of float64
-// The input JSON will get queried using JSONPath query language if
-// the JSONPath expression is not empty.
-func (i *IndexTracker) ParsePayload(payload []byte) (vals []float64, err error) {
+type DataSource interface {
+	// Source returns the data source.
+	Source() string
+	// Get returns current index price and volume.
+	Get(context.Context) ([]float64, error)
+	// The recommended interval for calling the Get method.
+	// Some APIs will return an error if called more often
+	// Due to API rate limiting of the provider.
+	Interval() time.Duration 
+}
 
+type Parser interface {
+	Parse([]byte)(vals []float64, err error)
+}
+
+type FileParser struct{}
+
+func (*FileParser) Parse(payload []byte)(vals []float64, err error){
 	var decodedPayload, result interface{}
 	err = json.Unmarshal(payload, &decodedPayload)
 	if err != nil {
-		return
+		return 0,
 	}
+}
 
-	// Query the json payload using JSONPath expression if needed.
+type JsonPathParser struct{}
+
+func (*JsonPathParser) Parse(payload []byte)(vals []float64, err error){
 	result = decodedPayload
-	if len(strings.TrimSpace(i.Param)) > 0 {
+	if len(strings.TrimSpace(self.Param)) > 0 {
 		if err != nil {
 			return
 		}
-		result, err = jsonpath.Read(decodedPayload, i.Param)
+		result, err = jsonpath.Read(decodedPayload, self.Param)
 		if err != nil {
 			return
 		}
-	}
-
-	// Expect result to be a slice of float or a single float value.
-	var resultList []interface{}
-	switch result := result.(type) {
-	case []interface{}:
-		resultList = result
-	default:
-		resultList = []interface{}{result}
 	}
 
 	// Parse each item of slice to a float.
@@ -385,23 +358,14 @@ func (i *IndexTracker) ParsePayload(payload []byte) (vals []float64, err error) 
 		}
 		vals = append(vals, val)
 	}
-	return
 }
 
-// IndexProcessor consolidates the recorded API values to a single value.
-type IndexProcessor func([]*IndexTracker, time.Time, float64) (PriceInfo, float64, error)
 
-type ValueGenerator interface {
-	// Require reports what a PSR requires to produce a value.
-	Require() map[string]IndexProcessor
-
-	// ValueAt returns the best estimate of a value at a given time, and the confidence
-	// if confidence == 0, the value has no meaning
-	ValueAt(map[string]PriceInfo) float64
-
-	// Granularity returns the currency granularity.
-	Granularity() int64
-
-	// Symbol returns the tracker Symbol.
-	Symbol() string
+func NewParser(t ParserType) Parser {
+	switch t {
+	case jsonPathParser:
+		return &JsonPathParser{}
+	default: 
+		return &FileParser{}
+	}
 }

@@ -8,11 +8,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/aggregator"
+	"github.com/tellor-io/telliot/pkg/dataServer"
+	"github.com/tellor-io/telliot/pkg/submitter"
+	"github.com/tellor-io/telliot/pkg/tracker/index"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const (
@@ -21,83 +25,16 @@ const (
 	LensAddressRinkeby = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
 )
 
-// Unfortunate hack to enable json parsing of human readable time strings
-// see https://github.com/golang/go/issues/10275
-// code from https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations.
-type Duration struct {
-	time.Duration
-}
-
-func (d Duration) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + d.String() + "\""), nil
-}
-
-func (d *Duration) UnmarshalJSON(b []byte) error {
-	var v interface{}
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	switch value := v.(type) {
-	case float64:
-		d.Duration = time.Duration(value * float64(time.Second))
-		return nil
-	case string:
-		dur, err := time.ParseDuration(value)
-		if err != nil {
-			return err
-		}
-		d.Duration = dur
-		return nil
-	default:
-		return errors.Errorf("invalid duration")
-	}
-}
-
-type DataServer struct {
-	ListenHost string
-	ListenPort uint
-}
-
-type Mine struct {
-	// Connect to this remote DB.
-	RemoteDBHost string
-	RemoteDBPort uint
-	// Exposes metrics on this host and port.
-	ListenHost string
-	ListenPort uint
-	// Minimum percent of profit when submitting a solution.
-	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
-	// a ProfitThreshold of 200% or more will wait until the reward is increased or
-	// the gas cost is lowered.
-	// a ProfitThreshold of 199% or less will submit
-	ProfitThreshold              uint64
-	Heartbeat                    Duration
-	MiningInterruptCheckInterval Duration
-	MinSubmitPeriod              Duration
-}
-
-type Trackers struct {
-	SleepCycle       Duration
-	FetchTimeout     Duration
-	MinConfidence    float64
-	DisputeTimeDelta Duration // Ignore data further than this away from the value we are checking.
-	DisputeThreshold float64  // Maximum allowed relative difference between observed and submitted value.
-	Names            map[string]bool
-}
-
 // Config holds global config info derived from config.json.
 type Config struct {
-	Mine             Mine
-	DataServer       DataServer
-	Trackers         Trackers
+	Submitter        submitter.Config
+	DataServer       dataServer.Config
+	IndexTracker     index.Config
+	Aggregator       aggregator.Config
 	EthClientTimeout uint
 	DBFile           string
 	GasMultiplier    float32
 	GasMax           uint
-	ServerWhitelist  []string
-	ApiFile          string
-	ManualDataFile   string
-	HistoryFile      string
 	Logger           map[string]string
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
@@ -106,35 +43,29 @@ type Config struct {
 var defaultConfig = Config{
 	GasMax:        10,
 	GasMultiplier: 1,
-	Mine: Mine{
-		ListenHost:                   "localhost",
-		ListenPort:                   9090,
-		Heartbeat:                    Duration{15 * time.Second},
-		MiningInterruptCheckInterval: Duration{15 * time.Second},
+	Submitter: submitter.Config{
+		ListenHost: "localhost",
+		ListenPort: 9090,
 		// MinSubmitPeriod is the time limit between each submit for a staked miner.
 		// We added a 1 second delay here as a workaround to prevent failed transactions.
-		MinSubmitPeriod: Duration{15*time.Minute + 1*time.Second},
+		MinSubmitPeriod: util.Duration{15*time.Minute + 1*time.Second},
 	},
-	DataServer: DataServer{
+	DataServer: dataServer.Config{
 		ListenHost: "localhost",
 		ListenPort: 5000,
 	},
+	Aggregator: aggregator.Config{
+		MinConfidence: 0.2,
+		Interval:      util.Duration{30 * time.Second},
+	},
 	DBFile:           "db",
 	EthClientTimeout: 3000,
-	Trackers: Trackers{
-		SleepCycle:       Duration{30 * time.Second},
-		FetchTimeout:     Duration{30 * time.Second},
-		MinConfidence:    0.2,
-		DisputeTimeDelta: Duration{5 * time.Minute},
-		DisputeThreshold: 0.01,
-		Names: map[string]bool{
-			"indexers":       true,
-			"disputeChecker": false,
-		},
+	IndexTracker: index.Config{
+		Interval:       util.Duration{30 * time.Second},
+		FetchTimeout:   util.Duration{30 * time.Second},
+		ApiFile:        "configs/api.json",
+		ManualDataFile: "configs/manualData.json",
 	},
-	ApiFile:        "configs/api.json",
-	ManualDataFile: "configs/manualData.json",
-	HistoryFile:    "configs/saved.json",
 	Logger: map[string]string{
 		"db":         "info",
 		"rpc":        "info",
@@ -188,15 +119,7 @@ func ParseConfig(path string) (*Config, error) {
 	return Populate(cfg)
 }
 
-func validate(cfg *Config) error {
-	return nil
-}
-
 func Populate(cfg *Config) (*Config, error) {
-	if err := validate(cfg); err != nil {
-		return nil, errors.Wrap(err, "validate config")
-	}
-
 	err := godotenv.Load(cfg.EnvFile)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "loading env vars from env file")
@@ -209,25 +132,8 @@ func Populate(cfg *Config) (*Config, error) {
 	}
 	if len(accounts) != 0 {
 		for _, acc := range accounts {
-			cfg.ServerWhitelist = append(cfg.ServerWhitelist, acc.Address.String())
+			cfg.DataServer.ServerWhitelist = append(cfg.DataServer.ServerWhitelist, acc.Address.String())
 		}
 	}
 	return cfg, nil
-}
-
-func ValidateDataServerConfig(cfg *Config) error {
-	if len(cfg.ServerWhitelist) == 0 {
-		return errors.New("ServerWhitelist shouldn't be empty while running as dataserver")
-	}
-	return nil
-}
-
-func ValidateMinerConfig(cfg *Config) error {
-	_privateKeys := os.Getenv(PrivateKeysEnvName)
-	privateKeys := strings.Split(_privateKeys, ",")
-
-	if len(privateKeys) == 0 {
-		return errors.New("PrivateKeysEnvName env shouldn't be empty while running as miner")
-	}
-	return nil
 }

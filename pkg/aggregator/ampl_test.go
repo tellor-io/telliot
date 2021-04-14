@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package index
+package aggregator
 
 // [Krasi] I have no idea what this test actually tests so for now removing.
 //

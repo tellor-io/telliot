@@ -39,6 +39,22 @@ import (
 
 const ComponentName = "submitter"
 
+type Config struct {
+	// Connect to this remote DB.
+	RemoteDBHost string
+	RemoteDBPort uint
+	// Exposes metrics on this host and port.
+	ListenHost string
+	ListenPort uint
+	// Minimum percent of profit when submitting a solution.
+	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
+	// a ProfitThreshold of 200% or more will wait until the reward is increased or
+	// the gas cost is lowered.
+	// a ProfitThreshold of 199% or less will submit
+	ProfitThreshold uint64
+	MinSubmitPeriod util.Duration
+}
+
 /**
 * The submitter has one purpose: to either submit the solution on-chain
 * or to reject it if the miner has already submitted a solution for the challenge

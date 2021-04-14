@@ -527,6 +527,14 @@ func (m mineCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "validating config")
 	}
+
+	// Expand any env variables with their values from the .env file.
+	_, err := godotenv.Read(cfg.EnvFile)
+	// Ignore file doesn't exist errors.
+	if err != nil && !os.IsNotExist(err) {
+		return errors.Wrap(err, "reading env file"))
+	}
+
 	logger := logging.NewLogger()
 	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
 	if err != nil {
@@ -536,9 +544,9 @@ func (m mineCmd) Run() error {
 	// DataServer is the Telliot data server.
 	var proxy db.DataServerProxy
 
-	DB, err := migrateAndOpenDB(logger, cfg)
+	DB, err = db.Open(logger, cfg, cfg.DBFile)
 	if err != nil {
-		return errors.Wrapf(err, "initializing database")
+		return nil, errors.Wrapf(err, "opening DB instance")
 	}
 	if cfg.Mine.RemoteDBHost != "" {
 		proxy, err = db.OpenRemote(logger, cfg, DB)
@@ -548,25 +556,6 @@ func (m mineCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "open remote DB instance")
 
-	}
-
-	// Not using a remote DB so need to start the trackers.
-	if cfg.Mine.RemoteDBHost == "" {
-		err = config.ValidateDataServerConfig(cfg)
-		if err != nil {
-			return errors.Wrapf(err, "validating config")
-		}
-		ds, err := dataServer.NewDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
-		if err != nil {
-			return errors.Wrapf(err, "creating data server")
-		}
-		// Start and wait for it to be ready.
-		if err := ds.Start(); err != nil {
-			return errors.Wrap(err, "starting data server")
-		}
-		defer ds.Stop()
-		// We need to wait until the DataServer instance is ready.
-		// <-ds.Ready()
 	}
 
 	// We define our run groups here.
@@ -594,14 +583,44 @@ func (m mineCmd) Run() error {
 			})
 		}
 
-		// Run the profit tracker.
+		// Open the TSDB database.
+		tsdbOptions := tsdb.DefaultOptions()
+		// 2 days are enough as the agregator needs data only 24 hours in the past.
+		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
+		tsdbDB, err := tsdb.Open(cfg.DBFile, logger, nil, tsdbOptions)
+		if err != nil {
+			return errors.Wrapf(err, "creating tsdb DB")
+		}
+
+		defer func() {
+			if err := tsdbDB.Close(); err != nil {
+				level.Error(logger).Log("msg", "closing the tsdb", "err", err)
+			}
+		}()
+
+		// Index tracker.
+		// TODO Run only when not using remote DB
+		index, err := New(logger, ctx, cfg, tsDB,client)
+		if err != nil {
+			return errors.Wrapf(err, "creating index tracker")
+		}
+
+		g.Add(func() error {
+			err := index.Start()
+			level.Info(logger).Log("msg", "index shutdown complete")
+			return err
+		}, func(error) {
+			index.Stop()
+		})
+
+		// Profit tracker.
 		var accountAddrs []common.Address
 		for _, acc := range accounts {
 			accountAddrs = append(accountAddrs, acc.Address)
 		}
 		profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg, client, contract, proxy, accountAddrs)
 		if err != nil {
-			return errors.Wrapf(err, "creating profit checker")
+			return errors.Wrapf(err, "creating profit tracker")
 		}
 		g.Add(func() error {
 			err := profitTracker.Start()
@@ -611,31 +630,14 @@ func (m mineCmd) Run() error {
 			profitTracker.Stop()
 		})
 
-		// Open the TSDB database
-		tsdbOptions := tsdb.DefaultOptions()
-		// 40 days since later when we use TSDB for the index trackers will need 30 days price avarages.
-		tsdbOptions.RetentionDuration = int64(40 * 24 * time.Hour)
-		tsdbDB, err := tsdb.Open(cfg.DBFile, logger, nil, tsdbOptions)
-		if err != nil {
-			return errors.Wrapf(err, "creating tsdb DB")
-		}
+		
 
-		// Run the Gas Tracker.
 
-		defer func() {
-			if err := tsdbDB.Close(); err != nil {
-				level.Error(logger).Log("msg", "closing the tsdb", "err", err)
-			}
-		}()
-
-		gasPriceTracker := gasPrice.New(logger, tsdbDB, client)
-
-		// Create a tasker intance.
+		// Event tasker.
 		tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg, client, contract, accounts)
 		if err != nil {
 			return errors.Wrapf(err, "creating tasker")
 		}
-		// Run the tasker.
 		g.Add(func() error {
 			err := tasker.Start()
 			level.Info(logger).Log("msg", "tasker shutdown complete")
@@ -644,7 +646,8 @@ func (m mineCmd) Run() error {
 			tasker.Stop()
 		})
 
-		// Add a submitter for each account.
+		// Create a submitter for each account.
+		gasPriceTracker := gasPrice.New(logger, client)
 		for _, account := range accounts {
 			transactor, err := transactor.NewTransactor(logger, cfg, gasPriceTracker, client, account, contract)
 			if err != nil {

@@ -69,6 +69,14 @@ func NewMiningManager(
 	account *config.Account,
 	client contracts.ETHClient,
 ) (*MiningMgr, error) {
+
+	_privateKeys := os.Getenv(PrivateKeysEnvName)
+	privateKeys := strings.Split(_privateKeys, ",")
+
+	if len(privateKeys) == 0 {
+		return nil,errors.New("PrivateKeysEnvName env shouldn't be empty")
+	}
+
 	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")

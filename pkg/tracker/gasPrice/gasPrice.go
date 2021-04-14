@@ -28,7 +28,6 @@ const ComponentName = "gasTracker"
 // GasTracker is the struct that maintains the latest gasprices.
 // note the prices are actually stored in the DB.
 type GasTracker struct {
-	db     *tsdb.DB
 	client contracts.ETHClient
 	logger log.Logger
 }
@@ -44,16 +43,15 @@ func (self *GasTracker) String() string {
 	return "GasTracker"
 }
 
-func New(logger log.Logger, db *tsdb.DB, client contracts.ETHClient) *GasTracker {
+func New(logger log.Logger,client contracts.ETHClient) *GasTracker {
 	return &GasTracker{
-		db:     db,
 		client: client,
 		logger: log.With(logger, "component", ComponentName),
 	}
 
 }
 
-func (self *GasTracker) set(ctx context.Context) (int64, error) {
+func (self *GasTracker) Query(ctx context.Context) (int64, error) {
 	netID, err := self.client.NetworkID(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "get network id")
@@ -92,50 +90,5 @@ func (self *GasTracker) set(ctx context.Context) (int64, error) {
 		}
 	}
 
-	appender := self.db.Appender(ctx)
-
-	_, err = appender.Append(0, labels.Labels{db.GasPriceLabel}, timestamp.FromTime(time.Now().Round(0)), float64(gasPrice.Int64()))
-	if err != nil {
-		return 0, errors.Wrap(err, "append to db")
-	}
-
-	if err := appender.Commit(); err != nil {
-		return 0, err
-	}
-
 	return gasPrice.Int64(), nil
-}
-
-func (self *GasTracker) Query(ctx context.Context, mint time.Time) (float64, error) {
-	q, err := self.db.Querier(ctx, timestamp.FromTime(mint.Round(0)), timestamp.FromTime(time.Now()))
-	if err != nil {
-		return 0, err
-	}
-	defer q.Close()
-	s := q.Select(false, nil, labels.MustNewMatcher(labels.MatchEqual, db.GasPriceLabel.Name, db.GasPriceLabel.Value))
-
-	var i int
-	var samples []tsdbutil.Sample
-	for s.Next() {
-		if i > 0 {
-			return 0, errors.New("returned more then one series")
-		}
-		series := s.At()
-		_samples, err := storage.ExpandSamples(series.Iterator(), nil)
-		if err != nil {
-			return 0, err
-		}
-		samples = _samples
-		i++
-	}
-
-	if len(samples) == 0 {
-		res, err := self.set(ctx)
-		if err != nil {
-			return 0, errors.Wrap(err, "getting fresh gas price")
-		}
-		return float64(res), nil
-	}
-
-	return samples[len(samples)-1].V(), nil
 }

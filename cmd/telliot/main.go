@@ -57,43 +57,6 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 	return client, contract, accounts, nil
 }
 
-// migrateAndOpenDB migrates the tx costs and deletes the db.
-// The DB is always deleted because the price avarages calculations
-// is not calculated properly between restarts.
-// TODO don't do this and just improve the price calculations.
-func migrateAndOpenDB(logger log.Logger, cfg *config.Config) (db.DB, error) {
-	// Create a db instance
-	DB, err := db.Open(logger, cfg, cfg.DBFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "opening DB instance")
-	}
-
-	var txsGas [][]byte
-	for i := 0; i <= 5; i++ {
-		txID := reward.PriceTXs + strconv.Itoa(i)
-		txGas, err := DB.Get(txID)
-		if err == nil && len(txGas) > 0 {
-			txsGas = append(txsGas, txGas)
-		}
-	}
-	if err := DB.Close(); err != nil {
-		return nil, errors.Wrapf(err, "closing DB instance for migration")
-	}
-	os.RemoveAll(cfg.DBFile)
-
-	DB, err = db.Open(logger, cfg, cfg.DBFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "opening DB instance")
-	}
-
-	for i, txGas := range txsGas {
-		txID := reward.PriceTXs + strconv.Itoa(i)
-		_ = DB.Put(txID, txGas)
-	}
-
-	return DB, nil
-}
-
 var cli struct {
 	Migrate  migrateCmd  `cmd:"" help:"Migrate funds from the old oracle contract"`
 	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
@@ -122,6 +85,6 @@ func main() {
 	ctx := kong.Parse(&cli, kong.Name("Telliot"),
 		kong.Description("The official Tellor cli tool"),
 		kong.UsageOnError())
-	err := ctx.Run(*ctx)
-	ctx.FatalIfErrorf(err)
+
+	ctx.FatalIfErrorf(ctx.Run(*ctx))
 }

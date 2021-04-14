@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -32,15 +33,13 @@ type Balancer struct {
 	token1  string
 	token2  string
 	client  contracts.ETHClient
+	interval time.Duration
 }
 
-func (b *Balancer) String() string {
-	return "Balancer"
-}
-
-func NewBalancer(pair, address string, client contracts.ETHClient) *Balancer {
+func NewBalancer(pair, address string, interval time.Duration, client contracts.ETHClient) *Balancer {
 	tokens := strings.Split(pair, "/")
 	return &Balancer{
+		interval:interval,
 		address: address,
 		token1:  tokens[0],
 		token2:  tokens[1],
@@ -61,6 +60,15 @@ func (b *Balancer) Get(ctx context.Context) ([]byte, error) {
 	}
 	// Output to index tracker.
 	return json.Marshal([]float64{price})
+}
+
+func (b *Balancer) Interval() time.Duration {
+	return b.interval
+}
+
+
+func (b *Balancer) Source() string {
+	return b.address
 }
 
 func (b *Balancer) getPair() (*BalancerPair, error) {

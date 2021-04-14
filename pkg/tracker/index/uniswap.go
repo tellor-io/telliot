@@ -25,16 +25,14 @@ type Uniswap struct {
 	symbol1 string
 	address string
 	client  contracts.ETHClient
-}
-
-func (u *Uniswap) String() string {
-	return "Uniswap"
+	interval time.Duration
 }
 
 // NewUniswap creates new Uniswap for provided pair and pair address.
-func NewUniswap(pair string, address string, client contracts.ETHClient) *Uniswap {
+func NewUniswap(pair string, address string,interval time.Duration, client contracts.ETHClient) *Uniswap {
 	symbols := strings.Split(pair, "/")
 	return &Uniswap{
+		interval:interval,
 		symbol0: symbols[0],
 		symbol1: symbols[1],
 		address: address,
@@ -51,6 +49,14 @@ func (u *Uniswap) Get(ctx context.Context) ([]byte, error) {
 	}
 	priceF64, _ := price.Float64()
 	return json.Marshal([]float64{priceF64})
+}
+
+func (u *Uniswap) Interval() time.Duration {
+	return b.interval
+}
+
+func (u *Uniswap) Source() string {
+	return b.address
 }
 
 func (u *Uniswap) getSpotPrice(ctx context.Context) (*big.Float, error) {

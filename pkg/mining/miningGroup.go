@@ -76,9 +76,10 @@ type MiningGroup struct {
 	logger           log.Logger
 	cfg              *config.Config
 	contractInstance *contracts.ITellor
+	heartbeat        time.Duration
 }
 
-func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+func NewMiningGroup(logger log.Logger, cfg *config.Config, heartbeat time.Duration, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
@@ -239,7 +240,7 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 		idleWorkers <- b
 	}
 
-	nextHeartbeat := g.cfg.Mine.Heartbeat.Duration
+	nextHeartbeat := g.heartbeat
 
 	var currHashSettings *HashSettings
 	var currWork *Work
@@ -253,7 +254,7 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 		elapsed := time.Since(timeStarted)
 		if elapsed > nextHeartbeat {
 			g.PrintHashRateSummary()
-			nextHeartbeat = elapsed + g.cfg.Mine.Heartbeat.Duration
+			nextHeartbeat = elapsed + g.heartbeat
 		}
 		select {
 		case <-ctx.Done():
