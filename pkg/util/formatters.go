@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -52,4 +53,8 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	default:
 		return errors.Errorf("invalid duration")
 	}
+}
+
+func SanitizeMetricName(input string) string {
+	return strings.ReplaceAll(input, "/", "_")
 }

@@ -16,13 +16,19 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 )
 
 const ComponentName = "transactor"
+
+type Config struct {
+	LogLevel      string
+	GasMax        uint
+	GasMultiplier int
+}
 
 // Transactor takes care of sending transactions over the blockchain network.
 type Transactor interface {
@@ -31,30 +37,30 @@ type Transactor interface {
 
 // TransactorDefault implements the Transactor interface.
 type TransactorDefault struct {
+	cfg              Config
 	logger           log.Logger
-	cfg              *config.Config
 	gasPriceTracker  *gasPrice.GasTracker
 	client           contracts.ETHClient
-	account          *config.Account
+	account          *ethereum.Account
 	contractInstance *contracts.ITellor
 }
 
 func NewTransactor(
 	logger log.Logger,
-	cfg *config.Config,
+	cfg Config,
 	gasPriceTracker *gasPrice.GasTracker,
 	client contracts.ETHClient,
-	account *config.Account,
+	account *ethereum.Account,
 	contractInstance *contracts.ITellor,
 ) (*TransactorDefault, error) {
-	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 
 	return &TransactorDefault{
-		logger:           log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6]),
 		cfg:              cfg,
+		logger:           log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6]),
 		gasPriceTracker:  gasPriceTracker,
 		client:           client,
 		account:          account,
@@ -71,7 +77,7 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 	// Use the same nonce in case there is a stuck transaction so thaself iself submits with the currenself nonce buself higher gas price.
 	IntNonce := int64(nonce)
 
-	_gasPrice, err := self.gasPriceTracker.Query(ctx, time.Now().Add(-(5 * time.Second)))
+	_gasPrice, err := self.gasPriceTracker.Query(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting data from the db")
 	}

@@ -13,17 +13,17 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/tracker/index"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 )
 
 // PriceTXs is the key used to save transactions cost
 // These are used to calculate the profitability when submitting a solution.
 const PriceTXs = "PriceTXSlot"
 
-func NewReward(logger log.Logger, contractInstance *contracts.ITellor, proxy db.DataServerProxy) *Reward {
+func NewReward(logger log.Logger, contractInstance *contracts.ITellor, proxy db.DB) *Reward {
 	return &Reward{
 		logger:           logger,
 		contractInstance: contractInstance,
@@ -34,7 +34,7 @@ func NewReward(logger log.Logger, contractInstance *contracts.ITellor, proxy db.
 type Reward struct {
 	logger           log.Logger
 	contractInstance *contracts.ITellor
-	proxy            db.DataServerProxy
+	proxy            db.DB
 }
 
 // Current returns the profit in percents based on the current TRB price.
@@ -107,7 +107,7 @@ func (self *Reward) SaveGasUsed(_gasUsed uint64, slot *big.Int) {
 }
 
 func (s *Reward) trbPrice() (*big.Int, error) {
-	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(index.RequestID_TRB_ETH))
+	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(aggregator.RequestID_TRB_ETH))
 	if err != nil {
 		return nil, errors.New("getting the trb price from the db")
 	}
@@ -123,7 +123,7 @@ func (s *Reward) trbPrice() (*big.Int, error) {
 
 func (s *Reward) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
 	ether := big.NewInt(params.Ether)
-	precisionUpscale := big.NewInt(0).Div(ether, big.NewInt(index.PSRs[index.RequestID_TRB_ETH].Granularity()))
+	precisionUpscale := big.NewInt(0).Div(ether, big.NewInt(int64(aggregator.RequestID_TRB_ETHGranularity)))
 	trbPrice.Mul(trbPrice, precisionUpscale)
 
 	eth := big.NewInt(0).Mul(trbPrice, trbAmount)
@@ -132,7 +132,7 @@ func (s *Reward) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
 }
 
 func (s *Reward) Slot() (*big.Int, error) {
-	slot, err := s.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_SLOT_PROGRESS")))
+	slot, err := s.contractInstance.GetUintVar(nil, ethereum.Keccak256([]byte("_SLOT_PROGRESS")))
 	if err != nil {
 		return nil, errors.Wrap(err, "getting _SLOT_PROGRESS")
 	}

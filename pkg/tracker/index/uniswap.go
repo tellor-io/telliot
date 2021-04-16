@@ -5,10 +5,10 @@ package index
 
 import (
 	"context"
-	"encoding/json"
 	"math"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -21,48 +21,48 @@ import (
 
 // Uniswap implements DataSource interface.
 type Uniswap struct {
-	symbol0 string
-	symbol1 string
-	address string
-	client  contracts.ETHClient
+	symbol0  string
+	symbol1  string
+	address  string
+	client   contracts.ETHClient
 	interval time.Duration
 }
 
 // NewUniswap creates new Uniswap for provided pair and pair address.
-func NewUniswap(pair string, address string,interval time.Duration, client contracts.ETHClient) *Uniswap {
+func NewUniswap(pair string, address string, interval time.Duration, client contracts.ETHClient) *Uniswap {
 	symbols := strings.Split(pair, "/")
 	return &Uniswap{
-		interval:interval,
-		symbol0: symbols[0],
-		symbol1: symbols[1],
-		address: address,
-		client:  client,
+		interval: interval,
+		symbol0:  symbols[0],
+		symbol1:  symbols[1],
+		address:  address,
+		client:   client,
 	}
 }
 
 // Get calculates price for the provided pair.
-func (u *Uniswap) Get(ctx context.Context) ([]byte, error) {
+func (self *Uniswap) Get(ctx context.Context) (float64, float64, time.Time, error) {
 	// Getting price on-chain.
-	price, err := u.getSpotPrice(ctx)
+	price, err := self.getSpotPrice(ctx)
 	if err != nil {
-		return nil, err
+		return 0, 0, time.Time{}, err
 	}
 	priceF64, _ := price.Float64()
-	return json.Marshal([]float64{priceF64})
+	return priceF64, 0, time.Time{}, nil
 }
 
-func (u *Uniswap) Interval() time.Duration {
-	return b.interval
+func (self *Uniswap) Interval() time.Duration {
+	return self.interval
 }
 
-func (u *Uniswap) Source() string {
-	return b.address
+func (self *Uniswap) Source() string {
+	return self.address
 }
 
-func (u *Uniswap) getSpotPrice(ctx context.Context) (*big.Float, error) {
+func (self *Uniswap) getSpotPrice(ctx context.Context) (*big.Float, error) {
 	var pairContract *uniswap.IUniswapV2PairCaller
 	var err error
-	pairContract, err = uniswap.NewIUniswapV2PairCaller(common.HexToAddress(u.address), u.client)
+	pairContract, err = uniswap.NewIUniswapV2PairCaller(common.HexToAddress(self.address), self.client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting pair contract")
 	}
@@ -87,17 +87,17 @@ func (u *Uniswap) getSpotPrice(ctx context.Context) (*big.Float, error) {
 	}
 
 	// Getting token decimals
-	decimals0, err := u.getTokenDecimals(token0)
+	decimals0, err := self.getTokenDecimals(token0)
 	if err != nil {
 		return nil, err
 	}
-	decimals1, err := u.getTokenDecimals(token1)
+	decimals1, err := self.getTokenDecimals(token1)
 	if err != nil {
 		return nil, err
 	}
 
 	// Getting the price side for our calculations.
-	side, err := u.getSide(token0, token1)
+	side, err := self.getSide(token0, token1)
 	if err != nil {
 		return nil, err
 	}
@@ -109,11 +109,11 @@ func (u *Uniswap) getSpotPrice(ctx context.Context) (*big.Float, error) {
 	return calculateSpotPrice(reserve.Reserve1, reserve.Reserve0, decimals1, decimals0), nil
 }
 
-func (u *Uniswap) getTokenDecimals(token common.Address) (uint8, error) {
+func (self *Uniswap) getTokenDecimals(token common.Address) (uint8, error) {
 	// Get token decimals.
 	// Call on erc20 contracts.
 	var erc20TokenCaller *uniswap.IERC20Caller
-	erc20TokenCaller, err := uniswap.NewIERC20Caller(token, u.client)
+	erc20TokenCaller, err := uniswap.NewIERC20Caller(token, self.client)
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting token(%s) contract", token.Hex())
 	}
@@ -124,36 +124,36 @@ func (u *Uniswap) getTokenDecimals(token common.Address) (uint8, error) {
 	return decimals, nil
 }
 
-func (u *Uniswap) getSide(token0, token1 common.Address) (int, error) {
+func (self *Uniswap) getSide(token0, token1 common.Address) (int, error) {
 	// Get price side.
-	symbol0, err := u.getTokenSymbol(token0)
+	symbol0, err := self.getTokenSymbol(token0)
 	if err != nil {
 		return -1, err
 	}
-	symbol1, err := u.getTokenSymbol(token1)
+	symbol1, err := self.getTokenSymbol(token1)
 	if err != nil {
 		return -1, err
 	}
-	if symbol0 == u.symbol0 {
+	if symbol0 == self.symbol0 {
 		// Maybe this check isn't necessary!
-		if symbol1 == u.symbol1 {
+		if symbol1 == self.symbol1 {
 			return 0, nil
 		}
 
-	} else if symbol0 == u.symbol1 { // Maybe this check isn't necessary too and could be ignored to reduce on-chain calls!
+	} else if symbol0 == self.symbol1 { // Maybe this check isn't necessary too and could be ignored to reduce on-chain calls!
 
-		if symbol1 == u.symbol0 {
+		if symbol1 == self.symbol0 {
 			return 1, nil
 		}
 	}
 	return -1, errors.New("wrong pair of input symbols were provided")
 }
 
-func (u *Uniswap) getTokenSymbol(token common.Address) (string, error) {
+func (self *Uniswap) getTokenSymbol(token common.Address) (string, error) {
 	// Get token symbol.
 	// Call on erc20 contracts.
 	var erc20TokenCaller *uniswap.IERC20Caller
-	erc20TokenCaller, err := uniswap.NewIERC20Caller(token, u.client)
+	erc20TokenCaller, err := uniswap.NewIERC20Caller(token, self.client)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting token(%s) contract", token.Hex())
 	}

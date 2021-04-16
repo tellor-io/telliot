@@ -21,7 +21,8 @@ package aggregator
 // 	"github.com/tellor-io/telliot/pkg/config"
 // )
 
-// const RequestID_TRB_ETH int = 43
+const RequestID_TRB_ETH int = 43
+const RequestID_TRB_ETHGranularity int = 1000000
 
 // var PSRs = map[int]ValueGenerator{
 // 	1: &SingleSymbol{symbol: "ETH/USD", granularity: 1000000, transform: MedianAt},

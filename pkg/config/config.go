@@ -14,38 +14,62 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/dataServer"
+	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/submitter"
+	"github.com/tellor-io/telliot/pkg/tasker"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
+	"github.com/tellor-io/telliot/pkg/tracker/profit"
+	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
-const (
-	TellorAddress      = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
-	LensAddressMainnet = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
-	LensAddressRinkeby = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
-)
-
-// Config holds global config info derived from config.json.
+// Config is the top-level configuration that holds configs for all components.
 type Config struct {
-	Submitter        submitter.Config
-	DataServer       dataServer.Config
-	IndexTracker     index.Config
-	Aggregator       aggregator.Config
-	EthClientTimeout uint
-	DBFile           string
-	GasMultiplier    float32
-	GasMax           uint
-	Logger           map[string]string
+	Mining        mining.Config
+	Submitter     submitter.Config
+	ProfitTracker profit.Config
+	Tasker        tasker.Config
+	Transactor    transactor.Config
+	DataServer    dataServer.Config
+	IndexTracker  index.Config
+	Ethereum      ethereum.Config
+	Aggregator    aggregator.Config
+	Db            db.Config
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
+
+	// Exposes metrics on this host and port.
+	ListenHost string
+	ListenPort uint
 }
 
 var defaultConfig = Config{
-	GasMax:        10,
-	GasMultiplier: 1,
+	ListenHost: "localhost",
+	ListenPort: 9090,
+
+	Db: db.Config{
+		LogLevel: "info",
+		Path:     "db",
+	},
+	Tasker: tasker.Config{
+		LogLevel: "info",
+	},
+	ProfitTracker: profit.Config{
+		LogLevel: "info",
+	},
+	Ethereum: ethereum.Config{
+		LogLevel: "info",
+		Timeout:  3000,
+	},
+	Transactor: transactor.Config{
+		GasMax:        10,
+		LogLevel:      "info",
+		GasMultiplier: 1,
+	},
 	Submitter: submitter.Config{
-		ListenHost: "localhost",
-		ListenPort: 9090,
+		LogLevel: "info",
 		// MinSubmitPeriod is the time limit between each submit for a staked miner.
 		// We added a 1 second delay here as a workaround to prevent failed transactions.
 		MinSubmitPeriod: util.Duration{15*time.Minute + 1*time.Second},
@@ -58,28 +82,16 @@ var defaultConfig = Config{
 		MinConfidence: 0.2,
 		Interval:      util.Duration{30 * time.Second},
 	},
-	DBFile:           "db",
-	EthClientTimeout: 3000,
+
 	IndexTracker: index.Config{
 		Interval:       util.Duration{30 * time.Second},
 		FetchTimeout:   util.Duration{30 * time.Second},
 		ApiFile:        "configs/api.json",
 		ManualDataFile: "configs/manualData.json",
 	},
-	Logger: map[string]string{
-		"db":         "info",
-		"rpc":        "info",
-		"dataServer": "info",
-		"tracker":    "info",
-		"pow:":       "info",
-		"ops":        "info",
-		"rest":       "info",
-		"apiOracle":  "info",
-	},
 	EnvFile: "configs/.env",
 }
 
-const PrivateKeysEnvName = "ETH_PRIVATE_KEYS"
 const NodeURLEnvName = "NODE_WEBSOCKET_URL"
 
 func ParseConfig(path string) (*Config, error) {
@@ -116,24 +128,9 @@ func ParseConfig(path string) (*Config, error) {
 
 	}
 
-	return Populate(cfg)
-}
-
-func Populate(cfg *Config) (*Config, error) {
-	err := godotenv.Load(cfg.EnvFile)
-	if err != nil && !os.IsNotExist(err) {
+	if err := godotenv.Load(cfg.EnvFile); err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "loading env vars from env file")
 	}
 
-	// Parsing private keys and add their public keys to cfg.ServerWhitelist if any.
-	accounts, err := GetAccounts()
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing private keys")
-	}
-	if len(accounts) != 0 {
-		for _, acc := range accounts {
-			cfg.DataServer.ServerWhitelist = append(cfg.DataServer.ServerWhitelist, acc.Address.String())
-		}
-	}
 	return cfg, nil
 }

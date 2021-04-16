@@ -13,8 +13,8 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
@@ -27,7 +27,7 @@ func prepareTransfer(
 	logger log.Logger,
 	client contracts.ETHClient,
 	tellor *contracts.ITellor,
-	account *config.Account,
+	account *ethereum.Account,
 	amt *big.Int,
 ) (*bind.TransactOpts, error) {
 	balance, err := tellor.BalanceOf(nil, account.Address)
@@ -40,7 +40,7 @@ func prepareTransfer(
 			util.FormatERC20Balance(balance),
 			util.FormatERC20Balance(amt))
 	}
-	auth, err := util.PrepareEthTransaction(ctx, client, account)
+	auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
 		return nil, errors.Wrap(err, "preparing ethereum transaction")
 	}
@@ -52,7 +52,7 @@ func Transfer(
 	logger log.Logger,
 	client contracts.ETHClient,
 	tellor *contracts.ITellor,
-	account *config.Account,
+	account *ethereum.Account,
 	toAddress common.Address,
 	amt *big.Int,
 ) error {
@@ -79,7 +79,7 @@ func Approve(
 	logger log.Logger,
 	client contracts.ETHClient,
 	tellor *contracts.ITellor,
-	account *config.Account,
+	account *ethereum.Account,
 	spender common.Address,
 	amt *big.Int,
 ) error {

@@ -20,7 +20,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -29,12 +28,16 @@ import (
 
 const ComponentName = "profitTracker"
 
+type Config struct {
+	LogLevel string
+}
+
 type ProfitTracker struct {
 	client           contracts.ETHClient
 	logger           log.Logger
 	contractInstance *contracts.ITellor
 	abi              abi.ABI
-	proxy            db.DataServerProxy
+	proxy            db.DB
 	ctx              context.Context
 	stop             context.CancelFunc
 	addrs            []common.Address
@@ -53,13 +56,13 @@ type ProfitTracker struct {
 func NewProfitTracker(
 	logger log.Logger,
 	ctx context.Context,
-	cfg *config.Config,
+	cfg Config,
 	client contracts.ETHClient,
 	contractInstance *contracts.ITellor,
-	proxy db.DataServerProxy,
+	proxy db.DB,
 	addrs []common.Address,
 ) (*ProfitTracker, error) {
-	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}

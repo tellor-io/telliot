@@ -5,6 +5,7 @@ package http
 
 import (
 	"context"
+	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -14,7 +15,10 @@ import (
 )
 
 func Fetch(ctx context.Context, logger log.Logger, url string, retryDelay time.Duration) ([]byte, error) {
-	client := http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := http.Client{Transport: tr}
 	ticker := time.NewTicker(retryDelay)
 
 	logger = log.With(logger, "url", url)

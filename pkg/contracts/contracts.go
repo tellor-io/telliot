@@ -8,11 +8,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts/balancer"
 	"github.com/tellor-io/telliot/pkg/contracts/lens"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/contracts/uniswap"
+)
+
+const (
+	TellorAddress      = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
+	LensAddressMainnet = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
+	LensAddressRinkeby = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
 )
 
 type (
@@ -83,16 +88,16 @@ func getLensAddress(client ETHClient) (common.Address, error) {
 	}
 	switch networkID.Int64() {
 	case 1:
-		return common.HexToAddress(config.LensAddressMainnet), nil
+		return common.HexToAddress(LensAddressMainnet), nil
 	case 4:
-		return common.HexToAddress(config.LensAddressRinkeby), nil
+		return common.HexToAddress(LensAddressRinkeby), nil
 	default:
 		return common.Address{}, errors.New("contract address for current network id not found")
 	}
 }
 
 func NewITellor(client ETHClient) (*ITellor, error) {
-	tellorInstance, err := tellor.NewITellor(common.HexToAddress(config.TellorAddress), client)
+	tellorInstance, err := tellor.NewITellor(common.HexToAddress(TellorAddress), client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating telllor interface")
 	}
@@ -106,5 +111,5 @@ func NewITellor(client ETHClient) (*ITellor, error) {
 		return nil, errors.Wrap(err, "creating telllor interface")
 	}
 
-	return &ITellor{Address: common.HexToAddress(config.TellorAddress), ITellor: tellorInstance, Main: lensInstance}, nil
+	return &ITellor{Address: common.HexToAddress(TellorAddress), ITellor: tellorInstance, Main: lensInstance}, nil
 }

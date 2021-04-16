@@ -13,13 +13,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/timestamp"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/tsdb"
-	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/http"
 )
 
@@ -43,7 +37,7 @@ func (self *GasTracker) String() string {
 	return "GasTracker"
 }
 
-func New(logger log.Logger,client contracts.ETHClient) *GasTracker {
+func New(logger log.Logger, client contracts.ETHClient) *GasTracker {
 	return &GasTracker{
 		client: client,
 		logger: log.With(logger, "component", ComponentName),

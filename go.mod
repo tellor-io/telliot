@@ -11,6 +11,7 @@ require (
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
+	github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96 // indirect
 	github.com/ethereum/go-ethereum v1.10.3-0.20210409105221-9c653ff6625d
 	github.com/go-kit/kit v0.10.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -21,7 +22,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.10.0
-	github.com/prometheus/prometheus v1.8.2-0.20210412075927-057c0784a416
+	github.com/prometheus/prometheus v1.8.2-0.20210415085501-f9e2dd069758
 	github.com/prometheus/tsdb v0.7.1
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/status-im/keycard-go v0.0.0-20190424133014-d95853db0f48 // indirect

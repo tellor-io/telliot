@@ -32,7 +32,7 @@ package dataServer
 // 	DB db.DataServerProxy,
 // 	client contracts.ETHClient,
 // 	contract *contracts.ITellor,
-// 	accounts []*config.Account,
+// 	accounts []*ethereum.Account,
 // ) (*DataServerOps, error) {
 // 	ds, err := NewServer(logger, config, DB, client, contract, accounts)
 // 	if err != nil {

@@ -8,16 +8,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/alecthomas/kong"
 	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/reward"
-	"github.com/tellor-io/telliot/pkg/rpc"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 )
 
 func parseConfig(path string) (*config.Config, error) {
@@ -31,8 +28,8 @@ func parseConfig(path string) (*config.Config, error) {
 	return cfg, nil
 }
 
-func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.Config) (contracts.ETHClient, *contracts.ITellor, []*config.Account, error) {
-	client, err := rpc.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, *contracts.ITellor, []*ethereum.Account, error) {
+	client, err := ethereum.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
@@ -40,7 +37,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg *config.C
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
 	}
-	accounts, err := config.GetAccounts()
+	accounts, err := ethereum.GetAccounts()
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "creating accounts")
 	}

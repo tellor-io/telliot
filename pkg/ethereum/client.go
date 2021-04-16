@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package rpc
+package ethereum
 
 import (
 	"context"
@@ -18,12 +18,17 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/logging"
 )
 
-const ComponentName = "rpc"
+const ComponentName = "ethereumClient"
+
+type Config struct {
+	LogLevel      string
+	Timeout       uint
+	GasMultiplier int
+}
 
 // clientInstance is the concrete implementation of the ETHClient.
 type clientInstance struct {
@@ -41,13 +46,13 @@ var (
 )
 
 // NewClient creates a new client instance.
-func NewClient(logger log.Logger, cfg *config.Config, url string) (contracts.ETHClient, error) {
-	timeout := time.Duration(cfg.EthClientTimeout) * time.Second
+func NewClient(logger log.Logger, cfg Config, url string) (contracts.ETHClient, error) {
+	timeout := time.Duration(cfg.Timeout) * time.Second
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
 	}
-	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err = logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}

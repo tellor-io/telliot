@@ -4,30 +4,13 @@
 package dispute
 
 import (
-	"context"
-	"fmt"
-	"io/ioutil"
-	"math"
-	"math/big"
-	"strings"
-	"time"
-
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const ComponentName = "dispute"
 
 type Config struct {
+	LogLevel         string
 	DisputeTimeDelta util.Duration // Ignore data further than this away from the value we are checking.
 	DisputeThreshold float64       // Maximum allowed relative difference between observed and submitted value.
 }

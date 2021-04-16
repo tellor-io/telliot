@@ -16,19 +16,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/prometheus/tsdb"
-	"github.com/tellor-io/telliot/pkg/config"
-	"github.com/tellor-io/telliot/pkg/dataServer"
+	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/ops"
-	"github.com/tellor-io/telliot/pkg/rest"
-	"github.com/tellor-io/telliot/pkg/submitter"
-	"github.com/tellor-io/telliot/pkg/tasker"
-	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
+	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
-	"github.com/tellor-io/telliot/pkg/transactor"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 var GitTag string
@@ -69,7 +63,7 @@ func (c *transferCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -103,7 +97,7 @@ func (c *approveCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -138,7 +132,7 @@ func (a *accountsCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	_, _, accounts, err := createTellorVariables(ctx, logger, cfg)
+	_, _, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -164,7 +158,7 @@ func (b *balanceCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, _, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, _, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -198,7 +192,7 @@ func (d depositCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -225,7 +219,7 @@ func (w withdrawCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -257,7 +251,7 @@ func (r requestCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -282,7 +276,7 @@ func (s statusCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -306,7 +300,7 @@ func (s migrateCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -314,7 +308,7 @@ func (s migrateCmd) Run() error {
 	// Do migration for each account.
 	for _, account := range accounts {
 		level.Info(logger).Log("msg", "TRB migration", "account", account.Address.String())
-		auth, err := util.PrepareEthTransaction(ctx, client, account)
+		auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
 		if err != nil {
 			return errors.Wrap(err, "prepare ethereum transaction")
 		}
@@ -337,39 +331,41 @@ type newDisputeCmd struct {
 }
 
 func (n newDisputeCmd) Run() error {
-	cfg, err := parseConfig(string(n.Config))
-	if err != nil {
-		return errors.Wrapf(err, "creating config")
-	}
+	// cfg, err := parseConfig(string(n.Config))
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating config")
+	// }
 
-	logger := logging.NewLogger()
+	// logger := logging.NewLogger()
 
-	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
-	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
-	}
+	// ctx := context.Background()
+	// client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating tellor variables")
+	// }
 
-	requestID := EthereumInt{}
-	err = requestID.Set(n.requestId)
-	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
-	}
-	timestamp := EthereumInt{}
-	err = timestamp.Set(n.timestamp)
-	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
-	}
-	minerIndex := EthereumInt{}
-	err = minerIndex.Set(n.minerIndex)
-	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
-	}
-	account, err := getAccountFor(accounts, n.Account)
-	if err != nil {
-		return err
-	}
-	return ops.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
+	// requestID := EthereumInt{}
+	// err = requestID.Set(n.requestId)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "parsing argument")
+	// }
+	// timestamp := EthereumInt{}
+	// err = timestamp.Set(n.timestamp)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "parsing argument")
+	// }
+	// minerIndex := EthereumInt{}
+	// err = minerIndex.Set(n.minerIndex)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "parsing argument")
+	// }
+	// account, err := getAccountFor(accounts, n.Account)
+	// if err != nil {
+	// 	return err
+	// }
+	// return ops.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
+
+	return nil
 
 }
 
@@ -381,29 +377,30 @@ type voteCmd struct {
 }
 
 func (v voteCmd) Run() error {
-	cfg, err := parseConfig(string(v.Config))
-	if err != nil {
-		return errors.Wrapf(err, "creating config")
-	}
+	// cfg, err := parseConfig(string(v.Config))
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating config")
+	// }
 
-	logger := logging.NewLogger()
+	// logger := logging.NewLogger()
 
-	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
-	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
-	}
+	// ctx := context.Background()
+	// client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating tellor variables")
+	// }
 
-	disputeID := EthereumInt{}
-	err = disputeID.Set(v.disputeId)
-	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
-	}
-	account, err := getAccountFor(accounts, v.Account)
-	if err != nil {
-		return err
-	}
-	return ops.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
+	// disputeID := EthereumInt{}
+	// err = disputeID.Set(v.disputeId)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "parsing argument")
+	// }
+	// account, err := getAccountFor(accounts, v.Account)
+	// if err != nil {
+	// 	return err
+	// }
+	// return ops.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
+	return nil
 }
 
 type showCmd struct {
@@ -412,23 +409,24 @@ type showCmd struct {
 }
 
 func (s showCmd) Run() error {
-	cfg, err := parseConfig(string(s.Config))
-	if err != nil {
-		return errors.Wrapf(err, "creating config")
-	}
+	// cfg, err := parseConfig(string(s.Config))
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating config")
+	// }
 
-	logger := logging.NewLogger()
+	// logger := logging.NewLogger()
 
-	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
-	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
-	}
-	account, err := getAccountFor(accounts, s.Account)
-	if err != nil {
-		return err
-	}
-	return ops.List(ctx, cfg, logger, client, contract, account)
+	// ctx := context.Background()
+	// client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating tellor variables")
+	// }
+	// account, err := getAccountFor(accounts, s.Account)
+	// if err != nil {
+	// 	return err
+	// }
+	// return ops.List(ctx, cfg, logger, client, contract, account)
+	return nil
 }
 
 type dataserverCmd struct {
@@ -436,79 +434,81 @@ type dataserverCmd struct {
 }
 
 func (d dataserverCmd) Run() error {
-	cfg, err := parseConfig(string(d.Config))
-	if err != nil {
-		return errors.Wrapf(err, "creating config")
-	}
-	err = config.ValidateDataServerConfig(cfg)
-	if err != nil {
-		return errors.Wrapf(err, "validating config")
-	}
-	logger := logging.NewLogger()
+	// cfg, err := parseConfig(string(d.Config))
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating config")
+	// }
 
-	ctx := context.Background()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
-	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
-	}
+	// When the ServerWhitelist is empty try to get
+	//for _, acc := range accounts {
+	// 	cfg.DataServer.ServerWhitelist = append(cfg.DataServer.ServerWhitelist, acc.Address.String())
+	// }
 
-	DB, err := migrateAndOpenDB(logger, cfg)
-	if err != nil {
-		return errors.Wrapf(err, "initializing database")
-	}
-	proxy, err := db.OpenLocal(logger, cfg, DB)
-	if err != nil {
-		return errors.Wrapf(err, "open remote DB instance")
-	}
-	ds, err := dataServer.NewDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
-	if err != nil {
-		return errors.Wrapf(err, "creating data server")
-	}
-	// Start and wait for it to be ready.
-	if err := ds.Start(); err != nil {
-		return errors.Wrap(err, "starting data server")
-	}
-	// We need to wait until the DataServer instance is ready.
-	<-ds.Ready()
+	// logger := logging.NewLogger()
 
-	// We define our run groups here.
-	var g run.Group
-	// Run groups.
-	{
-		// Handle interupts.
-		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
+	// ctx := context.Background()
+	// client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating tellor variables")
+	// }
 
-		// Metrics server.
-		{
-			http.Handle("/metrics", promhttp.Handler())
-			srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.Mine.ListenHost, cfg.Mine.ListenPort)
-			if err != nil {
-				return errors.Wrapf(err, "creating http data server")
-			}
-			g.Add(func() error {
-				level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
-				// returns ErrServerClosed on graceful close
-				var err error
-				if err = srv.Start(); err != nil {
-					err = errors.Wrapf(err, "ListenAndServe")
-				}
-				level.Info(logger).Log("msg", "metrics server shutdown complete")
-				return err
-			}, func(error) {
-				if srv.Stop() != nil {
-					level.Error(logger).Log("msg", "shutting down the rest service", "err", err)
-				}
-			})
-		}
+	// DB, err := migrateAndOpenDB(logger, cfg)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "initializing database")
+	// }
+	// proxy, err := db.OpenLocal(logger, cfg, DB)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "open remote DB instance")
+	// }
+	// ds, err := dataServer.NewDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "creating data server")
+	// }
+	// // Start and wait for it to be ready.
+	// if err := ds.Start(); err != nil {
+	// 	return errors.Wrap(err, "starting data server")
+	// }
+	// // We need to wait until the DataServer instance is ready.
+	// <-ds.Ready()
 
-	}
+	// // We define our run groups here.
+	// var g run.Group
+	// // Run groups.
+	// {
+	// 	// Handle interupts.
+	// 	g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
 
-	if err := g.Run(); err != nil {
-		level.Info(logger).Log("msg", "main exited with error", "err", err)
-		return err
-	}
+	// 	// Metrics server.
+	// 	{
+	// 		http.Handle("/metrics", promhttp.Handler())
+	// 		srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.Mine.ListenHost, cfg.Mine.ListenPort)
+	// 		if err != nil {
+	// 			return errors.Wrapf(err, "creating http data server")
+	// 		}
+	// 		g.Add(func() error {
+	// 			level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
+	// 			// returns ErrServerClosed on graceful close
+	// 			var err error
+	// 			if err = srv.Start(); err != nil {
+	// 				err = errors.Wrapf(err, "ListenAndServe")
+	// 			}
+	// 			level.Info(logger).Log("msg", "metrics server shutdown complete")
+	// 			return err
+	// 		}, func(error) {
+	// 			if srv.Stop() != nil {
+	// 				level.Error(logger).Log("msg", "shutting down the rest service", "err", err)
+	// 			}
+	// 		})
+	// 	}
 
-	level.Info(logger).Log("msg", "main shutdown complete")
+	// }
+
+	// if err := g.Run(); err != nil {
+	// 	level.Info(logger).Log("msg", "main exited with error", "err", err)
+	// 	return err
+	// }
+
+	// level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
 }
 
@@ -523,40 +523,29 @@ func (m mineCmd) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "creating config")
 	}
-	err = config.ValidateMinerConfig(cfg)
-	if err != nil {
-		return errors.Wrapf(err, "validating config")
-	}
-
-	// Expand any env variables with their values from the .env file.
-	_, err := godotenv.Read(cfg.EnvFile)
-	// Ignore file doesn't exist errors.
-	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrap(err, "reading env file"))
-	}
 
 	logger := logging.NewLogger()
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg)
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
 
 	// DataServer is the Telliot data server.
-	var proxy db.DataServerProxy
+	// var proxy db.DataServerProxy
 
-	DB, err = db.Open(logger, cfg, cfg.DBFile)
+	proxy, err := db.Open(logger, cfg.Db)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening DB instance")
+		return errors.Wrapf(err, "opening DB instance")
 	}
-	if cfg.Mine.RemoteDBHost != "" {
-		proxy, err = db.OpenRemote(logger, cfg, DB)
-	} else {
-		proxy, err = db.OpenLocal(logger, cfg, DB)
-	}
-	if err != nil {
-		return errors.Wrapf(err, "open remote DB instance")
+	// if cfg.Mine.RemoteDBHost != "" {
+	// 	proxy, err = db.OpenRemote(logger, cfg, DB)
+	// } else {
+	// proxy, err = db.OpenLocal(logger, cfg, DB)
+	// }
+	// if err != nil {
+	// 	return errors.Wrapf(err, "open remote DB instance")
 
-	}
+	// }
 
 	// We define our run groups here.
 	var g run.Group
@@ -568,9 +557,9 @@ func (m mineCmd) Run() error {
 		// Metrics server.
 		{
 			http.Handle("/metrics", promhttp.Handler())
-			srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.Mine.ListenHost, cfg.Mine.ListenPort)}
+			srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.ListenHost, cfg.ListenPort)}
 			g.Add(func() error {
-				level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
+				level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.ListenHost, "port", cfg.ListenPort)
 				// returns ErrServerClosed on graceful close
 				var err error
 				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -584,29 +573,44 @@ func (m mineCmd) Run() error {
 		}
 
 		// Open the TSDB database.
+		// TODO when remote use NewSampleAndChunkQueryableClient.
 		tsdbOptions := tsdb.DefaultOptions()
 		// 2 days are enough as the agregator needs data only 24 hours in the past.
 		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
-		tsdbDB, err := tsdb.Open(cfg.DBFile, logger, nil, tsdbOptions)
+		tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 		if err != nil {
 			return errors.Wrapf(err, "creating tsdb DB")
 		}
 
 		defer func() {
-			if err := tsdbDB.Close(); err != nil {
+			if err := tsDB.Close(); err != nil {
 				level.Error(logger).Log("msg", "closing the tsdb", "err", err)
 			}
 		}()
 
+		// Aggregator.
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB, client)
+		if err != nil {
+			return errors.Wrapf(err, "creating aggregator")
+		}
+
+		g.Add(func() error {
+			err := aggregator.Run()
+			level.Info(logger).Log("msg", "aggregator shutdown complete")
+			return err
+		}, func(error) {
+			aggregator.Stop()
+		})
+
 		// Index tracker.
 		// TODO Run only when not using remote DB
-		index, err := New(logger, ctx, cfg, tsDB,client)
+		index, err := index.New(logger, ctx, cfg.IndexTracker, tsDB, client)
 		if err != nil {
 			return errors.Wrapf(err, "creating index tracker")
 		}
 
 		g.Add(func() error {
-			err := index.Start()
+			err := index.Run()
 			level.Info(logger).Log("msg", "index shutdown complete")
 			return err
 		}, func(error) {
@@ -618,7 +622,7 @@ func (m mineCmd) Run() error {
 		for _, acc := range accounts {
 			accountAddrs = append(accountAddrs, acc.Address)
 		}
-		profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg, client, contract, proxy, accountAddrs)
+		profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contract, proxy, accountAddrs)
 		if err != nil {
 			return errors.Wrapf(err, "creating profit tracker")
 		}
@@ -630,62 +634,59 @@ func (m mineCmd) Run() error {
 			profitTracker.Stop()
 		})
 
-		
-
-
 		// Event tasker.
-		tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg, client, contract, accounts)
-		if err != nil {
-			return errors.Wrapf(err, "creating tasker")
-		}
-		g.Add(func() error {
-			err := tasker.Start()
-			level.Info(logger).Log("msg", "tasker shutdown complete")
-			return err
-		}, func(error) {
-			tasker.Stop()
-		})
+		// tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
+		// if err != nil {
+		// 	return errors.Wrapf(err, "creating tasker")
+		// }
+		// g.Add(func() error {
+		// 	err := tasker.Start()
+		// 	level.Info(logger).Log("msg", "tasker shutdown complete")
+		// 	return err
+		// }, func(error) {
+		// 	tasker.Stop()
+		// })
 
 		// Create a submitter for each account.
-		gasPriceTracker := gasPrice.New(logger, client)
-		for _, account := range accounts {
-			transactor, err := transactor.NewTransactor(logger, cfg, gasPriceTracker, client, account, contract)
-			if err != nil {
-				return errors.Wrapf(err, "creating transactor")
-			}
-			// Get a channel on which it listens for new data to submit.
-			submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy, transactor, gasPriceTracker)
-			if err != nil {
-				return errors.Wrapf(err, "creating submitter")
-			}
-			g.Add(func() error {
-				err := submitter.Start()
-				level.Info(logger).Log("msg", "submitter shutdown complete",
-					"addr", account.Address.String(),
-				)
-				return err
-			}, func(error) {
-				submitter.Stop()
-			})
+		// gasPriceTracker := gasPrice.New(logger, client)
+		// for _, account := range accounts {
+		// 	transactor, err := transactor.NewTransactor(logger, cfg, gasPriceTracker, client, account, contract)
+		// 	if err != nil {
+		// 		return errors.Wrapf(err, "creating transactor")
+		// 	}
+		// 	// Get a channel on which it listens for new data to submit.
+		// 	submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy, transactor, gasPriceTracker)
+		// 	if err != nil {
+		// 		return errors.Wrapf(err, "creating submitter")
+		// 	}
+		// 	g.Add(func() error {
+		// 		err := submitter.Start()
+		// 		level.Info(logger).Log("msg", "submitter shutdown complete",
+		// 			"addr", account.Address.String(),
+		// 		)
+		// 		return err
+		// 	}, func(error) {
+		// 		submitter.Stop()
+		// 	})
 
-			// Will be used to cancel pending submissions.
-			tasker.AddSubmitCanceler(submitter)
+		// 	// Will be used to cancel pending submissions.
+		// 	tasker.AddSubmitCanceler(submitter)
 
-			// the Miner component.
-			miner, err := mining.NewMiningManager(logger, ctx, cfg, proxy, contract, taskerChs[account.Address.String()], submitterCh, account, client)
-			if err != nil {
-				return errors.Wrapf(err, "creating miner")
-			}
-			g.Add(func() error {
-				err := miner.Start()
-				level.Info(logger).Log("msg", "miner shutdown complete",
-					"addr", account.Address.String(),
-				)
-				return err
-			}, func(error) {
-				miner.Stop()
-			})
-		}
+		// 	// the Miner component.
+		// 	miner, err := mining.NewMiningManager(logger, ctx, cfg, proxy, contract, taskerChs[account.Address.String()], submitterCh, account, client)
+		// 	if err != nil {
+		// 		return errors.Wrapf(err, "creating miner")
+		// 	}
+		// 	g.Add(func() error {
+		// 		err := miner.Start()
+		// 		level.Info(logger).Log("msg", "miner shutdown complete",
+		// 			"addr", account.Address.String(),
+		// 		)
+		// 		return err
+		// 	}, func(error) {
+		// 		miner.Stop()
+		// 	})
+		// }
 	}
 
 	if err := g.Run(); err != nil {
@@ -697,7 +698,7 @@ func (m mineCmd) Run() error {
 	return nil
 }
 
-func getAccountFor(accounts []*config.Account, accountNo int) (*config.Account, error) {
+func getAccountFor(accounts []*ethereum.Account, accountNo int) (*ethereum.Account, error) {
 	if accountNo < 0 || accountNo >= len(accounts) {
 		return nil, errors.New("account not found")
 	}

@@ -10,11 +10,15 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/logging"
 )
 
 const ComponentName = "db"
+
+type Config struct {
+	LogLevel string
+	Path     string
+}
 
 const (
 
@@ -42,28 +46,28 @@ type impl struct {
 }
 
 // Open the database using the given DB file as its data store.
-func Open(logger log.Logger, cfg *config.Config, file string) (DB, error) {
+func Open(logger log.Logger, cfg Config) (DB, error) {
 	// Open the db and recover any potential corruptions.
-	db, err := leveldb.OpenFile(file, &opt.Options{
+	db, err := leveldb.OpenFile(cfg.Path, &opt.Options{
 		OpenFilesCacheCapacity: minHandles,
 		BlockCacheCapacity:     minCache / 2 * opt.MiB,
 		WriteBuffer:            minCache / 4 * opt.MiB, // Two of these are used internally.
 		Filter:                 filter.NewBloomFilter(10),
 	})
 	if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
-		db, err = leveldb.RecoverFile(file, nil)
+		db, err = leveldb.RecoverFile(cfg.Path, nil)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	logger, err = logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err = logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	i := &impl{db: db, logger: log.With(logger, "component", ComponentName)}
-	level.Info(i.logger).Log("msg", "created DB", "at", file)
+	level.Info(i.logger).Log("msg", "created DB", "at", cfg.Path)
 	return i, nil
 }
 

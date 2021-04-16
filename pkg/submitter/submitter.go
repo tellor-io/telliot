@@ -6,33 +6,25 @@ package submitter
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/tsdb"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
-	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -40,12 +32,10 @@ import (
 const ComponentName = "submitter"
 
 type Config struct {
+	LogLevel string
 	// Connect to this remote DB.
 	RemoteDBHost string
 	RemoteDBPort uint
-	// Exposes metrics on this host and port.
-	ListenHost string
-	ListenPort uint
 	// Minimum percent of profit when submitting a solution.
 	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
 	// a ProfitThreshold of 200% or more will wait until the reward is increased or
@@ -65,10 +55,10 @@ type Submitter struct {
 	ctx              context.Context
 	close            context.CancelFunc
 	logger           log.Logger
-	cfg              *config.Config
-	proxy            db.DataServerProxy
+	cfg              *Config
+	proxy            db.DB
 	tsDB             *tsdb.DB
-	account          *config.Account
+	account          *ethereum.Account
 	client           contracts.ETHClient
 	contractInstance *contracts.ITellor
 	resultCh         chan *mining.Result
@@ -82,17 +72,17 @@ type Submitter struct {
 
 func NewSubmitter(
 	ctx context.Context,
-	cfg *config.Config,
+	cfg *Config,
 	logger log.Logger,
 	client contracts.ETHClient,
 	contractInstance *contracts.ITellor,
-	account *config.Account,
-	proxy db.DataServerProxy,
+	account *ethereum.Account,
+	proxy db.DB,
 	tsDB *tsdb.DB,
 	transactor transactor.Transactor,
 	gasPriceTracker *gasPrice.GasTracker,
 ) (*Submitter, chan *mining.Result, error) {
-	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "apply filter logger")
 	}
@@ -127,7 +117,7 @@ func NewSubmitter(
 		}),
 	}
 
-	if cfg.Mine.ProfitThreshold > 0 { // Profit check is enabled.
+	if cfg.ProfitThreshold > 0 { // Profit check is enabled.
 		submitter.reward = reward.NewReward(logger, contractInstance, proxy)
 	}
 
@@ -191,14 +181,14 @@ func (self *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Contex
 		}
 		break
 	}
-	if lastSubmit < self.cfg.Mine.MinSubmitPeriod.Duration {
+	if lastSubmit < self.cfg.MinSubmitPeriod.Duration {
 		level.Info(self.logger).Log("msg", "min transaction submit threshold hasn't passed",
-			"nextSubmit", time.Duration(self.cfg.Mine.MinSubmitPeriod.Nanoseconds())-lastSubmit,
+			"nextSubmit", time.Duration(self.cfg.MinSubmitPeriod.Nanoseconds())-lastSubmit,
 			"lastSubmit", lastSubmit,
 			"lastSubmitTimestamp", timestamp.Format("2006-01-02 15:04:05.000000"),
-			"minSubmitPeriod", self.cfg.Mine.MinSubmitPeriod,
+			"minSubmitPeriod", self.cfg.MinSubmitPeriod,
 		)
-		timeToSubmit, cncl := context.WithDeadline(newChallengeReplace, timestamp.Add(self.cfg.Mine.MinSubmitPeriod.Duration))
+		timeToSubmit, cncl := context.WithDeadline(newChallengeReplace, timestamp.Add(self.cfg.MinSubmitPeriod.Duration))
 		defer cncl()
 		select {
 		case <-newChallengeReplace.Done():
@@ -215,8 +205,8 @@ func (self *Submitter) canSubmit() error {
 			level.Warn(self.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
 		} else if err != nil {
 			return errors.Wrapf(err, "submit solution profit check")
-		} else if profitPercent < int64(self.cfg.Mine.ProfitThreshold) {
-			return errors.Errorf("profit:%v lower then the profit threshold:%v", profitPercent, self.cfg.Mine.ProfitThreshold)
+		} else if profitPercent < int64(self.cfg.ProfitThreshold) {
+			return errors.Errorf("profit:%v lower then the profit threshold:%v", profitPercent, self.cfg.ProfitThreshold)
 		}
 	}
 
@@ -236,7 +226,7 @@ func (self *Submitter) profitPercent() (int64, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting current slot")
 	}
-	gasPrice, err := self.gasPriceTracker.Query(self.ctx, time.Now().Add(-(2 * self.cfg.Trackers.SleepCycle.Duration)))
+	gasPrice, err := self.gasPriceTracker.Query(self.ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting current Gas price")
 	}
@@ -331,53 +321,53 @@ func (self *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) 
 	// The submit contains values for 5 data IDs so add them here.
 	for i := 0; i < 5; i++ {
 		// Look back only 2 times the API tracker cycle to use only fresh values.
-		q, err := self.tsDB.Querier(self.ctx, timestamp.FromTime(time.Now().Add(-2*self.cfg.Trackers.SleepCycle.Duration)), timestamp.FromTime(time.Now().Round(0)))
-		if err != nil {
-			return currentValues, err
-		}
-		defer q.Close()
-		s := q.Select(false, nil, labels.MustNewMatcher(labels.MatchEqual, "__name__", requestIDs[i].String()))
+		// q, err := self.tsDB.Querier(self.ctx, timestamp.FromTime(time.Now().Truncate(2*self.cfg.Trackers.SleepCycle.Duration)), timestamp.FromTime(time.Now().Round(0)))
+		// if err != nil {
+		// 	return currentValues, err
+		// }
+		// defer q.Close()
+		// s := q.Select(false, nil, labels.MustNewMatcher(labels.MatchEqual, "__name__", requestIDs[i].String()))
 
-		valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestIDs[i].Uint64())
-		m, err := self.proxy.BatchGet([]string{valKey})
-		if err != nil {
-			return currentValues, errors.Wrapf(err, "retrieve pricing from db for data id:%v", requestIDs[i].Uint64())
-		}
-		val := m[valKey]
-		var value *big.Int
-		if len(val) == 0 {
-			jsonFile, err := os.Open(self.cfg.ManualDataFile)
-			if err != nil {
-				return currentValues, errors.Wrapf(err, "manualData read Error")
-			}
-			defer jsonFile.Close()
-			byteValue, _ := ioutil.ReadAll(jsonFile)
-			var result map[string]map[string]uint
-			_ = json.Unmarshal([]byte(byteValue), &result)
-			_id := strconv.FormatUint(requestIDs[i].Uint64(), 10)
-			val := result[_id]["VALUE"]
-			if val == 0 {
-				return currentValues, errors.Errorf("pricing data not available from db or the manual file for request id:%v", requestIDs[i].Uint64())
-			}
-			value = big.NewInt(int64(val))
-		} else {
-			value, err = hexutil.DecodeBig(string(val))
-			if err != nil {
-				if requestIDs[i].Uint64() > index.MaxPSRID() {
-					level.Error(self.logger).Log(
-						"msg", "decoding price value prior to submiting solution",
-						"err", err,
-					)
-					if len(val) == 0 {
-						level.Error(self.logger).Log("msg", "0 value being submitted")
-						currentValues[i] = big.NewInt(0)
-					}
-					continue
-				}
-				return currentValues, errors.Errorf("no value in database,  reg id:%v", requestIDs[i].Uint64())
-			}
-		}
-		currentValues[i] = value
+		// valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestIDs[i].Uint64())
+		// m, err := self.proxy.BatchGet([]string{valKey})
+		// if err != nil {
+		// 	return currentValues, errors.Wrapf(err, "retrieve pricing from db for data id:%v", requestIDs[i].Uint64())
+		// }
+		// val := m[valKey]
+		// var value *big.Int
+		// if len(val) == 0 {
+		// 	jsonFile, err := os.Open(self.cfg.ManualDataFile)
+		// 	if err != nil {
+		// 		return currentValues, errors.Wrapf(err, "manualData read Error")
+		// 	}
+		// 	defer jsonFile.Close()
+		// 	byteValue, _ := ioutil.ReadAll(jsonFile)
+		// 	var result map[string]map[string]uint
+		// 	_ = json.Unmarshal([]byte(byteValue), &result)
+		// 	_id := strconv.FormatUint(requestIDs[i].Uint64(), 10)
+		// 	val := result[_id]["VALUE"]
+		// 	if val == 0 {
+		// 		return currentValues, errors.Errorf("pricing data not available from db or the manual file for request id:%v", requestIDs[i].Uint64())
+		// 	}
+		// 	value = big.NewInt(int64(val))
+		// } else {
+		// 	value, err = hexutil.DecodeBig(string(val))
+		// 	if err != nil {
+		// 		if requestIDs[i].Uint64() > index.MaxPSRID() {
+		// 			level.Error(self.logger).Log(
+		// 				"msg", "decoding price value prior to submiting solution",
+		// 				"err", err,
+		// 			)
+		// 			if len(val) == 0 {
+		// 				level.Error(self.logger).Log("msg", "0 value being submitted")
+		// 				currentValues[i] = big.NewInt(0)
+		// 			}
+		// 			continue
+		// 		}
+		// 		return currentValues, errors.Errorf("no value in database,  reg id:%v", requestIDs[i].Uint64())
+		// 	}
+		// }
+		// currentValues[i] = value
 	}
 	return currentValues, nil
 }
@@ -397,7 +387,7 @@ func (self *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "decoding address")
 	}
-	last, err := self.contractInstance.GetUintVar(nil, util.Keccak256(decoded))
+	last, err := self.contractInstance.GetUintVar(nil, ethereum.Keccak256(decoded))
 
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "getting last submit time for:%v", self.account.Address.String())

@@ -6,6 +6,7 @@ package dataServer
 const ComponentName = "dataServer"
 
 type Config struct {
+	LogLevel        string
 	ListenHost      string
 	ListenPort      uint
 	ServerWhitelist []string
@@ -29,7 +30,7 @@ type Config struct {
 // 	DB db.DataServerProxy,
 // 	client contracts.ETHClient,
 // 	contract *contracts.ITellor,
-// 	accounts []*config.Account,
+// 	accounts []*ethereum.Account,
 // ) (*DataServer, error) {
 
 // 	if len(cfg.ServerWhitelist) == 0 {

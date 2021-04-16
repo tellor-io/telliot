@@ -46,12 +46,9 @@ func TestUniswapPrice(t *testing.T) {
 	client := rpc.NewMockClientWithValues(opts)
 
 	tracker := NewUniswap("ETH/AMPL", bPairContract.Hex(), client)
-	priceJSON, err := tracker.Get(context.Background())
+	price,_,_ err := tracker.Get(context.Background())
 	testutil.Ok(t, err)
 
-	var priceInfo []float64
-	err = json.Unmarshal(priceJSON, &priceInfo)
-	testutil.Ok(t, err)
-	testutil.Equals(t, []float64{1345.5123168996497}, priceInfo)
-	t.Logf("AMPL/ETH price on Uniswap: %.5f\n", priceInfo[0])
+	testutil.Equals(t, []float64{1345.5123168996497}, price)
+	t.Logf("AMPL/ETH price on Uniswap: %.5f\n", price[0])
 }

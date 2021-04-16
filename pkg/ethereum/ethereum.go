@@ -1,13 +1,14 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package util
+package ethereum
 
 import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/hex"
 	"math/big"
+	"os"
 	"regexp"
 	"strings"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
 )
+
+const PrivateKeysEnvName = "ETH_PRIVATE_KEYS"
 
 var ethAddressRE *regexp.Regexp = regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
 
@@ -69,15 +72,10 @@ func DecodeHex(s string) []byte {
 	return b
 }
 
-type Account interface {
-	GetAddress() common.Address
-	GetPrivateKey() *ecdsa.PrivateKey
-}
-
 func PrepareEthTransaction(
 	ctx context.Context,
 	client contracts.ETHClient,
-	account Account,
+	account *Account,
 ) (*bind.TransactOpts, error) {
 
 	nonce, err := client.PendingNonceAt(ctx, account.GetAddress())
@@ -123,4 +121,43 @@ func Keccak256(input []byte) [32]byte {
 	copy(hashed[:], hash)
 
 	return hashed
+}
+
+type Account struct {
+	Address    common.Address
+	PrivateKey *ecdsa.PrivateKey
+}
+
+func (a *Account) GetAddress() common.Address {
+	return a.Address
+}
+
+func (a *Account) GetPrivateKey() *ecdsa.PrivateKey {
+	return a.PrivateKey
+}
+
+// GetAccounts returns a slice of Account from private keys in
+// PrivateKeysEnvName environment variable.
+func GetAccounts() ([]*Account, error) {
+	_privateKeys := os.Getenv(PrivateKeysEnvName)
+	privateKeys := strings.Split(_privateKeys, ",")
+
+	// Create an Account instance per private keys.
+	accounts := make([]*Account, len(privateKeys))
+	for i, pkey := range privateKeys {
+		privateKey, err := crypto.HexToECDSA(strings.TrimSpace(pkey))
+		if err != nil {
+			return nil, errors.Wrap(err, "getting private key to ECDSA")
+		}
+
+		publicKey := privateKey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			return nil, errors.New("casting public key to ECDSA")
+		}
+
+		publicAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+		accounts[i] = &Account{Address: publicAddress, PrivateKey: privateKey}
+	}
+	return accounts, nil
 }

@@ -6,16 +6,22 @@ package mining
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 )
+
+type Config struct {
+	LogLevel  string
+	Address   common.Address
+	Heartbeat time.Duration
+}
 
 type SolutionSink interface {
 	Submit(context.Context, *Result) (*types.Transaction, error)
@@ -23,7 +29,7 @@ type SolutionSink interface {
 
 const NumProcessors = 1
 
-func SetupMiningGroup(logger log.Logger, cfg *config.Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+func SetupMiningGroup(logger log.Logger, cfg Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	var hashers []Hasher
 	level.Info(logger).Log("msg", "starting CPU mining", "threads", NumProcessors)
 	for i := 0; i < NumProcessors; i++ {
@@ -50,9 +56,7 @@ type MiningMgr struct {
 	group            *MiningGroup
 	taskerCh         chan *Work
 	submitterCh      chan *Result
-	database         db.DataServerProxy
 	contractInstance *contracts.ITellor
-	cfg              *config.Config
 	toMineInput      chan *Work
 	solutionOutput   chan *Result
 }
@@ -61,27 +65,18 @@ type MiningMgr struct {
 func NewMiningManager(
 	logger log.Logger,
 	ctx context.Context,
-	cfg *config.Config,
-	database db.DataServerProxy,
+	cfg Config,
 	contractInstance *contracts.ITellor,
 	taskerCh chan *Work,
 	submitterCh chan *Result,
-	account *config.Account,
 	client contracts.ETHClient,
 ) (*MiningMgr, error) {
 
-	_privateKeys := os.Getenv(PrivateKeysEnvName)
-	privateKeys := strings.Split(_privateKeys, ",")
-
-	if len(privateKeys) == 0 {
-		return nil,errors.New("PrivateKeysEnvName env shouldn't be empty")
-	}
-
-	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
-	logger = log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6])
+	logger = log.With(logger, "component", ComponentName, "addr", cfg.Address.String()[:6])
 
 	group, err := SetupMiningGroup(logger, cfg, contractInstance)
 	if err != nil {
@@ -97,8 +92,6 @@ func NewMiningManager(
 		taskerCh:         taskerCh,
 		submitterCh:      submitterCh,
 		contractInstance: contractInstance,
-		cfg:              cfg,
-		database:         database,
 		ethClient:        client,
 		toMineInput:      make(chan *Work),
 		solutionOutput:   make(chan *Result),

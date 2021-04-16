@@ -21,15 +21,12 @@ func OpenTestConfig(nestedLevel string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg.Mine.ListenPort = uint(port)
-	// Don't need any trackers for the tests.
-	cfg.Trackers.Names = make(map[string]bool)
+	cfg.ListenPort = uint(port)
 
-	cfg.ApiFile = filepath.Join(rootDir, cfg.ApiFile)
+	cfg.IndexTracker.ApiFile = filepath.Join(rootDir, cfg.IndexTracker.ApiFile)
 	cfg.EnvFile = filepath.Join(rootDir, cfg.EnvFile+".example")
-	cfg.ManualDataFile = filepath.Join(rootDir, cfg.ManualDataFile)
-	cfg.HistoryFile = filepath.Join(rootDir, cfg.HistoryFile)
+	cfg.IndexTracker.ManualDataFile = filepath.Join(rootDir, cfg.IndexTracker.ManualDataFile)
 
-	return Populate(&cfg)
+	return &cfg, nil
 
 }
