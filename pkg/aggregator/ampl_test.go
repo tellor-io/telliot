@@ -14,7 +14,7 @@ package aggregator
 // defer func() {
 // 	testutil.Ok(t, cleanup())
 // }()
-// 	testClient := rpc.NewMockClient()
+// 	testClient := ethereum.NewMockClient()
 // 	defer t.Cleanup(cleanup)
 
 // 	logger := logging.NewLogger()

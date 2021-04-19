@@ -33,7 +33,7 @@ package dispute
 // 	if err != nil {
 // 		stdlog.Fatal(err)
 // 	}
-// 	client := rpc.NewMockClient()
+// 	client := ethereum.NewMockClient()
 // 	defer func() {
 // 		if err := cleanup(); err != nil {
 // 			stdlog.Fatal(err)
@@ -52,7 +52,7 @@ package dispute
 // }
 
 // func TestDisputeCheckerInRange(t *testing.T) {
-// 	client := rpc.NewMockClient()
+// 	client := ethereum.NewMockClient()
 // 	contract, err := contracts.NewITellor(client)
 // 	testutil.Ok(t, err)
 // 	ctx := context.Background()
@@ -73,7 +73,7 @@ package dispute
 // 	testutil.Ok(t, err)
 
 // 	logger := logging.NewLogger()
-// 	client := rpc.NewMockClient()
+// 	client := ethereum.NewMockClient()
 // 	contract, err := contracts.NewITellor(client)
 // 	testutil.Ok(t, err)
 

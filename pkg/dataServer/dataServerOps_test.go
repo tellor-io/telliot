@@ -23,7 +23,7 @@ package dataServer
 // 	logger := logging.NewLogger()
 // 	DB, cleanup := db.OpenTestDB(t)
 // 	defer t.Cleanup(cleanup)
-// 	client := rpc.NewMockClient()
+// 	client := ethereum.NewMockClient()
 
 // 	proxy, err := db.OpenLocal(logger, cfg, DB)
 // 	testutil.Ok(t, err)

@@ -193,8 +193,6 @@ func (self *IndexTracker) Run() error {
 	return nil
 }
 
-const TsLastValueSuffix = "_ts_last_value"
-const ValueSuffix = "_ts_last_value"
 const PriceSuffix = "_price"
 const VolumeSuffix = "_volume"
 
@@ -206,7 +204,7 @@ func (self *IndexTracker) recordValues(delay int, symbol string, interval time.D
 
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
-	tsLastValue := time.Now().Unix()
+
 	for {
 		select {
 		case <-self.ctx.Done():
@@ -214,16 +212,6 @@ func (self *IndexTracker) recordValues(delay int, symbol string, interval time.D
 			return
 		default:
 		}
-
-		appender := self.tsDB.Appender(self.ctx)
-		appender.Append(0,
-			labels.Labels{
-				labels.Label{Name: "__name__", Value: util.SanitizeMetricName(symbol + TsLastValueSuffix)},
-				labels.Label{Name: "source", Value: dataSource.Source()},
-			},
-			timestamp.FromTime(time.Now().Round(0)),
-			float64(tsLastValue),
-		)
 
 		price, volume, ts, err := dataSource.Get(self.ctx)
 		if err != nil {
@@ -240,12 +228,14 @@ func (self *IndexTracker) recordValues(delay int, symbol string, interval time.D
 			continue
 		}
 
+		// Record the actual price and volume for this data source.
+		appender := self.tsDB.Appender(self.ctx)
 		appender.Append(0,
 			labels.Labels{
 				labels.Label{Name: "__name__", Value: util.SanitizeMetricName(symbol + PriceSuffix)},
 				labels.Label{Name: "source", Value: dataSource.Source()},
 			},
-			timestamp.FromTime(time.Now().Round(0)),
+			timestamp.FromTime(time.Now()),
 			price,
 		)
 		appender.Append(0,
@@ -253,7 +243,7 @@ func (self *IndexTracker) recordValues(delay int, symbol string, interval time.D
 				labels.Label{Name: "__name__", Value: util.SanitizeMetricName(symbol + VolumeSuffix)},
 				labels.Label{Name: "source", Value: dataSource.Source()},
 			},
-			timestamp.FromTime(time.Now().Round(0)),
+			timestamp.FromTime(time.Now()),
 			volume,
 		)
 
@@ -262,8 +252,6 @@ func (self *IndexTracker) recordValues(delay int, symbol string, interval time.D
 			<-ticker.C
 			continue
 		}
-
-		tsLastValue = time.Now().Unix()
 
 		self.prices.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Gauge).Set(price)
 		self.volumes.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Gauge).Set(volume)
@@ -356,7 +344,6 @@ type JSONapi struct {
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, float64, time.Time, error) {
-
 	vals, err := http.Fetch(ctx, self.logger, self.url, self.retryDelay)
 	if err != nil {
 		return 0, 0, time.Time{}, errors.Wrap(err, "fetching data from API")

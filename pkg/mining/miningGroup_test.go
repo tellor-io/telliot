@@ -55,13 +55,13 @@ package mining
 // 	cfg, err := config.OpenTestConfig("../..")
 // 	testutil.Ok(t, err)
 
-// 	opts := &rpc.MockOptions{
+// 	opts := &ethereum.MockOptions{
 // 		Nonce:         1,
 // 		GasPrice:      big.NewInt(700000000),
 // 		TokenBalance:  big.NewInt(0),
 // 		Top50Requests: []*big.Int{},
 // 	}
-// 	client := rpc.NewMockClientWithValues(opts)
+// 	client := ethereum.NewMockClientWithValues(opts)
 // 	contract, err := contracts.NewITellor(client)
 // 	if err != nil {
 // 		testutil.Ok(t, errors.Wrap(err, "creating new contract instance"))
@@ -123,13 +123,13 @@ package mining
 // 	cfg, err := config.OpenTestConfig("../..")
 // 	testutil.Ok(t, err)
 
-// 	opts := &rpc.MockOptions{
+// 	opts := &ethereum.MockOptions{
 // 		Nonce:         1,
 // 		GasPrice:      big.NewInt(700000000),
 // 		TokenBalance:  big.NewInt(0),
 // 		Top50Requests: []*big.Int{},
 // 	}
-// 	client := rpc.NewMockClientWithValues(opts)
+// 	client := ethereum.NewMockClientWithValues(opts)
 // 	contract, err := contracts.NewITellor(client)
 // 	testutil.Ok(t, err)
 

@@ -1,8 +1,42 @@
 {
-    "ALGO/USD": [
+    "ETH/BTC": [
         {
-            "URL": "https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1",
+            "URL": "https://api.pro.coinbase.com/products/ETH-BTC/ticker",
+            "param": "$.price"
+        },
+        {
+            "URL": "https://api.kraken.com/0/public/Ticker?pair=ETHXBT",
+            "param": "$.result.XETHXXBT.c[0]"
+        },
+        {
+            "URL": "https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1",
             "param": "$[0][4]"
+        },
+        {
+            "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=btc",
+            "param": "$.ethereum.btc"
+        }
+    ],
+    "ETH/USD": [
+        {
+            "URL": "https://api.pro.coinbase.com/products/ETH-USD/ticker",
+            "param": "$[\"price\", \"volume\"]"
+        },
+        {
+            "URL": "https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1",
+            "param": "$[0][4]"
+        },
+        {
+            "URL": "https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1",
+            "param": "$[0][4]"
+        },
+        {
+            "URL": "https://api.kraken.com/0/public/Ticker?pair=ETHUSD",
+            "param": "$.result.XETHZUSD.c[0]"
+        },
+        {
+            "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
+            "param": "$.ethereum.usd"
         }
     ]
 }

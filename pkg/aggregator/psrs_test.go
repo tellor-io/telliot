@@ -25,7 +25,7 @@ package aggregator
 // 	}()
 // 	proxy, err := db.OpenLocal(logger, cfg, DB)
 // 	testutil.Ok(t, err)
-// 	testClient := rpc.NewMockClient()
+// 	testClient := ethereum.NewMockClient()
 // 	if _, err := BuildIndexTrackers(logger, cfg, proxy, testClient); err != nil {
 // 		testutil.Ok(t, err)
 // 	}
