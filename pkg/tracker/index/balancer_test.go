@@ -1,11 +1,7 @@
-// // Copyright (c) The Tellor Authors.
-// // Licensed under the MIT License.
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
 
-// // Copyright (c) The Tellor Authors.
-// // Copyright (c) The Tellor Authors.
-// // Licensed under the MIT License.
-
-// package index
+package index
 
 // import (
 // 	"context"

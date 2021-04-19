@@ -35,9 +35,8 @@ func TestConfig(t *testing.T) {
 	testutil.Ok(t, err)
 
 	//Asserting Default Values
-	testutil.Assert(t, cfg.GasMax > 0, "GasMax should have value")
-	testutil.Assert(t, cfg.GasMultiplier > 0, "GasMultiplier should have value")
-	testutil.Assert(t, cfg.Trackers.MinConfidence > 0, "MinConfidence should have value")
-	testutil.Assert(t, cfg.Trackers.DisputeThreshold > 0, "DisputeThreshold should have value")
+	testutil.Assert(t, cfg.Transactor.GasMax > 0, "GasMax should have value")
+	testutil.Assert(t, cfg.Transactor.GasMultiplier > 0, "GasMultiplier should have value")
+	testutil.Assert(t, cfg.Aggregator.MinConfidence > 0, "MinConfidence should have value")
 
 }
