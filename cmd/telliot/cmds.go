@@ -685,7 +685,7 @@ func (m mineCmd) Run() error {
 	}
 
 	if err := g.Run(); err != nil {
-		level.Info(logger).Log("msg", "main exited with error", "err", err)
+		level.Error(logger).Log("msg", "main exited with error", "err", err)
 		return err
 	}
 
