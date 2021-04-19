@@ -101,9 +101,7 @@ func NewSubmitter(
 		}),
 	}
 
-	if cfg.Mine.ProfitThreshold > 0 { // Profit check is enabled.
-		submitter.reward = reward.NewReward(logger, contractInstance, proxy)
-	}
+	submitter.reward = reward.NewReward(logger, contractInstance, proxy)
 
 	return submitter, submitter.resultCh, nil
 }
@@ -183,7 +181,7 @@ func (s *Submitter) blockUntilTimeToSubmit(newChallengeReplace context.Context) 
 }
 
 func (s *Submitter) canSubmit() error {
-	if s.reward != nil { // Profit check is enabled.
+	if s.cfg.Mine.ProfitThreshold > 0 { // Profit check is enabled.
 		profitPercent, err := s.profitPercent()
 		if _, ok := errors.Cause(err).(reward.ErrNoDataForSlot); ok {
 			level.Warn(s.logger).Log("msg", "skipping profit check when the slot has no record for how much gas it uses", "err", err)
@@ -274,7 +272,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 
 				if recieipt.Status != types.ReceiptStatusSuccessful {
 					s.submitFailCount.Inc()
-					level.Error(s.logger).Log("msg", "submiting solution status not success", "status", recieipt.Status)
+					level.Error(s.logger).Log("msg", "submiting solution status not success", "status", recieipt.Status, "hash", tx.Hash())
 					return
 				}
 				level.Info(s.logger).Log("msg", "successfully submited solution",
@@ -290,7 +288,7 @@ func (s *Submitter) Submit(newChallengeReplace context.Context, result *mining.R
 				if err != nil {
 					level.Error(s.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
 				} else {
-					s.reward.SaveGasUsed(recieipt.GasUsed, slot)
+					s.reward.SaveGasUsed(recieipt.GasUsed, slot.Sub(slot, big.NewInt(1)))
 				}
 
 				return

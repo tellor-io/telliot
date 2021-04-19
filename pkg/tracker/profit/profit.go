@@ -387,7 +387,7 @@ func (self *ProfitTracker) monitorCostFailed() {
 						// When it is a reorg event, remove the cost for the dropped blocks.
 						if self.lastFailedBlock >= event.Number.Int64() {
 							level.Debug(logger).Log("msg", "reorg head")
-							for _cost, cachedBlock := range self.cacheTXsCostFailed.GetALL(false) {
+							for cachedBlock, _cost := range self.cacheTXsCostFailed.GetALL(false) {
 								if cachedBlock.(int64) >= event.Number.Int64() {
 									cost := _cost.(float64)
 									level.Debug(logger).Log("msg", "removing cost from dropped block", "amount", cost)
@@ -477,6 +477,7 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
 			level.Error(logger).Log("msg", "receipt retrieval", "err", err)
+			return
 		} else if receipt != nil {
 			if receipt.Status != types.ReceiptStatusSuccessful {
 				level.Error(logger).Log("msg", "event status not success so no profit added", "status", receipt.Status)

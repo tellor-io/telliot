@@ -563,8 +563,6 @@ func (m mineCmd) Run() error {
 			return errors.Wrap(err, "starting data server")
 		}
 		defer ds.Stop()
-		// We need to wait until the DataServer instance is ready.
-		<-ds.Ready()
 	}
 
 	// We define our run groups here.
@@ -588,7 +586,9 @@ func (m mineCmd) Run() error {
 				level.Info(logger).Log("msg", "metrics server shutdown complete")
 				return err
 			}, func(error) {
-				srv.Close()
+				if err := srv.Close(); err != nil {
+					level.Error(logger).Log("msg", "closing metrics server", "err", err)
+				}
 			})
 		}
 
@@ -668,7 +668,7 @@ func (m mineCmd) Run() error {
 	}
 
 	if err := g.Run(); err != nil {
-		level.Info(logger).Log("msg", "main exited with error", "err", err)
+		level.Error(logger).Log("msg", "main exited with error", "err", err)
 		return err
 	}
 
