@@ -467,8 +467,6 @@ func (d dataserverCmd) Run() error {
 	// if err := ds.Start(); err != nil {
 	// 	return errors.Wrap(err, "starting data server")
 	// }
-	// // We need to wait until the DataServer instance is ready.
-	// <-ds.Ready()
 
 	// // We define our run groups here.
 	// var g run.Group
