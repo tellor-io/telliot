@@ -9,7 +9,6 @@ import (
 	"math"
 	"net"
 	"net/http"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/route"
-
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/promql"
@@ -43,7 +41,6 @@ const (
 type errorType string
 
 const (
-	errorNone        errorType = ""
 	errorTimeout     errorType = "timeout"
 	errorCanceled    errorType = "canceled"
 	errorExec        errorType = "execution"
@@ -90,7 +87,6 @@ type API struct {
 	QueryEngine *promql.Engine
 	now         func() time.Time
 	logger      log.Logger
-	CORSOrigin  *regexp.Regexp
 }
 
 func init() {
@@ -99,18 +95,17 @@ func init() {
 
 // New returns an initialized API type.
 func New(
+	logger log.Logger,
+	ctx context.Context,
 	qe *promql.Engine,
 	q storage.SampleAndChunkQueryable,
-	ap storage.Appendable,
-	logger log.Logger,
-	CORSOrigin *regexp.Regexp,
 ) *API {
+
 	a := &API{
 		QueryEngine: qe,
 		Queryable:   q,
 		now:         time.Now,
 		logger:      logger,
-		CORSOrigin:  CORSOrigin,
 	}
 
 	return a
@@ -127,7 +122,6 @@ func setUnavailStatusOnTSDBNotReady(r apiFuncResult) apiFuncResult {
 func (api *API) Register(r *route.Router) {
 	wrap := func(f apiFunc) http.HandlerFunc {
 		hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			httputil.SetCORS(w, api.CORSOrigin, r)
 			result := setUnavailStatusOnTSDBNotReady(f(r))
 			if result.finalizer != nil {
 				defer result.finalizer()
@@ -147,8 +141,6 @@ func (api *API) Register(r *route.Router) {
 			Handler: hf,
 		}.ServeHTTP
 	}
-
-	r.Options("/*path", wrap(api.options))
 
 	r.Get("/query", wrap(api.query))
 	r.Post("/query", wrap(api.query))
@@ -173,10 +165,6 @@ func invalidParamError(err error, parameter string) apiFuncResult {
 	return apiFuncResult{nil, &apiError{
 		errorBadData, errors.Wrapf(err, "invalid parameter %q", parameter),
 	}, nil, nil}
-}
-
-func (api *API) options(r *http.Request) apiFuncResult {
-	return apiFuncResult{nil, nil, nil, nil}
 }
 
 func (api *API) query(r *http.Request) (result apiFuncResult) {

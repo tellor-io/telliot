@@ -14,7 +14,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/http"
+	"github.com/tellor-io/telliot/pkg/web"
 )
 
 const ComponentName = "gasTracker"
@@ -56,7 +56,7 @@ func (self *GasTracker) Query(ctx context.Context) (int64, error) {
 	if big.NewInt(1).Cmp(netID) == 0 {
 		ctx, cncl := context.WithTimeout(ctx, 15*time.Second)
 		defer cncl()
-		resp, err := http.Fetch(ctx, self.logger, "https://ethgasstation.info/json/ethgasAPI.json", time.Second)
+		resp, err := web.Fetch(ctx, self.logger, "https://ethgasstation.info/json/ethgasAPI.json", time.Second)
 		if err != nil {
 			gasPrice, err = self.client.SuggestGasPrice(ctx)
 			if err != nil {

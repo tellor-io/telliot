@@ -21,7 +21,7 @@ func OpenTestConfig(nestedLevel string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg.ListenPort = uint(port)
+	cfg.Web.ListenPort = uint(port)
 
 	cfg.IndexTracker.ApiFile = filepath.Join(rootDir, cfg.IndexTracker.ApiFile)
 	cfg.EnvFile = filepath.Join(rootDir, cfg.EnvFile+".example")

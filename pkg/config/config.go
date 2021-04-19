@@ -23,10 +23,12 @@ import (
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/web"
 )
 
 // Config is the top-level configuration that holds configs for all components.
 type Config struct {
+	Web           web.Config
 	Mining        mining.Config
 	Submitter     submitter.Config
 	ProfitTracker profit.Config
@@ -39,16 +41,13 @@ type Config struct {
 	Db            db.Config
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
-
-	// Exposes metrics on this host and port.
-	ListenHost string
-	ListenPort uint
 }
 
 var defaultConfig = Config{
-	ListenHost: "localhost",
-	ListenPort: 9090,
-
+	Web: web.Config{
+		ListenHost: "localhost",
+		ListenPort: 9090,
+	},
 	Db: db.Config{
 		LogLevel: "info",
 		Path:     "db",
@@ -80,7 +79,6 @@ var defaultConfig = Config{
 	},
 	Aggregator: aggregator.Config{
 		MinConfidence: 0.2,
-		Interval:      util.Duration{30 * time.Second},
 	},
 
 	IndexTracker: index.Config{

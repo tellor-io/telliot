@@ -37,9 +37,9 @@ var aggr = map[int]AggregatorRule{
 }
 
 type Config struct {
-	LogLevel      string
-	MinConfidence float64
-	Interval      util.Duration
+	LogLevel            string
+	MinConfidence       float64
+	ConfidIntvThreshold util.Duration
 }
 
 type PriceInfo struct {
@@ -67,11 +67,11 @@ func New(
 	ctx, stop := context.WithCancel(ctx)
 
 	opts := promql.EngineOpts{
-		Logger:        nil,
+		Logger:        logger,
 		Reg:           nil,
-		MaxSamples:    10,
+		MaxSamples:    10000,
 		Timeout:       10 * time.Second,
-		LookbackDelta: 24 * time.Hour,
+		LookbackDelta: cfg.ConfidIntvThreshold.Duration,
 	}
 	engine := promql.NewEngine(opts)
 
@@ -94,8 +94,13 @@ func New(
 }
 
 func (self *Aggregator) Run() error {
-	ticker := time.NewTicker(self.cfg.Interval.Duration)
+	ticker := time.NewTicker(5 * time.Second)
 	for {
+		select {
+		case <-self.ctx.Done():
+			return nil
+		default:
+		}
 		price, volume, confidence, err := self.MedianAt("ETH/USD", time.Now())
 		if err != nil {
 			level.Error(self.logger).Log("msg", "get latest", "err", err)
@@ -103,7 +108,12 @@ func (self *Aggregator) Run() error {
 			continue
 		}
 		fmt.Println("price, volume, confidence", price, volume, confidence)
-		<-ticker.C
+		select {
+		case <-self.ctx.Done():
+			return nil
+		case <-ticker.C:
+			continue
+		}
 
 	}
 }

@@ -23,8 +23,8 @@ import (
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
-	"github.com/tellor-io/telliot/pkg/http"
 	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/web"
 	"github.com/yalp/jsonpath"
 )
 
@@ -176,7 +176,6 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 
 func (self *IndexTracker) Run() error {
 	for symbol, dataSources := range self.dataSources {
-
 		go self.recordApiCount(len(dataSources), symbol)
 
 		for delay, dataSource := range dataSources {
@@ -344,7 +343,7 @@ type JSONapi struct {
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, float64, time.Time, error) {
-	vals, err := http.Fetch(ctx, self.logger, self.url, self.retryDelay)
+	vals, err := web.Fetch(ctx, self.logger, self.url, self.retryDelay)
 	if err != nil {
 		return 0, 0, time.Time{}, errors.Wrap(err, "fetching data from API")
 	}

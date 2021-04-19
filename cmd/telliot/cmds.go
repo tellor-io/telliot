@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"syscall"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -23,6 +21,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
+	"github.com/tellor-io/telliot/pkg/web"
 )
 
 var GitTag string
@@ -554,24 +553,6 @@ func (m mineCmd) Run() error {
 		// Handle interupts.
 		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
 
-		// Metrics server.
-		{
-			http.Handle("/metrics", promhttp.Handler())
-			srv := &http.Server{Addr: fmt.Sprintf("%s:%d", cfg.ListenHost, cfg.ListenPort)}
-			g.Add(func() error {
-				level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.ListenHost, "port", cfg.ListenPort)
-				// returns ErrServerClosed on graceful close
-				var err error
-				if err = srv.ListenAndServe(); err != http.ErrServerClosed {
-					err = errors.Wrapf(err, "ListenAndServe")
-				}
-				level.Info(logger).Log("msg", "metrics server shutdown complete")
-				return err
-			}, func(error) {
-				srv.Close()
-			})
-		}
-
 		// Open the TSDB database.
 		// TODO when remote use NewSampleAndChunkQueryableClient.
 		tsdbOptions := tsdb.DefaultOptions()
@@ -588,7 +569,23 @@ func (m mineCmd) Run() error {
 			}
 		}()
 
+		// Web/Api server.
+		{
+			srv := web.New(logger, ctx, tsDB, cfg.Web)
+			g.Add(func() error {
+				err := srv.Start()
+				level.Info(logger).Log("msg", "web server shutdown complete")
+				return err
+			}, func(error) {
+				srv.Stop()
+			})
+		}
+
 		// Aggregator.
+		if cfg.Aggregator.ConfidIntvThreshold.Duration == 0 {
+			// Values outside the default tracker interval are not used and decrease the confidence level.
+			cfg.Aggregator.ConfidIntvThreshold.Duration = cfg.IndexTracker.Interval.Duration + time.Second
+		}
 		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB, client)
 		if err != nil {
 			return errors.Wrapf(err, "creating aggregator")
