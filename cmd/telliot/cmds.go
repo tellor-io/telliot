@@ -27,9 +27,15 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/ops"
+	"github.com/tellor-io/telliot/pkg/reward"
+	"github.com/tellor-io/telliot/pkg/submitter"
+	"github.com/tellor-io/telliot/pkg/tasker"
+	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
+	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/web"
 )
 
@@ -532,23 +538,6 @@ func (self mineCmd) Run() error {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
 
-	// DataServer is the Telliot data server.
-	// var proxy db.DataServerProxy
-
-	proxy, err := db.Open(logger, cfg.Db)
-	if err != nil {
-		return errors.Wrapf(err, "opening DB instance")
-	}
-	// if cfg.Mine.RemoteDBHost != "" {
-	// 	proxy, err = db.OpenRemote(logger, cfg, DB)
-	// } else {
-	// proxy, err = db.OpenLocal(logger, cfg, DB)
-	// }
-	// if err != nil {
-	// 	return errors.Wrapf(err, "open remote DB instance")
-
-	// }
-
 	// We define our run groups here.
 	var g run.Group
 	// Run groups.
@@ -637,7 +626,7 @@ func (self mineCmd) Run() error {
 		for _, acc := range accounts {
 			accountAddrs = append(accountAddrs, acc.Address)
 		}
-		profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contract, proxy, accountAddrs)
+		profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contract, accountAddrs)
 		if err != nil {
 			return errors.Wrapf(err, "creating profit tracker")
 		}
@@ -650,58 +639,60 @@ func (self mineCmd) Run() error {
 		})
 
 		// Event tasker.
-		// tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
-		// if err != nil {
-		// 	return errors.Wrapf(err, "creating tasker")
-		// }
-		// g.Add(func() error {
-		// 	err := tasker.Start()
-		// 	level.Info(logger).Log("msg", "tasker shutdown complete")
-		// 	return err
-		// }, func(error) {
-		// 	tasker.Stop()
-		// })
+		tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
+		if err != nil {
+			return errors.Wrapf(err, "creating tasker")
+		}
+		g.Add(func() error {
+			err := tasker.Start()
+			level.Info(logger).Log("msg", "tasker shutdown complete")
+			return err
+		}, func(error) {
+			tasker.Stop()
+		})
 
 		// Create a submitter for each account.
-		// gasPriceTracker := gasPrice.New(logger, client)
-		// for _, account := range accounts {
-		// 	transactor, err := transactor.NewTransactor(logger, cfg, gasPriceTracker, client, account, contract)
-		// 	if err != nil {
-		// 		return errors.Wrapf(err, "creating transactor")
-		// 	}
-		// 	// Get a channel on which it listens for new data to submit.
-		// 	submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg, logger, client, contract, account, proxy, transactor, gasPriceTracker)
-		// 	if err != nil {
-		// 		return errors.Wrapf(err, "creating submitter")
-		// 	}
-		// 	g.Add(func() error {
-		// 		err := submitter.Start()
-		// 		level.Info(logger).Log("msg", "submitter shutdown complete",
-		// 			"addr", account.Address.String(),
-		// 		)
-		// 		return err
-		// 	}, func(error) {
-		// 		submitter.Stop()
-		// 	})
+		gasPriceTracker := gasPrice.New(logger, client)
+		for _, account := range accounts {
+			transactor, err := transactor.NewTransactor(logger, cfg.Transactor, gasPriceTracker, client, account, contract)
+			if err != nil {
+				return errors.Wrapf(err, "creating transactor")
+			}
 
-		// 	// Will be used to cancel pending submissions.
-		// 	tasker.AddSubmitCanceler(submitter)
+			reward := reward.NewReward(logger, aggregator, contract)
+			// Get a channel on which it listens for new data to submit.
+			submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg.Submitter, logger, client, contract, account, reward, transactor, gasPriceTracker)
+			if err != nil {
+				return errors.Wrapf(err, "creating submitter")
+			}
+			g.Add(func() error {
+				err := submitter.Start()
+				level.Info(logger).Log("msg", "submitter shutdown complete",
+					"addr", account.Address.String(),
+				)
+				return err
+			}, func(error) {
+				submitter.Stop()
+			})
 
-		// 	// the Miner component.
-		// 	miner, err := mining.NewMiningManager(logger, ctx, cfg, proxy, contract, taskerChs[account.Address.String()], submitterCh, account, client)
-		// 	if err != nil {
-		// 		return errors.Wrapf(err, "creating miner")
-		// 	}
-		// 	g.Add(func() error {
-		// 		err := miner.Start()
-		// 		level.Info(logger).Log("msg", "miner shutdown complete",
-		// 			"addr", account.Address.String(),
-		// 		)
-		// 		return err
-		// 	}, func(error) {
-		// 		miner.Stop()
-		// 	})
-		// }
+			// Will be used to cancel pending submissions.
+			tasker.AddSubmitCanceler(submitter)
+
+			// The Miner component.
+			miner, err := mining.NewMiningManager(logger, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
+			if err != nil {
+				return errors.Wrapf(err, "creating miner")
+			}
+			g.Add(func() error {
+				err := miner.Start()
+				level.Info(logger).Log("msg", "miner shutdown complete",
+					"addr", account.Address.String(),
+				)
+				return err
+			}, func(error) {
+				miner.Stop()
+			})
+		}
 	}
 
 	if err := g.Run(); err != nil {

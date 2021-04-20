@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/storage"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/tellor-io/telliot/pkg/web/api"
 )
@@ -34,7 +35,11 @@ type Web struct {
 	srv    *http.Server
 }
 
-func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQueryable, cfg Config) *Web {
+func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQueryable, cfg Config) (*Web, error) {
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
 	router := route.New()
 	router.Get("/metrics", promhttp.Handler().ServeHTTP)
 
@@ -67,7 +72,7 @@ func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQuer
 		ctx:    ctx,
 		stop:   stop,
 		srv:    srv,
-	}
+	}, nil
 
 }
 

@@ -22,7 +22,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 )
 
@@ -37,7 +36,6 @@ type ProfitTracker struct {
 	logger           log.Logger
 	contractInstance *contracts.ITellor
 	abi              abi.ABI
-	proxy            db.DB
 	ctx              context.Context
 	stop             context.CancelFunc
 	addrs            []common.Address
@@ -59,7 +57,6 @@ func NewProfitTracker(
 	cfg Config,
 	client contracts.ETHClient,
 	contractInstance *contracts.ITellor,
-	proxy db.DB,
 	addrs []common.Address,
 ) (*ProfitTracker, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
@@ -83,7 +80,6 @@ func NewProfitTracker(
 		logger:           logger,
 		contractInstance: contractInstance,
 		abi:              abi,
-		proxy:            proxy,
 		addrs:            addrs,
 		addrsMap:         addrsMap,
 		ctx:              ctx,

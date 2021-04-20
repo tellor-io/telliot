@@ -17,9 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
@@ -52,9 +50,7 @@ type Submitter struct {
 	ctx              context.Context
 	close            context.CancelFunc
 	logger           log.Logger
-	cfg              *Config
-	proxy            db.DB
-	tsDB             *tsdb.DB
+	cfg              Config
 	account          *ethereum.Account
 	client           contracts.ETHClient
 	contractInstance *contracts.ITellor
@@ -69,13 +65,12 @@ type Submitter struct {
 
 func NewSubmitter(
 	ctx context.Context,
-	cfg *Config,
+	cfg Config,
 	logger log.Logger,
 	client contracts.ETHClient,
 	contractInstance *contracts.ITellor,
 	account *ethereum.Account,
-	proxy db.DB,
-	tsDB *tsdb.DB,
+	reward *reward.Reward,
 	transactor transactor.Transactor,
 	gasPriceTracker *gasPrice.GasTracker,
 ) (*Submitter, chan *mining.Result, error) {
@@ -89,11 +84,10 @@ func NewSubmitter(
 		ctx:              ctx,
 		close:            close,
 		client:           client,
-		proxy:            proxy,
-		tsDB:             tsDB,
 		cfg:              cfg,
 		resultCh:         make(chan *mining.Result),
 		account:          account,
+		reward:           reward,
 		logger:           logger,
 		contractInstance: contractInstance,
 		transactor:       transactor,
@@ -113,8 +107,6 @@ func NewSubmitter(
 			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		}),
 	}
-
-	submitter.reward = reward.NewReward(logger, contractInstance, proxy)
 
 	return submitter, submitter.resultCh, nil
 }

@@ -44,14 +44,18 @@ type Config struct {
 }
 
 var defaultConfig = Config{
+	Mining: mining.Config{
+		LogLevel: "info",
+	},
 	Web: web.Config{
+		LogLevel:   "info",
 		ListenHost: "localhost",
 		ListenPort: 9090,
 	},
 	Db: db.Config{
 		LogLevel:      "info",
 		Path:          "db",
-		RemoteTimeout: util.Duration{5 * time.Second},
+		RemoteTimeout: util.Duration{Duration: 5 * time.Second},
 	},
 	Tasker: tasker.Config{
 		LogLevel: "info",
@@ -64,27 +68,28 @@ var defaultConfig = Config{
 		Timeout:  3000,
 	},
 	Transactor: transactor.Config{
-		GasMax:        10,
 		LogLevel:      "info",
+		GasMax:        10,
 		GasMultiplier: 1,
 	},
 	Submitter: submitter.Config{
 		LogLevel: "info",
 		// MinSubmitPeriod is the time limit between each submit for a staked miner.
 		// We added a 1 second delay here as a workaround to prevent failed transactions.
-		MinSubmitPeriod: util.Duration{15*time.Minute + 1*time.Second},
+		MinSubmitPeriod: util.Duration{Duration: 15*time.Minute + 1*time.Second},
 	},
 	DataServer: dataServer.Config{
 		ListenHost: "localhost",
 		ListenPort: 5000,
 	},
 	Aggregator: aggregator.Config{
+		LogLevel:      "info",
 		MinConfidence: 0.2,
 	},
 
 	IndexTracker: index.Config{
-		Interval:       util.Duration{30 * time.Second},
-		FetchTimeout:   util.Duration{30 * time.Second},
+		Interval:       util.Duration{Duration: 30 * time.Second},
+		FetchTimeout:   util.Duration{Duration: 30 * time.Second},
 		ApiFile:        "configs/api.json",
 		ManualDataFile: "configs/manualData.json",
 	},

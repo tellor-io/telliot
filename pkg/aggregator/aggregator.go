@@ -16,6 +16,7 @@ import (
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/util"
 )
@@ -63,6 +64,11 @@ func New(
 	tsDB storage.SampleAndChunkQueryable,
 	client contracts.ETHClient,
 ) (*Aggregator, error) {
+
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
 
 	ctx, stop := context.WithCancel(ctx)
 

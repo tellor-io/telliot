@@ -6,35 +6,30 @@ package reward
 import (
 	"fmt"
 	"math/big"
-	"strconv"
+	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 )
 
-// PriceTXs is the key used to save transactions cost
-// These are used to calculate the profitability when submitting a solution.
-const PriceTXs = "PriceTXSlot"
-
-func NewReward(logger log.Logger, contractInstance *contracts.ITellor, proxy db.DB) *Reward {
+func NewReward(logger log.Logger, aggr *aggregator.Aggregator, contractInstance *contracts.ITellor) *Reward {
 	return &Reward{
+		aggr:             aggr,
 		logger:           logger,
 		contractInstance: contractInstance,
-		proxy:            proxy,
 	}
 }
 
 type Reward struct {
 	logger           log.Logger
+	aggr             *aggregator.Aggregator
 	contractInstance *contracts.ITellor
-	proxy            db.DB
+	gasUsed          map[int64]*big.Int
 }
 
 // Current returns the profit in percents based on the current TRB price.
@@ -75,15 +70,12 @@ func (self *Reward) Current(slot *big.Int, gasPrice *big.Int) (int64, error) {
 }
 
 func (self *Reward) GasUsed(slot *big.Int) (*big.Int, error) {
-	txID := PriceTXs + slot.String()
-	gas, err := self.proxy.Get(txID)
-	if err != nil {
-		return nil, errors.New("getting the tx eth cost from the db")
+	if gas, ok := self.gasUsed[slot.Int64()]; ok {
+		return gas, nil
 	}
-	if gas == nil {
-		return nil, ErrNoDataForSlot{slot: slot.String()}
-	}
-	return big.NewInt(0).SetBytes(gas), nil
+
+	return nil, ErrNoDataForSlot{slot: slot.String()}
+
 }
 
 type ErrNoDataForSlot struct {
@@ -98,27 +90,22 @@ func (e ErrNoDataForSlot) Error() string {
 func (self *Reward) SaveGasUsed(_gasUsed uint64, slot *big.Int) {
 	gasUsed := big.NewInt(int64(_gasUsed))
 
-	txID := PriceTXs + slot.String()
-	err := self.proxy.Put(txID, gasUsed.Bytes())
-	if err != nil {
-		level.Error(self.logger).Log("msg", "saving transaction cost", "err", err)
-	}
+	self.gasUsed[slot.Int64()] = gasUsed
 	level.Info(self.logger).Log("msg", "saved transaction gas used", "amount", gasUsed.Int64(), "slot", slot.Int64())
 }
 
 func (s *Reward) trbPrice() (*big.Int, error) {
-	_trbPrice, err := s.proxy.Get(db.QueriedValuePrefix + strconv.Itoa(aggregator.RequestID_TRB_ETH))
+	trbPrice, _, confidence, err := s.aggr.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour, 10, aggregator.NoDecay)
 	if err != nil {
-		return nil, errors.New("getting the trb price from the db")
+		return nil, errors.New("getting the trb price from the aggregator")
 	}
-	if len(_trbPrice) == 0 {
-		return nil, errors.New("the db doesn't have the trb price")
+
+	if confidence < 0.5 {
+		return nil, errors.New("trb price confidence too low")
+
 	}
-	trbPrice, err := hexutil.DecodeBig(string(_trbPrice))
-	if err != nil {
-		return nil, errors.New("decoding trb price from the db")
-	}
-	return trbPrice, nil
+
+	return big.NewInt(int64(trbPrice)), nil
 }
 
 func (s *Reward) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
