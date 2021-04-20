@@ -49,8 +49,9 @@ var defaultConfig = Config{
 		ListenPort: 9090,
 	},
 	Db: db.Config{
-		LogLevel: "info",
-		Path:     "db",
+		LogLevel:      "info",
+		Path:          "db",
+		RemoteTimeout: util.Duration{5 * time.Second},
 	},
 	Tasker: tasker.Config{
 		LogLevel: "info",

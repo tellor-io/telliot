@@ -33,9 +33,6 @@ const ComponentName = "submitter"
 
 type Config struct {
 	LogLevel string
-	// Connect to this remote DB.
-	RemoteDBHost string
-	RemoteDBPort uint
 	// Minimum percent of profit when submitting a solution.
 	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
 	// a ProfitThreshold of 200% or more will wait until the reward is increased or

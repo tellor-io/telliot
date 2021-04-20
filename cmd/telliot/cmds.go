@@ -6,6 +6,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"os"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -13,8 +16,14 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
+	promConfig "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/storage"
+	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/aggregator"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
@@ -432,80 +441,76 @@ type dataserverCmd struct {
 	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
-func (d dataserverCmd) Run() error {
-	// cfg, err := parseConfig(string(d.Config))
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating config")
-	// }
+func (self dataserverCmd) Run() error {
+	// Defining a global context for starting and stopping of components.
+	ctx := context.Background()
+	cfg, err := parseConfig(string(self.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
 
-	// When the ServerWhitelist is empty try to get
-	//for _, acc := range accounts {
-	// 	cfg.DataServer.ServerWhitelist = append(cfg.DataServer.ServerWhitelist, acc.Address.String())
-	// }
+	logger := logging.NewLogger()
 
-	// logger := logging.NewLogger()
+	// We define our run groups here.
+	var g run.Group
+	// Run groups.
+	{
+		// Handle interupts.
+		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
 
-	// ctx := context.Background()
-	// client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating tellor variables")
-	// }
+		// Open the TSDB database.
+		tsdbOptions := tsdb.DefaultOptions()
+		// 2 days are enough as the agregator needs data only 24 hours in the past.
+		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
+		tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
+		if err != nil {
+			return errors.Wrapf(err, "creating tsdb DB")
+		}
 
-	// DB, err := migrateAndOpenDB(logger, cfg)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "initializing database")
-	// }
-	// proxy, err := db.OpenLocal(logger, cfg, DB)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "open remote DB instance")
-	// }
-	// ds, err := dataServer.NewDataServerOps(ctx, logger, cfg, proxy, client, contract, accounts)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating data server")
-	// }
-	// // Start and wait for it to be ready.
-	// if err := ds.Start(); err != nil {
-	// 	return errors.Wrap(err, "starting data server")
-	// }
+		defer func() {
+			if err := tsDB.Close(); err != nil {
+				level.Error(logger).Log("msg", "closing the tsdb", "err", err)
+			}
+		}()
 
-	// // We define our run groups here.
-	// var g run.Group
-	// // Run groups.
-	// {
-	// 	// Handle interupts.
-	// 	g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
+		// Web/Api server.
+		{
+			srv := web.New(logger, ctx, tsDB, cfg.Web)
+			g.Add(func() error {
+				err := srv.Start()
+				level.Info(logger).Log("msg", "web server shutdown complete")
+				return err
+			}, func(error) {
+				srv.Stop()
+			})
+		}
 
-	// 	// Metrics server.
-	// 	{
-	// 		http.Handle("/metrics", promhttp.Handler())
-	// 		srv, err := rest.Create(logger, cfg, ctx, proxy, cfg.Mine.ListenHost, cfg.Mine.ListenPort)
-	// 		if err != nil {
-	// 			return errors.Wrapf(err, "creating http data server")
-	// 		}
-	// 		g.Add(func() error {
-	// 			level.Info(logger).Log("msg", "starting metrics server", "addr", cfg.Mine.ListenHost, "port", cfg.Mine.ListenPort)
-	// 			// returns ErrServerClosed on graceful close
-	// 			var err error
-	// 			if err = srv.Start(); err != nil {
-	// 				err = errors.Wrapf(err, "ListenAndServe")
-	// 			}
-	// 			level.Info(logger).Log("msg", "metrics server shutdown complete")
-	// 			return err
-	// 		}, func(error) {
-	// 			if srv.Stop() != nil {
-	// 				level.Error(logger).Log("msg", "shutting down the rest service", "err", err)
-	// 			}
-	// 		})
-	// 	}
+		// Index tracker.
+		client, err := ethereum.NewClient(logger, cfg.Ethereum, os.Getenv(config.NodeURLEnvName))
+		if err != nil {
+			return errors.Wrap(err, "create rpc client instance")
+		}
 
-	// }
+		index, err := index.New(logger, ctx, cfg.IndexTracker, tsDB, client)
+		if err != nil {
+			return errors.Wrapf(err, "creating index tracker")
+		}
 
-	// if err := g.Run(); err != nil {
-	// 	level.Info(logger).Log("msg", "main exited with error", "err", err)
-	// 	return err
-	// }
+		g.Add(func() error {
+			err := index.Run()
+			level.Info(logger).Log("msg", "index shutdown complete")
+			return err
+		}, func(error) {
+			index.Stop()
+		})
+	}
 
-	// level.Info(logger).Log("msg", "main shutdown complete")
+	if err := g.Run(); err != nil {
+		level.Error(logger).Log("msg", "main exited with error", "err", err)
+		return err
+	}
+
+	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
 }
 
@@ -513,10 +518,10 @@ type mineCmd struct {
 	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
-func (m mineCmd) Run() error {
+func (self mineCmd) Run() error {
 	// Defining a global context for starting and stopping of components.
 	ctx := context.Background()
-	cfg, err := parseConfig(string(m.Config))
+	cfg, err := parseConfig(string(self.Config))
 	if err != nil {
 		return errors.Wrapf(err, "creating config")
 	}
@@ -552,24 +557,22 @@ func (m mineCmd) Run() error {
 		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
 
 		// Open the TSDB database.
-		// TODO when remote use NewSampleAndChunkQueryableClient.
-		tsdbOptions := tsdb.DefaultOptions()
-		// 2 days are enough as the agregator needs data only 24 hours in the past.
-		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
-		tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
-		if err != nil {
-			return errors.Wrapf(err, "creating tsdb DB")
-		}
-
-		defer func() {
-			if err := tsDB.Close(); err != nil {
-				level.Error(logger).Log("msg", "closing the tsdb", "err", err)
+		var tsDBRead storage.SampleAndChunkQueryable
+		if cfg.Db.RemoteHost != "" {
+			tsDBRead, err = remoteDB(cfg.Db)
+			if err != nil {
+				return errors.Wrapf(err, "opening remote tsdb DB")
 			}
-		}()
+		} else {
+			tsDBRead, err = tsdb.OpenDBReadOnly(cfg.Db.Path, nil)
+			if err != nil {
+				return errors.Wrapf(err, "opening tsdb DB")
+			}
+		}
 
 		// Web/Api server.
 		{
-			srv := web.New(logger, ctx, tsDB, cfg.Web)
+			srv := web.New(logger, ctx, tsDBRead, cfg.Web)
 			g.Add(func() error {
 				err := srv.Start()
 				level.Info(logger).Log("msg", "web server shutdown complete")
@@ -584,7 +587,7 @@ func (m mineCmd) Run() error {
 			// Values outside the default tracker interval are not used and decrease the confidence level.
 			cfg.Aggregator.ConfidIntvThreshold.Duration = cfg.IndexTracker.Interval.Duration + time.Second
 		}
-		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB, client)
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
 		if err != nil {
 			return errors.Wrapf(err, "creating aggregator")
 		}
@@ -598,19 +601,36 @@ func (m mineCmd) Run() error {
 		})
 
 		// Index tracker.
-		// TODO Run only when not using remote DB
-		index, err := index.New(logger, ctx, cfg.IndexTracker, tsDB, client)
-		if err != nil {
-			return errors.Wrapf(err, "creating index tracker")
-		}
+		// Run only when not usging remote DB.
+		if cfg.Db.RemoteHost == "" {
+			// Open the TSDB database.
+			tsdbOptions := tsdb.DefaultOptions()
+			// 2 days are enough as the agregator needs data only 24 hours in the past.
+			tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
+			tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
+			if err != nil {
+				return errors.Wrapf(err, "creating tsdb DB")
+			}
 
-		g.Add(func() error {
-			err := index.Run()
-			level.Info(logger).Log("msg", "index shutdown complete")
-			return err
-		}, func(error) {
-			index.Stop()
-		})
+			defer func() {
+				if err := tsDB.Close(); err != nil {
+					level.Error(logger).Log("msg", "closing the tsdb", "err", err)
+				}
+			}()
+
+			index, err := index.New(logger, ctx, cfg.IndexTracker, tsDB, client)
+			if err != nil {
+				return errors.Wrapf(err, "creating index tracker")
+			}
+
+			g.Add(func() error {
+				err := index.Run()
+				level.Info(logger).Log("msg", "index shutdown complete")
+				return err
+			}, func(error) {
+				index.Stop()
+			})
+		}
 
 		// Profit tracker.
 		var accountAddrs []common.Address
@@ -691,6 +711,31 @@ func (m mineCmd) Run() error {
 
 	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
+}
+
+func remoteDB(cfg db.Config) (storage.SampleAndChunkQueryable, error) {
+
+	url, err := url.Parse("http://" + cfg.RemoteHost + ":" + strconv.Itoa(int(cfg.RemotePort)) + "/read")
+	if err != nil {
+		return nil, err
+	}
+	client, err := remote.NewReadClient("", &remote.ClientConfig{
+		URL:     &promConfig.URL{URL: url},
+		Timeout: model.Duration(cfg.RemoteTimeout.Duration),
+		HTTPClientConfig: promConfig.HTTPClientConfig{
+			FollowRedirects: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return remote.NewSampleAndChunkQueryableClient(
+		client,
+		labels.Labels{},
+		[]*labels.Matcher{},
+		true,
+		func() (i int64, err error) { return 0, nil },
+	), nil
 }
 
 func getAccountFor(accounts []*ethereum.Account, accountNo int) (*ethereum.Account, error) {

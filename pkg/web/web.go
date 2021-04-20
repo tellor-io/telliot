@@ -12,7 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/prometheus/promql"
-	"github.com/prometheus/prometheus/tsdb"
+	"github.com/prometheus/prometheus/storage"
 	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/tellor-io/telliot/pkg/web/api"
 )
@@ -34,7 +34,7 @@ type Web struct {
 	srv    *http.Server
 }
 
-func New(logger log.Logger, ctx context.Context, tsDB *tsdb.DB, cfg Config) *Web {
+func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQueryable, cfg Config) *Web {
 	router := route.New()
 	router.Get("/metrics", promhttp.Handler().ServeHTTP)
 

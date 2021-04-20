@@ -21,11 +21,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/route"
+	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/storage"
+	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/prometheus/prometheus/util/httputil"
 	"github.com/prometheus/prometheus/util/stats"
@@ -83,10 +85,11 @@ type apiFunc func(r *http.Request) apiFuncResult
 // API can register a set of endpoints in a router and handle
 // them using the provided storage and query engine.
 type API struct {
-	Queryable   storage.SampleAndChunkQueryable
-	QueryEngine *promql.Engine
-	now         func() time.Time
-	logger      log.Logger
+	Queryable         storage.SampleAndChunkQueryable
+	QueryEngine       *promql.Engine
+	now               func() time.Time
+	remoteReadHandler http.Handler
+	logger            log.Logger
 }
 
 func init() {
@@ -101,11 +104,13 @@ func New(
 	q storage.SampleAndChunkQueryable,
 ) *API {
 
+	configFunc := func() promConfig.Config { return promConfig.Config{} }
 	a := &API{
-		QueryEngine: qe,
-		Queryable:   q,
-		now:         time.Now,
-		logger:      logger,
+		QueryEngine:       qe,
+		Queryable:         q,
+		now:               time.Now,
+		logger:            logger,
+		remoteReadHandler: remote.NewReadHandler(logger, nil, q, configFunc, 5e7, 10, 1048576),
 	}
 
 	return a
@@ -153,6 +158,9 @@ func (api *API) Register(r *route.Router) {
 
 	r.Get("/series", wrap(api.series))
 	r.Post("/series", wrap(api.series))
+
+	r.Post("/read", http.HandlerFunc(api.remoteRead))
+
 }
 
 type queryData struct {
@@ -165,6 +173,10 @@ func invalidParamError(err error, parameter string) apiFuncResult {
 	return apiFuncResult{nil, &apiError{
 		errorBadData, errors.Wrapf(err, "invalid parameter %q", parameter),
 	}, nil, nil}
+}
+
+func (api *API) remoteRead(w http.ResponseWriter, r *http.Request) {
+	api.remoteReadHandler.ServeHTTP(w, r)
 }
 
 func (api *API) query(r *http.Request) (result apiFuncResult) {

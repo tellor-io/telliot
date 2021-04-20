@@ -14,7 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/promql"
-	"github.com/prometheus/prometheus/tsdb"
+	"github.com/prometheus/prometheus/storage"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/util"
@@ -50,7 +50,7 @@ type Aggregator struct {
 	logger       log.Logger
 	ctx          context.Context
 	stop         context.CancelFunc
-	tsDB         *tsdb.DB
+	tsDB         storage.SampleAndChunkQueryable
 	promqlEngine *promql.Engine
 	cfg          Config
 	prices       *prometheus.GaugeVec
@@ -60,7 +60,7 @@ func New(
 	logger log.Logger,
 	ctx context.Context,
 	cfg Config,
-	tsDB *tsdb.DB,
+	tsDB storage.SampleAndChunkQueryable,
 	client contracts.ETHClient,
 ) (*Aggregator, error) {
 
@@ -71,7 +71,7 @@ func New(
 		Reg:           nil,
 		MaxSamples:    10000,
 		Timeout:       10 * time.Second,
-		LookbackDelta: cfg.ConfidIntvThreshold.Duration,
+		LookbackDelta: cfg.ConfidIntvThreshold.Duration, // Any value below this Duration is considered invalid.
 	}
 	engine := promql.NewEngine(opts)
 

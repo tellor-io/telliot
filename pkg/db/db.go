@@ -11,6 +11,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const ComponentName = "db"
@@ -18,6 +19,10 @@ const ComponentName = "db"
 type Config struct {
 	LogLevel string
 	Path     string
+	// Connect to this remote DB.
+	RemoteHost    string
+	RemotePort    uint
+	RemoteTimeout util.Duration
 }
 
 const (

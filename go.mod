@@ -20,7 +20,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.20.0
-	github.com/prometheus/prometheus v1.8.2-0.20210415085501-f9e2dd069758
+	github.com/prometheus/prometheus v1.8.2-0.20210419070145-a9a5f04ff9d6
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/status-im/keycard-go v0.0.0-20190424133014-d95853db0f48 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954

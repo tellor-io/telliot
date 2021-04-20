@@ -3,7 +3,9 @@
         "GasMax": 10
     },
     "Db": {
-        "File": "tmp/db"
+        "File": "tmp/db",
+        "RemoteDBHost": "localhost",
+        "RemoteDBPort": 9090
     },
     "IndexTracker": {
         "ApiFile": "configs/api.json",
