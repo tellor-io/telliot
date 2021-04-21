@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/aggregator"
@@ -45,11 +47,12 @@ type Config struct {
 
 var defaultConfig = Config{
 	Mining: mining.Config{
-		LogLevel: "info",
+		LogLevel:  "info",
+		Heartbeat: time.Minute,
 	},
 	Web: web.Config{
 		LogLevel:   "info",
-		ListenHost: "localhost",
+		ListenHost: "", // Listen on all addresses.
 		ListenPort: 9090,
 	},
 	Db: db.Config{
@@ -78,27 +81,24 @@ var defaultConfig = Config{
 		// We added a 1 second delay here as a workaround to prevent failed transactions.
 		MinSubmitPeriod: util.Duration{Duration: 15*time.Minute + 1*time.Second},
 	},
-	DataServer: dataServer.Config{
-		ListenHost: "localhost",
-		ListenPort: 5000,
-	},
 	Aggregator: aggregator.Config{
 		LogLevel:      "info",
 		MinConfidence: 0.2,
 	},
 
 	IndexTracker: index.Config{
+		LogLevel:       "info",
 		Interval:       util.Duration{Duration: 30 * time.Second},
 		FetchTimeout:   util.Duration{Duration: 30 * time.Second},
 		ApiFile:        "configs/api.json",
 		ManualDataFile: "configs/manualData.json",
 	},
-	EnvFile: "configs/.env",
+	EnvFile: ".local/.env",
 }
 
 const NodeURLEnvName = "NODE_WEBSOCKET_URL"
 
-func ParseConfig(path string) (*Config, error) {
+func ParseConfig(logger log.Logger, path string) (*Config, error) {
 	if path == "" {
 		path = filepath.Join("configs", "config.json")
 	}
@@ -117,19 +117,27 @@ func ParseConfig(path string) (*Config, error) {
 	}
 
 	f, err := os.Open(path)
+	var noConfigFile bool
 	if err != nil {
-		return nil, errors.Wrap(err, "open config file")
-	}
-	dec := json.NewDecoder(f)
-	dec.DisallowUnknownFields()
-	for {
-		// Override defaults with the custom configs.
-		if err := dec.Decode(cfg); err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, errors.Wrap(err, "parse config")
+		if !os.IsNotExist(err) {
+			return nil, errors.Wrap(err, "open config file")
 		}
+		noConfigFile = true
+		level.Warn(logger).Log("msg", "no config file on disk so using defaults", "path", path)
+	}
 
+	if !noConfigFile {
+		dec := json.NewDecoder(f)
+		dec.DisallowUnknownFields()
+		for {
+			// Override defaults with the custom configs.
+			if err := dec.Decode(cfg); err == io.EOF {
+				break
+			} else if err != nil {
+				return nil, errors.Wrap(err, "parse config")
+			}
+
+		}
 	}
 
 	if err := godotenv.Load(cfg.EnvFile); err != nil && !os.IsNotExist(err) {

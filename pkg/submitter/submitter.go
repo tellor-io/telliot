@@ -308,7 +308,7 @@ func (self *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) 
 	// The submit contains values for 5 data IDs so add them here.
 	for i := 0; i < 5; i++ {
 		// Look back only 2 times the API tracker cycle to use only fresh values.
-		// q, err := self.tsDB.Querier(self.ctx, timestamp.FromTime(time.Now().Truncate(2*self.cfg.Trackers.SleepCycle.Duration)), timestamp.FromTime(time.Now().Round(0)))
+		// q, err := self.tsDB.Querier(self.ctx, timestamp.FromTime(time.Now().Add(-(2*self.cfg.Trackers.SleepCycle.Duration))), timestamp.FromTime(time.Now().Round(0)))
 		// if err != nil {
 		// 	return currentValues, err
 		// }

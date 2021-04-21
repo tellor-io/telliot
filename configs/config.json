@@ -1,22 +1,6 @@
 {
-    "Transactor": {
-        "GasMax": 10
-    },
-    "Db": {
-        "File": "tmp/db",
-        "RemoteDBHost": "localhost",
-        "RemoteDBPort": 9090
-    },
-    "IndexTracker": {
-        "ApiFile": "configs/api.json",
-        "ManualDataFile": "configs/manualData.json"
-    },
-    "EnvFile": ".env",
-    "Submitter": {
-        "ProfitThreshold": 100
-    },
-    "Dataserver": {
-        "ListenHost": "0.0.0.0",
-        "ListenPort": 5000
-    }
+    "Transactor": {},
+    "Db": {},
+    "IndexTracker": {},
+    "Submitter": {}
 }

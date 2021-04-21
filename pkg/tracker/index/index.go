@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/tellor-io/telliot/pkg/web"
 	"github.com/yalp/jsonpath"
@@ -57,6 +58,11 @@ func New(
 	tsDB *tsdb.DB,
 	client contracts.ETHClient,
 ) (*IndexTracker, error) {
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
+
 	dataSources, err := createDataSources(logger, ctx, cfg, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "create data sources")
@@ -83,15 +89,15 @@ func New(
 			Name:      "price",
 			Help:      "The currency price",
 		},
-			[]string{"source"},
+			[]string{"symbol", "source"},
 		),
 		volumes: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
 			Name:      "volume",
-			Help:      "The currency trade ammount",
+			Help:      "The currency trade amount",
 		},
-			[]string{"source"},
+			[]string{"symbol", "source"},
 		),
 	}, nil
 }
@@ -124,7 +130,8 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 				api.Type = httpSource
 			}
 
-			if int64(api.Interval.Duration) != 0 {
+			// Use the default itnerval when the api doesn't have custom interval.
+			if int64(api.Interval.Duration) == 0 {
 				api.Interval = cfg.Interval
 			}
 
@@ -175,10 +182,11 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 }
 
 func (self *IndexTracker) Run() error {
+	delay := time.Second
 	for symbol, dataSources := range self.dataSources {
 		go self.recordApiCount(len(dataSources), symbol)
 
-		for delay, dataSource := range dataSources {
+		for _, dataSource := range dataSources {
 			// Use the default interval when not set.
 			interval := dataSource.Interval()
 			if int64(interval) == 0 {
@@ -186,20 +194,21 @@ func (self *IndexTracker) Run() error {
 			}
 
 			go self.recordValues(delay, symbol, interval, dataSource)
+			delay += time.Second
 		}
 	}
 	<-self.ctx.Done()
 	return nil
 }
 
-const PriceSuffix = "_price"
-const VolumeSuffix = "_volume"
+const PriceMetricName = ComponentName + "_prices"
+const VolumeMetricName = ComponentName + "_volumes"
 
 // recordValues from all API calls.
 // The request delay is used to avoid rate limiting at startup
 // for when all API calls try to happen at the same time.
-func (self *IndexTracker) recordValues(delay int, symbol string, interval time.Duration, dataSource DataSource) {
-	time.Sleep(time.Duration(delay))
+func (self *IndexTracker) recordValues(delay time.Duration, symbol string, interval time.Duration, dataSource DataSource) {
+	time.Sleep(delay)
 
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
@@ -222,29 +231,41 @@ func (self *IndexTracker) recordValues(delay int, symbol string, interval time.D
 
 		// Only manual entries expose ts so ignore zero values.
 		if !ts.IsZero() && time.Now().After(ts) {
-			level.Error(self.logger).Log("msg", "index value timestamp has expired", "ts", ts)
+			level.Error(logger).Log("msg", "index value timestamp has expired", "ts", ts)
 			<-ticker.C
 			continue
 		}
 
+		level.Debug(logger).Log("msg", "adding value", "symbol", symbol, "price", price)
+
 		// Record the actual price and volume for this data source.
 		appender := self.tsDB.Appender(self.ctx)
-		appender.Append(0,
+		if _, err := appender.Append(0,
 			labels.Labels{
-				labels.Label{Name: "__name__", Value: util.SanitizeMetricName(symbol + PriceSuffix)},
+				labels.Label{Name: "__name__", Value: PriceMetricName},
 				labels.Label{Name: "source", Value: dataSource.Source()},
+				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
 			},
 			timestamp.FromTime(time.Now()),
 			price,
-		)
-		appender.Append(0,
+		); err != nil {
+			level.Error(logger).Log("msg", "append values to the DB", "err", err)
+			<-ticker.C
+			continue
+		}
+		if _, err := appender.Append(0,
 			labels.Labels{
-				labels.Label{Name: "__name__", Value: util.SanitizeMetricName(symbol + VolumeSuffix)},
+				labels.Label{Name: "__name__", Value: VolumeMetricName},
 				labels.Label{Name: "source", Value: dataSource.Source()},
+				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
 			},
 			timestamp.FromTime(time.Now()),
 			volume,
-		)
+		); err != nil {
+			level.Error(logger).Log("msg", "append values to the DB", "err", err)
+			<-ticker.C
+			continue
+		}
 
 		if err := appender.Commit(); err != nil {
 			level.Error(logger).Log("msg", "adding values to the DB", "err", err)
@@ -252,14 +273,24 @@ func (self *IndexTracker) recordValues(delay int, symbol string, interval time.D
 			continue
 		}
 
-		self.prices.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Gauge).Set(price)
-		self.volumes.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Gauge).Set(volume)
+		self.prices.With(
+			prometheus.Labels{
+				"source": dataSource.Source(),
+				"symbol": util.SanitizeMetricName(symbol),
+			},
+		).(prometheus.Gauge).Set(price)
+		self.volumes.With(
+			prometheus.Labels{
+				"source": dataSource.Source(),
+				"symbol": util.SanitizeMetricName(symbol),
+			},
+		).(prometheus.Gauge).Set(volume)
 
 		<-ticker.C
 	}
 }
 
-const ApiCountSuffix = "_api_count"
+const ApiCountMetricName = ComponentName + "_api_count"
 
 // recordApiCount records the total number of APIs per Symbol.
 // It records in a loop with a given interval to always have a fresh value near the current time.
@@ -274,13 +305,18 @@ func (self *IndexTracker) recordApiCount(count int, symbol string) {
 		}
 
 		appender := self.tsDB.Appender(self.ctx)
-		appender.Append(0,
+		if _, err := appender.Append(0,
 			labels.Labels{
-				labels.Label{Name: "__name__", Value: util.SanitizeMetricName(symbol + ApiCountSuffix)},
+				labels.Label{Name: "__name__", Value: ApiCountMetricName},
+				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
 			},
 			timestamp.FromTime(time.Now().Round(0)),
 			float64(count),
-		)
+		); err != nil {
+			level.Error(self.logger).Log("msg", "append values to the DB", "err", err)
+			<-ticker.C
+			continue
+		}
 
 		if err := appender.Commit(); err != nil {
 			level.Error(self.logger).Log("msg", "adding values to the DB", "err", err)

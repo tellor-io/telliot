@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/alecthomas/kong"
 	"github.com/go-kit/kit/log"
@@ -16,17 +15,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 )
-
-func parseConfig(path string) (*config.Config, error) {
-	if path == "" {
-		path = filepath.Join("configs", "config.json")
-	}
-	cfg, err := config.ParseConfig(path)
-	if err != nil {
-		return nil, errors.Wrapf(err, "parsing config")
-	}
-	return cfg, nil
-}
 
 func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, *contracts.ITellor, []*ethereum.Account, error) {
 	client, err := ethereum.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))

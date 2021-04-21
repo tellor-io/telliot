@@ -38,9 +38,8 @@ var aggr = map[int]AggregatorRule{
 }
 
 type Config struct {
-	LogLevel            string
-	MinConfidence       float64
-	ConfidIntvThreshold util.Duration
+	LogLevel      string
+	MinConfidence float64
 }
 
 type PriceInfo struct {
@@ -73,11 +72,10 @@ func New(
 	ctx, stop := context.WithCancel(ctx)
 
 	opts := promql.EngineOpts{
-		Logger:        logger,
-		Reg:           nil,
-		MaxSamples:    10000,
-		Timeout:       10 * time.Second,
-		LookbackDelta: cfg.ConfidIntvThreshold.Duration, // Any value below this Duration is considered invalid.
+		Logger:     logger,
+		Reg:        nil,
+		MaxSamples: 30000,
+		Timeout:    10 * time.Second,
 	}
 	engine := promql.NewEngine(opts)
 
@@ -107,7 +105,7 @@ func (self *Aggregator) Run() error {
 			return nil
 		default:
 		}
-		price, volume, confidence, err := self.MedianAt("ETH/USD", time.Now())
+		price, volume, confidence, err := self.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour)
 		if err != nil {
 			level.Error(self.logger).Log("msg", "get latest", "err", err)
 			<-ticker.C
@@ -161,48 +159,63 @@ func (self *Aggregator) mean(vals []PriceInfo) (float64, float64) {
 	return priceSum / float64(len(vals)), volSum
 }
 
+// TimeWeightedAvg returns price,volume and confidence level for a given symbol.
+// Confidence is calculated based on the total amount of data points and the total count of data sources.
+// For example with 1h look back, resolution 1m and 10 data sources 100% confidence is
+// when the total count of data points is 600 (60m/1m * 10).
+// In other words total duration divided by resolution multiplied by sources count.
 func (self *Aggregator) TimeWeightedAvg(
 	symbol string,
 	from time.Time,
 	lookBack time.Duration,
-	resolution float64,
-	weightFn func(float64) (float64, float64),
 ) (float64, float64, float64, error) {
-	sum := 0.0
-	weightSum := 0.0
-	series, err := self.valuesForTime(symbol, from, lookBack)
+	query, err := self.promqlEngine.NewInstantQuery(
+		self.tsDB,
+		`avg_over_time(`+index.PriceMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
+		from,
+	)
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	for _, ser := range series {
-		for _, v := range ser.Points {
-			normDelta := from.Sub(timestamp.Time(v.T)).Seconds() / lookBack.Seconds()
-			weight, _ := weightFn(normDelta)
-			sum += v.V * weight
-			weightSum += weight
-		}
+	defer query.Close()
+	result := query.Exec(self.ctx)
+	if result.Err != nil {
+		return 0, 0, 0, errors.Wrapf(result.Err, "error evaluating query:%v", query)
 	}
+	fmt.Println("avg", result)
 
-	// Number of APIs * rate * interval.
-	apiCount, err := self.apiCount(symbol)
+	query, err = self.promqlEngine.NewInstantQuery(
+		self.tsDB,
+		`count_over_time(`+index.PriceMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
+		from,
+	)
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	maxWeight := apiCount * (1 / resolution) * lookBack.Seconds()
-	// Average weight is the integral of the weight fn over [0,1].
-	_, avgWeight := weightFn(0)
-	targetWeight := maxWeight * avgWeight
-
-	price := sum / weightSum
-
-	// Use the highest volume seen over all values.
-	// Works well when the time averaging window is equal to the interval of volume reporting
-	// ie, 24 hour average on an api that returns 24hr volume
-	volume, err := self.maxVolumeFor(symbol, from, lookBack)
-	if err != nil {
-		return 0, 0, 0, err
+	defer query.Close()
+	result = query.Exec(self.ctx)
+	if result.Err != nil {
+		return 0, 0, 0, errors.Wrapf(result.Err, "error evaluating query:%v", query)
 	}
-	return price, volume, math.Min(weightSum/targetWeight, 1.0), nil
+
+	fmt.Println("count", result)
+
+	return 0, 0, 0, err
+
+	// // Number of APIs * rate * interval.
+	// apiCount, err := self.apiCount(symbol)
+	// if err != nil {
+	// 	return 0, 0, 0, err
+	// }
+
+	// // Use the highest volume seen over all values.
+	// // Works well when the time averaging window is equal to the interval of volume reporting
+	// // ie, 24 hour average on an api that returns 24hr volume
+	// volume, err := self.maxVolumeFor(symbol, from, lookBack)
+	// if err != nil {
+	// 	return 0, 0, 0, err
+	// }
+	// return price, volume, math.Min(weightSum/targetWeight, 1.0), nil
 }
 
 // ExpDecay maps values of x between 0 (brand new) and 1 (old) to weights between 0 and 1
@@ -233,13 +246,13 @@ func (self *Aggregator) Stop() {
 	self.stop()
 }
 
-func (self *Aggregator) valuesForTime(symbol string, from time.Time, lookBack time.Duration) (promql.Matrix, error) {
+func (self *Aggregator) valuesForTime(symbol string, from time.Time, lookBack time.Duration, resolution time.Duration) (promql.Matrix, error) {
 	query, err := self.promqlEngine.NewRangeQuery(
 		self.tsDB,
-		util.SanitizeMetricName(symbol+index.PriceSuffix),
+		util.SanitizeMetricName(symbol+index.PriceMetricName),
 		from,
 		from.Truncate(lookBack),
-		time.Second,
+		resolution*time.Millisecond, // The parameter expects milliseconds.
 	)
 	if err != nil {
 		return nil, err
@@ -257,7 +270,7 @@ func (self *Aggregator) valuesForTime(symbol string, from time.Time, lookBack ti
 func (self *Aggregator) maxVolumeFor(symbol string, from time.Time, lookBack time.Duration) (float64, error) {
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		"max(max_over_time("+util.SanitizeMetricName(symbol+index.VolumeSuffix)+"["+lookBack.String()+"]))",
+		"max(max_over_time("+util.SanitizeMetricName(symbol+index.VolumeMetricName)+"["+lookBack.String()+"]))",
 		from,
 	)
 	if err != nil {
@@ -314,7 +327,7 @@ func (self *Aggregator) valuesAt(symbol string, at time.Time) ([]PriceInfo, floa
 	return priceInfos, totalConf / apiCount, nil
 }
 func (self *Aggregator) volumesAt(symbol string, at time.Time) (promql.Vector, error) {
-	query, err := self.promqlEngine.NewInstantQuery(self.tsDB, util.SanitizeMetricName(symbol+index.VolumeSuffix), at)
+	query, err := self.promqlEngine.NewInstantQuery(self.tsDB, util.SanitizeMetricName(symbol+index.VolumeMetricName), at)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +340,11 @@ func (self *Aggregator) volumesAt(symbol string, at time.Time) (promql.Vector, e
 }
 
 func (self *Aggregator) pricesAt(symbol string, at time.Time) (promql.Vector, error) {
-	query, err := self.promqlEngine.NewInstantQuery(self.tsDB, util.SanitizeMetricName(symbol+index.PriceSuffix), at)
+	query, err := self.promqlEngine.NewInstantQuery(
+		self.tsDB,
+		index.PriceMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}`,
+		at,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +358,7 @@ func (self *Aggregator) pricesAt(symbol string, at time.Time) (promql.Vector, er
 }
 
 func (self *Aggregator) apiCount(symbol string) (float64, error) {
-	query, err := self.promqlEngine.NewInstantQuery(self.tsDB, util.SanitizeMetricName(symbol+index.ApiCountSuffix), time.Now())
+	query, err := self.promqlEngine.NewInstantQuery(self.tsDB, util.SanitizeMetricName(symbol+index.ApiCountMetricName), time.Now())
 	if err != nil {
 		return 0, err
 	}

@@ -6,4 +6,5 @@ configs/.env
 /telliot
 myconfig.json
 tmp
+db
 scripts/bindings
