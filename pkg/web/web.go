@@ -43,9 +43,6 @@ func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQuer
 	router := route.New()
 	router.Get("/metrics", promhttp.Handler().ServeHTTP)
 
-	mux := http.NewServeMux()
-	mux.Handle("/", router)
-
 	opts := promql.EngineOpts{
 		Logger:        logger,
 		Reg:           nil,
@@ -55,8 +52,12 @@ func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQuer
 	}
 	engine := promql.NewEngine(opts)
 
+	// routerApi := route.New().WithPrefix("/api/v1")
 	api := api.New(logger, ctx, engine, tsDB)
-	api.Register(router)
+	api.Register(router.WithPrefix("/api/v1"))
+
+	mux := http.NewServeMux()
+	mux.Handle("/", router)
 
 	srv := &http.Server{
 		Handler:     mux,

@@ -173,12 +173,12 @@ export NAME= # Put an instance name here. Something short as some properties are
 ### To delete an instance.
 
 ```bash
-export NAME=  # telliot-db-... or  telliot-m-...
-kubectl delete statefulsets.apps $INSTANCE_NAME
-kubectl delete service $INSTANCE_NAME
-kubectl delete configmap $INSTANCE_NAME
-kubectl delete secret $INSTANCE_NAME
-kubectl delete persistentvolumeclaims $INSTANCE_NAME
+export DEPL_INSTANCE_NAME=  # telliot-db-lat or  telliot-m-lat
+kubectl delete statefulsets.apps $DEPL_INSTANCE_NAME
+kubectl delete service $DEPL_INSTANCE_NAME
+kubectl delete configmap $DEPL_INSTANCE_NAME
+kubectl delete secret $DEPL_INSTANCE_NAME
+kubectl delete persistentvolumeclaims $DEPL_INSTANCE_NAME
 ```
 
 ### To run a custom docker image.

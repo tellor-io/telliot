@@ -214,26 +214,29 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	logger := log.With(self.logger, "source", dataSource.Source())
 
 	for {
-		select {
-		case <-self.ctx.Done():
-			level.Debug(self.logger).Log("msg", "values record loop exited")
-			return
-		default:
-		}
-
 		price, volume, ts, err := dataSource.Get(self.ctx)
 		if err != nil {
 			level.Error(logger).Log("msg", "getting values from data source", "err", err)
 			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
-			<-ticker.C
-			continue
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
 		}
 
 		// Only manual entries expose ts so ignore zero values.
 		if !ts.IsZero() && time.Now().After(ts) {
 			level.Error(logger).Log("msg", "index value timestamp has expired", "ts", ts)
-			<-ticker.C
-			continue
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
 		}
 
 		level.Debug(logger).Log("msg", "adding value", "symbol", symbol, "price", price)
@@ -250,8 +253,13 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			price,
 		); err != nil {
 			level.Error(logger).Log("msg", "append values to the DB", "err", err)
-			<-ticker.C
-			continue
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
 		}
 		if _, err := appender.Append(0,
 			labels.Labels{
@@ -263,14 +271,24 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			volume,
 		); err != nil {
 			level.Error(logger).Log("msg", "append values to the DB", "err", err)
-			<-ticker.C
-			continue
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
 		}
 
 		if err := appender.Commit(); err != nil {
 			level.Error(logger).Log("msg", "adding values to the DB", "err", err)
-			<-ticker.C
-			continue
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
 		}
 
 		self.prices.With(
@@ -286,7 +304,13 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			},
 		).(prometheus.Gauge).Set(volume)
 
-		<-ticker.C
+		select {
+		case <-self.ctx.Done():
+			level.Debug(self.logger).Log("msg", "values record loop exited")
+			return
+		case <-ticker.C:
+			continue
+		}
 	}
 }
 

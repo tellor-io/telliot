@@ -635,7 +635,7 @@ func (self mineCmd) Run() error {
 		}
 		g.Add(func() error {
 			err := profitTracker.Start()
-			level.Info(logger).Log("msg", "tasker shutdown complete")
+			level.Info(logger).Log("msg", "profit shutdown complete")
 			return err
 		}, func(error) {
 			profitTracker.Stop()
