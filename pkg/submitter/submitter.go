@@ -293,7 +293,11 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 				if err != nil {
 					level.Error(self.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
 				} else {
-					self.reward.SaveGasUsed(recieipt.GasUsed, slot.Sub(slot, big.NewInt(1)))
+					slot.Sub(slot, big.NewInt(1))
+					if slot.Int64() == -1 {
+						slot = big.NewInt(4)
+					}
+					self.reward.SaveGasUsed(recieipt.GasUsed, slot)
 				}
 
 				return
