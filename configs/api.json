@@ -7,8 +7,8 @@
     ],
     "AMPL/BTC": [
         {
-            "URL": "https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPBTC",
-            "param": "$[0][7,8]"
+            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPBTC",
+            "param": "$[6,7]"
         }
     ],
     "AMPL/USD": [
@@ -17,17 +17,16 @@
             "param": "$.ampleforth.usd"
         },
         {
-            "URL": "https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUST",
-            "param": "$[0][7,8]"
+            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUST",
+            "param": "$[6,7]"
         },
         {
-            "URL": "https://api-pub.bitfinex.com/v2/tickers?symbols=tAMPUSD",
-            "param": "$[0][7,8]"
+            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUSD",
+            "param": "$[6,7]"
         },
         {
             "URL": "https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD",
-            "param": "$.USD",
-            "interval": 600
+            "param": "$.RAW.AMPL.USD[PRICE,TOTALVOLUME24H]"
         }
     ],
     "AMPL/USDC": [

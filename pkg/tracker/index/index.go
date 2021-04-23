@@ -184,8 +184,6 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 func (self *IndexTracker) Run() error {
 	delay := time.Second
 	for symbol, dataSources := range self.dataSources {
-		go self.recordApiCount(len(dataSources), symbol)
-
 		for _, dataSource := range dataSources {
 			// Use the default interval when not set.
 			interval := dataSource.Interval()
@@ -202,6 +200,7 @@ func (self *IndexTracker) Run() error {
 }
 
 const PriceMetricName = ComponentName + "_prices"
+const IntervalMetricName = ComponentName + "_interval"
 const VolumeMetricName = ComponentName + "_volumes"
 
 // recordValues from all API calls.
@@ -213,11 +212,134 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
 
+	appender := self.tsDB.Appender(self.ctx)
 	for {
-		price, volume, ts, err := dataSource.Get(self.ctx)
-		if err != nil {
-			level.Error(logger).Log("msg", "getting values from data source", "err", err)
-			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
+
+		// Record the source interval to use it for the confidence calculation.
+		// Confidence = avg(expectedMaxSamplesCount/actualSamplesCount) for a given period.
+		{
+			if _, err := appender.Append(0,
+				labels.Labels{
+					labels.Label{Name: "__name__", Value: IntervalMetricName},
+					labels.Label{Name: "source", Value: dataSource.Source()},
+					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
+				},
+				timestamp.FromTime(time.Now()),
+				float64(interval),
+			); err != nil {
+				level.Error(logger).Log("msg", "append values to the DB", "err", err)
+				select {
+				case <-self.ctx.Done():
+					level.Debug(self.logger).Log("msg", "values record loop exited")
+					return
+				case <-ticker.C:
+					continue
+				}
+			}
+
+			if err := appender.Commit(); err != nil {
+				level.Error(logger).Log("msg", "adding values to the DB", "err", err)
+				select {
+				case <-self.ctx.Done():
+					level.Debug(self.logger).Log("msg", "values record loop exited")
+					return
+				case <-ticker.C:
+					continue
+				}
+			}
+		}
+
+		// Record the actual price and volume.
+		{
+			price, volume, ts, err := dataSource.Get(self.ctx)
+			if err != nil {
+				level.Error(logger).Log("msg", "getting values from data source", "err", err)
+				self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
+				select {
+				case <-self.ctx.Done():
+					level.Debug(self.logger).Log("msg", "values record loop exited")
+					return
+				case <-ticker.C:
+					continue
+				}
+			}
+
+			// Only manual entries expose ts so ignore zero values.
+			if !ts.IsZero() && time.Now().After(ts) {
+				level.Error(logger).Log("msg", "index value timestamp has expired", "ts", ts)
+				select {
+				case <-self.ctx.Done():
+					level.Debug(self.logger).Log("msg", "values record loop exited")
+					return
+				case <-ticker.C:
+					continue
+				}
+			}
+
+			level.Debug(logger).Log("msg", "adding value", "symbol", symbol, "price", price)
+
+			// Record the actual price and volume for this data source.
+			if _, err := appender.Append(0,
+				labels.Labels{
+					labels.Label{Name: "__name__", Value: PriceMetricName},
+					labels.Label{Name: "source", Value: dataSource.Source()},
+					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
+				},
+				timestamp.FromTime(time.Now()),
+				price,
+			); err != nil {
+				level.Error(logger).Log("msg", "append values to the DB", "err", err)
+				select {
+				case <-self.ctx.Done():
+					level.Debug(self.logger).Log("msg", "values record loop exited")
+					return
+				case <-ticker.C:
+					continue
+				}
+			}
+			if _, err := appender.Append(0,
+				labels.Labels{
+					labels.Label{Name: "__name__", Value: VolumeMetricName},
+					labels.Label{Name: "source", Value: dataSource.Source()},
+					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
+				},
+				timestamp.FromTime(time.Now()),
+				volume,
+			); err != nil {
+				level.Error(logger).Log("msg", "append values to the DB", "err", err)
+				select {
+				case <-self.ctx.Done():
+					level.Debug(self.logger).Log("msg", "values record loop exited")
+					return
+				case <-ticker.C:
+					continue
+				}
+			}
+
+			if err := appender.Commit(); err != nil {
+				level.Error(logger).Log("msg", "adding values to the DB", "err", err)
+				select {
+				case <-self.ctx.Done():
+					level.Debug(self.logger).Log("msg", "values record loop exited")
+					return
+				case <-ticker.C:
+					continue
+				}
+			}
+
+			self.prices.With(
+				prometheus.Labels{
+					"source": dataSource.Source(),
+					"symbol": util.SanitizeMetricName(symbol),
+				},
+			).(prometheus.Gauge).Set(price)
+			self.volumes.With(
+				prometheus.Labels{
+					"source": dataSource.Source(),
+					"symbol": util.SanitizeMetricName(symbol),
+				},
+			).(prometheus.Gauge).Set(volume)
+
 			select {
 			case <-self.ctx.Done():
 				level.Debug(self.logger).Log("msg", "values record loop exited")
@@ -225,132 +347,11 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			case <-ticker.C:
 				continue
 			}
-		}
-
-		// Only manual entries expose ts so ignore zero values.
-		if !ts.IsZero() && time.Now().After(ts) {
-			level.Error(logger).Log("msg", "index value timestamp has expired", "ts", ts)
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-
-		level.Debug(logger).Log("msg", "adding value", "symbol", symbol, "price", price)
-
-		// Record the actual price and volume for this data source.
-		appender := self.tsDB.Appender(self.ctx)
-		if _, err := appender.Append(0,
-			labels.Labels{
-				labels.Label{Name: "__name__", Value: PriceMetricName},
-				labels.Label{Name: "source", Value: dataSource.Source()},
-				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
-			},
-			timestamp.FromTime(time.Now()),
-			price,
-		); err != nil {
-			level.Error(logger).Log("msg", "append values to the DB", "err", err)
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-		if _, err := appender.Append(0,
-			labels.Labels{
-				labels.Label{Name: "__name__", Value: VolumeMetricName},
-				labels.Label{Name: "source", Value: dataSource.Source()},
-				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
-			},
-			timestamp.FromTime(time.Now()),
-			volume,
-		); err != nil {
-			level.Error(logger).Log("msg", "append values to the DB", "err", err)
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-
-		if err := appender.Commit(); err != nil {
-			level.Error(logger).Log("msg", "adding values to the DB", "err", err)
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-
-		self.prices.With(
-			prometheus.Labels{
-				"source": dataSource.Source(),
-				"symbol": util.SanitizeMetricName(symbol),
-			},
-		).(prometheus.Gauge).Set(price)
-		self.volumes.With(
-			prometheus.Labels{
-				"source": dataSource.Source(),
-				"symbol": util.SanitizeMetricName(symbol),
-			},
-		).(prometheus.Gauge).Set(volume)
-
-		select {
-		case <-self.ctx.Done():
-			level.Debug(self.logger).Log("msg", "values record loop exited")
-			return
-		case <-ticker.C:
-			continue
 		}
 	}
 }
 
 const ApiCountMetricName = ComponentName + "_api_count"
-
-// recordApiCount records the total number of APIs per Symbol.
-// It records in a loop with a given interval to always have a fresh value near the current time.
-func (self *IndexTracker) recordApiCount(count int, symbol string) {
-	ticker := time.NewTicker(self.cfg.Interval.Duration)
-	for {
-		select {
-		case <-self.ctx.Done():
-			level.Debug(self.logger).Log("msg", "api count record loop exited")
-			return
-		default:
-		}
-
-		appender := self.tsDB.Appender(self.ctx)
-		if _, err := appender.Append(0,
-			labels.Labels{
-				labels.Label{Name: "__name__", Value: ApiCountMetricName},
-				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
-			},
-			timestamp.FromTime(time.Now().Round(0)),
-			float64(count),
-		); err != nil {
-			level.Error(self.logger).Log("msg", "append values to the DB", "err", err)
-			<-ticker.C
-			continue
-		}
-
-		if err := appender.Commit(); err != nil {
-			level.Error(self.logger).Log("msg", "adding values to the DB", "err", err)
-			<-ticker.C
-			continue
-		}
-
-		<-ticker.C
-	}
-}
 
 func (self *IndexTracker) Stop() {
 	self.stop()
@@ -369,7 +370,6 @@ const (
 type ParserType string
 
 const (
-	fileParser     ParserType = "jsonPath"
 	jsonPathParser ParserType = "jsonPath"
 	uniswapParser  ParserType = "Uniswap"
 	balancerParser ParserType = "Balancer"
