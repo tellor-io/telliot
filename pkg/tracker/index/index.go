@@ -46,8 +46,7 @@ type IndexTracker struct {
 	tsDB        *tsdb.DB
 	cfg         Config
 	dataSources map[string][]DataSource
-	prices      *prometheus.GaugeVec
-	volumes     *prometheus.GaugeVec
+	values      *prometheus.GaugeVec
 	getErrors   *prometheus.CounterVec
 }
 
@@ -83,19 +82,11 @@ func New(
 			Name:      "errors_total",
 			Help:      "The total number of get errors. Usually caused by API throtling.",
 		}, []string{"source"}),
-		prices: promauto.NewGaugeVec(prometheus.GaugeOpts{
+		values: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
 			Name:      "price",
 			Help:      "The currency price",
-		},
-			[]string{"symbol", "source"},
-		),
-		volumes: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "telliot",
-			Subsystem: ComponentName,
-			Name:      "volume",
-			Help:      "The currency trade amount",
 		},
 			[]string{"symbol", "source"},
 		),
@@ -199,9 +190,8 @@ func (self *IndexTracker) Run() error {
 	return nil
 }
 
-const PriceMetricName = ComponentName + "_prices"
+const ValuesMetricName = ComponentName + "_values"
 const IntervalMetricName = ComponentName + "_interval"
-const VolumeMetricName = ComponentName + "_volumes"
 
 // recordValues from all API calls.
 // The request delay is used to avoid rate limiting at startup
@@ -251,7 +241,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 
 		// Record the actual price and volume.
 		{
-			price, volume, ts, err := dataSource.Get(self.ctx)
+			value, ts, err := dataSource.Get(self.ctx)
 			if err != nil {
 				level.Error(logger).Log("msg", "getting values from data source", "err", err)
 				self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
@@ -276,35 +266,17 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				}
 			}
 
-			level.Debug(logger).Log("msg", "adding value", "symbol", symbol, "price", price)
+			level.Debug(logger).Log("msg", "adding value", "symbol", symbol, "value", value)
 
-			// Record the actual price and volume for this data source.
+			// Record the actual value for this data source.
 			if _, err := appender.Append(0,
 				labels.Labels{
-					labels.Label{Name: "__name__", Value: PriceMetricName},
+					labels.Label{Name: "__name__", Value: ValuesMetricName},
 					labels.Label{Name: "source", Value: dataSource.Source()},
 					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
 				},
 				timestamp.FromTime(time.Now()),
-				price,
-			); err != nil {
-				level.Error(logger).Log("msg", "append values to the DB", "err", err)
-				select {
-				case <-self.ctx.Done():
-					level.Debug(self.logger).Log("msg", "values record loop exited")
-					return
-				case <-ticker.C:
-					continue
-				}
-			}
-			if _, err := appender.Append(0,
-				labels.Labels{
-					labels.Label{Name: "__name__", Value: VolumeMetricName},
-					labels.Label{Name: "source", Value: dataSource.Source()},
-					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
-				},
-				timestamp.FromTime(time.Now()),
-				volume,
+				value,
 			); err != nil {
 				level.Error(logger).Log("msg", "append values to the DB", "err", err)
 				select {
@@ -327,18 +299,12 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				}
 			}
 
-			self.prices.With(
+			self.values.With(
 				prometheus.Labels{
 					"source": dataSource.Source(),
 					"symbol": util.SanitizeMetricName(symbol),
 				},
-			).(prometheus.Gauge).Set(price)
-			self.volumes.With(
-				prometheus.Labels{
-					"source": dataSource.Source(),
-					"symbol": util.SanitizeMetricName(symbol),
-				},
-			).(prometheus.Gauge).Set(volume)
+			).(prometheus.Gauge).Set(value)
 
 			select {
 			case <-self.ctx.Done():
@@ -402,10 +368,10 @@ type JSONapi struct {
 	Parser
 }
 
-func (self *JSONapi) Get(ctx context.Context) (float64, float64, time.Time, error) {
+func (self *JSONapi) Get(ctx context.Context) (float64, time.Time, error) {
 	vals, err := web.Fetch(ctx, self.logger, self.url, self.retryDelay)
 	if err != nil {
-		return 0, 0, time.Time{}, errors.Wrap(err, "fetching data from API")
+		return 0, time.Time{}, errors.Wrap(err, "fetching data from API")
 	}
 	return self.Parse(vals)
 }
@@ -430,10 +396,10 @@ type JSONfile struct {
 	filepath string
 }
 
-func (self *JSONfile) Get(_ context.Context) (float64, float64, time.Time, error) {
+func (self *JSONfile) Get(_ context.Context) (float64, time.Time, error) {
 	b, err := ioutil.ReadFile(self.filepath)
 	if err != nil {
-		return 0, 0, time.Time{}, err
+		return 0, time.Time{}, err
 	}
 	return self.Parse(b)
 }
@@ -450,7 +416,7 @@ type DataSource interface {
 	// Source returns the data source.
 	Source() string
 	// Get returns current index price and volume.
-	Get(context.Context) (float64, float64, time.Time, error)
+	Get(context.Context) (float64, time.Time, error)
 	// The recommended interval for calling the Get method.
 	// Some APIs will return an error if called more often
 	// Due to API rate limiting of the provider.
@@ -458,26 +424,26 @@ type DataSource interface {
 }
 
 type Parser interface {
-	Parse([]byte) (price float64, volume float64, timestamp time.Time, err error)
+	Parse([]byte) (price float64, timestamp time.Time, err error)
 }
 
 type JsonPathParser struct {
 	param string
 }
 
-func (self *JsonPathParser) Parse(input []byte) (float64, float64, time.Time, error) {
+func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 	var output interface{}
 
 	var timestamp time.Time
 
 	err := json.Unmarshal(input, &output)
 	if err != nil {
-		return 0, 0, timestamp, err
+		return 0, timestamp, err
 	}
 
 	output, err = jsonpath.Read(output, self.param)
 	if err != nil {
-		return 0, 0, timestamp, err
+		return 0, timestamp, err
 	}
 
 	// Expect result to be a slice of float or a single float value.
@@ -489,7 +455,7 @@ func (self *JsonPathParser) Parse(input []byte) (float64, float64, time.Time, er
 		resultList = []interface{}{result}
 	}
 	// Parse each item of slice to a float.
-	var price, volume float64
+	var price float64
 	for i, a := range resultList {
 		strValue := fmt.Sprintf("%v", a)
 		// Normalize based on american locale.
@@ -499,26 +465,20 @@ func (self *JsonPathParser) Parse(input []byte) (float64, float64, time.Time, er
 		case 0:
 			val, err := strconv.ParseFloat(strValue, 64)
 			if err != nil {
-				return 0, 0, timestamp, errors.Wrap(err, "price needs to be a valid float")
+				return 0, timestamp, errors.Wrap(err, "price needs to be a valid float")
 			}
 			price = val
 		case 1:
 			val, err := strconv.ParseFloat(strValue, 64)
 			if err != nil {
-				return 0, 0, timestamp, errors.Wrap(err, "volume needs to be a valid float")
-			}
-			volume = val
-		case 2:
-			val, err := strconv.ParseFloat(strValue, 64)
-			if err != nil {
-				return 0, 0, timestamp, errors.Wrap(err, "timestamp needs to be a valid float")
+				return 0, timestamp, errors.Wrap(err, "timestamp needs to be a valid float")
 			}
 			timestamp = time.Unix(int64(val), 0)
 
 		}
 
 	}
-	return price, volume, timestamp, nil
+	return price, timestamp, nil
 }
 
 func NewParser(t Api) Parser {

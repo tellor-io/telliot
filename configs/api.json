@@ -8,7 +8,13 @@
     "AMPL/BTC": [
         {
             "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPBTC",
-            "param": "$[6,7]"
+            "param": "$[6]"
+        }
+    ],
+    "AMPL/BTC-1H-VOLUME": [
+        {
+            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPBTC",
+            "param": "$[7]"
         }
     ],
     "AMPL/USD": [
@@ -17,16 +23,30 @@
             "param": "$.ampleforth.usd"
         },
         {
-            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUST",
-            "param": "$[6,7]"
+            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUSD",
+            "param": "$[6]"
         },
+        {
+            "URL": "https://min-api.cryptocompare.com/data/pricemultifull?fsyms=AMPL&tsyms=USD",
+            "param": "$.RAW.AMPL.USD[PRICE,VOLUME24HOUR]"
+        }
+    ],
+    "AMPL/USD-1H-VOLUME": [
         {
             "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUSD",
-            "param": "$[6,7]"
-        },
+            "param": "$[7]"
+        }
+    ],
+    "AMPL/USD-1D-VWAP": [
         {
-            "URL": "https://min-api.cryptocompare.com/data/price?fsym=AMPL&tsyms=USD",
-            "param": "$.RAW.AMPL.USD[PRICE,TOTALVOLUME24H]"
+            "URL": "https://api-pub.bitfinex.com/v2/stats1/vwap:1d:tAMPUSD/last",
+            "param": "$[1]"
+        }
+    ],
+    "AMPL/USDT-1D-VWAP": [
+        {
+            "URL": "https://api-pub.bitfinex.com/v2/stats1/vwap:1d:tAMPUST/last",
+            "param": "$[1]"
         }
     ],
     "AMPL/USDC": [
@@ -34,6 +54,12 @@
             "URL": "Mainnet:0x7860e28ebfb8ae052bfe279c07ac5d94c9cd2937,Rinkeby:0x7Ce90580beC5Fc55b1Cb51926151E00cF1544C80",
             "type": "ethereum",
             "parser": "Balancer"
+        }
+    ],
+    "AMPL/USDT": [
+        {
+            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUST",
+            "param": "$[6,7]"
         }
     ],
     "AMPL/ETH": [
@@ -140,8 +166,8 @@
             "param": "$.bitcoin.usd"
         },
         {
-            "URL": "https://api-pub.bitfinex.com/v2/tickers?symbols=tBTCUSD",
-            "param": "$[0][7,8]"
+            "URL": "https://api-pub.bitfinex.com/v2/ticker/tBTCUSD",
+            "param": "$[6]"
         }
     ],
     "BTCDOMINANCE": [
@@ -239,7 +265,7 @@
     "ETH/USD": [
         {
             "URL": "https://api.pro.coinbase.com/products/ETH-USD/ticker",
-            "param": "$[price, volume]"
+            "param": "$[price]"
         },
         {
             "URL": "https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1",

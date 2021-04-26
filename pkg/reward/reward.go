@@ -95,7 +95,7 @@ func (self *Reward) SaveGasUsed(_gasUsed uint64, slot *big.Int) {
 }
 
 func (s *Reward) trbPrice() (*big.Int, error) {
-	trbPrice, _, confidence, err := s.aggr.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour)
+	trbPrice, confidence, err := s.aggr.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour)
 	if err != nil {
 		return nil, errors.New("getting the trb price from the aggregator")
 	}

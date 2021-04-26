@@ -33,10 +33,6 @@ type Config struct {
 	MinConfidence float64
 }
 
-type PriceInfo struct {
-	Price, Volume float64
-}
-
 type Aggregator struct {
 	logger       log.Logger
 	ctx          context.Context
@@ -96,13 +92,13 @@ func (self *Aggregator) Run() error {
 			return nil
 		default:
 		}
-		price, volume, confidence, err := self.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour)
+		value, confidence, err := self.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour)
 		if err != nil {
 			level.Error(self.logger).Log("msg", "get latest", "err", err)
 			<-ticker.C
 			continue
 		}
-		fmt.Println("price, volume, confidence", price, volume, confidence)
+		fmt.Println("price, volume, confidence", value, confidence)
 		select {
 		case <-self.ctx.Done():
 			return nil
@@ -113,41 +109,39 @@ func (self *Aggregator) Run() error {
 	}
 }
 
-func (self *Aggregator) MedianAt(symbol string, at time.Time) (float64, float64, float64, error) {
-	values, confidence, err := self.valuesAt(symbol, at)
+func (self *Aggregator) MedianAt(symbol string, at time.Time) (float64, float64, error) {
+	values, confidence, err := self.valuesAtWithConfidence(symbol, at)
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, err
 	}
 	if len(values) == 0 {
-		return 0, 0, 0, errors.New("no values")
+		return 0, 0, errors.New("no values")
 	}
-	price, volume := self.median(values)
-	return price, volume, confidence, nil
+	price := self.median(values)
+	return price, confidence, nil
 }
 
-func (self *Aggregator) MedianAtEOD(symbol string, at time.Time) (float64, float64, float64, error) {
+func (self *Aggregator) MedianAtEOD(symbol string, at time.Time) (float64, float64, error) {
 	d := 24 * time.Hour
 	eod := time.Now().Truncate(d)
 	return self.MedianAt(symbol, eod)
 }
 
-func (self *Aggregator) MeanAt(symbol string, at time.Time) (float64, float64, float64, error) {
-	values, confidence, err := self.valuesAt(symbol, at)
+func (self *Aggregator) MeanAt(symbol string, at time.Time) (float64, float64, error) {
+	values, confidence, err := self.valuesAtWithConfidence(symbol, at)
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, err
 	}
-	price, volume := self.mean(values)
-	return price, volume, confidence, nil
+	price := self.mean(values)
+	return price, confidence, nil
 }
 
-func (self *Aggregator) mean(vals []PriceInfo) (float64, float64) {
+func (self *Aggregator) mean(vals []float64) float64 {
 	priceSum := 0.0
-	volSum := 0.0
 	for _, val := range vals {
-		priceSum += val.Price
-		volSum += val.Volume
+		priceSum += val
 	}
-	return priceSum / float64(len(vals)), volSum
+	return priceSum / float64(len(vals))
 }
 
 // TimeWeightedAvg returns price,volume and confidence level for a given symbol.
@@ -165,7 +159,7 @@ func (self *Aggregator) TimeWeightedAvg(
 	// Avg value.
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`avg_over_time(`+index.PriceMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
+		`avg_over_time(`+index.ValuesMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
 		from,
 	)
 	if err != nil {
@@ -183,7 +177,7 @@ func (self *Aggregator) TimeWeightedAvg(
 	query, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
-			count_over_time(`+index.PriceMetricName+`{
+			count_over_time(`+index.ValuesMetricName+`{
 				symbol="`+util.SanitizeMetricName(symbol)+`"
 			}[`+lookBack.String()+`]) /
 			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / indexTracker_interval))`,
@@ -201,16 +195,12 @@ func (self *Aggregator) TimeWeightedAvg(
 	return avg.Value.(promql.Vector)[0].V, confidence.Value.(promql.Vector)[0].V, err
 }
 
-func (self *Aggregator) median(values []PriceInfo) (float64, float64) {
+func (self *Aggregator) median(values []float64) float64 {
 	sort.Slice(values, func(i, j int) bool {
-		return values[i].Price < values[j].Price
+		return values[i] < values[j]
 	})
-	price := values[len(values)/2].Price
-	volume := 0.0
-	for _, price := range values {
-		volume += price.Volume
-	}
-	return price, volume
+	price := values[len(values)/2]
+	return price
 }
 
 func (self *Aggregator) Stop() {
@@ -238,80 +228,69 @@ func (self *Aggregator) Stop() {
 
 // }
 
-func (self *Aggregator) maxVolumeFor(symbol string, from time.Time, lookBack time.Duration) (float64, error) {
-	query, err := self.promqlEngine.NewInstantQuery(
-		self.tsDB,
-		`max_over_time(`+index.VolumeMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
-		from,
-	)
-	if err != nil {
-		return 0, err
-	}
-	defer query.Close()
-	result := query.Exec(self.ctx)
-	if result.Err != nil {
-		return 0, errors.Wrapf(result.Err, "error evaluating query:%v", query)
-	}
+// func (self *Aggregator) maxVolumeFor(symbol string, from time.Time, lookBack time.Duration) (float64, error) {
+// 	query, err := self.promqlEngine.NewInstantQuery(
+// 		self.tsDB,
+// 		`max_over_time(`+index.VolumeMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
+// 		from,
+// 	)
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	defer query.Close()
+// 	result := query.Exec(self.ctx)
+// 	if result.Err != nil {
+// 		return 0, errors.Wrapf(result.Err, "error evaluating query:%v", query)
+// 	}
 
-	return result.Value.(promql.Vector)[0].V, nil
+// 	return result.Value.(promql.Vector)[0].V, nil
 
-}
+// }
 
 // valuesAt returns the value from all sources for a given symbol with the confidence level.
 // 100% confidence is when all apis have returned a value within the last 10 minutes.
 // For every missing value the calculation subtracts some confidence level.
-// Confidence is calculated totalValues/totalApiCount
-func (self *Aggregator) valuesAt(symbol string, at time.Time) ([]PriceInfo, float64, error) {
-	var priceInfos []PriceInfo
-	prices, err := self.pricesAt(symbol, at)
+// Confidence is calculated totalValues/totalApiCount.
+func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]float64, float64, error) {
+	var prices []float64
+	pricesVector, err := self.valuesAt(symbol, at)
 	if err != nil {
 		return nil, 0, err
 	}
-	volumes, err := self.volumesAt(symbol, at)
-	if err != nil {
-		return nil, 0, err
-	}
-	for _, price := range prices {
-		volume := 0.0
-		for _, _volume := range volumes { // Find the volume for this symbol.
-			if price.Metric[1].Value == _volume.Metric[1].Value {
-				volume = _volume.V
-				break
-			}
-		}
-		priceInfos = append(priceInfos, PriceInfo{
-			Price:  price.V,
-			Volume: volume,
-		})
+
+	for _, price := range pricesVector {
+		prices = append(prices, price.V)
+
 	}
 	apiCount, err := self.apiCount(symbol)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return priceInfos, float64(len(prices)) / apiCount, nil
-}
-func (self *Aggregator) volumesAt(symbol string, at time.Time) (promql.Vector, error) {
-	query, err := self.promqlEngine.NewInstantQuery(
-		self.tsDB,
-		`last_over_time{`+index.VolumeMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"})[10m]`,
-		at,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer query.Close()
-	result := query.Exec(self.ctx)
-	if result.Err != nil {
-		return nil, errors.Wrapf(result.Err, "error evaluating query:%v", query)
-	}
-	return result.Value.(promql.Vector), nil
+	return prices, float64(len(prices)) / apiCount, nil
 }
 
-func (self *Aggregator) pricesAt(symbol string, at time.Time) (promql.Vector, error) {
+// func (self *Aggregator) volumesAt(symbol string, at time.Time) (promql.Vector, error) {
+// 	query, err := self.promqlEngine.NewInstantQuery(
+// 		self.tsDB,
+// 		`last_over_time{`+index.VolumeMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"})[10m]`,
+// 		at,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer query.Close()
+// 	result := query.Exec(self.ctx)
+// 	if result.Err != nil {
+// 		return nil, errors.Wrapf(result.Err, "error evaluating query:%v", query)
+// 	}
+// 	return result.Value.(promql.Vector), nil
+// }
+
+func (self *Aggregator) valuesAt(symbol string, at time.Time) (promql.Vector, error) {
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`last_over_time(`+index.PriceMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[10m])`,
+		`last_over_time(`+index.ValuesMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[10m])`,
 		at,
 	)
 	if err != nil {
