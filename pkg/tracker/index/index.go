@@ -202,12 +202,11 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
 
-	appender := self.tsDB.Appender(self.ctx)
 	for {
-
 		// Record the source interval to use it for the confidence calculation.
 		// Confidence = avg(expectedMaxSamplesCount/actualSamplesCount) for a given period.
 		{
+			appender := self.tsDB.Appender(self.ctx)
 			if _, err := appender.Append(0,
 				labels.Labels{
 					labels.Label{Name: "__name__", Value: IntervalMetricName},
@@ -241,6 +240,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 
 		// Record the actual price and volume.
 		{
+			appender := self.tsDB.Appender(self.ctx)
 			value, ts, err := dataSource.Get(self.ctx)
 			if err != nil {
 				level.Error(logger).Log("msg", "getting values from data source", "err", err)
