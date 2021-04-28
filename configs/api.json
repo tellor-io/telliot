@@ -18,11 +18,11 @@
     "AMPL/BTC/VOLUME": [
         {
             "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPBTC/last",
-            "param": "$[5,0]"
+            "param": "$[5]"
         },
         {
             "URL": "https://api.kucoin.com/api/v1/market/candles?type=1min&symbol=AMPL-BTC",
-            "param": "$.data[0][5,0]"
+            "param": "$.data[0][5]"
         }
     ],
     "AMPL/USD": [
@@ -32,17 +32,17 @@
         },
         {
             "URL": "https://ftx.com/api/markets/AMPL/USD",
-            "param": "$result[0][price]"
+            "param": "$.result.price"
         }
     ],
     "AMPL/USD/VOLUME": [
         {
             "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPUSD/last",
-            "param": "$[5,0]"
+            "param": "$[5]"
         },
         {
             "URL": "https://ftx.com/api/markets/AMPL/USD/candles?resolution=60&limit=1",
-            "param": "$result[0][volume,time]"
+            "param": "$.result[0][volume]"
         }
     ],
     "AMPL/USDT": [
@@ -56,7 +56,7 @@
         },
         {
             "URL": "https://ftx.com/api/markets/AMPL/USDT",
-            "param": "$result[0][price]"
+            "param": "$.result.price"
         },
         {
             "URL": "https://www.mxc.com/open/api/v2/market/ticker?symbol=AMPL_USDT",
@@ -66,19 +66,19 @@
     "AMPL/USDT/VOLUME": [
         {
             "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPUST/last",
-            "param": "$[5,0]"
+            "param": "$[5]"
         },
         {
             "URL": "https://api.kucoin.com/api/v1/market/candles?type=1min&symbol=AMPL-USDT",
-            "param": "$.data[0][5,0]"
+            "param": "$.data[0][5]"
         },
         {
             "URL": "https://ftx.com/api/markets/AMPL/USDT/candles?resolution=60&limit=1",
-            "param": "$result[0][volume,time]"
+            "param": "$.result[0][volume]"
         },
         {
             "URL": "https://www.mxc.com/open/api/v2/market/kline?symbol=AMPL_USDT&interval=1m",
-            "param": "$.data[0][5,0]"
+            "param": "$.data[0][5]"
         }
     ],
     "AMPL/ETH": [
@@ -90,11 +90,11 @@
     "AMPL/ETH/VOLUME": [
         {
             "URL": "https://api.kucoin.com/api/v1/market/candles?type=1min&symbol=AMPL-ETH",
-            "param": "$.data[0][6,0]"
+            "param": "$.data[0][5]"
         },
         {
             "URL": "https://www.mxc.com/open/api/v2/market/kline?symbol=AMPL_ETH&interval=1m",
-            "param": "$.data[0][5,0]"
+            "param": "$.data[0][5]"
         }
     ],
     "ATOM/USD": [
