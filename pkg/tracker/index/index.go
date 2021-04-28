@@ -29,7 +29,13 @@ import (
 	"github.com/yalp/jsonpath"
 )
 
-const ComponentName = "indexTracker"
+const (
+	ComponentName      = "indexTracker"
+	ValueSuffix        = "value"
+	IntervalSuffix     = "interval"
+	ValueMetricName    = ComponentName + "_" + ValueSuffix
+	IntervalMetricName = ComponentName + "_" + IntervalSuffix
+)
 
 type Config struct {
 	LogLevel       string
@@ -46,7 +52,7 @@ type IndexTracker struct {
 	tsDB        *tsdb.DB
 	cfg         Config
 	dataSources map[string][]DataSource
-	values      *prometheus.GaugeVec
+	value       *prometheus.GaugeVec
 	getErrors   *prometheus.CounterVec
 }
 
@@ -82,11 +88,11 @@ func New(
 			Name:      "errors_total",
 			Help:      "The total number of get errors. Usually caused by API throtling.",
 		}, []string{"source"}),
-		values: promauto.NewGaugeVec(prometheus.GaugeOpts{
+		value: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
-			Name:      "price",
-			Help:      "The currency price",
+			Name:      ValueSuffix,
+			Help:      "The current tracker value",
 		},
 			[]string{"symbol", "source"},
 		),
@@ -190,9 +196,6 @@ func (self *IndexTracker) Run() error {
 	return nil
 }
 
-const ValuesMetricName = ComponentName + "_values"
-const IntervalMetricName = ComponentName + "_interval"
-
 // recordValues from all API calls.
 // The request delay is used to avoid rate limiting at startup
 // for when all API calls try to happen at the same time.
@@ -238,7 +241,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			}
 		}
 
-		// Record the actual price and volume.
+		// Record the actual value.
 		{
 			appender := self.tsDB.Appender(self.ctx)
 			value, ts, err := dataSource.Get(self.ctx)
@@ -271,7 +274,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			// Record the actual value for this data source.
 			if _, err := appender.Append(0,
 				labels.Labels{
-					labels.Label{Name: "__name__", Value: ValuesMetricName},
+					labels.Label{Name: "__name__", Value: ValueMetricName},
 					labels.Label{Name: "source", Value: dataSource.Source()},
 					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
 				},
@@ -299,7 +302,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				}
 			}
 
-			self.values.With(
+			self.value.With(
 				prometheus.Labels{
 					"source": dataSource.Source(),
 					"symbol": util.SanitizeMetricName(symbol),
@@ -415,7 +418,7 @@ func (self *JSONfile) Source() string {
 type DataSource interface {
 	// Source returns the data source.
 	Source() string
-	// Get returns current index price and volume.
+	// Get returns current api value.
 	Get(context.Context) (float64, time.Time, error)
 	// The recommended interval for calling the Get method.
 	// Some APIs will return an error if called more often
@@ -424,7 +427,7 @@ type DataSource interface {
 }
 
 type Parser interface {
-	Parse([]byte) (price float64, timestamp time.Time, err error)
+	Parse([]byte) (value float64, timestamp time.Time, err error)
 }
 
 type JsonPathParser struct {
@@ -455,7 +458,7 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 		resultList = []interface{}{result}
 	}
 	// Parse each item of slice to a float.
-	var price float64
+	var value float64
 	for i, a := range resultList {
 		strValue := fmt.Sprintf("%v", a)
 		// Normalize based on american locale.
@@ -465,9 +468,9 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 		case 0:
 			val, err := strconv.ParseFloat(strValue, 64)
 			if err != nil {
-				return 0, timestamp, errors.Wrap(err, "price needs to be a valid float")
+				return 0, timestamp, errors.Wrap(err, "value needs to be a valid float")
 			}
-			price = val
+			value = val
 		case 1:
 			val, err := strconv.ParseFloat(strValue, 64)
 			if err != nil {
@@ -478,7 +481,7 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 		}
 
 	}
-	return price, timestamp, nil
+	return value, timestamp, nil
 }
 
 func NewParser(t Api) Parser {

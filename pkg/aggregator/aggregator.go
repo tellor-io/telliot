@@ -159,7 +159,7 @@ func (self *Aggregator) TimeWeightedAvg(
 	// Avg value.
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`avg_over_time(`+index.ValuesMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
+		`avg_over_time(`+index.ValueMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
 		from,
 	)
 	if err != nil {
@@ -173,11 +173,11 @@ func (self *Aggregator) TimeWeightedAvg(
 
 	// Confidence level.
 	// an example for 1h period.
-	// avg(count_over_time(indexTracker_prices{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
+	// avg(count_over_time(indexTracker_values{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
 	query, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
-			count_over_time(`+index.ValuesMetricName+`{
+			count_over_time(`+index.ValueMetricName+`{
 				symbol="`+util.SanitizeMetricName(symbol)+`"
 			}[`+lookBack.String()+`]) /
 			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / indexTracker_interval))`,
@@ -290,7 +290,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 func (self *Aggregator) valuesAt(symbol string, at time.Time) (promql.Vector, error) {
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`last_over_time(`+index.ValuesMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[10m])`,
+		`last_over_time(`+index.ValueMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[10m])`,
 		at,
 	)
 	if err != nil {
