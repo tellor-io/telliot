@@ -435,16 +435,21 @@ type JsonPathParser struct {
 func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 	var output interface{}
 
+	maxErrL := len(string(input)) - 1
+	if maxErrL > 30 {
+		maxErrL = 30
+	}
+
 	var timestamp time.Time
 
 	err := json.Unmarshal(input, &output)
 	if err != nil {
-		return 0, timestamp, errors.Wrapf(err, "json marshal:%v", string(input)[:30])
+		return 0, timestamp, errors.Wrapf(err, "json marshal:%v", string(input)[:maxErrL])
 	}
 
 	output, err = jsonpath.Read(output, self.param)
 	if err != nil {
-		return 0, timestamp, errors.Wrapf(err, "json path read:%v", string(input)[:30])
+		return 0, timestamp, errors.Wrapf(err, "json path read:%v", string(input)[:maxErrL])
 	}
 
 	// Expect result to be a slice of float or a single float value.
