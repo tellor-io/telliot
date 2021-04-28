@@ -39,6 +39,7 @@ type Aggregator struct {
 	stop         context.CancelFunc
 	tsDB         storage.SampleAndChunkQueryable
 	promqlEngine *promql.Engine
+	maxLookback  time.Duration
 	cfg          Config
 	prices       *prometheus.GaugeVec
 }
@@ -58,11 +59,13 @@ func New(
 
 	ctx, stop := context.WithCancel(ctx)
 
+	maxLookback := 5 * time.Minute
 	opts := promql.EngineOpts{
-		Logger:     logger,
-		Reg:        nil,
-		MaxSamples: 30000,
-		Timeout:    10 * time.Second,
+		Logger:        logger,
+		Reg:           nil,
+		MaxSamples:    30000,
+		Timeout:       10 * time.Second,
+		LookbackDelta: maxLookback,
 	}
 	engine := promql.NewEngine(opts)
 
@@ -73,6 +76,7 @@ func New(
 		tsDB:         tsDB,
 		promqlEngine: engine,
 		cfg:          cfg,
+		maxLookback:  maxLookback,
 		prices: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
@@ -173,6 +177,7 @@ func (self *Aggregator) TimeWeightedAvg(
 
 	// Confidence level.
 	// an example for 1h period.
+	// confidence = actualDataPointCount/maxDataPointCount
 	// avg(count_over_time(indexTracker_values{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
 	query, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
@@ -190,6 +195,10 @@ func (self *Aggregator) TimeWeightedAvg(
 	confidence := query.Exec(self.ctx)
 	if confidence.Err != nil {
 		return 0, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query)
+	}
+
+	if len(avg.Value.(promql.Vector)) == 0 {
+		return 0, 0, errors.New("no result")
 	}
 
 	return avg.Value.(promql.Vector)[0].V, confidence.Value.(promql.Vector)[0].V, err
@@ -262,12 +271,30 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		prices = append(prices, price.V)
 
 	}
-	apiCount, err := self.apiCount(symbol)
+
+	// Confidence level.
+	// an example for 1h period.
+	// confidence = actualDataPointCount/maxDataPointCount
+	// avg(count_over_time(indexTracker_values{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
+	query, err := self.promqlEngine.NewInstantQuery(
+		self.tsDB,
+		`avg(
+			count_over_time(`+index.ValueMetricName+`{
+				symbol="`+util.SanitizeMetricName(symbol)+`"
+			}[`+self.maxLookback.String()+`]) /
+			(`+strconv.Itoa(int(self.maxLookback.Nanoseconds()))+` / indexTracker_interval))`,
+		time.Now(),
+	)
 	if err != nil {
 		return nil, 0, err
 	}
+	defer query.Close()
+	confidence := query.Exec(self.ctx)
+	if confidence.Err != nil {
+		return nil, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query)
+	}
 
-	return prices, float64(len(prices)) / apiCount, nil
+	return prices, confidence.Value.(promql.Vector)[0].V, nil
 }
 
 // func (self *Aggregator) volumesAt(symbol string, at time.Time) (promql.Vector, error) {
@@ -303,22 +330,4 @@ func (self *Aggregator) valuesAt(symbol string, at time.Time) (promql.Vector, er
 	}
 
 	return result.Value.(promql.Vector), nil
-}
-
-func (self *Aggregator) apiCount(symbol string) (float64, error) {
-	query, err := self.promqlEngine.NewInstantQuery(self.tsDB, util.SanitizeMetricName(symbol+index.ApiCountMetricName), time.Now())
-	if err != nil {
-		return 0, err
-	}
-	defer query.Close()
-	result := query.Exec(self.ctx)
-	if result.Err != nil {
-		return 0, errors.Wrapf(result.Err, "error evaluating query:%v", query)
-	}
-
-	if result.Value.String() == "" {
-		return 0, errors.New("no results for API count")
-	}
-
-	return result.Value.(promql.Vector)[0].V, nil
 }
