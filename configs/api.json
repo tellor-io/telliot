@@ -9,64 +9,92 @@
         {
             "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPBTC",
             "param": "$[6]"
+        },
+        {
+            "URL": "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=AMPL-BTC",
+            "param": "$.data.price"
         }
     ],
-    "AMPL/BTC-1H-VOLUME": [
+    "AMPL/BTC/VOLUME": [
         {
-            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPBTC",
-            "param": "$[7]"
+            "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPBTC/last",
+            "param": "$[5,0]"
+        },
+        {
+            "URL": "https://api.kucoin.com/api/v1/market/candles?type=1min&symbol=AMPL-BTC",
+            "param": "$.data[0][5,0]"
         }
     ],
     "AMPL/USD": [
-        {
-            "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ampleforth&vs_currencies=usd",
-            "param": "$.ampleforth.usd"
-        },
         {
             "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUSD",
             "param": "$[6]"
         },
         {
-            "URL": "https://min-api.cryptocompare.com/data/pricemultifull?fsyms=AMPL&tsyms=USD",
-            "param": "$.RAW.AMPL.USD[PRICE,VOLUME24HOUR]"
+            "URL": "https://ftx.com/api/markets/AMPL/USD",
+            "param": "$result[0][price]"
         }
     ],
-    "AMPL/USD-1H-VOLUME": [
+    "AMPL/USD/VOLUME": [
         {
-            "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUSD",
-            "param": "$[7]"
-        }
-    ],
-    "AMPL/USD-1D-VWAP": [
+            "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPUSD/last",
+            "param": "$[5,0]"
+        },
         {
-            "URL": "https://api-pub.bitfinex.com/v2/stats1/vwap:1d:tAMPUSD/last",
-            "param": "$[1]"
-        }
-    ],
-    "AMPL/USDT-1D-VWAP": [
-        {
-            "URL": "https://api-pub.bitfinex.com/v2/stats1/vwap:1d:tAMPUST/last",
-            "param": "$[1]"
-        }
-    ],
-    "AMPL/USDC": [
-        {
-            "URL": "Mainnet:0x7860e28ebfb8ae052bfe279c07ac5d94c9cd2937,Rinkeby:0x7Ce90580beC5Fc55b1Cb51926151E00cF1544C80",
-            "type": "ethereum",
-            "parser": "Balancer"
+            "URL": "https://ftx.com/api/markets/AMPL/USD/candles?resolution=60&limit=1",
+            "param": "$result[0][volume,time]"
         }
     ],
     "AMPL/USDT": [
         {
             "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUST",
-            "param": "$[6,7]"
+            "param": "$[6]"
+        },
+        {
+            "URL": "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=AMPL-USDT",
+            "param": "$.data.price"
+        },
+        {
+            "URL": "https://ftx.com/api/markets/AMPL/USDT",
+            "param": "$result[0][price]"
+        },
+        {
+            "URL": "https://www.mxc.com/open/api/v2/market/ticker?symbol=AMPL_USDT",
+            "param": "$.data[0][last]"
+        }
+    ],
+    "AMPL/USDT/VOLUME": [
+        {
+            "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPUST/last",
+            "param": "$[5,0]"
+        },
+        {
+            "URL": "https://api.kucoin.com/api/v1/market/candles?type=1min&symbol=AMPL-USDT",
+            "param": "$.data[0][5,0]"
+        },
+        {
+            "URL": "https://ftx.com/api/markets/AMPL/USDT/candles?resolution=60&limit=1",
+            "param": "$result[0][volume,time]"
+        },
+        {
+            "URL": "https://www.mxc.com/open/api/v2/market/kline?symbol=AMPL_USDT&interval=1m",
+            "param": "$.data[0][5,0]"
         }
     ],
     "AMPL/ETH": [
         {
-            "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x6dFd19363709f6245a7e7A74eA66e5c59dF9360F",
-            "type": "ethereum",
-            "parser": "Uniswap"
+            "URL": "https://www.mxc.com/open/api/v2/market/ticker?symbol=AMPL_ETH",
+            "param": "$.data[0][last]"
+        }
+    ],
+    "AMPL/ETH/VOLUME": [
+        {
+            "URL": "https://api.kucoin.com/api/v1/market/candles?type=1min&symbol=AMPL-ETH",
+            "param": "$.data[0][6,0]"
+        },
+        {
+            "URL": "https://www.mxc.com/open/api/v2/market/kline?symbol=AMPL_ETH&interval=1m",
+            "param": "$.data[0][5,0]"
         }
     ],
     "ATOM/USD": [
@@ -100,7 +128,7 @@
     "BCH/USD": [
         {
             "URL": "https://api.kraken.com/0/public/Ticker?pair=BCHUSD",
-            "param": "$.result.BCHUSD[p, v][0]"
+            "param": "$.result.BCHUSD[p][0]"
         }
     ],
     "BNB/BTC": [
