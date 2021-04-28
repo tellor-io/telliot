@@ -320,8 +320,6 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	}
 }
 
-const ApiCountMetricName = ComponentName + "_api_count"
-
 func (self *IndexTracker) Stop() {
 	self.stop()
 }
@@ -441,12 +439,12 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 
 	err := json.Unmarshal(input, &output)
 	if err != nil {
-		return 0, timestamp, err
+		return 0, timestamp, errors.Wrapf(err, "json marshal:%v", string(input)[:30])
 	}
 
 	output, err = jsonpath.Read(output, self.param)
 	if err != nil {
-		return 0, timestamp, err
+		return 0, timestamp, errors.Wrapf(err, "json path read:%v", string(input)[:30])
 	}
 
 	// Expect result to be a slice of float or a single float value.
@@ -468,18 +466,16 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 		case 0:
 			val, err := strconv.ParseFloat(strValue, 64)
 			if err != nil {
-				return 0, timestamp, errors.Wrap(err, "value needs to be a valid float")
+				return 0, timestamp, errors.Wrapf(err, "value needs to be a valid float:%v", strValue)
 			}
 			value = val
 		case 1:
 			val, err := strconv.ParseFloat(strValue, 64)
 			if err != nil {
-				return 0, timestamp, errors.Wrap(err, "timestamp needs to be a valid float")
+				return 0, timestamp, errors.Wrapf(err, "timestamp needs to be a valid float:%v", strValue)
 			}
 			timestamp = time.Unix(int64(val), 0)
-
 		}
-
 	}
 	return value, timestamp, nil
 }
