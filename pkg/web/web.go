@@ -44,11 +44,12 @@ func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQuer
 	router.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	opts := promql.EngineOpts{
-		Logger:        logger,
-		Reg:           nil,
-		MaxSamples:    10000,
-		Timeout:       10 * time.Second,
-		LookbackDelta: 24 * time.Hour,
+		Logger:               logger,
+		Reg:                  nil,
+		MaxSamples:           10000,
+		Timeout:              10 * time.Second,
+		EnableAtModifier:     true,
+		EnableNegativeOffset: true,
 	}
 	engine := promql.NewEngine(opts)
 

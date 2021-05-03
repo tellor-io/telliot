@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -94,7 +95,7 @@ func New(
 			Name:      ValueSuffix,
 			Help:      "The current tracker value",
 		},
-			[]string{"symbol", "source"},
+			[]string{"symbol", "domain", "source"},
 		),
 	}, nil
 }
@@ -205,7 +206,44 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
 
+	var lastTS time.Time
 	for {
+		value, ts, err := dataSource.Get(self.ctx)
+		if err != nil {
+			level.Error(logger).Log("msg", "getting values from data source", "err", err)
+			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
+		}
+
+		if lastTS.Equal(ts) { // Skip data that has already been added.
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
+		}
+		lastTS = ts
+
+		source, err := url.Parse(dataSource.Source())
+		if err != nil {
+			level.Error(logger).Log("msg", "parsing url from data source", "err", err)
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
+		}
+
 		// Record the source interval to use it for the confidence calculation.
 		// Confidence = avg(expectedMaxSamplesCount/actualSamplesCount) for a given period.
 		{
@@ -214,12 +252,13 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				labels.Labels{
 					labels.Label{Name: "__name__", Value: IntervalMetricName},
 					labels.Label{Name: "source", Value: dataSource.Source()},
+					labels.Label{Name: "domain", Value: source.Host},
 					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
 				},
-				timestamp.FromTime(time.Now()),
+				timestamp.FromTime(ts),
 				float64(interval),
 			); err != nil {
-				level.Error(logger).Log("msg", "append values to the DB", "err", err)
+				level.Error(logger).Log("msg", "append values to the DB", "err", err, "ts", ts)
 				select {
 				case <-self.ctx.Done():
 					level.Debug(self.logger).Log("msg", "values record loop exited")
@@ -244,41 +283,16 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 		// Record the actual value.
 		{
 			appender := self.tsDB.Appender(self.ctx)
-			value, ts, err := dataSource.Get(self.ctx)
-			if err != nil {
-				level.Error(logger).Log("msg", "getting values from data source", "err", err)
-				self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
-				select {
-				case <-self.ctx.Done():
-					level.Debug(self.logger).Log("msg", "values record loop exited")
-					return
-				case <-ticker.C:
-					continue
-				}
-			}
+			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", util.SanitizeMetricName(symbol), "value", value, "ts", ts.Unix())
 
-			// Only manual entries expose ts so ignore zero values.
-			if !ts.IsZero() && time.Now().After(ts) {
-				level.Error(logger).Log("msg", "index value timestamp has expired", "ts", ts)
-				select {
-				case <-self.ctx.Done():
-					level.Debug(self.logger).Log("msg", "values record loop exited")
-					return
-				case <-ticker.C:
-					continue
-				}
-			}
-
-			level.Debug(logger).Log("msg", "adding value", "symbol", symbol, "value", value)
-
-			// Record the actual value for this data source.
 			if _, err := appender.Append(0,
 				labels.Labels{
 					labels.Label{Name: "__name__", Value: ValueMetricName},
 					labels.Label{Name: "source", Value: dataSource.Source()},
+					labels.Label{Name: "domain", Value: source.Host},
 					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
 				},
-				timestamp.FromTime(time.Now()),
+				timestamp.FromTime(ts),
 				value,
 			); err != nil {
 				level.Error(logger).Log("msg", "append values to the DB", "err", err)
@@ -305,17 +319,19 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			self.value.With(
 				prometheus.Labels{
 					"source": dataSource.Source(),
+					"domain": source.Host,
 					"symbol": util.SanitizeMetricName(symbol),
 				},
 			).(prometheus.Gauge).Set(value)
 
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
+		}
+
+		select {
+		case <-self.ctx.Done():
+			level.Debug(self.logger).Log("msg", "values record loop exited")
+			return
+		case <-ticker.C:
+			continue
 		}
 	}
 }
@@ -402,7 +418,15 @@ func (self *JSONfile) Get(_ context.Context) (float64, time.Time, error) {
 	if err != nil {
 		return 0, time.Time{}, err
 	}
-	return self.Parse(b)
+	val, ts, err := self.Parse(b)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrap(err, "data parse")
+	}
+	if time.Now().After(ts) {
+		return 0, time.Time{}, errors.Errorf("index value timestamp has expired:%v", ts)
+	}
+
+	return val, time.Now(), nil
 }
 
 func (self *JSONfile) Interval() time.Duration {
@@ -436,11 +460,11 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 	var output interface{}
 
 	maxErrL := len(string(input)) - 1
-	if maxErrL > 30 {
-		maxErrL = 30
+	if maxErrL > 200 {
+		maxErrL = 200
 	}
 
-	var timestamp time.Time
+	timestamp := time.Now()
 
 	err := json.Unmarshal(input, &output)
 	if err != nil {
@@ -480,6 +504,9 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 				return 0, timestamp, errors.Wrapf(err, "timestamp needs to be a valid float:%v", strValue)
 			}
 			timestamp = time.Unix(int64(val), 0)
+			if int64(val) > 9999999999 { // The TS is with Millisecond granularity.
+				timestamp = time.Unix(0, int64(val)*int64(time.Millisecond))
+			}
 		}
 	}
 	return value, timestamp, nil

@@ -462,7 +462,7 @@ func (self dataserverCmd) Run() error {
 
 		// Open the TSDB database.
 		tsdbOptions := tsdb.DefaultOptions()
-		// 2 days are enough as the agregator needs data only 24 hours in the past.
+		// 2 days are enough as the aggregator needs data only 24 hours in the past.
 		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
 		tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 		if err != nil {
@@ -597,7 +597,7 @@ func (self mineCmd) Run() error {
 		if cfg.Db.RemoteHost == "" {
 			// Open the TSDB database.
 			tsdbOptions := tsdb.DefaultOptions()
-			// 2 days are enough as the agregator needs data only 24 hours in the past.
+			// 2 days are enough as the aggregator needs data only 24 hours in the past.
 			tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
 			tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 			if err != nil {
@@ -709,7 +709,7 @@ func (self mineCmd) Run() error {
 
 func remoteDB(cfg db.Config) (storage.SampleAndChunkQueryable, error) {
 
-	url, err := url.Parse("http://" + cfg.RemoteHost + ":" + strconv.Itoa(int(cfg.RemotePort)) + "/read")
+	url, err := url.Parse("http://" + cfg.RemoteHost + ":" + strconv.Itoa(int(cfg.RemotePort)) + "/api/v1/read")
 	if err != nil {
 		return nil, err
 	}
