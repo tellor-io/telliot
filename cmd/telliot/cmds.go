@@ -508,6 +508,38 @@ func (self dataserverCmd) Run() error {
 		}, func(error) {
 			index.Stop()
 		})
+
+		// Aggregator.
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB, client)
+		if err != nil {
+			return errors.Wrapf(err, "creating aggregator")
+		}
+
+		g.Add(func() error {
+			ticker := time.NewTicker(10 * time.Minute)
+			for {
+				select {
+				case <-ctx.Done():
+					return nil
+				default:
+				}
+				_, _, err := aggregator.VolumWeightedAvg("AMPL/USD", time.Now().Add(-(24 * time.Hour)), time.Now(), 10*time.Minute)
+				if err != nil {
+					level.Error(logger).Log("msg", "get latest", "err", err)
+					<-ticker.C
+					continue
+				}
+				select {
+				case <-ctx.Done():
+					level.Info(logger).Log("msg", "aggregator shutdown complete")
+					return nil
+				case <-ticker.C:
+					continue
+				}
+
+			}
+		}, func(error) {
+		})
 	}
 
 	if err := g.Run(); err != nil {
@@ -579,18 +611,10 @@ func (self mineCmd) Run() error {
 		}
 
 		// Aggregator.
-		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
-		if err != nil {
-			return errors.Wrapf(err, "creating aggregator")
-		}
-
-		g.Add(func() error {
-			err := aggregator.Run()
-			level.Info(logger).Log("msg", "aggregator shutdown complete")
-			return err
-		}, func(error) {
-			aggregator.Stop()
-		})
+		// aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
+		// if err != nil {
+		// 	return errors.Wrapf(err, "creating aggregator")
+		// }
 
 		// Index tracker.
 		// Run only when not usging remote DB.

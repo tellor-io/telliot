@@ -46,7 +46,7 @@ func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQuer
 	opts := promql.EngineOpts{
 		Logger:               logger,
 		Reg:                  nil,
-		MaxSamples:           10000,
+		MaxSamples:           100000,
 		Timeout:              10 * time.Second,
 		EnableAtModifier:     true,
 		EnableNegativeOffset: true,

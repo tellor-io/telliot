@@ -2,13 +2,11 @@ package aggregator
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strconv"
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -36,12 +34,12 @@ type Config struct {
 type Aggregator struct {
 	logger       log.Logger
 	ctx          context.Context
-	stop         context.CancelFunc
 	tsDB         storage.SampleAndChunkQueryable
 	promqlEngine *promql.Engine
 	maxLookback  time.Duration
 	cfg          Config
-	prices       *prometheus.GaugeVec
+	value        *prometheus.GaugeVec
+	confidence   *prometheus.GaugeVec
 }
 
 func New(
@@ -57,9 +55,7 @@ func New(
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 
-	ctx, stop := context.WithCancel(ctx)
-
-	maxLookback := 10 * time.Minute
+	maxLookback := 5 * time.Minute
 	opts := promql.EngineOpts{
 		Logger:               logger,
 		Reg:                  nil,
@@ -74,45 +70,27 @@ func New(
 	return &Aggregator{
 		logger:       log.With(logger, "component", ComponentName),
 		ctx:          ctx,
-		stop:         stop,
 		tsDB:         tsDB,
 		promqlEngine: engine,
 		cfg:          cfg,
 		maxLookback:  maxLookback,
-		prices: promauto.NewGaugeVec(prometheus.GaugeOpts{
+		value: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
-			Name:      "price",
-			Help:      "The currency price",
+			Name:      "value",
+			Help:      "The aggregated value",
 		},
-			[]string{"source"},
+			[]string{"symbol", "type", "interval"},
+		),
+		confidence: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: ComponentName,
+			Name:      "confidence",
+			Help:      "The aggregated value confidence",
+		},
+			[]string{"symbol", "type", "interval"},
 		),
 	}, nil
-}
-
-func (self *Aggregator) Run() error {
-	ticker := time.NewTicker(5 * time.Second)
-	for {
-		select {
-		case <-self.ctx.Done():
-			return nil
-		default:
-		}
-		value, confidence, err := self.VolumWeightedAvg("AMPL/USD", time.Now().Add(-(24 * time.Hour)), time.Now(), 10*time.Minute)
-		if err != nil {
-			level.Error(self.logger).Log("msg", "get latest", "err", err)
-			<-ticker.C
-			continue
-		}
-		fmt.Println("price, confidence", value, confidence)
-		select {
-		case <-self.ctx.Done():
-			return nil
-		case <-ticker.C:
-			continue
-		}
-
-	}
 }
 
 func (self *Aggregator) MedianAt(symbol string, at time.Time) (float64, float64, error) {
@@ -158,7 +136,7 @@ func (self *Aggregator) mean(vals []float64) float64 {
 // The same calculation is done for all source and the final value is the average of all.
 // Example for 1h.
 // maxDataPointCount is calculated by deviding the seconds in 1h by how often the tracker queries the APIs.
-// avg(count_over_time(indexTracker_values{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval)).
+// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval)).
 func (self *Aggregator) TimeWeightedAvg(
 	symbol string,
 	from time.Time,
@@ -213,84 +191,119 @@ func (self *Aggregator) TimeWeightedAvg(
 // The same calculation is done for all source and the final value is the average of all.
 // Example for 1h.
 // maxDataPointCount is calculated by deviding the seconds in 1h by how often the tracker queries the APIs.
-// avg(count_over_time(indexTracker_values{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval)).
+// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval)).
 func (self *Aggregator) VolumWeightedAvg(
 	symbol string,
 	start time.Time,
 	end time.Time,
 	aggrWindow time.Duration,
 ) (float64, float64, error) {
-	q, err := self.promqlEngine.NewRangeQuery(
+	_timeWindow := end.Sub(start).Round(time.Minute).Seconds()
+	timeWindow := strconv.Itoa(int(_timeWindow)) + "s"
+
+	q, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`sum_over_time(indexTracker_value{symbol="`+util.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`])
-		or
-		avg_over_time(indexTracker_value{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+aggrWindow.String()+`])`,
-		start,
-		end.Add(time.Second),
-		aggrWindow,
+		`avg(
+			sum_over_time(
+				(
+					sum_over_time(indexTracker_value{symbol="`+util.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`])
+					*  on(domain)
+					avg_over_time(indexTracker_value{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+aggrWindow.String()+`])
+				)[`+timeWindow+`:`+aggrWindow.String()+`])
+			/ on(domain)
+			sum_over_time(
+				(
+					sum_over_time(indexTracker_value{symbol="`+util.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`]
+				)
+			)[`+timeWindow+`:`+aggrWindow.String()+`])
+		)`,
+		end,
 	)
 	if err != nil {
 		return 0, 0, err
 	}
 	defer q.Close()
-	vals := q.Exec(self.ctx)
-	if vals.Err != nil {
-		return 0, 0, errors.Wrapf(vals.Err, "error evaluating query:%v", q)
+
+	_result := q.Exec(self.ctx)
+	if _result.Err != nil {
+		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", q)
+	}
+	result := _result.Value.(promql.Vector)
+	if len(result) == 0 {
+		return 0, 0, errors.New("no result for values")
 	}
 
-	if len(vals.Value.(promql.Matrix)) == 0 {
-		return 0, 0, errors.New("no result")
+	// Confidence level for prices and volumes.
+	// an example for 1h period.
+	// confidence = actualDataPointCountFor1h/maxDataPointCountFor1h
+	// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
+
+	// For prices.
+	q, err = self.promqlEngine.NewInstantQuery(
+		self.tsDB,
+		`avg(
+			count_over_time(`+index.ValueMetricName+`{
+				symbol="`+util.SanitizeMetricName(symbol)+`"
+			}[`+timeWindow+`]) /
+			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / indexTracker_interval))`,
+		end,
+	)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer q.Close()
+
+	confidenceP := q.Exec(self.ctx)
+	if confidenceP.Err != nil {
+		return 0, 0, errors.Wrapf(confidenceP.Err, "error evaluating query:%v", q)
 	}
 
-	for i, val := range vals.Value.(promql.Matrix) {
-
-		fmt.Println("i", i, val)
-		// total := len(vals.Points)
-		// if len(volumes[i].Points) < total {
-		// 	total = len(volumes[i].Points)
-		// }
-
-		// var (
-		// 	totalVandP float64
-		// 	totalV     float64
-		// )
-
-		// for ii := 0; ii < total; ii++ {
-		// 	if vals.Points[ii].T == volumes[i].Points[ii].T {
-		// 		totalVandP += prices.Points[ii].V * volumes[i].Points[ii].V
-		// 		totalV += prices.Points[ii].V
-		// 		fmt.Println("time", i, ii, prices.Points[ii].T, volumes[i].Points[ii].T)
-		// 		continue
-		// 	}
-		// 	fmt.Println("mismmatched time", i, ii, prices.Points[ii].T, volumes[i].Points[ii].T)
-		// }
-
-		// vwap := totalVandP / totalV
-
-		// fmt.Println("vwap", vwap)
-
+	// For volumes.
+	q, err = self.promqlEngine.NewInstantQuery(
+		self.tsDB,
+		`avg(
+			count_over_time(`+index.ValueMetricName+`{
+				symbol="`+util.SanitizeMetricName(symbol)+`_VOLUME"
+			}[`+timeWindow+`]) /
+			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / indexTracker_interval))`,
+		end,
+	)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer q.Close()
+	confidenceV := q.Exec(self.ctx)
+	if confidenceV.Err != nil {
+		return 0, 0, errors.Wrapf(confidenceV.Err, "error evaluating query:%v", q)
 	}
 
-	// // Confidence level.
-	// query, err = self.promqlEngine.NewInstantQuery(
-	// 	self.tsDB,
-	// 	`avg(
-	// 		count_over_time(`+index.ValueMetricName+`{
-	// 			symbol="`+util.SanitizeMetricName(symbol)+`"
-	// 		}[`+lookBack.String()+`]) /
-	// 		(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / indexTracker_interval))`,
-	// 	from,
-	// )
-	// if err != nil {
-	// 	return 0, 0, err
-	// }
-	// defer query.Close()
-	// confidence := query.Exec(self.ctx)
-	// if confidence.Err != nil {
-	// 	return 0, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query)
-	// }
+	if len(confidenceP.Value.(promql.Vector)) == 0 || len(confidenceV.Value.(promql.Vector)) == 0 {
+		return 0, 0, errors.New("no result for confidence")
+	}
 
-	return 0, 0, err
+	// Use the smaller confidence.
+	confidence := confidenceP.Value.(promql.Vector)[0].V
+	if confidence > confidenceV.Value.(promql.Vector)[0].V {
+		confidence = confidenceV.Value.(promql.Vector)[0].V
+	}
+
+	self.value.With(
+		prometheus.Labels{
+			"type":     "vwap",
+			"interval": start.Sub(end).String(),
+			"symbol":   util.SanitizeMetricName(symbol),
+		},
+	).(prometheus.Gauge).Set(result[0].V)
+
+	self.confidence.With(
+		prometheus.Labels{
+			"type":     "vwap",
+			"interval": start.Sub(end).String(),
+			"symbol":   util.SanitizeMetricName(symbol),
+		},
+	).(prometheus.Gauge).Set(confidence)
+
+	return result[0].V, confidence, nil
 }
 
 func (self *Aggregator) median(values []float64) float64 {
@@ -299,10 +312,6 @@ func (self *Aggregator) median(values []float64) float64 {
 	})
 	price := values[len(values)/2]
 	return price
-}
-
-func (self *Aggregator) Stop() {
-	self.stop()
 }
 
 // func (self *Aggregator) valuesForTime(symbol string, from time.Time, lookBack time.Duration, resolution time.Duration) (promql.Matrix, error) {
@@ -363,8 +372,8 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 
 	// Confidence level.
 	// an example for 1h period.
-	// confidence = actualDataPointCount/maxDataPointCount
-	// avg(count_over_time(indexTracker_values{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
+	// confidence = actualDataPointCountFor1h/maxDataPointCountFor1h
+	// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(

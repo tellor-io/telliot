@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/timestamp"
+	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
@@ -248,13 +249,20 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 		// Confidence = avg(expectedMaxSamplesCount/actualSamplesCount) for a given period.
 		{
 			appender := self.tsDB.Appender(self.ctx)
-			if _, err := appender.Append(0,
-				labels.Labels{
-					labels.Label{Name: "__name__", Value: IntervalMetricName},
-					labels.Label{Name: "source", Value: dataSource.Source()},
-					labels.Label{Name: "domain", Value: source.Host},
-					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
-				},
+
+			labels := labels.Labels{
+				labels.Label{Name: "__name__", Value: IntervalMetricName},
+				labels.Label{Name: "source", Value: dataSource.Source()},
+				labels.Label{Name: "domain", Value: source.Host},
+				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
+			}
+			ref := uint64(0)
+			if g, ok := appender.(storage.GetRef); ok {
+				ref, _ = g.GetRef(labels)
+			}
+
+			if _, err := appender.Append(ref,
+				labels,
 				timestamp.FromTime(ts),
 				float64(interval),
 			); err != nil {
@@ -285,13 +293,18 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			appender := self.tsDB.Appender(self.ctx)
 			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", util.SanitizeMetricName(symbol), "value", value, "ts", ts.Unix())
 
-			if _, err := appender.Append(0,
-				labels.Labels{
-					labels.Label{Name: "__name__", Value: ValueMetricName},
-					labels.Label{Name: "source", Value: dataSource.Source()},
-					labels.Label{Name: "domain", Value: source.Host},
-					labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
-				},
+			labels := labels.Labels{
+				labels.Label{Name: "__name__", Value: ValueMetricName},
+				labels.Label{Name: "source", Value: dataSource.Source()},
+				labels.Label{Name: "domain", Value: source.Host},
+				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
+			}
+			ref := uint64(0)
+			if g, ok := appender.(storage.GetRef); ok {
+				ref, _ = g.GetRef(labels)
+			}
+			if _, err := appender.Append(ref,
+				labels,
 				timestamp.FromTime(ts),
 				value,
 			); err != nil {
