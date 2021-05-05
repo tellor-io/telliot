@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -16,6 +17,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/cmd/telliot/cli"
+	"github.com/tellor-io/telliot/pkg/config"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -28,10 +30,16 @@ type commandInfo struct {
 	Help      string
 }
 
+type cfgDoc struct {
+	Name    string
+	Help    string
+	Default interface{}
+}
+
 func main() {
 	app := kingpin.New(filepath.Base(os.Args[0]), "Telliot config docs generator.")
 	app.HelpFlag.Short('h')
-	// outputDir := app.Flag("output-dir", "Output directory for generated docs.").String()
+	// outputFile := app.Flag("output", "Output file for the generated doc.").String()
 
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	if _, err := app.Parse(os.Args[1:]); err != nil {
@@ -39,18 +47,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	cliCommands := make(map[string]commandInfo)
+	cliDocs := make(map[string]commandInfo)
 	cli := cli.Cli()
-	if err := generateCommand("", reflect.ValueOf(cli).Elem(), cliCommands); err != nil {
-		level.Error(logger).Log("msg", "failed to generate", "type", "cli", "err", err)
+	if err := generateCommand("", reflect.ValueOf(cli).Elem(), cliDocs); err != nil {
+		level.Error(logger).Log("msg", "failed to generate", "type", "cli docs", "err", err)
 		os.Exit(1)
 	}
 
-	spew.Dump(cliCommands)
+	var (
+		envDocs map[string]string
+		err     error
+	)
+	if envDocs, err = genEnvDocs(); err != nil {
+		level.Error(logger).Log("msg", "failed to generate", "type", "env docs", "err", err)
+		os.Exit(1)
+	}
+
+	cfgDocs := make(map[string]interface{})
+	cfg := config.DefaultConfig()
+	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocs); err != nil {
+		level.Error(logger).Log("msg", "failed to generate", "type", "cli", "err", err)
+		os.Exit(1)
+	}
+	spew.Dump(cfgDocs)
+	spew.Dump(envDocs)
+	spew.Dump(cliDocs)
 	logger.Log("msg", "success")
 }
 
-func generateCommand(parent string, cli reflect.Value, cmds map[string]commandInfo) error {
+func generateCommand(parent string, cli reflect.Value, docs map[string]commandInfo) error {
 	for i := 0; i < cli.NumField(); i++ {
 		v := cli.Field(i)
 		t := cli.Type().Field(i)
@@ -84,7 +109,7 @@ func generateCommand(parent string, cli reflect.Value, cmds map[string]commandIn
 				if len(parent) > 0 {
 					cmdName = fmt.Sprintf("%s %s", parent, cmdName)
 				}
-				cmds[cmdName] = commandInfo{
+				docs[cmdName] = commandInfo{
 					Arguments: getArguments(v),
 					Help:      tag.Value(),
 				}
@@ -95,11 +120,11 @@ func generateCommand(parent string, cli reflect.Value, cmds map[string]commandIn
 					parentName = fmt.Sprintf("%s %s", parent, parentName)
 				}
 				// Add top level command too.
-				cmds[parentName] = commandInfo{
+				docs[parentName] = commandInfo{
 					Arguments: map[string]argument{},
 					Help:      tag.Value(),
 				}
-				if err := generateCommand(parentName, v, cmds); err != nil {
+				if err := generateCommand(parentName, v, docs); err != nil {
 					return errors.Wrapf(err, "%s", t.Name)
 				}
 			}
@@ -141,4 +166,47 @@ func getArguments(cmd reflect.Value) map[string]argument {
 
 	}
 	return out
+}
+
+func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}) error {
+	for i := 0; i < cfg.NumField(); i++ {
+		v := cfg.Field(i)
+		t := cfg.Type().Field(i)
+		switch v.Kind() {
+		case reflect.Struct:
+			cfgDocs[t.Name] = make(map[string]interface{})
+			if err := genCfgDocs(v, cfgDocs[t.Name].(map[string]interface{})); err != nil {
+				return err
+			}
+		default:
+			doc := cfgDoc{
+				Name:    t.Name,
+				Default: v.Interface(),
+			}
+			tags, _ := structtag.Parse(string(t.Tag))
+			if tags != nil {
+				help, _ := tags.Get("help")
+				if help != nil {
+					doc.Help = help.Value()
+				}
+			}
+			cfgDocs[t.Name] = doc
+		}
+	}
+	return nil
+}
+
+func genEnvDocs() (map[string]string, error) {
+	docs := make(map[string]string)
+	bytes, err := ioutil.ReadFile("configs/.env.example")
+	if err != nil {
+		return nil, err
+	}
+	envExamples := strings.Split(string(bytes), "\n")
+	for _, env := range envExamples {
+		comment := strings.TrimSpace(strings.Split(env, "#")[1])
+		name := strings.TrimSpace(strings.Split(env, "=")[0])
+		docs[name] = comment
+	}
+	return docs, nil
 }
