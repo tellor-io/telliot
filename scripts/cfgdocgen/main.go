@@ -5,28 +5,33 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fatih/structtag"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
+	"github.com/tellor-io/telliot/cmd/telliot/cli"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
-	yaml "gopkg.in/yaml.v2"
 )
 
-
-
+type argument struct {
+	Optional bool
+	Help     string
+}
+type commandInfo struct {
+	Arguments map[string]argument
+	Help      string
+}
 
 func main() {
 	app := kingpin.New(filepath.Base(os.Args[0]), "Telliot config docs generator.")
 	app.HelpFlag.Short('h')
-	outputDir := app.Flag("output-dir", "Output directory for generated docs.").String()
+	// outputDir := app.Flag("output-dir", "Output directory for generated docs.").String()
 
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	if _, err := app.Parse(os.Args[1:]); err != nil {
@@ -34,71 +39,106 @@ func main() {
 		os.Exit(1)
 	}
 
-
-	cfg := config.DefaultConfig()
-	if err := generate(cfg, "config", *outputDir); err != nil {
-		level.Error(logger).Log("msg", "failed to generate", "type", "config", "err", err)
+	cliCommands := make(map[string]commandInfo)
+	cli := cli.Cli()
+	if err := generateCommand("", reflect.ValueOf(cli).Elem(), cliCommands); err != nil {
+		level.Error(logger).Log("msg", "failed to generate", "type", "cli", "err", err)
 		os.Exit(1)
 	}
 
+	spew.Dump(cliCommands)
 	logger.Log("msg", "success")
 }
 
-func generate(obj interface{}, typ string, outputDir string) error {
-	// We forbid omitempty option. This is for simplification for doc generation.
-	if err := checkForOmitEmptyTagOption(obj); err != nil {
-		return errors.Wrap(err, "invalid type")
-	}
+func generateCommand(parent string, cli reflect.Value, cmds map[string]commandInfo) error {
+	for i := 0; i < cli.NumField(); i++ {
+		v := cli.Field(i)
+		t := cli.Type().Field(i)
+		switch v.Kind() {
+		case reflect.Struct:
 
-	out, err := yaml.Marshal(obj)
-	if err != nil {
-		return err
-	}
+			// If there is no child struct fields then v is a leaf.
+			leafFound := true
+			if v.Type().NumField() > 0 {
+				// Checking the first field to know if it's a leaf.
+				v0 := v.Type().Field(0)
 
-	return ioutil.WriteFile(filepath.Join(outputDir, fmt.Sprintf("config_%s.txt", typ)), out, os.ModePerm)
-}
-
-func generateName(prefix, typ string) string {
-	return prefix + strings.ReplaceAll(strings.ToLower(string(typ)), "-", "_")
-}
-
-func checkForOmitEmptyTagOption(obj interface{}) error {
-	return checkForOmitEmptyTagOptionRec(reflect.ValueOf(obj))
-}
-
-func checkForOmitEmptyTagOptionRec(v reflect.Value) error {
-	switch v.Kind() {
-	case reflect.Struct:
-		for i := 0; i < v.NumField(); i++ {
-			tags, err := structtag.Parse(string(v.Type().Field(i).Tag))
+				tags, err := structtag.Parse(string(v0.Tag))
+				if err != nil {
+					return errors.Wrapf(err, "%s: failed to parse tag %q", v.Type().Field(i).Name, v.Type().Field(i).Tag)
+				}
+				_, err = tags.Get("cmd")
+				leafFound = err != nil
+			}
+			tags, err := structtag.Parse(string(t.Tag))
 			if err != nil {
 				return errors.Wrapf(err, "%s: failed to parse tag %q", v.Type().Field(i).Name, v.Type().Field(i).Tag)
 			}
-
-			tag, err := tags.Get("yaml")
+			tag, err := tags.Get("help")
 			if err != nil {
-				return errors.Wrapf(err, "%s: failed to get tag %q", v.Type().Field(i).Name, v.Type().Field(i).Tag)
+				return errors.Wrapf(err, "help tag missing: %s", t.Name)
 			}
+			if leafFound {
+				// v is a leaf in the cmd tree.
+				cmdName := strings.ToLower(t.Name)
+				if len(parent) > 0 {
+					cmdName = fmt.Sprintf("%s %s", parent, cmdName)
+				}
+				cmds[cmdName] = commandInfo{
+					Arguments: getArguments(v),
+					Help:      tag.Value(),
+				}
 
-			for _, opts := range tag.Options {
-				if opts == "omitempty" {
-					return errors.Errorf("omitempty is forbidden for config, but spotted on field '%s'", v.Type().Field(i).Name)
+			} else {
+				parentName := strings.ToLower(t.Name)
+				if len(parent) > 0 {
+					parentName = fmt.Sprintf("%s %s", parent, parentName)
+				}
+				// Add top level command too.
+				cmds[parentName] = commandInfo{
+					Arguments: map[string]argument{},
+					Help:      tag.Value(),
+				}
+				if err := generateCommand(parentName, v, cmds); err != nil {
+					return errors.Wrapf(err, "%s", t.Name)
 				}
 			}
 
-			if err := checkForOmitEmptyTagOptionRec(v.Field(i)); err != nil {
-				return errors.Wrapf(err, "%s", v.Type().Field(i).Name)
-			}
+		case reflect.Ptr:
+			return errors.New("nil pointers are not allowed in configuration")
+		case reflect.Interface:
+
 		}
-
-	case reflect.Ptr:
-		return errors.New("nil pointers are not allowed in configuration")
-
-	case reflect.Interface:
-		return checkForOmitEmptyTagOptionRec(v.Elem())
 	}
-
 	return nil
 }
 
+func getArguments(cmd reflect.Value) map[string]argument {
+	out := make(map[string]argument)
+	for i := 0; i < cmd.NumField(); i++ {
+		// v := cmd.Field(i)
+		t := cmd.Type().Field(i)
+		tags, err := structtag.Parse(string(t.Tag))
+		if err != nil {
+			fmt.Printf("err: %v\n", errors.Wrapf(err, "%s: failed to parse tag %q", t.Name, t.Tag))
+			continue
+		}
+		_, err = tags.Get("arg")
+		if err != nil {
+			fmt.Printf("err: %v\n", errors.Wrapf(err, "help tag missing: %s", t.Name))
+			continue
+		}
+		_, optionalErr := tags.Get("optional")
+		helpText := ""
+		help, _ := tags.Get("help")
+		if help != nil {
+			helpText = help.Value()
+		}
+		out[t.Name] = argument{
+			Optional: optionalErr == nil,
+			Help:     helpText,
+		}
 
+	}
+	return out
+}
