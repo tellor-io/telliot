@@ -114,7 +114,6 @@ var cli struct {
 	Version    VersionCmd    `cmd:"" help:"Show the CLI version information"`
 }
 
-func Cli() interface{}{
+func Cli() interface{} {
 	return &cli
 }
-
