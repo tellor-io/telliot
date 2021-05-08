@@ -104,7 +104,7 @@ func main() {
 		cfgDocs = append(cfgDocs, cfgDocsMap[k])
 	}
 	tmpl := template.Must(template.ParseFiles("scripts/cfgdocgen/configuration.md"))
-	outf, err := os.Open(*outputFile)
+	outf, err := os.Create(*outputFile)
 	if err != nil {
 		level.Error(logger).Log("msg", "failed to open output file, redirecting to stdout", "err", err, "output", *outputFile)
 		outf = os.Stdout
