@@ -9,7 +9,6 @@ GOBIN       ?= $(firstword $(subst :, ,${GOPATH}))/bin
 GOTEST_OPTS ?= -failfast -timeout 10m
 GOPROXY     ?= https://proxy.golang.org
 
-
 # Support gsed on OSX (installed via brew), falling back to sed. On Linux
 # systems gsed won't be installed, so will use sed as expected.
 SED     ?= $(shell which gsed 2>/dev/null || which sed)
@@ -81,6 +80,10 @@ build:
 	@[ "${GIT_HASH}" ] || ( echo ">> GIT_HASH is not set"; exit 1 )
 	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/telliot
 
+.PHONY: gen-config-docs
+generate-config-docs:
+	@go run ./scripts/cfgdocgen --output docs/configuration.md
+
 .PHONY: check-git
 check-git:
 ifneq ($(GIT),)
@@ -101,23 +104,6 @@ go-format: $(GOIMPORTS)
 	@SED_BIN="$(SED)" scripts/cleanup-white-noise.sh $(FILES_TO_FMT)
 	@gofmt -s -w $(FILES_TO_FMT)
 	@$(GOIMPORTS) -w $(FILES_TO_FMT)
-
-.PHONY: docs
-docs: ## Regenerates flags in docs for all telliot commands.
-docs: $(EMBEDMD) build
-	@echo ">> generating docs"
-	@EMBEDMD_BIN="$(EMBEDMD)" SED_BIN="$(SED)" TELLIOT_BIN="./telliot"  scripts/genflagdocs.sh
-	@echo ">> cleaning whte noise"
-	@find . -type f -name "*.md" | SED_BIN="$(SED)" xargs scripts/cleanup-white-noise.sh
-
-.PHONY: check-docs
-check-docs: ## checks docs against discrepancy with flags, links, white noise.
-check-docs: $(EMBEDMD) build
-	@echo ">> checking docs generation"
-	@EMBEDMD_BIN="$(EMBEDMD)" SED_BIN="$(SED)" TELLIOT_BIN="./telliot" scripts/genflagdocs.sh check
-	@echo ">> checking links (DISABLED for now)"
-	@find . -type f -name "*.md" | SED_BIN="$(SED)" xargs scripts/cleanup-white-noise.sh
-	$(call require_clean_work_tree,'run make docs and commit changes')
 
 .PHONY:format
 format: ## Formats code including imports and cleans up white noise.
