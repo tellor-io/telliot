@@ -21,6 +21,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
+	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
@@ -38,6 +39,7 @@ type Config struct {
 	Transactor    transactor.Config
 	DataServer    dataServer.Config
 	IndexTracker  index.Config
+	Disputer      dispute.Config
 	Ethereum      ethereum.Config
 	Aggregator    aggregator.Config
 	Db            db.Config

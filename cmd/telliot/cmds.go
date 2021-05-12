@@ -340,39 +340,39 @@ type newDisputeCmd struct {
 }
 
 func (n newDisputeCmd) Run() error {
-	// logger := logging.NewLogger()
+	logger := logging.NewLogger()
 
-	// cfg, err := config.ParseConfig(logger,string(n.Config))
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating config")
-	// }
+	cfg, err := config.ParseConfig(logger, string(n.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
 
-	// ctx := context.Background()
-	// client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating tellor variables")
-	// }
+	ctx := context.Background()
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 
-	// requestID := EthereumInt{}
-	// err = requestID.Set(n.requestId)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "parsing argument")
-	// }
-	// timestamp := EthereumInt{}
-	// err = timestamp.Set(n.timestamp)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "parsing argument")
-	// }
-	// minerIndex := EthereumInt{}
-	// err = minerIndex.Set(n.minerIndex)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "parsing argument")
-	// }
-	// account, err := getAccountFor(accounts, n.Account)
-	// if err != nil {
-	// 	return err
-	// }
-	// return ops.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
+	requestID := EthereumInt{}
+	err = requestID.Set(n.requestId)
+	if err != nil {
+		return errors.Wrapf(err, "parsing argument")
+	}
+	timestamp := EthereumInt{}
+	err = timestamp.Set(n.timestamp)
+	if err != nil {
+		return errors.Wrapf(err, "parsing argument")
+	}
+	minerIndex := EthereumInt{}
+	err = minerIndex.Set(n.minerIndex)
+	if err != nil {
+		return errors.Wrapf(err, "parsing argument")
+	}
+	account, err := getAccountFor(accounts, n.Account)
+	if err != nil {
+		return err
+	}
+	return ops.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
 
 	return nil
 
