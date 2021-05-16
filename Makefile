@@ -13,6 +13,7 @@ GOPROXY     ?= https://proxy.golang.org
 # systems gsed won't be installed, so will use sed as expected.
 SED     ?= $(shell which gsed 2>/dev/null || which sed)
 GIT     ?= $(shell which git)
+CMP     ?= $(shell which cmp)
 
 BIN_DIR ?= /tmp/bin
 OS      ?= $(shell uname -s | tr '[A-Z]' '[a-z]')
@@ -80,9 +81,14 @@ build:
 	@[ "${GIT_HASH}" ] || ( echo ">> GIT_HASH is not set"; exit 1 )
 	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/telliot
 
-.PHONY: gen-config-docs
+.PHONY: generate-config-docs
 generate-config-docs:
 	@go run ./scripts/cfgdocgen --output docs/configuration.md
+
+.PHONY: check-config-docs
+check-config-docs:
+	@go run ./scripts/cfgdocgen --output tmp/configuration.md
+	"$(CMP)" --silent docs/configuration.md tmp/configuration.md || (echo >&2 "outdated docs/configuration.md, run the config docs generator script" ; exit 1)
 
 .PHONY: check-git
 check-git:
@@ -123,7 +129,7 @@ lint: go-lint shell-lint
 #      --mem-profile-path string   Path to memory profile output file
 # to debug big allocations during linting.
 .PHONY: go-lint
-go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT) $(MISSPELL)
+go-lint: check-git deps check-config-docs $(GOLANGCI_LINT) $(FAILLINT) $(MISSPELL)
 	$(call require_clean_work_tree,'detected not clean master before running lint, previous job changed something?')
 	@echo ">> verifying modules being imported"
 	@$(FAILLINT) -paths "errors=github.com/pkg/errors" ./...
