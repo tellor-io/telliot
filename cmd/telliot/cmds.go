@@ -27,10 +27,15 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/ops"
+	"github.com/tellor-io/telliot/pkg/reward"
+	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
+	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
+	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/web"
 )
 
@@ -373,9 +378,6 @@ func (n newDisputeCmd) Run() error {
 		return err
 	}
 	return ops.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
-
-	return nil
-
 }
 
 type voteCmd struct {
@@ -386,30 +388,29 @@ type voteCmd struct {
 }
 
 func (v voteCmd) Run() error {
-	// logger := logging.NewLogger()
+	logger := logging.NewLogger()
 
-	// cfg, err := config.ParseConfig(logger,string(v.Config))
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating config")
-	// }
+	cfg, err := config.ParseConfig(logger, string(v.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
 
-	// ctx := context.Background()
-	// client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating tellor variables")
-	// }
+	ctx := context.Background()
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
 
-	// disputeID := EthereumInt{}
-	// err = disputeID.Set(v.disputeId)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "parsing argument")
-	// }
-	// account, err := getAccountFor(accounts, v.Account)
-	// if err != nil {
-	// 	return err
-	// }
-	// return ops.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
-	return nil
+	disputeID := EthereumInt{}
+	err = disputeID.Set(v.disputeId)
+	if err != nil {
+		return errors.Wrapf(err, "parsing argument")
+	}
+	account, err := getAccountFor(accounts, v.Account)
+	if err != nil {
+		return err
+	}
+	return ops.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
 }
 
 type showCmd struct {
@@ -418,24 +419,46 @@ type showCmd struct {
 }
 
 func (s showCmd) Run() error {
-	// logger := logging.NewLogger()
+	logger := logging.NewLogger()
 
-	// cfg, err := config.ParseConfig(logger,string(s.Config))
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating config")
-	// }
+	cfg, err := config.ParseConfig(logger, string(s.Config))
+	if err != nil {
+		return errors.Wrapf(err, "creating config")
+	}
 
-	// ctx := context.Background()
-	// client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "creating tellor variables")
-	// }
-	// account, err := getAccountFor(accounts, s.Account)
-	// if err != nil {
-	// 	return err
-	// }
-	// return ops.List(ctx, cfg, logger, client, contract, account)
-	return nil
+	ctx := context.Background()
+	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	if err != nil {
+		return errors.Wrapf(err, "creating tellor variables")
+	}
+	account, err := getAccountFor(accounts, s.Account)
+	if err != nil {
+		return err
+	}
+
+	// Open the TSDB database.
+	var tsDBRead storage.SampleAndChunkQueryable
+	if cfg.Db.RemoteHost != "" {
+		tsDBRead, err = remoteDB(cfg.Db)
+		if err != nil {
+			return errors.Wrapf(err, "opening remote tsdb DB")
+		}
+	} else {
+		if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
+			return errors.Wrapf(err, "creating tsdb DB folder")
+		}
+		tsDBRead, err = tsdb.OpenDBReadOnly(cfg.Db.Path, nil)
+		if err != nil {
+			return errors.Wrapf(err, "opening tsdb DB")
+		}
+	}
+
+	aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
+	if err != nil {
+		return errors.Wrapf(err, "creating aggregator")
+	}
+
+	return ops.List(ctx, cfg.Disputer, logger, client, contract, account, aggregator)
 }
 
 type dataserverCmd struct {
@@ -491,6 +514,9 @@ func (self dataserverCmd) Run() error {
 		}
 
 		// Index tracker.
+
+		// The client is needed when the api requests data from the blockchain.
+		// TODO create an eth client only if the api config file has eth address.
 		client, err := ethereum.NewClient(logger, cfg.Ethereum, os.Getenv(config.NodeURLEnvName))
 		if err != nil {
 			return errors.Wrap(err, "create rpc client instance")
@@ -509,8 +535,18 @@ func (self dataserverCmd) Run() error {
 			index.Stop()
 		})
 
+		// Open the TSDB database.
+
+		if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
+			return errors.Wrapf(err, "creating tsdb DB folder")
+		}
+		tsDBRead, err := tsdb.OpenDBReadOnly(cfg.Db.Path, nil)
+		if err != nil {
+			return errors.Wrapf(err, "opening tsdb DB")
+		}
+
 		// Aggregator.
-		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB, client)
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
 		if err != nil {
 			return errors.Wrapf(err, "creating aggregator")
 		}
@@ -611,10 +647,10 @@ func (self mineCmd) Run() error {
 		}
 
 		// Aggregator.
-		// aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
-		// if err != nil {
-		// 	return errors.Wrapf(err, "creating aggregator")
-		// }
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
+		if err != nil {
+			return errors.Wrapf(err, "creating aggregator")
+		}
 
 		// Index tracker.
 		// Run only when not usging remote DB.
@@ -666,7 +702,7 @@ func (self mineCmd) Run() error {
 		})
 
 		// Event tasker.
-		tasker, _, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
+		tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
 		if err != nil {
 			return errors.Wrapf(err, "creating tasker")
 		}
@@ -679,47 +715,58 @@ func (self mineCmd) Run() error {
 		})
 
 		// Create a submitter for each account.
-		// gasPriceTracker := gasPrice.New(logger, client)
-		// for _, account := range accounts {
-		// 	transactor, err := transactor.NewTransactor(logger, cfg.Transactor, gasPriceTracker, client, account, contract)
-		// 	if err != nil {
-		// 		return errors.Wrapf(err, "creating transactor")
-		// 	}
+		gasPriceTracker := gasPrice.New(logger, client)
+		for _, account := range accounts {
+			transactor, err := transactor.NewTransactor(logger, cfg.Transactor, gasPriceTracker, client, account, contract)
+			if err != nil {
+				return errors.Wrapf(err, "creating transactor")
+			}
 
-		// 	reward := reward.NewReward(logger, aggregator, contract)
-		// 	// Get a channel on which it listens for new data to submit.
-		// 	submitter, submitterCh, err := submitter.NewSubmitter(ctx, cfg.Submitter, logger, client, contract, account, reward, transactor, gasPriceTracker)
-		// 	if err != nil {
-		// 		return errors.Wrapf(err, "creating submitter")
-		// 	}
-		// 	g.Add(func() error {
-		// 		err := submitter.Start()
-		// 		level.Info(logger).Log("msg", "submitter shutdown complete",
-		// 			"addr", account.Address.String(),
-		// 		)
-		// 		return err
-		// 	}, func(error) {
-		// 		submitter.Stop()
-		// 	})
+			reward := reward.NewReward(logger, aggregator, contract)
+			// Get a channel on which it listens for new data to submit.
+			submitter, submitterCh, err := submitter.NewSubmitter(
+				ctx,
+				logger,
+				cfg.Submitter,
+				client,
+				contract,
+				account,
+				reward,
+				transactor,
+				gasPriceTracker,
+				aggregator,
+			)
+			if err != nil {
+				return errors.Wrapf(err, "creating submitter")
+			}
+			g.Add(func() error {
+				err := submitter.Start()
+				level.Info(logger).Log("msg", "submitter shutdown complete",
+					"addr", account.Address.String(),
+				)
+				return err
+			}, func(error) {
+				submitter.Stop()
+			})
 
-		// 	// Will be used to cancel pending submissions.
-		// 	tasker.AddSubmitCanceler(submitter)
+			// Will be used to cancel pending submissions.
+			tasker.AddSubmitCanceler(submitter)
 
-		// 	// The Miner component.
-		// 	miner, err := mining.NewMiningManager(logger, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
-		// 	if err != nil {
-		// 		return errors.Wrapf(err, "creating miner")
-		// 	}
-		// 	g.Add(func() error {
-		// 		err := miner.Start()
-		// 		level.Info(logger).Log("msg", "miner shutdown complete",
-		// 			"addr", account.Address.String(),
-		// 		)
-		// 		return err
-		// 	}, func(error) {
-		// 		miner.Stop()
-		// 	})
-		// }
+			// The Miner component.
+			miner, err := mining.NewMiningManager(logger, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
+			if err != nil {
+				return errors.Wrapf(err, "creating miner")
+			}
+			g.Add(func() error {
+				err := miner.Start()
+				level.Info(logger).Log("msg", "miner shutdown complete",
+					"addr", account.Address.String(),
+				)
+				return err
+			}, func(error) {
+				miner.Stop()
+			})
+		}
 	}
 
 	if err := g.Run(); err != nil {

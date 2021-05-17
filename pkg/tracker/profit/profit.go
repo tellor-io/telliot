@@ -347,7 +347,6 @@ func (self *ProfitTracker) monitorCostFailed() {
 			}
 			level.Info(logger).Log("msg", "re-subscribed to events")
 		case event := <-events:
-
 			if event.Bloom.Test(self.abi.Events["NonceSubmitted"].ID.Bytes()) {
 				logger := log.With(logger, "block", event.Number)
 

@@ -22,6 +22,7 @@ func NewReward(logger log.Logger, aggr *aggregator.Aggregator, contractInstance 
 		aggr:             aggr,
 		logger:           logger,
 		contractInstance: contractInstance,
+		gasUsed:          make(map[int64]*big.Int),
 	}
 }
 
@@ -110,7 +111,7 @@ func (s *Reward) trbPrice() (*big.Int, error) {
 
 func (s *Reward) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
 	ether := big.NewInt(params.Ether)
-	precisionUpscale := big.NewInt(0).Div(ether, big.NewInt(int64(aggregator.RequestID_TRB_ETHGranularity)))
+	precisionUpscale := big.NewInt(0).Div(ether, big.NewInt(int64(aggregator.DefaultGranularity)))
 	trbPrice.Mul(trbPrice, precisionUpscale)
 
 	eth := big.NewInt(0).Mul(trbPrice, trbAmount)

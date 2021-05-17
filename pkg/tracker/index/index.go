@@ -40,11 +40,10 @@ const (
 )
 
 type Config struct {
-	LogLevel       string
-	Interval       util.Duration
-	FetchTimeout   util.Duration
-	ApiFile        string
-	ManualDataFile string
+	LogLevel     string
+	Interval     util.Duration
+	FetchTimeout util.Duration
+	ApiFile      string
 }
 
 type IndexTracker struct {
@@ -143,10 +142,6 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 				{
 					source = NewJSONapi(logger, api.Interval.Duration, cfg.FetchTimeout.Duration, api.URL, NewParser(api))
 				}
-			case manualSource:
-				{
-					source = NewJSONfile(cfg.ManualDataFile, NewParser(api))
-				}
 			case ethereumSource:
 				{
 					// Getting current network id from geth node.
@@ -169,7 +164,7 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 					}
 				}
 			default:
-				return nil, errors.New("unknown index type for index object")
+				return nil, errors.Errorf("unknown index type for index object:%v", api.Type)
 			}
 
 			dataSources[symbol] = append(dataSources[symbol], source)
@@ -359,7 +354,6 @@ type IndexType string
 const (
 	httpSource     IndexType = "http"
 	ethereumSource IndexType = "ethereum"
-	manualSource   IndexType = "manualData"
 )
 
 // ParserType -> index parser for Api.
@@ -412,42 +406,6 @@ func (self *JSONapi) Interval() time.Duration {
 
 func (self *JSONapi) Source() string {
 	return self.url
-}
-
-func NewJSONfile(filepath string, parser Parser) *JSONfile {
-	return &JSONfile{
-		filepath: filepath,
-		Parser:   parser,
-	}
-}
-
-type JSONfile struct {
-	Parser
-	filepath string
-}
-
-func (self *JSONfile) Get(_ context.Context) (float64, time.Time, error) {
-	b, err := ioutil.ReadFile(self.filepath)
-	if err != nil {
-		return 0, time.Time{}, err
-	}
-	val, ts, err := self.Parse(b)
-	if err != nil {
-		return 0, time.Time{}, errors.Wrap(err, "data parse")
-	}
-	if time.Now().After(ts) {
-		return 0, time.Time{}, errors.Errorf("index value timestamp has expired:%v", ts)
-	}
-
-	return val, time.Now(), nil
-}
-
-func (self *JSONfile) Interval() time.Duration {
-	return 0
-}
-
-func (self *JSONfile) Source() string {
-	return self.filepath
 }
 
 type DataSource interface {

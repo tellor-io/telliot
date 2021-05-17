@@ -25,7 +25,7 @@ func OpenTestConfig(nestedLevel string) (*Config, error) {
 
 	cfg.IndexTracker.ApiFile = filepath.Join(rootDir, cfg.IndexTracker.ApiFile)
 	cfg.EnvFile = filepath.Join(rootDir, cfg.EnvFile+".example")
-	cfg.IndexTracker.ManualDataFile = filepath.Join(rootDir, cfg.IndexTracker.ManualDataFile)
+	cfg.Aggregator.ManualDataFile = filepath.Join(rootDir, cfg.Aggregator.ManualDataFile)
 
 	return &cfg, nil
 

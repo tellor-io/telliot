@@ -25,9 +25,8 @@ import (
 const ComponentName = "ethereumClient"
 
 type Config struct {
-	LogLevel      string
-	Timeout       uint
-	GasMultiplier int
+	LogLevel string
+	Timeout  uint
 }
 
 // clientInstance is the concrete implementation of the ETHClient.

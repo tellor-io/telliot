@@ -432,12 +432,6 @@
             "param": "$[0][4]"
         }
     ],
-    "USPCE": [
-        {
-            "param": "$.USPCE[VALUE,DATE]",
-            "type": "manualData"
-        }
-    ],
     "VIXEOD": [
         {
             "URL": "https://www.quandl.com/api/v3/datasets/CHRIS/CBOE_VX1.json?api_key=${VIXEOD_KEY}",

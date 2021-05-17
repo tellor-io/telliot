@@ -2,11 +2,15 @@ package aggregator
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -18,17 +22,12 @@ import (
 	"github.com/tellor-io/telliot/pkg/util"
 )
 
-type AggregatorRule struct {
-	Symbol      string
-	Transform   string
-	Granularity int
-}
-
 const ComponentName = "aggregator"
 
 type Config struct {
-	LogLevel      string
-	MinConfidence float64
+	LogLevel       string
+	MinConfidence  float64
+	ManualDataFile string
 }
 
 type Aggregator struct {
@@ -91,6 +90,182 @@ func New(
 			[]string{"symbol", "type", "interval"},
 		),
 	}, nil
+}
+
+const (
+	DefaultGranularity = 1000000
+)
+
+func (self *Aggregator) GetValueForIDWithDefaultGranularity(reqID int64, ts time.Time) (float64, error) {
+	val, err := self.GetValueForID(reqID, ts)
+	return val * DefaultGranularity, err
+}
+
+func (self *Aggregator) GetValueForID(reqID int64, ts time.Time) (float64, error) {
+
+	val, err := self.getManualValue(reqID, ts)
+	if err != nil {
+		level.Error(self.logger).Log("msg", "get manual value", "reqID", reqID, "err", err)
+	}
+
+	if val != 0 {
+		level.Warn(self.logger).Log("msg", "USING MANUAL VALUE", "reqID", reqID, "val", val)
+		return val, nil
+	}
+	var conf float64
+
+	switch reqID {
+	case 1:
+		val, conf, err = self.MedianAt("ETH/USD", ts)
+	case 2:
+		val, conf, err = self.MedianAt("BTC/USD", ts)
+	case 3:
+		val, conf, err = self.MedianAt("BNB/USD", ts)
+	case 4:
+		val, conf, err = self.TimeWeightedAvg("BTC/USD", ts, 24*time.Hour)
+	case 5:
+		val, conf, err = self.MedianAt("ETH/BTC", ts)
+	case 6:
+		val, conf, err = self.MedianAt("BNB/BTC", ts)
+	case 7:
+		val, conf, err = self.MedianAt("BNB/ETH", ts)
+	case 8:
+		val, conf, err = self.TimeWeightedAvg("ETH/USD", ts, 24*time.Hour)
+	case 9:
+		val, conf, err = self.MedianAtEOD("ETH/USD", ts)
+	case 10: // For more details see https://docs.google.com/document/d/1RFCApk1PznMhSRVhiyFl_vBDPA4mP2n1dTmfqjvuTNw/edit
+		val, conf, err = self.VolumWeightedAvg("AMPL/USD", time.Now().Add(-(24 * time.Hour)), time.Now(), 10*time.Minute)
+	case 11:
+		val, conf, err = self.MedianAt("ZEC/ETH", ts)
+	case 12:
+		val, conf, err = self.MedianAt("TRX/ETH", ts)
+	case 13:
+		val, conf, err = self.MedianAt("XRP/USD", ts)
+	case 14:
+		val, conf, err = self.MedianAt("XMR/ETH", ts)
+	case 15:
+		val, conf, err = self.MedianAt("ATOM/USD", ts)
+	case 16:
+		val, conf, err = self.MedianAt("LTC/USD", ts)
+	case 17:
+		val, conf, err = self.MedianAt("WAVES/BTC", ts)
+	case 18:
+		val, conf, err = self.MedianAt("REP/BTC", ts)
+	case 19:
+		val, conf, err = self.MedianAt("TUSD/ETH", ts)
+	case 20:
+		val, conf, err = self.MedianAt("EOS/USD", ts)
+	case 21:
+		val, conf, err = self.MedianAt("IOTA/USD", ts)
+	case 22:
+		val, conf, err = self.MedianAt("ETC/USD", ts)
+	case 23:
+		val, conf, err = self.MedianAt("ETH/PAX", ts)
+	case 24:
+		val, conf, err = self.TimeWeightedAvg("ETH/BTC", ts, 1*time.Hour)
+	case 25:
+		val, conf, err = self.MedianAt("USDC/USDT", ts)
+	case 26:
+		val, conf, err = self.MedianAt("XTZ/USD", ts)
+	case 27:
+		val, conf, err = self.MedianAt("LINK/USD", ts)
+	case 28:
+		val, conf, err = self.MedianAt("ZRX/BNB", ts)
+	case 29:
+		val, conf, err = self.MedianAt("ZEC/USD", ts)
+	case 30:
+		val, conf, err = self.MedianAt("XAU/USD", ts)
+	case 31:
+		val, conf, err = self.MedianAt("MATIC/USD", ts)
+	case 32:
+		val, conf, err = self.MedianAt("BAT/USD", ts)
+	case 33:
+		val, conf, err = self.MedianAt("ALGO/USD", ts)
+	case 34:
+		val, conf, err = self.MedianAt("ZRX/USD", ts)
+	case 35:
+		val, conf, err = self.MedianAt("COS/USD", ts)
+	case 36:
+		val, conf, err = self.MedianAt("BCH/USD", ts)
+	case 37:
+		val, conf, err = self.MedianAt("REP/USD", ts)
+	case 38:
+		val, conf, err = self.MedianAt("GNO/USD", ts)
+	case 39:
+		val, conf, err = self.MedianAt("DAI/USD", ts)
+	case 40:
+		val, conf, err = self.MedianAt("STEEM/BTC", ts)
+	case 41:
+		// ID 41 is always manual so it sholud never get here.
+		// It is three month average for US PCE (monthly levels): https://www.bea.gov/data/personal-consumption-expenditures-price-index-excluding-food-and-energy
+		return 0, errors.New("no manual entry for request ID 41")
+	case 42:
+		val, conf, err = self.MedianAtEOD("BTC/USD", ts)
+	case 43:
+		val, conf, err = self.MedianAt("TRB/ETH", ts)
+	case 44:
+		val, conf, err = self.TimeWeightedAvg("BTC/USD", ts, 1*time.Hour)
+	case 45:
+		val, conf, err = self.MedianAtEOD("TRB/USD", ts)
+	case 46:
+		val, conf, err = self.TimeWeightedAvg("ETH/USD", ts, 1*time.Hour)
+	case 47:
+		val, conf, err = self.MedianAt("BSV/USD", ts)
+	case 48:
+		val, conf, err = self.MedianAt("MAKER/USD", ts)
+	case 49:
+		val, conf, err = self.TimeWeightedAvg("BCH/USD", ts, 24*time.Hour)
+	case 50:
+		val, conf, err = self.MedianAt("TRB/USD", ts)
+	case 51:
+		val, conf, err = self.MedianAt("XMR/USD", ts)
+	case 52:
+		val, conf, err = self.MedianAt("XFT/USD", ts)
+	case 53:
+		val, conf, err = self.MedianAt("BTCDOMINANCE", ts)
+	case 54:
+		val, conf, err = self.MedianAt("WAVES/USD", ts)
+	case 55:
+		val, conf, err = self.MedianAt("OGN/USD", ts)
+	case 56:
+		val, conf, err = self.MedianAt("VIXEOD", ts)
+	case 57:
+		val, conf, err = self.MeanAt("DEFITVL", ts)
+	case 58:
+		val, conf, err = self.MeanAt("DEFIMCAP", ts)
+	default:
+		return 0, errors.Errorf("undeclared request ID:%v", reqID)
+	}
+
+	if conf < self.cfg.MinConfidence {
+		return 0, errors.Errorf("not enough confidence - value:%v, conf:%v,confidence threshold:%v", val, conf, self.cfg.MinConfidence)
+	}
+
+	return val, err
+}
+
+func (self *Aggregator) getManualValue(reqID int64, t time.Time) (float64, error) {
+	jsonFile, err := os.Open(self.cfg.ManualDataFile)
+	if err != nil {
+		return 0, errors.Wrapf(err, "manualData read Error")
+	}
+	defer jsonFile.Close()
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	var result map[string]map[string]float64
+	err = json.Unmarshal([]byte(byteValue), &result)
+	if err != nil {
+		return 0, errors.Wrap(err, "unmarshal manual file")
+	}
+
+	val := result[strconv.FormatInt(reqID, 10)]["VALUE"]
+	if val != 0 {
+		ts := result[strconv.FormatInt(reqID, 10)]["DATE"]
+		timestamp := time.Unix(int64(ts), 0)
+		if t.After(timestamp) {
+			return 0, errors.Errorf("manual entry value has expired:%v", ts)
+		}
+	}
+	return val, nil
 }
 
 func (self *Aggregator) MedianAt(symbol string, at time.Time) (float64, float64, error) {
@@ -314,46 +489,6 @@ func (self *Aggregator) median(values []float64) float64 {
 	return price
 }
 
-// func (self *Aggregator) valuesForTime(symbol string, from time.Time, lookBack time.Duration, resolution time.Duration) (promql.Matrix, error) {
-// 	query, err := self.promqlEngine.NewInstantQuery(
-// 		self.tsDB,
-// 		util.SanitizeMetricName(symbol+index.PriceMetricName),
-// 		from,
-// 		from.Add(-lookBack),
-// 		resolution*time.Millisecond, // The parameter expects milliseconds.
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer query.Close()
-// 	result := query.Exec(self.ctx)
-// 	if result.Err != nil {
-// 		return nil, errors.Wrapf(result.Err, "error evaluating query:%v", query)
-// 	}
-
-// 	return result.Value.(promql.Matrix), nil
-
-// }
-
-// func (self *Aggregator) maxVolumeFor(symbol string, from time.Time, lookBack time.Duration) (float64, error) {
-// 	query, err := self.promqlEngine.NewInstantQuery(
-// 		self.tsDB,
-// 		`max_over_time(`+index.VolumeMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
-// 		from,
-// 	)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	defer query.Close()
-// 	result := query.Exec(self.ctx)
-// 	if result.Err != nil {
-// 		return 0, errors.Wrapf(result.Err, "error evaluating query:%v", query)
-// 	}
-
-// 	return result.Value.(promql.Vector)[0].V, nil
-
-// }
-
 // valuesAt returns the value from all sources for a given symbol with the confidence level.
 // 100% confidence is when all apis have returned a value within the last 10 minutes.
 // For every missing value the calculation subtracts some confidence level.
@@ -394,23 +529,6 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 
 	return prices, confidence.Value.(promql.Vector)[0].V, nil
 }
-
-// func (self *Aggregator) volumesAt(symbol string, at time.Time) (promql.Vector, error) {
-// 	query, err := self.promqlEngine.NewInstantQuery(
-// 		self.tsDB,
-// 		`last_over_time{`+index.VolumeMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"})[10m]`,
-// 		at,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer query.Close()
-// 	result := query.Exec(self.ctx)
-// 	if result.Err != nil {
-// 		return nil, errors.Wrapf(result.Err, "error evaluating query:%v", query)
-// 	}
-// 	return result.Value.(promql.Vector), nil
-// }
 
 func (self *Aggregator) valuesAt(symbol string, at time.Time) (promql.Vector, error) {
 	query, err := self.promqlEngine.NewInstantQuery(

@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
@@ -61,18 +62,20 @@ type Submitter struct {
 	transactor       transactor.Transactor
 	reward           *reward.Reward
 	gasPriceTracker  *gasPrice.GasTracker
+	aggregator       *aggregator.Aggregator
 }
 
 func NewSubmitter(
 	ctx context.Context,
-	cfg Config,
 	logger log.Logger,
+	cfg Config,
 	client contracts.ETHClient,
 	contractInstance *contracts.ITellor,
 	account *ethereum.Account,
 	reward *reward.Reward,
 	transactor transactor.Transactor,
 	gasPriceTracker *gasPrice.GasTracker,
+	aggregator *aggregator.Aggregator,
 ) (*Submitter, chan *mining.Result, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
@@ -92,6 +95,7 @@ func NewSubmitter(
 		contractInstance: contractInstance,
 		transactor:       transactor,
 		gasPriceTracker:  gasPriceTracker,
+		aggregator:       aggregator,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
 			Subsystem:   ComponentName,
@@ -308,57 +312,12 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 
 func (self *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) {
 	var currentValues [5]*big.Int
-
-	// The submit contains values for 5 data IDs so add them here.
-	for i := 0; i < 5; i++ {
-		// Look back only 2 times the API tracker cycle to use only fresh values.
-		// q, err := self.tsDB.Querier(self.ctx, timestamp.FromTime(time.Now().Add(-(2*self.cfg.Trackers.SleepCycle.Duration))), timestamp.FromTime(time.Now().Round(0)))
-		// if err != nil {
-		// 	return currentValues, err
-		// }
-		// defer q.Close()
-		// s := q.Select(false, nil, labels.MustNewMatcher(labels.MatchEqual, "__name__", requestIDs[i].String()))
-
-		// valKey := fmt.Sprintf("%s%d", db.QueriedValuePrefix, requestIDs[i].Uint64())
-		// m, err := self.proxy.BatchGet([]string{valKey})
-		// if err != nil {
-		// 	return currentValues, errors.Wrapf(err, "retrieve pricing from db for data id:%v", requestIDs[i].Uint64())
-		// }
-		// val := m[valKey]
-		// var value *big.Int
-		// if len(val) == 0 {
-		// 	jsonFile, err := os.Open(self.cfg.ManualDataFile)
-		// 	if err != nil {
-		// 		return currentValues, errors.Wrapf(err, "manualData read Error")
-		// 	}
-		// 	defer jsonFile.Close()
-		// 	byteValue, _ := ioutil.ReadAll(jsonFile)
-		// 	var result map[string]map[string]uint
-		// 	_ = json.Unmarshal([]byte(byteValue), &result)
-		// 	_id := strconv.FormatUint(requestIDs[i].Uint64(), 10)
-		// 	val := result[_id]["VALUE"]
-		// 	if val == 0 {
-		// 		return currentValues, errors.Errorf("pricing data not available from db or the manual file for request id:%v", requestIDs[i].Uint64())
-		// 	}
-		// 	value = big.NewInt(int64(val))
-		// } else {
-		// 	value, err = hexutil.DecodeBig(string(val))
-		// 	if err != nil {
-		// 		if requestIDs[i].Uint64() > index.MaxPSRID() {
-		// 			level.Error(self.logger).Log(
-		// 				"msg", "decoding price value prior to submiting solution",
-		// 				"err", err,
-		// 			)
-		// 			if len(val) == 0 {
-		// 				level.Error(self.logger).Log("msg", "0 value being submitted")
-		// 				currentValues[i] = big.NewInt(0)
-		// 			}
-		// 			continue
-		// 		}
-		// 		return currentValues, errors.Errorf("no value in database,  reg id:%v", requestIDs[i].Uint64())
-		// 	}
-		// }
-		// currentValues[i] = value
+	for i, reqID := range requestIDs {
+		val, err := self.aggregator.GetValueForIDWithDefaultGranularity(reqID.Int64(), time.Now())
+		if err != nil {
+			return currentValues, errors.Wrapf(err, "getting value for request ID:%v", reqID)
+		}
+		currentValues[i] = big.NewInt(int64(val))
 	}
 	return currentValues, nil
 }

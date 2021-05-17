@@ -84,16 +84,16 @@ var defaultConfig = Config{
 		MinSubmitPeriod: util.Duration{Duration: 15*time.Minute + 1*time.Second},
 	},
 	Aggregator: aggregator.Config{
-		LogLevel:      "info",
-		MinConfidence: 0.2,
+		LogLevel:       "info",
+		MinConfidence:  0.2,
+		ManualDataFile: "configs/manualData.json",
 	},
 
 	IndexTracker: index.Config{
-		LogLevel:       "info",
-		Interval:       util.Duration{Duration: 30 * time.Second},
-		FetchTimeout:   util.Duration{Duration: 30 * time.Second},
-		ApiFile:        "configs/api.json",
-		ManualDataFile: "configs/manualData.json",
+		LogLevel:     "info",
+		Interval:     util.Duration{Duration: 30 * time.Second},
+		FetchTimeout: util.Duration{Duration: 30 * time.Second},
+		ApiFile:      "configs/api.json",
 	},
 	EnvFile: ".local/.env",
 }

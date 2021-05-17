@@ -19,6 +19,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	tEthereum "github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/tracker/dispute"
@@ -106,13 +107,16 @@ func Vote(
 	return nil
 }
 
-func getNonceSubmissions(
+func getNonceSubmits(
 	ctx context.Context,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
 	valueBlock *big.Int,
 	dispute *contracts.ITellorNewDispute,
-) ([]time.Time, error) {
+) ([]struct {
+	time.Time
+	float64
+}, error) {
 	abi, err := abi.JSON(strings.NewReader(contracts.ITellorABI))
 	if err != nil {
 		return nil, errors.Wrap(err, "parse abi")
@@ -135,7 +139,10 @@ func getNonceSubmissions(
 	high := int64(valueBlock.Uint64())
 	low := high - blockStep
 	nonceSubmitID := abi.Events["NonceSubmitted"].ID
-	timedValues := make([]time.Time, 5)
+	timedValues := make([]struct {
+		time.Time
+		float64
+	}, 5)
 	found := 0
 	for found < 5 {
 		query := ethereum.FilterQuery{
@@ -166,7 +173,14 @@ func getNonceSubmissions(
 
 					bigF := new(big.Float)
 					bigF.SetInt(allVals[i])
-					timedValues[i] = valTime
+					f, _ := bigF.Float64()
+					timedValues[i] = struct {
+						time.Time
+						float64
+					}{
+						valTime,
+						f,
+					}
 					found++
 					break
 				}
@@ -185,6 +199,7 @@ func List(
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
 	account *tEthereum.Account,
+	aggregator *aggregator.Aggregator,
 ) error {
 	abi, err := abi.JSON(strings.NewReader(contracts.ITellorABI))
 	if err != nil {
@@ -251,15 +266,15 @@ func List(
 			"requestId", disputeI.RequestId.Uint64(),
 		)
 
-		allSubmitted, err := getNonceSubmissions(ctx, client, contract, uintVars[5], &disputeI)
+		allSubmitted, err := getNonceSubmits(ctx, client, contract, uintVars[5], &disputeI)
 		if err != nil {
 			return errors.Wrapf(err, "get the values submitted by other miners for the disputed block")
 		}
-		disputedValTime := allSubmitted[uintVars[6].Uint64()]
+		disputedValTime := allSubmitted[uintVars[6].Uint64()].Time
 
 		for i := len(allSubmitted) - 1; i >= 0; i-- {
 			sub := allSubmitted[i]
-			valStr := fmt.Sprintf("%f\n", sub.Price)
+			valStr := fmt.Sprintf("%f\n", sub.float64)
 			var pointerStr string
 			if i == int(uintVars[6].Uint64()) {
 				pointerStr = " <--disputed"
@@ -268,7 +283,7 @@ func List(
 			level.Debug(logger).Log(
 				"msg", "sub created",
 				"valStr", valStr,
-				"created", sub.Created.Format("3:04:05 PM"),
+				"created", sub.Time.Format("3:04:05 PM"),
 				"pointerStr", pointerStr,
 			)
 		}
@@ -288,7 +303,21 @@ func List(
 			"votes", uintVars[4],
 		)
 
-		result, err := dispute.CheckValueAtTime(cfg, disputeI.RequestId.Uint64(), uintVars[2], disputedValTime)
+		header, err := client.HeaderByNumber(ctx, nil)
+		if err != nil {
+			return errors.Wrap(err, "get latest eth block header")
+		}
+
+		disputer := dispute.NewDisputeChecker(
+			logger,
+			cfg,
+			client,
+			contract,
+			header.Number.Uint64(),
+			aggregator,
+		)
+
+		result, err := disputer.CheckValueAtTime(disputeI.RequestId.Int64(), uintVars[2], disputedValTime)
 		if err != nil {
 			return err
 		} else if result == nil || len(result.Datapoints) < 0 {
