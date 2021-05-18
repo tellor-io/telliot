@@ -53,7 +53,6 @@ func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQuer
 	}
 	engine := promql.NewEngine(opts)
 
-	// routerApi := route.New().WithPrefix("/api/v1")
 	api := api.New(logger, ctx, engine, tsDB)
 	api.Register(router.WithPrefix("/api/v1"))
 

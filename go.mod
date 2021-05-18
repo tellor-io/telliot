@@ -23,7 +23,6 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20210419070145-a9a5f04ff9d6
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/status-im/keycard-go v0.0.0-20190424133014-d95853db0f48 // indirect
-	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	go.uber.org/goleak v1.1.10

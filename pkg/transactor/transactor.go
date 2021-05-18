@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
@@ -175,16 +174,4 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 		return tx, receipt, nil
 	}
 	return nil, nil, errors.Wrapf(finalError, "submit tx after 5 attempts")
-}
-
-func getInt(data []byte) *big.Int {
-	if len(data) == 0 {
-		return big.NewInt(0)
-	}
-
-	val, err := hexutil.DecodeBig(string(data))
-	if err != nil {
-		return big.NewInt(0)
-	}
-	return val
 }

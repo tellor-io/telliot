@@ -102,18 +102,16 @@ func (self *Aggregator) GetValueForIDWithDefaultGranularity(reqID int64, ts time
 }
 
 func (self *Aggregator) GetValueForID(reqID int64, ts time.Time) (float64, error) {
-
 	val, err := self.getManualValue(reqID, ts)
 	if err != nil {
 		level.Error(self.logger).Log("msg", "get manual value", "reqID", reqID, "err", err)
 	}
-
 	if val != 0 {
 		level.Warn(self.logger).Log("msg", "USING MANUAL VALUE", "reqID", reqID, "val", val)
 		return val, nil
 	}
-	var conf float64
 
+	var conf float64
 	switch reqID {
 	case 1:
 		val, conf, err = self.MedianAt("ETH/USD", ts)
@@ -244,24 +242,24 @@ func (self *Aggregator) GetValueForID(reqID int64, ts time.Time) (float64, error
 	return val, err
 }
 
-func (self *Aggregator) getManualValue(reqID int64, t time.Time) (float64, error) {
+func (self *Aggregator) getManualValue(reqID int64, ts time.Time) (float64, error) {
 	jsonFile, err := os.Open(self.cfg.ManualDataFile)
 	if err != nil {
-		return 0, errors.Wrapf(err, "manualData read Error")
+		return 0, errors.Wrapf(err, "manual data file read Error")
 	}
 	defer jsonFile.Close()
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	var result map[string]map[string]float64
 	err = json.Unmarshal([]byte(byteValue), &result)
 	if err != nil {
-		return 0, errors.Wrap(err, "unmarshal manual file")
+		return 0, errors.Wrap(err, "unmarshal manual data file")
 	}
 
 	val := result[strconv.FormatInt(reqID, 10)]["VALUE"]
 	if val != 0 {
-		ts := result[strconv.FormatInt(reqID, 10)]["DATE"]
-		timestamp := time.Unix(int64(ts), 0)
-		if t.After(timestamp) {
+		_timestamp := int64(result[strconv.FormatInt(reqID, 10)]["DATE"])
+		timestamp := time.Unix(_timestamp, 0)
+		if ts.After(timestamp) {
 			return 0, errors.Errorf("manual entry value has expired:%v", ts)
 		}
 	}

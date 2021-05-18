@@ -15,7 +15,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/aggregator"
-	"github.com/tellor-io/telliot/pkg/dataServer"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/mining"
@@ -37,7 +36,6 @@ type Config struct {
 	ProfitTracker profit.Config
 	Tasker        tasker.Config
 	Transactor    transactor.Config
-	DataServer    dataServer.Config
 	IndexTracker  index.Config
 	Disputer      dispute.Config
 	Ethereum      ethereum.Config

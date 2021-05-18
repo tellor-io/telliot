@@ -7,11 +7,9 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"net"
 	"net/http"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 	"unsafe"
 
@@ -552,22 +550,6 @@ type GlobalURLOptions struct {
 	ListenAddress string
 	Host          string
 	Scheme        string
-}
-
-// sanitizeSplitHostPort acts like net.SplitHostPort.
-// Additionally, if there is no port in the host passed as input, we return the
-// original host, making sure that IPv6 addresses are not surrounded by square
-// brackets.
-func sanitizeSplitHostPort(input string) (string, string, error) {
-	host, port, err := net.SplitHostPort(input)
-	if err != nil && strings.HasSuffix(err.Error(), "missing port in address") {
-		var errWithPort error
-		host, _, errWithPort = net.SplitHostPort(input + ":80")
-		if errWithPort == nil {
-			err = nil
-		}
-	}
-	return host, port, err
 }
 
 func (api *API) respond(w http.ResponseWriter, data interface{}, warnings storage.Warnings) {
