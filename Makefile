@@ -81,14 +81,31 @@ build:
 	@[ "${GIT_HASH}" ] || ( echo ">> GIT_HASH is not set"; exit 1 )
 	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/telliot
 
+
 .PHONY: generate-config-docs
-generate-config-docs:
-	@go run ./scripts/cfgdocgen --output docs/configuration.md
+generate-config-docs: ## Auto generating the cli, config, and env.example documents using a golang script.
+generate-config-docs: ## 
+generate-config-docs: ## GENERATING ENV DOCS
+generate-config-docs: ## For generating env example docs, this will read the env.example file and generate docs using
+generate-config-docs: ## each line env name, env value, and comment.
+generate-config-docs: ## 
+generate-config-docs: ## GENERATING CONFIG STRUCT DOCS
+generate-config-docs: ## This will use field annotations from the default config struct and will result in docs entries
+generate-config-docs: ## per struct primitive fields consist of a name (separated by dots), an value (if provided and not nil) and
+generate-config-docs: ## a help text if there is a `help` annotation for that field.
+generate-config-docs: ## 
+generate-config-docs: ## GENERATING CLI DOCS
+generate-config-docs: ## Similar to config struct docs, this will use field annotations from the cli struct and will result in docs entries
+generate-config-docs: ## per cli command consist of a command name (separated by spaces if it's a subcommand), a list of arguments and
+generate-config-docs: ## and an help text from the cli struct `help` annotation.
+generate-config-docs: ## For generating a list of arguments we take a look at the cli struct and find out the fields that contain
+generate-config-docs: ## an arg annotation. we also consider other argument annotations like `optional` and `required` if any. 
+generate-config-docs:	@go run ./scripts/cfgdocgen --output docs/configuration.md
 
 .PHONY: check-config-docs
 check-config-docs:
 	@go run ./scripts/cfgdocgen --output tmp/configuration.md
-	"$(CMP)" --silent docs/configuration.md tmp/configuration.md || (echo >&2 "outdated docs/configuration.md, run the config docs generator script" ; exit 1)
+	"$(CMP)" --silent docs/configuration.md tmp/configuration.md || (echo >&2 "outdated docs/configuration.md, run make generate-config-docs" ; exit 1)
 
 .PHONY: check-git
 check-git:
@@ -129,7 +146,7 @@ lint: go-lint shell-lint
 #      --mem-profile-path string   Path to memory profile output file
 # to debug big allocations during linting.
 .PHONY: go-lint
-go-lint: check-git deps check-config-docs $(GOLANGCI_LINT) $(FAILLINT) $(MISSPELL)
+go-lint: check-git deps $(GOLANGCI_LINT) $(FAILLINT) $(MISSPELL)
 	$(call require_clean_work_tree,'detected not clean master before running lint, previous job changed something?')
 	@echo ">> verifying modules being imported"
 	@$(FAILLINT) -paths "errors=github.com/pkg/errors" ./...
