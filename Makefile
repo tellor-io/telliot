@@ -105,6 +105,7 @@ generate-config-docs:
 .PHONY: check-config-docs
 check-config-docs: ## Check that generated config docs are up to date. Mainly used in the CI.
 	@go run ./scripts/cfgdocgen --output docs/configuration.md
+	SED_BIN="$(SED)" scripts/cleanup-white-noise.sh docs/configuration.md
 	$(call require_clean_work_tree,'outdated docs/configuration.md, run make generate-config-docs')
 
 .PHONY: check-git

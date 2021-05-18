@@ -128,6 +128,7 @@ wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.j
 
 Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config. Make a copy of the `env.example` and edit with your secrets.
 For a working setup it is required to at least add one private key in your `"ETH_PRIVATE_KEYS"` environment variable. all of public addresses can be determined from your private keys.
+Any env variable from the .env file is substituted in the API URL (see [indexes.json](https://raw.githubusercontent.com/tellor-io/telliot/master/configs/indexes.json)). for example you may need a `CMC_KEY` env variable for making authenticated CoinMarketCap api calls \(required if you use authenticated API's\).
 
 ## mine - Become a Miner
 

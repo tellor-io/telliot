@@ -14,44 +14,118 @@ Telliot commands and config file options are as the following:
 
 #### Telliot Commands
 
-* `--logConfig` \(location of logging config file; default path is current directory\)
-* `mine` \(indicates to run the miner\)
-* `mine -r` \(indicates to mine utilizing a remote server\)
-* `dataserver` \(indicates to run the dataServer \(no mining\)\)
-* `transfer` \(AMOUNT\) \(TOADDRESS\) \(indicates transfer, toAddress is Ethereum address and amount is number of Tributes \(eg. transfer 10 0xea... \(this transfers 10 tokens\)\)\)
-* `approve` \(AMOUNT\) \(TOADDRESS\) \(amount to approve the toaddress to send this amount of tokens
-* `stake deposit` \(indicates to deposit tokens in the contract\)
-* `stake request` \(indicates you wish to withdraw your stake\)
-* `stake withdraw` \(withdraws your stake, run 1 week after request\)
-* `stake status` \(shows your staking balance\)
-* `balance` \(shows your balance\)
+
+* `accounts`   \(Show accounts\)
+
+
+* `approve` \(Address\)\(Amount\)\(Account\(optional\)\)  \(Approve tokens\)
+
+
+* `balance` \(Address\(optional\)\)  \(Check the balance of an address\)
+
+
+* `dataserver`   \(launch only a dataserver instance\)
+
+
+* `dispute`   \(Perform commands related to disputes\)
+
+
+* `dispute new` \(requestId: the request id to dispute it\)\(timestamp: the submitted timestamp to dispute\)\(minerIndex: the miner index to dispute\)\(Account\(optional\)\)  \(start a new dispute\)
+
+
+* `dispute show` \(Account\(optional\)\)  \(show open disputes\)
+
+
+* `dispute vote` \(disputeId: the dispute id\)\(support: true or false\)\(Account\(optional\)\)  \(vote on a open dispute\)
+
+
+* `migrate`   \(Migrate funds from the old oracle contract\)
+
+
+* `mine`   \(mine TRB and submit values\)
+
+
+* `stake`   \(Perform one of the stake operations\)
+
+
+* `stake deposit` \(Account\(optional\)\)  \(deposit a stake\)
+
+
+* `stake request` \(Account\(optional\)\)  \(request to withdraw stake\)
+
+
+* `stake status` \(Account\(optional\)\)  \(show stake status\)
+
+
+* `stake withdraw` \(Address\)\(Account\(optional\)\)  \(withdraw stake\)
+
+
+* `transfer` \(Address\)\(Amount\)\(Account\(optional\)\)  \(Transfer tokens\)
+
+
+* `version`   \(Show the CLI version information\)
 
 #### .env file options:
 
-* `NODE_WEBSOCKET_URL` \(required\) - node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+
 * `ETH_PRIVATE_KEYS` \(required\) - list of private keys separated by `,`
-* `$PSR$_KEY` - API key for getting a specific indexes.json api \(required if you use authenticated API's\)
+
+* `NODE_WEBSOCKET_URL` \(required\) - node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+
 
 #### Config file options:
 
-* `databaseURL` \(required\) - where you are reading from for the server database \(if hosted\)
-* `ethClientTimeout` \(required\) - timeout for making requests from your node
-* `trackerCycle` \(required\) - how often your database updates \(in seconds\)
-* `trackers` \(required\) - which pieces of the database you update
-* `dbFile` \(required\) - where you want to store your local database \(if self-hosting\)
-* `serverHost` \(required\) - location to host server
-* `serverWhitelist` \(required\) - whitelists which public address can access the data server
-* `fetchTimeout` - timeout for requesting data from an API
-* `requestData` - sets wether your miner request data if challenge is 0.  If yes, then you will addTip\(\) to this number.  Enter a uint number representing request id to be requested \(e.g. 2\)
-* `requestDataInterval` - min frequency at which to request data at \(in seconds, default 30\)
-* `gasMultiplier` - Multiplies the submitted gasPrice \(e.g. 2 will double gas costs\)
-* `gasMax` - a max for the gas price in gwei \(note: this max comes BEFORE the gas multiplier.  So a max gas cost of 10 gwei, can have gas prices up to 20 if gasMultiplier is 2\)
-* `heartbeat` - an integer that controls how frequently the miner process should report the hashrate \(larger is less frequent, try 1000000 to start\)
-* `numProcessors` - an integer number of CPU cores/threads to use for mining.
-* `disputeTimeDelta` - how far back to store values for min/max range - default 5 \(in minutes\)
-* `disputeThreshold` - percentage of acceptable range outside min/max for dispute checking - default
-* `psrFolder` - folder location holding your psr.json file, default working directory
-* `ProfitThreshold` - Solutions will only be submitted when the estimated profit margin is greater than the `ProfitThreshold` setting.  The estimated profit margin (%) is defined as `100*(EstimatedRewards - EstimatedTransactionCosts)/EstimatedTransaction Costs`.  Setting a ProfitThreshold of 0 will submit solutions if the transaction is estimated to break even `(EstimatedRewards = EstimatedTransactionCosts)`.   Values are estimates only.  There is no guarantee on the estimated values or making a profit.
+* `ApiFile` -  \(default: configs/api.json\) -
+
+* `DBFile` -  \(default: db\) -
+
+* `DataServer.ListenHost` -  \(default: localhost\) -
+
+* `DataServer.ListenPort` -  \(default: 5000\) -
+
+* `EnvFile` -  \(default: configs/.env\) -
+
+* `EthClientTimeout` -  \(default: 3000\) -
+
+* `GasMax` -  \(default: 10\) -
+
+* `GasMultiplier` -  \(default: 1\) -
+
+* `HistoryFile` -  \(default: configs/saved.json\) -
+
+* `Logger` -  \(default: map[apiOracle:info dataServer:info db:info ops:info pow::info rest:info rpc:info tracker:info]\) -
+
+* `ManualDataFile` -  \(default: configs/manualData.json\) -
+
+* `Mine.Heartbeat.Duration` -  \(default: 15s\) -
+
+* `Mine.ListenHost` -  \(default: localhost\) -
+
+* `Mine.ListenPort` -  \(default: 9090\) -
+
+* `Mine.MinSubmitPeriod.Duration` -  \(default: 15m1s\) -
+
+* `Mine.MiningInterruptCheckInterval.Duration` -  \(default: 15s\) -
+
+* `Mine.ProfitThreshold` -
+
+* `Mine.RemoteDBHost` -
+
+* `Mine.RemoteDBPort` -
+
+* `ServerWhitelist` -
+
+* `Trackers.DisputeThreshold` -  \(default: 0.01\) -
+
+* `Trackers.DisputeTimeDelta.Duration` -  \(default: 5m0s\) -
+
+* `Trackers.FetchTimeout.Duration` -  \(default: 30s\) -
+
+* `Trackers.MinConfidence` -  \(default: 0.2\) -
+
+* `Trackers.Names` -  \(default: map[disputeChecker:false gas:true indexers:true]\) -
+
+* `Trackers.SleepCycle.Duration` -  \(default: 30s\) -
 
 ### LogConfig file options
 
