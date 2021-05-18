@@ -1,5 +1,6 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
+
 package index
 
 // import (
