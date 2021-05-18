@@ -13,7 +13,6 @@ Telliot commands and config file options are as the following:
 * `--config` \(path to your config file.\)
 
 #### Telliot Commands
-* `--logConfig` \(location of logging config file; default path is current directory\)
 {{range .CliDocs}}
 
 * `{{ .Name }}` {{/*Ranging over the current cli arguments and writing name, optional tag and help for each argument if any, we also will write the cli help after this loop*/}}{{range .Arguments }}\({{.Name}}{{if .Optional}}\(optional\){{end}}{{if .Help}}: {{ .Help }}{{end}}\){{end}}  \({{ .Help }}\)
