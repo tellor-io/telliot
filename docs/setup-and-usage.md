@@ -29,7 +29,7 @@ The following example shows request ID 4, inputting a value of 9000 with a 1,000
 
 > by default the cli looks for these in the `./configs` folder relative to the cli folder.
 
-### Here is a quick reference how to run the cli with the default configs. 
+### Here is a quick reference how to run the cli with the default configs.
 
 ```
 mkdir ./configs
@@ -84,7 +84,7 @@ Advanced usage! If you are setting up a Tellor miner for the first time, it migh
 Some oracle feeds require 24h avarages and for these enough historical data is needed. Running a dataserver is the solution to always have enough historical data to generate these averages.
 
 The network topology of this setup looks like the diagram below.
-One ore more miners are connected to the same data server for fetching current or historical data to submit to the oracle. 
+One ore more miners are connected to the same data server for fetching current or historical data to submit to the oracle.
 The data server pulls data from the API providers, the 5 staked miners pull data from the data server and submit on-chain to the Tellor Core smart contracts.
 
 ```bash
@@ -199,7 +199,7 @@ kubectl apply -f configs/manifests/monitoring-persist.yml
 kubectl apply -f configs/manifests/monitoring.yml
 ```
 
-###  Optionally deploy the alerting manager and get alerts on your Telegram bot. 
+###  Optionally deploy the alerting manager and get alerts on your Telegram bot.
 
 This uses the alertmanager bot. see [here](https://github.com/metalmatze/alertmanager-bot) for more info and available commands.
 
