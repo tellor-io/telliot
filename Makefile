@@ -13,7 +13,6 @@ GOPROXY     ?= https://proxy.golang.org
 # systems gsed won't be installed, so will use sed as expected.
 SED     ?= $(shell which gsed 2>/dev/null || which sed)
 GIT     ?= $(shell which git)
-CMP     ?= $(shell which cmp)
 
 BIN_DIR ?= /tmp/bin
 OS      ?= $(shell uname -s | tr '[A-Z]' '[a-z]')
@@ -100,12 +99,13 @@ generate-config-docs: ## per cli command consist of a command name (separated by
 generate-config-docs: ## and an help text from the cli struct `help` annotation.
 generate-config-docs: ## For generating a list of arguments we take a look at the cli struct and find out the fields that contain
 generate-config-docs: ## an arg annotation. we also consider other argument annotations like `optional` and `required` if any. 
-generate-config-docs:	@go run ./scripts/cfgdocgen --output docs/configuration.md
+generate-config-docs:	
+	@go run ./scripts/cfgdocgen --output docs/configuration.md
 
 .PHONY: check-config-docs
-check-config-docs:
-	@go run ./scripts/cfgdocgen --output tmp/configuration.md
-	"$(CMP)" --silent docs/configuration.md tmp/configuration.md || (echo >&2 "outdated docs/configuration.md, run make generate-config-docs" ; exit 1)
+check-config-docs: ## Check that generated config docs are up to date. Mainly used in the CI.
+	@go run ./scripts/cfgdocgen --output docs/configuration.md
+	$(call require_clean_work_tree,'outdated docs/configuration.md, run make generate-config-docs')
 
 .PHONY: check-git
 check-git:
