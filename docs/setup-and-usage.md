@@ -24,7 +24,7 @@ The following example shows request ID 4, inputting a value of 9000 with a 1,000
     "DATE":1596153600
 }
 ```
- - `config.json` - optional config file to override any of the defaults. See [configuration page](./configuration.md) for full reference.
+ - `config.json` - optional config file to override any of the defaults. See [configuration page](configuration.md) for full reference.
 
 
 > by default the cli looks for these in the `./configs` folder relative to the cli folder.
@@ -78,7 +78,7 @@ The same instance can be used with multiple private keys in the `.env` file sepa
 ## DataServer - a shared data API feeds.
 
 {% hint style="info" %}
-Advanced usage! If you are setting up a Tellor miner for the first time, it might be a good idea to skip this section and come back after you're up and running with one miner. See the [configuration page](./configuration.md) for the required configs.
+Advanced usage! If you are setting up a Tellor miner for the first time, it might be a good idea to skip this section and come back after you're up and running with one miner. See the [configuration page](configuration.md) for the required configs.
 {% endhint %}
 
 Some oracle feeds require 24h avarages and for these enough historical data is needed. Running a dataserver is the solution to always have enough historical data to generate these averages.
@@ -161,7 +161,7 @@ mkdir -p $CFG_FOLDER/$INSTANCE_NAME
 
 # Run the same commands as the mining deployment.
 
-See [configuration page](./configuration.md) on how to setup other instances to connect to this remote dataserver
+See [configuration page](configuration.md) on how to setup other instances to connect to this remote dataserver
 
 ### To run another instance.
 

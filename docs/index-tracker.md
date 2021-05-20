@@ -1,24 +1,18 @@
 ---
-description: Internal architecture of the project.
+description: The Index Tracker module collects and stores data from HTTP or Blockchain endpoints.
 ---
 
-# Internal architecture
+# Index Tracker
 
-## Trackers
+The index tracker module uses an `index.json` file.
 
-A tracker is a process that gets data from an HTTP API or a Blockchain smart contract.
-All data is then stored in a database for later aggregation.
-
-There are different types of index trackers.
-
-
-The structure of this `index.json` file is as follow:
+The structure of the file is as follow:
 
 ```javascript
 {
     "ALGO/USD": [
         {
-            "URL": "https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1",
+            "URL": "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest?APIKEY=${API_KEY}",
             "param": "$[0][4]",
             "interval": 7200,
         }
@@ -35,9 +29,14 @@ The structure of this `index.json` file is as follow:
 }
 ```
 
+Any env variable is substituted in the API URL. The example above uses `API_KEY` env variable.
+This is needed as some API endpoints require api key to allows access or to increase API throtling.
+
+## Index Tracker types
+
 ### HTTP trackers
 
-If not set the default type of an index tracker is `http` type. also, the default parser for an index tracker is a `jsonpath` parser that parses data from a JSON payload. also, `param` is an additional parameter for the parser. for the `jsonpath` parser, it is the jsonpath param on how to parse the output. see [here](http://goessner.net/articles/JsonPath/) for more info
+If not set the default type of an index tracker is `http` type.
 
 ### On-chain trackers
 
@@ -45,7 +44,15 @@ If the index tracker type was set to `ethereum` then it's an on-chain tracker th
 
 Currently supported on-chain parsers are `Uniswap` and `Balancer` parsers.
 
-#### Balancer parser
+
+## Parsers
+
+### Jsonpath parser
+
+When not set this is the default parser. It parses data from the JSON payload using the `param` as an instruction on how to parse the output.
+[More info](http://goessner.net/articles/JsonPath/).
+
+### Balancer parser
 
 `Balancer` is a parser that fetches tracker info from a [Balancer pool](https://docs.balancer.finance/getting-started/faq#balancer-pools). Balancer pools are liquidity pools for pair of ERC20 tokens. a Balancer pool could exist on both Ethereum mainnet and testnets. for Balancer smart contract addresses see [here](https://docs.balancer.finance/smart-contracts/addresses).
 
@@ -126,7 +133,7 @@ All done. Let's confirm that we received BPTs by calling `balanceOf` directly on
 seth --from-wei $(seth --to-dec $(seth call $BPOOL "balanceOf(address)" $ETH_FROM))
 ```
 
-#### Uniswap parser
+### Uniswap parser
 
 `Uniswap` is a parser that fetches tracker info from a [UniswapV2 pair](https://uniswap.org/docs/v2/smart-contracts/pair/). the easiest way to add UniswapV2 testnet pair is to call the [addLiquidity](https://uniswap.org/docs/v2/smart-contracts/router02/#addliquidity) contract method on Uniswap RouterV2 smart contract on different Ethereum networks. see [addresses](https://uniswap.org/docs/v2/smart-contracts/router02/#addresshttps://uniswap.org/docs/v2/smart-contracts/router02/#address). the method is as follow:
 
