@@ -489,7 +489,7 @@ func (self *Aggregator) median(values []float64) float64 {
 // 100% confidence is when all apis have returned a value within the last 10 minutes.
 // For every missing value the calculation subtracts some confidence level.
 // Confidence is calculated actualDataPointCount/maxDataPointCount.
-// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
+// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval)).
 func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]float64, float64, error) {
 	var prices []float64
 	pricesVector, err := self.valuesAt(symbol, at)

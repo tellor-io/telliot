@@ -15,9 +15,9 @@ It simply solves the PoW challenge which is required by the oracle contract wen 
 
 ## Submitter
 
-Submits the currently requested data IDs to the oracle contract. 
+Submits the currently requested data IDs to the oracle contract.
 It makes all the necessary checks to prepare the data accordingly to avoid failed transactions.
-The data is taken from a local or remote DB. 
+The data is taken from a local or remote DB.
 The data is collected by the Index Tracker module and aggregated by the Aggregator module.
 
 ## Trackers
@@ -28,7 +28,7 @@ There are different types of trackers the main one being the [Index Tracker](ind
 ## Aggregator
 
 Aggregates data to expose median, mean, TWAP, VWAP etc.
-It also exposes all required data IDs required to submit data to the Tellor oracle. 
+It also exposes all required data IDs required to submit data to the Tellor oracle.
 These are specified in the module itself.
 
 ## API
