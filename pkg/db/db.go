@@ -4,7 +4,7 @@
 package db
 
 import (
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/format"
 )
 
 const ComponentName = "db"
@@ -15,5 +15,5 @@ type Config struct {
 	// Connect to this remote DB.
 	RemoteHost    string
 	RemotePort    uint
-	RemoteTimeout util.Duration
+	RemoteTimeout format.Duration
 }

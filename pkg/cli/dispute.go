@@ -22,13 +22,9 @@ import (
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	tEthereum "github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/tracker/dispute"
-	"github.com/tellor-io/telliot/pkg/util"
 )
-
-/**
- * This file handles all operations related to disputes
- */
 
 func Dispute(
 	ctx context.Context,
@@ -58,8 +54,8 @@ func Dispute(
 
 	if balance.Cmp(disputeCost) < 0 {
 		return errors.Errorf("insufficient balance TRB actual: %v, TRB required:%v)",
-			util.FormatERC20Balance(balance),
-			util.FormatERC20Balance(disputeCost))
+			format.ERC20Balance(balance),
+			format.ERC20Balance(disputeCost))
 	}
 
 	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account)
@@ -262,7 +258,7 @@ func List(
 			"reportedAddr", reportedAddr.Hex(),
 			"reportingMiner", reportingMiner.Hex(),
 			"createdTime", createdTime.Format("3:04 PM January 02, 2006 MST"),
-			"fee", util.FormatERC20Balance(uintVars[8]),
+			"fee", format.ERC20Balance(uintVars[8]),
 			"requestId", disputeI.RequestId.Uint64(),
 		)
 
@@ -299,7 +295,7 @@ func List(
 		level.Info(logger).Log(
 			"msg", "current TRB support for this dispute",
 			"currTallyRatio", fmt.Sprintf("%0.f%%", currTallyRatio*100),
-			"TRB", util.FormatERC20Balance(uintVars[7]),
+			"TRB", format.ERC20Balance(uintVars[7]),
 			"votes", uintVars[4],
 		)
 

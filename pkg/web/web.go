@@ -16,8 +16,8 @@ import (
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/storage"
+	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/tellor-io/telliot/pkg/web/api"
 )
 
@@ -27,7 +27,7 @@ type Config struct {
 	LogLevel    string
 	ListenHost  string
 	ListenPort  uint
-	ReadTimeout util.Duration
+	ReadTimeout format.Duration
 }
 
 type Web struct {

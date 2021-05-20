@@ -17,6 +17,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
@@ -24,7 +25,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
-	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/tellor-io/telliot/pkg/web"
 )
 
@@ -60,7 +60,7 @@ var defaultConfig = Config{
 	Db: db.Config{
 		LogLevel:      "info",
 		Path:          "db",
-		RemoteTimeout: util.Duration{Duration: 5 * time.Second},
+		RemoteTimeout: format.Duration{Duration: 5 * time.Second},
 	},
 	Tasker: tasker.Config{
 		LogLevel: "info",
@@ -81,7 +81,7 @@ var defaultConfig = Config{
 		LogLevel: "info",
 		// MinSubmitPeriod is the time limit between each submit for a staked miner.
 		// We added a 1 second delay here as a workaround to prevent failed transactions.
-		MinSubmitPeriod: util.Duration{Duration: 15*time.Minute + 1*time.Second},
+		MinSubmitPeriod: format.Duration{Duration: 15*time.Minute + 1*time.Second},
 	},
 	Aggregator: aggregator.Config{
 		LogLevel:       "info",
@@ -91,8 +91,8 @@ var defaultConfig = Config{
 
 	IndexTracker: index.Config{
 		LogLevel:     "info",
-		Interval:     util.Duration{Duration: 30 * time.Second},
-		FetchTimeout: util.Duration{Duration: 30 * time.Second},
+		Interval:     format.Duration{Duration: 30 * time.Second},
+		FetchTimeout: format.Duration{Duration: 30 * time.Second},
 		ApiFile:      "configs/index.json",
 	},
 	EnvFile: "configs/.env",

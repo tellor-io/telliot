@@ -20,12 +20,12 @@ import (
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/transactor"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const ComponentName = "submitter"
@@ -38,7 +38,7 @@ type Config struct {
 	// the gas cost is lowered.
 	// a ProfitThreshold of 199% or less will submit
 	ProfitThreshold uint64
-	MinSubmitPeriod util.Duration
+	MinSubmitPeriod format.Duration
 }
 
 /**

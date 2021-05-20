@@ -15,12 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/format"
 )
-
-/**
- * This is the operational transfer component. Its purpose is to transfer tellor tokens
- */
 
 func prepareTransfer(
 	ctx context.Context,
@@ -34,11 +30,11 @@ func prepareTransfer(
 	if err != nil {
 		return nil, errors.Wrap(err, "get balance")
 	}
-	level.Info(logger).Log("msg", "check my balance", util.FormatERC20Balance(balance))
+	level.Info(logger).Log("msg", "check my balance", format.ERC20Balance(balance))
 	if balance.Cmp(amt) < 0 {
 		return nil, errors.Errorf("insufficient balance TRB actual: %v, requested: %v",
-			util.FormatERC20Balance(balance),
-			util.FormatERC20Balance(amt))
+			format.ERC20Balance(balance),
+			format.ERC20Balance(amt))
 	}
 	auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
 	if err != nil {
@@ -67,7 +63,7 @@ func Transfer(
 	}
 	level.Info(logger).Log(
 		"msg", "transferred",
-		"amount", util.FormatERC20Balance(amt),
+		"amount", format.ERC20Balance(amt),
 		"to", toAddress.String()[:12],
 		"tx Hash", tx.Hash().Hex(),
 	)
@@ -92,7 +88,7 @@ func Approve(
 	if err != nil {
 		return errors.Wrap(err, "calling approve")
 	}
-	level.Info(logger).Log("msg", "approved", "amount", util.FormatERC20Balance(amt), "spender", spender.String()[:12], "tx Hash", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "approved", "amount", format.ERC20Balance(amt), "spender", spender.String()[:12], "tx Hash", tx.Hash().Hex())
 	return nil
 }
 
@@ -109,8 +105,8 @@ func Balance(ctx context.Context, logger log.Logger, client contracts.ETHClient,
 	level.Info(logger).Log(
 		"msg", "balance check",
 		"address", addr.String(),
-		"ETH", fmt.Sprintf("%10s", util.FormatERC20Balance(ethBalance)),
-		"TRB", fmt.Sprintf("%10s", util.FormatERC20Balance(trbBalance)),
+		"ETH", fmt.Sprintf("%10s", format.ERC20Balance(ethBalance)),
+		"TRB", fmt.Sprintf("%10s", format.ERC20Balance(trbBalance)),
 	)
 	return nil
 }

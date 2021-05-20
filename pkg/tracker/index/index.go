@@ -25,8 +25,8 @@ import (
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/util"
 	"github.com/tellor-io/telliot/pkg/web"
 	"github.com/yalp/jsonpath"
 )
@@ -41,8 +41,8 @@ const (
 
 type Config struct {
 	LogLevel     string
-	Interval     util.Duration
-	FetchTimeout util.Duration
+	Interval     format.Duration
+	FetchTimeout format.Duration
 	ApiFile      string
 }
 
@@ -249,7 +249,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				labels.Label{Name: "__name__", Value: IntervalMetricName},
 				labels.Label{Name: "source", Value: dataSource.Source()},
 				labels.Label{Name: "domain", Value: source.Host},
-				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
+				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
 			ref := uint64(0)
 			if g, ok := appender.(storage.GetRef); ok {
@@ -286,13 +286,13 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 		// Record the actual value.
 		{
 			appender := self.tsDB.Appender(self.ctx)
-			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", util.SanitizeMetricName(symbol), "value", value, "ts", ts.Unix())
+			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value, "ts", ts.Unix())
 
 			labels := labels.Labels{
 				labels.Label{Name: "__name__", Value: ValueMetricName},
 				labels.Label{Name: "source", Value: dataSource.Source()},
 				labels.Label{Name: "domain", Value: source.Host},
-				labels.Label{Name: "symbol", Value: util.SanitizeMetricName(symbol)},
+				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
 			ref := uint64(0)
 			if g, ok := appender.(storage.GetRef); ok {
@@ -328,7 +328,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				prometheus.Labels{
 					"source": dataSource.Source(),
 					"domain": source.Host,
-					"symbol": util.SanitizeMetricName(symbol),
+					"symbol": format.SanitizeMetricName(symbol),
 				},
 			).(prometheus.Gauge).Set(value)
 
@@ -367,11 +367,11 @@ const (
 
 // Api will be used in parsing index file.
 type Api struct {
-	URL      string        `json:"URL"`
-	Type     IndexType     `json:"type"`
-	Parser   ParserType    `json:"parser"`
-	Param    string        `json:"param"`
-	Interval util.Duration `json:"interval"`
+	URL      string          `json:"URL"`
+	Type     IndexType       `json:"type"`
+	Parser   ParserType      `json:"parser"`
+	Param    string          `json:"param"`
+	Interval format.Duration `json:"interval"`
 }
 
 func NewJSONapi(logger log.Logger, interval time.Duration, retryDelay time.Duration, url string, parser Parser) *JSONapi {

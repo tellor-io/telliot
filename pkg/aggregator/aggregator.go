@@ -20,9 +20,9 @@ import (
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const ComponentName = "aggregator"
@@ -321,7 +321,7 @@ func (self *Aggregator) TimeWeightedAvg(
 	// Avg value over the look back period.
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`avg_over_time(`+index.ValueMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
+		`avg_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`"}[`+lookBack.String()+`])`,
 		from,
 	)
 	if err != nil {
@@ -338,7 +338,7 @@ func (self *Aggregator) TimeWeightedAvg(
 		self.tsDB,
 		`avg(
 			count_over_time(`+index.ValueMetricName+`{
-				symbol="`+util.SanitizeMetricName(symbol)+`"
+				symbol="`+format.SanitizeMetricName(symbol)+`"
 			}[`+lookBack.String()+`]) /
 			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / indexTracker_interval))`,
 		from,
@@ -382,14 +382,14 @@ func (self *Aggregator) VolumWeightedAvg(
 		`avg(
 			sum_over_time(
 				(
-					sum_over_time(indexTracker_value{symbol="`+util.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`])
+					sum_over_time(indexTracker_value{symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`])
 					*  on(domain)
-					avg_over_time(indexTracker_value{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+aggrWindow.String()+`])
+					avg_over_time(indexTracker_value{symbol="`+format.SanitizeMetricName(symbol)+`"}[`+aggrWindow.String()+`])
 				)[`+timeWindow+`:`+aggrWindow.String()+`])
 			/ on(domain)
 			sum_over_time(
 				(
-					sum_over_time(indexTracker_value{symbol="`+util.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`]
+					sum_over_time(indexTracker_value{symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`]
 				)
 			)[`+timeWindow+`:`+aggrWindow.String()+`])
 		)`,
@@ -414,7 +414,7 @@ func (self *Aggregator) VolumWeightedAvg(
 		self.tsDB,
 		`avg(
 			count_over_time(`+index.ValueMetricName+`{
-				symbol="`+util.SanitizeMetricName(symbol)+`"
+				symbol="`+format.SanitizeMetricName(symbol)+`"
 			}[`+timeWindow+`]) /
 			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / indexTracker_interval))`,
 		end,
@@ -434,7 +434,7 @@ func (self *Aggregator) VolumWeightedAvg(
 		self.tsDB,
 		`avg(
 			count_over_time(`+index.ValueMetricName+`{
-				symbol="`+util.SanitizeMetricName(symbol)+`_VOLUME"
+				symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"
 			}[`+timeWindow+`]) /
 			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / indexTracker_interval))`,
 		end,
@@ -462,7 +462,7 @@ func (self *Aggregator) VolumWeightedAvg(
 		prometheus.Labels{
 			"type":     "vwap",
 			"interval": start.Sub(end).String(),
-			"symbol":   util.SanitizeMetricName(symbol),
+			"symbol":   format.SanitizeMetricName(symbol),
 		},
 	).(prometheus.Gauge).Set(result[0].V)
 
@@ -470,7 +470,7 @@ func (self *Aggregator) VolumWeightedAvg(
 		prometheus.Labels{
 			"type":     "vwap",
 			"interval": start.Sub(end).String(),
-			"symbol":   util.SanitizeMetricName(symbol),
+			"symbol":   format.SanitizeMetricName(symbol),
 		},
 	).(prometheus.Gauge).Set(confidence)
 
@@ -507,7 +507,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		self.tsDB,
 		`avg(
 			count_over_time(`+index.ValueMetricName+`{
-				symbol="`+util.SanitizeMetricName(symbol)+`"
+				symbol="`+format.SanitizeMetricName(symbol)+`"
 			}[`+self.maxLookback.String()+`]) /
 			(`+strconv.Itoa(int(self.maxLookback.Nanoseconds()))+` / indexTracker_interval))`,
 		time.Now(),
@@ -527,7 +527,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 func (self *Aggregator) valuesAt(symbol string, at time.Time) (promql.Vector, error) {
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`last_over_time(`+index.ValueMetricName+`{symbol="`+util.SanitizeMetricName(symbol)+`"}[`+self.maxLookback.String()+`])`,
+		`last_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`"}[`+self.maxLookback.String()+`])`,
 		at,
 	)
 	if err != nil {

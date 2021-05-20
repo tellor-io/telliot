@@ -39,7 +39,7 @@ package mining
 
 // func CheckSolution(t *testing.T, challenge *MiningChallenge, nonce string) {
 // 	_string := fmt.Sprintf("%x", challenge.Challenge) + "0000000000000000000000000000000000000000"
-// 	hashIn := util.DecodeHex(_string)
+// 	hashIn := format.DecodeHex(_string)
 // 	hashIn = append(hashIn, []byte(nonce)...)
 
 // 	a, err := hashFn(hashIn)
@@ -176,7 +176,7 @@ package mining
 // 	for k, v := range testVectors {
 // 		nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", k))
 // 		_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
-// 		bytes := util.DecodeHex(_string)
+// 		bytes := format.DecodeHex(_string)
 // 		result, err := hashFn(bytes)
 // 		testutil.Ok(t, err)
 // 		if result.Text(16) != v {
@@ -189,7 +189,7 @@ package mining
 // 	challenge := createChallenge(0, 500)
 // 	nonce := fmt.Sprintf("%x", fmt.Sprintf("%d", 10))
 // 	_string := fmt.Sprintf("%x", challenge.Challenge) + "abcd0123" + nonce
-// 	bytes := util.DecodeHex(_string)
+// 	bytes := format.DecodeHex(_string)
 
 // 	for i := 0; i < b.N; i++ {
 // 		_, err := hashFn(bytes)

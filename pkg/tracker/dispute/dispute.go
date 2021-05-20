@@ -21,15 +21,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/format"
 )
 
 const ComponentName = "dispute"
 
 type Config struct {
 	LogLevel         string
-	DisputeTimeDelta util.Duration // Ignore data further than this away from the value we are checking.
-	DisputeThreshold float64       // Maximum allowed relative difference between observed and submitted value.
+	DisputeTimeDelta format.Duration // Ignore data further than this away from the value we are checking.
+	DisputeThreshold float64         // Maximum allowed relative difference between observed and submitted value.
 }
 
 type disputeChecker struct {

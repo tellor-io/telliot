@@ -14,12 +14,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/format"
 )
-
-/**
- * This is the operational deposit component. Its purpose is to deposit Tellor Tokens so you can mine
- */
 
 func printStakeStatus(logger log.Logger, bigStatus *big.Int, started *big.Int) {
 	// 0-not Staked, 1=Staked, 2=LockedForWithdraw 3= OnDispute
@@ -79,8 +75,8 @@ func Deposit(
 
 	if balance.Cmp(stakeAmt) < 0 {
 		return errors.Errorf("insufficient mining stake TRB balance actual: %v, required:%v",
-			util.FormatERC20Balance(balance),
-			util.FormatERC20Balance(stakeAmt))
+			format.ERC20Balance(balance),
+			format.ERC20Balance(stakeAmt))
 	}
 
 	auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
