@@ -80,7 +80,7 @@ var defaultConfig = Config{
 	Submitter: submitter.Config{
 		LogLevel: "info",
 		// MinSubmitPeriod is the time limit between each submit for a staked miner.
-		// We added a 1 second delay here as a workaround to prevent failed transactions.
+		// With a 1 second delay here as a workaround to prevent a race condition in the oracle contract check.
 		MinSubmitPeriod: format.Duration{Duration: 15*time.Minute + 1*time.Second},
 	},
 	Aggregator: aggregator.Config{
@@ -90,10 +90,9 @@ var defaultConfig = Config{
 	},
 
 	IndexTracker: index.Config{
-		LogLevel:     "info",
-		Interval:     format.Duration{Duration: 30 * time.Second},
-		FetchTimeout: format.Duration{Duration: 30 * time.Second},
-		ApiFile:      "configs/index.json",
+		LogLevel: "info",
+		Interval: format.Duration{Duration: 30 * time.Second},
+		ApiFile:  "configs/index.json",
 	},
 	EnvFile: "configs/.env",
 }
@@ -104,7 +103,7 @@ func ParseConfig(logger log.Logger, path string) (*Config, error) {
 	}
 
 	cfg := &Config{}
-	// DeepCopy the default config into the final.
+	// DeepCopy the default config into the final config.
 	{
 		b, err := json.Marshal(defaultConfig)
 		if err != nil {

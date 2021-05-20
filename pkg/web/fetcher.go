@@ -11,26 +11,20 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 )
 
-func Fetch(ctx context.Context, logger log.Logger, url string) ([]byte, error) {
+func Fetch(ctx context.Context, url string) ([]byte, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := http.Client{Transport: tr}
 	ticker := time.NewTicker(1 * time.Second)
 
-	logger = log.With(logger, "url", url)
-
 	var errFinal error
 	for i := 0; i < 5; i++ {
 		r, err := client.Get(url)
 		if err != nil {
-			errFinal = err
-			level.Error(logger).Log("msg", "fetching data", "err", err)
+			errFinal = errors.Wrap(err, "fetching data")
 			select {
 			case <-ticker.C:
 				continue
@@ -41,8 +35,7 @@ func Fetch(ctx context.Context, logger log.Logger, url string) ([]byte, error) {
 
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			errFinal = err
-			level.Error(logger).Log("msg", "read response body", "err", err)
+			errFinal = errors.Wrap(err, "read response body")
 			select {
 			case <-ticker.C:
 				continue
@@ -53,8 +46,7 @@ func Fetch(ctx context.Context, logger log.Logger, url string) ([]byte, error) {
 		r.Body.Close()
 
 		if r.StatusCode/100 != 2 {
-			errFinal = errors.Errorf("response status code not ok:%v", r.StatusCode)
-			level.Error(logger).Log("msg", "response status", "code", r.StatusCode, "payload", data)
+			errFinal = errors.Errorf("response status code not OK code:%v, payload:%v", r.StatusCode, string(data))
 			select {
 			case <-ticker.C:
 				continue

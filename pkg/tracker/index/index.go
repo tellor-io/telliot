@@ -390,9 +390,9 @@ type JSONapi struct {
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, time.Time, error) {
-	vals, err := web.Fetch(ctx, self.logger, self.url)
+	vals, err := web.Fetch(ctx, self.url)
 	if err != nil {
-		return 0, time.Time{}, errors.Wrap(err, "fetching data from API")
+		return 0, time.Time{}, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}
 	return self.Parse(vals)
 }
