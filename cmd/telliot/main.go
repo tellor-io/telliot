@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/alecthomas/kong"
-	"github.com/tellor-io/telliot/cmd/telliot/cli"
+	"github.com/tellor-io/telliot/pkg/cli"
 )
 
 func main() {
