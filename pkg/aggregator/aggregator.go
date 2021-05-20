@@ -340,7 +340,7 @@ func (self *Aggregator) TimeWeightedAvg(
 			count_over_time(`+index.ValueMetricName+`{
 				symbol="`+format.SanitizeMetricName(symbol)+`"
 			}[`+lookBack.String()+`]) /
-			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / indexTracker_interval))`,
+			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / `+index.IntervalMetricName+`))`,
 		from,
 	)
 	if err != nil {
@@ -382,14 +382,14 @@ func (self *Aggregator) VolumWeightedAvg(
 		`avg(
 			sum_over_time(
 				(
-					sum_over_time(indexTracker_value{symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`])
+					sum_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`])
 					*  on(domain)
-					avg_over_time(indexTracker_value{symbol="`+format.SanitizeMetricName(symbol)+`"}[`+aggrWindow.String()+`])
+					avg_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`"}[`+aggrWindow.String()+`])
 				)[`+timeWindow+`:`+aggrWindow.String()+`])
 			/ on(domain)
 			sum_over_time(
 				(
-					sum_over_time(indexTracker_value{symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`]
+					sum_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"}[`+aggrWindow.String()+`]
 				)
 			)[`+timeWindow+`:`+aggrWindow.String()+`])
 		)`,
@@ -416,7 +416,7 @@ func (self *Aggregator) VolumWeightedAvg(
 			count_over_time(`+index.ValueMetricName+`{
 				symbol="`+format.SanitizeMetricName(symbol)+`"
 			}[`+timeWindow+`]) /
-			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / indexTracker_interval))`,
+			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / `+index.IntervalMetricName+`))`,
 		end,
 	)
 	if err != nil {
@@ -436,7 +436,7 @@ func (self *Aggregator) VolumWeightedAvg(
 			count_over_time(`+index.ValueMetricName+`{
 				symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"
 			}[`+timeWindow+`]) /
-			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / indexTracker_interval))`,
+			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / `+index.IntervalMetricName+`))`,
 		end,
 	)
 	if err != nil {
@@ -509,7 +509,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 			count_over_time(`+index.ValueMetricName+`{
 				symbol="`+format.SanitizeMetricName(symbol)+`"
 			}[`+self.maxLookback.String()+`]) /
-			(`+strconv.Itoa(int(self.maxLookback.Nanoseconds()))+` / indexTracker_interval))`,
+			(`+strconv.Itoa(int(self.maxLookback.Nanoseconds()))+` / `+index.IntervalMetricName+`))`,
 		time.Now(),
 	)
 	if err != nil {
