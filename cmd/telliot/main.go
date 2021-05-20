@@ -42,7 +42,7 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.
 	return client, contract, accounts, nil
 }
 
-var cli struct {
+var CLI struct {
 	Migrate  migrateCmd  `cmd:"" help:"Migrate funds from the old oracle contract"`
 	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
 	Approve  approveCmd  `cmd:"" help:"Approve tokens"`
@@ -67,7 +67,7 @@ var cli struct {
 func main() {
 	//lint:ignore faillint it should print to console
 	fmt.Printf(versionMessage, GitTag, GitHash)
-	ctx := kong.Parse(&cli, kong.Name("Telliot"),
+	ctx := kong.Parse(&CLI, kong.Name("Telliot"),
 		kong.Description("The official Tellor cli tool"),
 		kong.UsageOnError())
 

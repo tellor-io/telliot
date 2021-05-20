@@ -28,6 +28,8 @@ import (
 	"github.com/tellor-io/telliot/pkg/web"
 )
 
+const NodeURLEnvName = "NODE_WEBSOCKET_URL"
+
 // Config is the top-level configuration that holds configs for all components.
 type Config struct {
 	Web           web.Config
@@ -93,10 +95,8 @@ var defaultConfig = Config{
 		FetchTimeout: util.Duration{Duration: 30 * time.Second},
 		ApiFile:      "configs/index.json",
 	},
-	EnvFile: ".local/.env",
+	EnvFile: "configs/.env",
 }
-
-const NodeURLEnvName = "NODE_WEBSOCKET_URL"
 
 func ParseConfig(logger log.Logger, path string) (*Config, error) {
 	if path == "" {

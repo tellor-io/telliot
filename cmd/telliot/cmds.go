@@ -23,12 +23,12 @@ import (
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/aggregator"
+	"github.com/tellor-io/telliot/pkg/cli"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
-	"github.com/tellor-io/telliot/pkg/ops"
 	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/submitter"
 	"github.com/tellor-io/telliot/pkg/tasker"
@@ -96,7 +96,7 @@ func (c *transferCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return ops.Transfer(ctx, logger, client, contract, account, address.addr, amount.Int)
+	return cli.Transfer(ctx, logger, client, contract, account, address.addr, amount.Int)
 
 }
 
@@ -130,7 +130,7 @@ func (c *approveCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return ops.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
+	return cli.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
 
 type accountsCmd struct {
@@ -189,7 +189,7 @@ func (b *balanceCmd) Run() error {
 			return errors.Wrapf(err, "parsing argument")
 		}
 	}
-	return ops.Balance(ctx, logger, client, contract, addr.addr)
+	return cli.Balance(ctx, logger, client, contract, addr.addr)
 }
 
 type depositCmd struct {
@@ -214,7 +214,7 @@ func (d depositCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return ops.Deposit(ctx, logger, client, contract, account)
+	return cli.Deposit(ctx, logger, client, contract, account)
 
 }
 
@@ -247,7 +247,7 @@ func (w withdrawCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return ops.WithdrawStake(ctx, logger, client, contract, account)
+	return cli.WithdrawStake(ctx, logger, client, contract, account)
 
 }
 
@@ -273,7 +273,7 @@ func (r requestCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return ops.RequestStakingWithdraw(ctx, logger, client, contract, account)
+	return cli.RequestStakingWithdraw(ctx, logger, client, contract, account)
 }
 
 type statusCmd struct {
@@ -298,7 +298,7 @@ func (s statusCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return ops.ShowStatus(ctx, logger, client, contract, account)
+	return cli.ShowStatus(ctx, logger, client, contract, account)
 }
 
 type migrateCmd struct {
@@ -377,7 +377,7 @@ func (n newDisputeCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return ops.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
+	return cli.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
 }
 
 type voteCmd struct {
@@ -410,7 +410,7 @@ func (v voteCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	return ops.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
+	return cli.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
 }
 
 type showCmd struct {
@@ -458,7 +458,7 @@ func (s showCmd) Run() error {
 		return errors.Wrapf(err, "creating aggregator")
 	}
 
-	return ops.List(ctx, cfg.Disputer, logger, client, contract, account, aggregator)
+	return cli.List(ctx, cfg.Disputer, logger, client, contract, account, aggregator)
 }
 
 type dataserverCmd struct {

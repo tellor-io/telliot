@@ -10,12 +10,12 @@ import (
 	"github.com/phayes/freeport"
 )
 
-func OpenTestConfig(nestedLevel string) (*Config, error) {
+func OpenTestConfig(dir string) (*Config, error) {
 	projectPath, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
-	rootDir := filepath.Join(projectPath, nestedLevel)
+	rootDir := filepath.Join(projectPath, dir)
 	cfg := defaultConfig
 	port, err := freeport.GetFreePort()
 	if err != nil {

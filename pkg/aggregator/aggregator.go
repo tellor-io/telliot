@@ -409,12 +409,7 @@ func (self *Aggregator) VolumWeightedAvg(
 		return 0, 0, errors.New("no result for values")
 	}
 
-	// Confidence level for prices and volumes.
-	// an example for 1h period.
-	// confidence = actualDataPointCountFor1h/maxDataPointCountFor1h
-	// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
-
-	// For prices.
+	// Confidence level for prices.
 	q, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
@@ -434,7 +429,7 @@ func (self *Aggregator) VolumWeightedAvg(
 		return 0, 0, errors.Wrapf(confidenceP.Err, "error evaluating query:%v", q)
 	}
 
-	// For volumes.
+	// Confidence level for volumes.
 	q, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
@@ -494,6 +489,7 @@ func (self *Aggregator) median(values []float64) float64 {
 // 100% confidence is when all apis have returned a value within the last 10 minutes.
 // For every missing value the calculation subtracts some confidence level.
 // Confidence is calculated actualDataPointCount/maxDataPointCount.
+// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
 func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]float64, float64, error) {
 	var prices []float64
 	pricesVector, err := self.valuesAt(symbol, at)
@@ -507,9 +503,6 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 	}
 
 	// Confidence level.
-	// an example for 1h period.
-	// confidence = actualDataPointCountFor1h/maxDataPointCountFor1h
-	// avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval))
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
