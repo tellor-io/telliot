@@ -14,7 +14,7 @@ The CLI support only linux and is provided as a pre-built binary with every rele
 
 ## Config files.
  - `.env` - keeps private information(private keys, api keys etc.). Most commands require some secrets and these are kept in this file as a precaution against accidental exposure. For a working setup it is required to at least add one private key in your `"ETH_PRIVATE_KEYS"` environment variable. Multiple private keys are supported separated by `,`.
- - `api.json` - all api endpoint for data providers. The cli uses these provider endpoints to gather data which is then used to submit to the onchain oracle.
+ - `index.json` - all api endpoint for data providers. The cli uses these provider endpoints to gather data which is then used to submit to the onchain oracle.
  - `manualdata.json` - for providing data manually. There is currently one data point which must be manually created. The rolling 3 month average of the US PCE . It is updated monthly. _Make sure to keep this file up to date._
  For testing purposes, or if you want to hardcode in a specific value, you can use the file to add manual data for a given requestID. Add the request ID, a given value \(with granularity\), and a date on which the manual data expires.
 The following example shows request ID 4, inputting a value of 9000 with a 1,000,000 granularity. Note the date is a unix timestamp.
@@ -34,7 +34,7 @@ The following example shows request ID 4, inputting a value of 9000 with a 1,000
 ```
 mkdir ./configs
 cd ./configs
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/api.json
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/index.json
 wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manualData.json
 wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/env.example
 mv env.example .env
@@ -134,14 +134,14 @@ cp configs/.env.example $CFG_FOLDER/$INSTANCE_NAME/.env # Edit the file after th
 cp configs/config.json $CFG_FOLDER/$INSTANCE_NAME/config.json # Optionaly edit the file after the copy if you want to change any of the defaults.
 
 # Copy the index, manual. In most cases these are used as is without editing.
-cp configs/api.json $CFG_FOLDER/$INSTANCE_NAME/api.json
+cp configs/index.json $CFG_FOLDER/$INSTANCE_NAME/index.json
 cp configs/manualData.json $CFG_FOLDER/$INSTANCE_NAME/manualData.json
 
 # Apply the configs.
 kubectl create secret generic $DEPL_NAME-$INSTANCE_NAME --from-env-file=$CFG_FOLDER/$INSTANCE_NAME/.env
 kubectl create configmap $DEPL_NAME-$INSTANCE_NAME \
   --from-file=$CFG_FOLDER/$INSTANCE_NAME/config.json \
-  --from-file=$CFG_FOLDER/$INSTANCE_NAME/api.json \
+  --from-file=$CFG_FOLDER/$INSTANCE_NAME/index.json \
   --from-file=$CFG_FOLDER/$INSTANCE_NAME/manualData.json \
   -o yaml --dry-run=client | kubectl apply -f -
 
