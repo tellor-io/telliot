@@ -91,7 +91,7 @@ var defaultConfig = Config{
 		LogLevel:     "info",
 		Interval:     util.Duration{Duration: 30 * time.Second},
 		FetchTimeout: util.Duration{Duration: 30 * time.Second},
-		ApiFile:      "configs/api.json",
+		ApiFile:      "configs/index.json",
 	},
 	EnvFile: ".local/.env",
 }
