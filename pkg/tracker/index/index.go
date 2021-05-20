@@ -40,10 +40,9 @@ const (
 )
 
 type Config struct {
-	LogLevel     string
-	Interval     format.Duration
-	FetchTimeout format.Duration
-	ApiFile      string
+	LogLevel string
+	Interval format.Duration
+	ApiFile  string
 }
 
 type IndexTracker struct {
@@ -140,7 +139,7 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 			switch api.Type {
 			case httpSource:
 				{
-					source = NewJSONapi(logger, api.Interval.Duration, cfg.FetchTimeout.Duration, api.URL, NewParser(api))
+					source = NewJSONapi(logger, api.Interval.Duration, api.URL, NewParser(api))
 				}
 			case ethereumSource:
 				{
@@ -374,26 +373,24 @@ type Api struct {
 	Interval format.Duration `json:"interval"`
 }
 
-func NewJSONapi(logger log.Logger, interval time.Duration, retryDelay time.Duration, url string, parser Parser) *JSONapi {
+func NewJSONapi(logger log.Logger, interval time.Duration, url string, parser Parser) *JSONapi {
 	return &JSONapi{
-		logger:     logger,
-		url:        url,
-		retryDelay: retryDelay,
-		interval:   interval,
-		Parser:     parser,
+		logger:   logger,
+		url:      url,
+		interval: interval,
+		Parser:   parser,
 	}
 }
 
 type JSONapi struct {
-	url        string
-	logger     log.Logger
-	retryDelay time.Duration
-	interval   time.Duration
+	url      string
+	logger   log.Logger
+	interval time.Duration
 	Parser
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, time.Time, error) {
-	vals, err := web.Fetch(ctx, self.logger, self.url, self.retryDelay)
+	vals, err := web.Fetch(ctx, self.logger, self.url)
 	if err != nil {
 		return 0, time.Time{}, errors.Wrap(err, "fetching data from API")
 	}
