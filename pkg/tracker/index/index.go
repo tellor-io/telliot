@@ -216,6 +216,24 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			}
 		}
 
+		if value == 0 {
+			level.Error(logger).Log("msg", "data source returned zero value")
+			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
+		}
+
+		// This means that it is the first run and
+		// to avoid adding the same timestamp twice need use the current time.
+		if lastTS.IsZero() {
+			ts = time.Now()
+		}
+
 		if lastTS.Equal(ts) { // Skip data that has already been added.
 			select {
 			case <-self.ctx.Done():
