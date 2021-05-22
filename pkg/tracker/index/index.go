@@ -275,10 +275,10 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 
 			if _, err := appender.Append(ref,
 				labels,
-				timestamp.FromTime(ts),
+				timestamp.FromTime(time.Now()),
 				float64(interval),
 			); err != nil {
-				level.Error(logger).Log("msg", "append values to the DB", "err", err, "ts", ts)
+				level.Error(logger).Log("msg", "append values to the DB", "err", err)
 				select {
 				case <-self.ctx.Done():
 					level.Debug(self.logger).Log("msg", "values record loop exited")
@@ -303,7 +303,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 		// Record the actual value.
 		{
 			appender := self.tsDB.Appender(self.ctx)
-			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value, "ts", ts.Unix())
+			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value)
 
 			labels := labels.Labels{
 				labels.Label{Name: "__name__", Value: ValueMetricName},
@@ -317,7 +317,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			}
 			if _, err := appender.Append(ref,
 				labels,
-				timestamp.FromTime(ts),
+				timestamp.FromTime(time.Now()),
 				value,
 			); err != nil {
 				level.Error(logger).Log("msg", "append values to the DB", "err", err)
