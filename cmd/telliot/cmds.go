@@ -12,10 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	promConfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
@@ -28,14 +29,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/mining"
-	"github.com/tellor-io/telliot/pkg/reward"
-	"github.com/tellor-io/telliot/pkg/submitter"
-	"github.com/tellor-io/telliot/pkg/tasker"
-	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
-	"github.com/tellor-io/telliot/pkg/tracker/profit"
-	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/web"
 )
 
@@ -569,7 +563,7 @@ func (self mineCmd) Run() error {
 	// Defining a global context for starting and stopping of components.
 	ctx := context.Background()
 
-	client, contract, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, _, _, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
 		return errors.Wrapf(err, "creating tellor variables")
 	}
@@ -589,9 +583,6 @@ func (self mineCmd) Run() error {
 				return errors.Wrapf(err, "opening remote tsdb DB")
 			}
 		} else {
-			if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
-				return errors.Wrapf(err, "creating tsdb DB folder")
-			}
 			tsDBRead, err = tsdb.OpenDBReadOnly(cfg.Db.Path, nil)
 			if err != nil {
 				return errors.Wrapf(err, "opening tsdb DB")
@@ -611,12 +602,6 @@ func (self mineCmd) Run() error {
 			}, func(error) {
 				srv.Stop()
 			})
-		}
-
-		// Aggregator.
-		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
-		if err != nil {
-			return errors.Wrapf(err, "creating aggregator")
 		}
 
 		// Index tracker.
@@ -651,89 +636,56 @@ func (self mineCmd) Run() error {
 			})
 		}
 
-		// Profit tracker.
-		var accountAddrs []common.Address
-		for _, acc := range accounts {
-			accountAddrs = append(accountAddrs, acc.Address)
-		}
-		profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contract, accountAddrs)
+		// Aggregator.
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
 		if err != nil {
-			return errors.Wrapf(err, "creating profit tracker")
+			return errors.Wrapf(err, "creating aggregator")
 		}
+
+		value := promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: "aggregator",
+			Name:      "value",
+			Help:      "The aggregated value",
+		},
+			[]string{"id"},
+		)
+
+		ctx, cncl := context.WithCancel(ctx)
+
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
 		g.Add(func() error {
-			err := profitTracker.Start()
-			level.Info(logger).Log("msg", "profit shutdown complete")
-			return err
+			for {
+				for i := int64(1); i <= 58; i++ {
+					select {
+					case <-ctx.Done():
+						return nil
+					default:
+					}
+					val, err := aggregator.GetValueForID(i, time.Now())
+					if err != nil {
+						level.Error(logger).Log("msg", "get value", "ID", i, "err", err)
+						continue
+					}
+					value.With(
+						prometheus.Labels{
+							"id": strconv.Itoa(int(i)),
+						},
+					).(prometheus.Gauge).Set(val)
+
+					level.Info(logger).Log("msg", "got value", "ID", i, "VAL", val)
+				}
+				select {
+				case <-ctx.Done():
+					return nil
+				case <-ticker.C:
+				}
+			}
 		}, func(error) {
-			profitTracker.Stop()
+			cncl()
 		})
-
-		// Event tasker.
-		tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
-		if err != nil {
-			return errors.Wrapf(err, "creating tasker")
-		}
-		g.Add(func() error {
-			err := tasker.Start()
-			level.Info(logger).Log("msg", "tasker shutdown complete")
-			return err
-		}, func(error) {
-			tasker.Stop()
-		})
-
-		// Create a submitter for each account.
-		gasPriceTracker := gasPrice.New(logger, client)
-		for _, account := range accounts {
-			transactor, err := transactor.NewTransactor(logger, cfg.Transactor, gasPriceTracker, client, account, contract)
-			if err != nil {
-				return errors.Wrapf(err, "creating transactor")
-			}
-
-			reward := reward.NewReward(logger, aggregator, contract)
-			// Get a channel on which it listens for new data to submit.
-			submitter, submitterCh, err := submitter.NewSubmitter(
-				ctx,
-				logger,
-				cfg.Submitter,
-				client,
-				contract,
-				account,
-				reward,
-				transactor,
-				gasPriceTracker,
-				aggregator,
-			)
-			if err != nil {
-				return errors.Wrapf(err, "creating submitter")
-			}
-			g.Add(func() error {
-				err := submitter.Start()
-				level.Info(logger).Log("msg", "submitter shutdown complete",
-					"addr", account.Address.String(),
-				)
-				return err
-			}, func(error) {
-				submitter.Stop()
-			})
-
-			// Will be used to cancel pending submissions.
-			tasker.AddSubmitCanceler(submitter)
-
-			// The Miner component.
-			miner, err := mining.NewMiningManager(logger, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
-			if err != nil {
-				return errors.Wrapf(err, "creating miner")
-			}
-			g.Add(func() error {
-				err := miner.Start()
-				level.Info(logger).Log("msg", "miner shutdown complete",
-					"addr", account.Address.String(),
-				)
-				return err
-			}, func(error) {
-				miner.Stop()
-			})
-		}
 	}
 
 	if err := g.Run(); err != nil {
