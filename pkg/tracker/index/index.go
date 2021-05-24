@@ -295,6 +295,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 		// Record the actual value.
 		{
 			appender := self.tsDB.Appender(self.ctx)
+			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value)
 
 			lbls := labels.Labels{
 				labels.Label{Name: "__name__", Value: ValueMetricName},
@@ -312,7 +313,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			if ref != 0 {
 				lbls = copiedLabels
 			}
-			level.Debug(self.logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "ref", ref, "value", value)
+			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "ref", ref, "value", value)
 			if _, err := appender.Append(ref,
 				lbls,
 				timestamp.FromTime(time.Now()),
@@ -324,7 +325,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				}
 				select {
 				case <-self.ctx.Done():
-					level.Debug(self.logger).Log("msg", "values record loop exited")
+					level.Debug(logger).Log("msg", "values record loop exited")
 					return
 				case <-ticker.C:
 					continue
@@ -335,7 +336,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				level.Error(logger).Log("msg", "adding values to the DB", "err", err)
 				select {
 				case <-self.ctx.Done():
-					level.Debug(self.logger).Log("msg", "values record loop exited")
+					level.Debug(logger).Log("msg", "values record loop exited")
 					return
 				case <-ticker.C:
 					continue
@@ -354,7 +355,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 
 		select {
 		case <-self.ctx.Done():
-			level.Debug(self.logger).Log("msg", "values record loop exited")
+			level.Debug(logger).Log("msg", "values record loop exited")
 			return
 		case <-ticker.C:
 			continue
