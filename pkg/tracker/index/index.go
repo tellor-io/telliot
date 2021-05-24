@@ -216,24 +216,6 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			}
 		}
 
-		if value == 0 {
-			level.Error(logger).Log("msg", "data source returned zero value")
-			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-
-		// This means that it is the first run and
-		// to avoid adding the same timestamp twice need use the current time.
-		if lastTS.IsZero() {
-			ts = time.Now()
-		}
-
 		if lastTS.Equal(ts) { // Skip data that has already been added.
 			select {
 			case <-self.ctx.Done():
@@ -262,19 +244,25 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 		{
 			appender := self.tsDB.Appender(self.ctx)
 
-			labels := labels.Labels{
+			lbls := labels.Labels{
 				labels.Label{Name: "__name__", Value: IntervalMetricName},
 				labels.Label{Name: "source", Value: dataSource.Source()},
 				labels.Label{Name: "domain", Value: source.Host},
 				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
-			ref := uint64(0)
+			var (
+				ref          uint64
+				copiedLabels labels.Labels
+			)
 			if g, ok := appender.(storage.GetRef); ok {
-				ref, _ = g.GetRef(labels)
+				ref, copiedLabels = g.GetRef(lbls)
+			}
+			if ref != 0 {
+				lbls = copiedLabels
 			}
 
 			if _, err := appender.Append(ref,
-				labels,
+				lbls,
 				timestamp.FromTime(time.Now()),
 				float64(interval),
 			); err != nil {
@@ -290,6 +278,10 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 
 			if err := appender.Commit(); err != nil {
 				level.Error(logger).Log("msg", "adding values to the DB", "err", err)
+				if err := appender.Rollback(); err != nil {
+					level.Error(logger).Log("msg", "rollback DB append", "err", err)
+				}
+
 				select {
 				case <-self.ctx.Done():
 					level.Debug(self.logger).Log("msg", "values record loop exited")
@@ -303,24 +295,33 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 		// Record the actual value.
 		{
 			appender := self.tsDB.Appender(self.ctx)
-			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value)
 
-			labels := labels.Labels{
+			lbls := labels.Labels{
 				labels.Label{Name: "__name__", Value: ValueMetricName},
 				labels.Label{Name: "source", Value: dataSource.Source()},
 				labels.Label{Name: "domain", Value: source.Host},
 				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
-			ref := uint64(0)
+			var (
+				ref          uint64
+				copiedLabels labels.Labels
+			)
 			if g, ok := appender.(storage.GetRef); ok {
-				ref, _ = g.GetRef(labels)
+				ref, copiedLabels = g.GetRef(lbls)
 			}
+			if ref != 0 {
+				lbls = copiedLabels
+			}
+			level.Debug(self.logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "ref", ref, "value", value)
 			if _, err := appender.Append(ref,
-				labels,
+				lbls,
 				timestamp.FromTime(time.Now()),
 				value,
 			); err != nil {
 				level.Error(logger).Log("msg", "append values to the DB", "err", err)
+				if err := appender.Rollback(); err != nil {
+					level.Error(logger).Log("msg", "rollback DB append", "err", err)
+				}
 				select {
 				case <-self.ctx.Done():
 					level.Debug(self.logger).Log("msg", "values record loop exited")
