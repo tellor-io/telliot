@@ -146,11 +146,11 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 			reqVals,
 		)
 		if err != nil {
-			if strings.Contains(err.Error(), "nonce too low") { // Can't use error type matching because of the way the eth client is implemented.
+			if strings.Contains(strings.ToLower(err.Error()), "nonce too low") { // Can't use error type matching because of the way the eth client is implemented.
 				IntNonce = IntNonce + 1
 				level.Warn(self.logger).Log("msg", "last transaction has been confirmed so will increase the nonce and resend the transaction.")
 
-			} else if strings.Contains(err.Error(), "replacement transaction underpriced") { // Can't use error type matching because of the way the eth client is implemented.
+			} else if strings.Contains(strings.ToLower(err.Error()), "replacement transaction underpriced") { // Can't use error type matching because of the way the eth client is implemented.
 				level.Warn(self.logger).Log("msg", "last transaction is stuck so will increase the gas price and try to resend")
 				finalError = err
 			} else {

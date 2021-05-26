@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -21,7 +22,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/timestamp"
-	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
@@ -201,6 +201,13 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
 
+	h := fnv.New32a()
+	h.Write([]byte(symbol + "interval"))
+	refInterval := uint64(h.Sum32())
+
+	h.Write([]byte(symbol + "value"))
+	refVal := uint64(h.Sum32())
+
 	var lastTS time.Time
 	for {
 		value, ts, err := dataSource.Get(self.ctx)
@@ -250,18 +257,8 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				labels.Label{Name: "domain", Value: source.Host},
 				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
-			var (
-				ref          uint64
-				copiedLabels labels.Labels
-			)
-			if g, ok := appender.(storage.GetRef); ok {
-				ref, copiedLabels = g.GetRef(lbls)
-			}
-			if ref != 0 {
-				lbls = copiedLabels
-			}
 
-			if _, err := appender.Append(ref,
+			if _, err := appender.Append(refInterval,
 				lbls,
 				timestamp.FromTime(time.Now()),
 				float64(interval),
@@ -295,26 +292,15 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 		// Record the actual value.
 		{
 			appender := self.tsDB.Appender(self.ctx)
-			level.Debug(logger).Log("msg", "adding value", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value)
-
 			lbls := labels.Labels{
 				labels.Label{Name: "__name__", Value: ValueMetricName},
 				labels.Label{Name: "source", Value: dataSource.Source()},
 				labels.Label{Name: "domain", Value: source.Host},
 				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
-			var (
-				ref          uint64
-				copiedLabels labels.Labels
-			)
-			if g, ok := appender.(storage.GetRef); ok {
-				ref, copiedLabels = g.GetRef(lbls)
-			}
-			if ref != 0 {
-				lbls = copiedLabels
-			}
-			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "ref", ref, "value", value)
-			if _, err := appender.Append(ref,
+
+			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "refVal", refVal, "refInterval", refInterval, "value", value, "interval", interval)
+			if _, err := appender.Append(refVal,
 				lbls,
 				timestamp.FromTime(time.Now()),
 				value,

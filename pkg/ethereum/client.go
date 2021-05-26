@@ -72,10 +72,10 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if err == nil {
 			return nil
 		}
-		if strings.Contains(err.Error(), "nonce too low") {
+		if strings.Contains(strings.ToLower(err.Error()), "nonce too low") {
 			return err
 		}
-		if strings.Contains(err.Error(), "replacement transaction underpriced") {
+		if strings.Contains(strings.ToLower(err.Error()), "replacement transaction underpriced") {
 			return err
 		}
 		level.Debug(c.logger).Log("msg", "calling eth client", "err", err)
