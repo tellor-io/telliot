@@ -431,9 +431,9 @@ func (s showCmd) Run() error {
 	}
 
 	// Open the TSDB database.
-	var tsDBRead storage.SampleAndChunkQueryable
+	var querable storage.SampleAndChunkQueryable
 	if cfg.Db.RemoteHost != "" {
-		tsDBRead, err = remoteDB(cfg.Db)
+		querable, err = remoteDB(cfg.Db)
 		if err != nil {
 			return errors.Wrapf(err, "opening remote tsdb DB")
 		}
@@ -441,13 +441,15 @@ func (s showCmd) Run() error {
 		if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
 			return errors.Wrapf(err, "creating tsdb DB folder")
 		}
-		tsDBRead, err = tsdb.OpenDBReadOnly(cfg.Db.Path, nil)
+		tsdbOptions := tsdb.DefaultOptions()
+		tsdbOptions.NoLockfile = true
+		querable, err = tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 		if err != nil {
 			return errors.Wrapf(err, "opening tsdb DB")
 		}
 	}
 
-	aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
+	aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, querable, client)
 	if err != nil {
 		return errors.Wrapf(err, "creating aggregator")
 	}
@@ -479,8 +481,8 @@ func (self dataserverCmd) Run() error {
 
 		// Open the TSDB database.
 		tsdbOptions := tsdb.DefaultOptions()
-		// 2 days are enough as the aggregator needs data only 24 hours in the past.
-		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
+		// 48h are enough as the aggregator needs data only 24 hours in the past.
+		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour / time.Millisecond)
 		if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
 			return errors.Wrapf(err, "creating tsdb DB folder")
 		}
@@ -517,15 +519,9 @@ func (self dataserverCmd) Run() error {
 			index.Stop()
 		})
 
-		// Open a read only instance of TSDB database.
-		tsDBRead, err := tsdb.OpenDBReadOnly(cfg.Db.Path, nil)
-		if err != nil {
-			return errors.Wrapf(err, "opening tsdb DB")
-		}
-
 		// Web/Api server.
 		{
-			srv, err := web.New(logger, ctx, tsDBRead, cfg.Web)
+			srv, err := web.New(logger, ctx, tsDB, cfg.Web)
 			if err != nil {
 				return errors.Wrap(err, "create web server")
 			}
@@ -575,23 +571,33 @@ func (self mineCmd) Run() error {
 		// Handle interupts.
 		g.Add(run.SignalHandler(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM))
 
-		// Open a read only instance of TSDB database.
-		var tsDBRead storage.SampleAndChunkQueryable
+		// Open a local or remote instance of the TSDB database.
+		var tsDB storage.SampleAndChunkQueryable
 		if cfg.Db.RemoteHost != "" {
-			tsDBRead, err = remoteDB(cfg.Db)
+			tsDB, err = remoteDB(cfg.Db)
 			if err != nil {
 				return errors.Wrapf(err, "opening remote tsdb DB")
 			}
 		} else {
-			tsDBRead, err = tsdb.OpenDBReadOnly(cfg.Db.Path, nil)
+			// Open the TSDB database.
+			tsdbOptions := tsdb.DefaultOptions()
+			// 2 days are enough as the aggregator needs data only 24 hours in the past.
+			tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
+			_tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 			if err != nil {
-				return errors.Wrapf(err, "opening tsdb DB")
+				return errors.Wrapf(err, "opening local tsdb DB")
 			}
+			defer func() {
+				if err := _tsDB.Close(); err != nil {
+					level.Error(logger).Log("msg", "closing the tsdb", "err", err)
+				}
+			}()
+			tsDB = _tsDB
 		}
 
 		// Web/Api server.
 		{
-			srv, err := web.New(logger, ctx, tsDBRead, cfg.Web)
+			srv, err := web.New(logger, ctx, tsDB, cfg.Web)
 			if err != nil {
 				return errors.Wrap(err, "create web server")
 			}
@@ -607,22 +613,11 @@ func (self mineCmd) Run() error {
 		// Index tracker.
 		// Run only when not using remote DB.
 		if cfg.Db.RemoteHost == "" {
-			// Open the TSDB database.
-			tsdbOptions := tsdb.DefaultOptions()
-			// 2 days are enough as the aggregator needs data only 24 hours in the past.
-			tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
-			tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
-			if err != nil {
-				return errors.Wrapf(err, "creating tsdb DB")
+			_tsDB, ok := tsDB.(*tsdb.DB)
+			if !ok {
+				return errors.Wrapf(err, "tsdb is not a writable DB instance")
 			}
-
-			defer func() {
-				if err := tsDB.Close(); err != nil {
-					level.Error(logger).Log("msg", "closing the tsdb", "err", err)
-				}
-			}()
-
-			index, err := index.New(logger, ctx, cfg.IndexTracker, tsDB, client)
+			index, err := index.New(logger, ctx, cfg.IndexTracker, _tsDB, client)
 			if err != nil {
 				return errors.Wrapf(err, "creating index tracker")
 			}
@@ -637,7 +632,7 @@ func (self mineCmd) Run() error {
 		}
 
 		// Aggregator.
-		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDBRead, client)
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB, client)
 		if err != nil {
 			return errors.Wrapf(err, "creating aggregator")
 		}
