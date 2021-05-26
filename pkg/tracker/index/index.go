@@ -202,10 +202,10 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	logger := log.With(self.logger, "source", dataSource.Source())
 
 	h := fnv.New32a()
-	h.Write([]byte(symbol + "interval"))
+	h.Write([]byte(dataSource.Source() + symbol + "interval"))
 	refInterval := uint64(h.Sum32())
 
-	h.Write([]byte(symbol + "value"))
+	h.Write([]byte(dataSource.Source() + symbol + "value"))
 	refVal := uint64(h.Sum32())
 
 	var lastTS time.Time
