@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/pprof"
+	"strings"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -44,6 +46,10 @@ func New(logger log.Logger, ctx context.Context, tsDB storage.SampleAndChunkQuer
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 	router := route.New()
+
+	router.Get("/debug/*subpath", serveDebug)
+	router.Post("/debug/*subpath", serveDebug)
+
 	router.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	opts := promql.EngineOpts{
@@ -92,5 +98,35 @@ func (self *Web) Stop() {
 	self.stop()
 	if err := self.srv.Close(); err != nil {
 		level.Error(self.logger).Log("msg", "closing srv", "err", err)
+	}
+}
+
+func serveDebug(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	subpath := route.Param(ctx, "subpath")
+
+	if subpath == "/pprof" {
+		http.Redirect(w, req, req.URL.Path+"/", http.StatusMovedPermanently)
+		return
+	}
+
+	if !strings.HasPrefix(subpath, "/pprof/") {
+		http.NotFound(w, req)
+		return
+	}
+	subpath = strings.TrimPrefix(subpath, "/pprof/")
+
+	switch subpath {
+	case "cmdline":
+		pprof.Cmdline(w, req)
+	case "profile":
+		pprof.Profile(w, req)
+	case "symbol":
+		pprof.Symbol(w, req)
+	case "trace":
+		pprof.Trace(w, req)
+	default:
+		req.URL.Path = "/debug/pprof/" + subpath
+		pprof.Index(w, req)
 	}
 }
