@@ -24,9 +24,9 @@ Telliot commands and config file options are as the following:
 {{end}}
 
 #### Config file options:
-{{range .CfgDocs}}
-* `{{ .Name }}` - {{if .Required }}\(required\){{end}} {{if .Default }}\(default: {{.Default}}\) - {{end}}{{ .Help }}
-{{end}}
+```json
+{{.CfgDocs}}
+```
 ### LogConfig file options
 
 The logging.config file consists of two fields: \* component \* level

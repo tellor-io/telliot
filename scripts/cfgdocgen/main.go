@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,7 +18,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/cmd/telliot/cli"
+	"github.com/tellor-io/telliot/pkg/cli"
 	"github.com/tellor-io/telliot/pkg/config"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -39,6 +40,10 @@ type cfgDoc struct {
 	Help     string
 	Default  interface{}
 	Required bool
+}
+
+func (c *cfgDoc) String() string {
+	return fmt.Sprintf("(Required: %v) %s - Default: %v", c.Required, c.Help, c.Default)
 }
 
 type envDoc struct {
@@ -86,21 +91,19 @@ func main() {
 	}
 
 	// Generating config docs from the default config object.
-	cfgDocsMap := make(map[string]cfgDoc)
+	cfgDocsMap := make(map[string]interface{})
 	cfg := config.DefaultConfig()
-	if err := genCfgDocs("", reflect.ValueOf(cfg), cfgDocsMap); err != nil {
+	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocsMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli", "err", err)
 		os.Exit(1)
 	}
-	cfgDocs := make([]cfgDoc, 0)
-	keys = []string{}
-	for k := range cfgDocsMap {
-		keys = append(keys, k)
+	// Converto to json
+	cfgDocs, err := json.MarshalIndent(cfgDocsMap, "", "\t")
+	if err != nil {
+		level.Error(logger).Log("msg", "marshaling config docs to json", "err", err)
+		os.Exit(1)
 	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		cfgDocs = append(cfgDocs, cfgDocsMap[k])
-	}
+
 	tmpl := template.Must(template.ParseFiles("scripts/cfgdocgen/configuration.md"))
 	outf, err := os.Create(*outputFile)
 	if err != nil {
@@ -111,11 +114,11 @@ func main() {
 		struct {
 			CliDocs []cliDoc
 			EnvDocs []envDoc
-			CfgDocs []cfgDoc
+			CfgDocs string
 		}{
 			CliDocs: cliDocs,
 			EnvDocs: envDocs,
-			CfgDocs: cfgDocs,
+			CfgDocs: string(cfgDocs),
 		})
 	if err != nil {
 		level.Error(logger).Log("msg", "failed to execute template", "err", err)
@@ -228,24 +231,19 @@ func (self *cliDocsGenerator) getArguments(cmd reflect.Value) []argument {
 	return out
 }
 
-func genCfgDocs(parent string, cfg reflect.Value, cfgDocs map[string]cfgDoc) error {
+func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}) error {
 	for i := 0; i < cfg.NumField(); i++ {
 		v := cfg.Field(i)
 		t := cfg.Type().Field(i)
 		switch v.Kind() {
 		case reflect.Struct:
-			parentName := t.Name
-			if len(parent) > 0 {
-				parentName = fmt.Sprintf("%s.%s", parent, parentName)
-			}
-			if err := genCfgDocs(parentName, v, cfgDocs); err != nil {
+			cfgDocs[t.Name] = make(map[string]interface{})
+			childDoc := (cfgDocs[t.Name]).(map[string]interface{})
+			if err := genCfgDocs(v, childDoc); err != nil {
 				return err
 			}
 		default:
 			name := t.Name
-			if len(parent) > 0 {
-				name = fmt.Sprintf("%s.%s", parent, name)
-			}
 			doc := cfgDoc{
 				Name:    name,
 				Default: v.Interface(),
@@ -257,7 +255,7 @@ func genCfgDocs(parent string, cfg reflect.Value, cfgDocs map[string]cfgDoc) err
 					doc.Help = help.Value()
 				}
 			}
-			cfgDocs[name] = doc
+			cfgDocs[name] = doc.String()
 		}
 	}
 	return nil
