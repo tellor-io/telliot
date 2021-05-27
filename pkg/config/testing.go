@@ -23,7 +23,7 @@ func OpenTestConfig(dir string) (*Config, error) {
 	}
 	cfg.Web.ListenPort = uint(port)
 
-	cfg.IndexTracker.ApiFile = filepath.Join(rootDir, cfg.IndexTracker.ApiFile)
+	cfg.IndexTracker.IndexFile = filepath.Join(rootDir, cfg.IndexTracker.IndexFile)
 	cfg.EnvFile = filepath.Join(rootDir, cfg.EnvFile+".example")
 	cfg.Aggregator.ManualDataFile = filepath.Join(rootDir, cfg.Aggregator.ManualDataFile)
 

@@ -90,9 +90,9 @@ var defaultConfig = Config{
 	},
 
 	IndexTracker: index.Config{
-		LogLevel: "info",
-		Interval: format.Duration{Duration: 30 * time.Second},
-		ApiFile:  "configs/index.json",
+		LogLevel:  "info",
+		Interval:  format.Duration{Duration: 30 * time.Second},
+		IndexFile: "configs/index.json",
 	},
 	EnvFile: "configs/.env",
 }

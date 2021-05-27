@@ -40,9 +40,9 @@ const (
 )
 
 type Config struct {
-	LogLevel string
-	Interval format.Duration
-	ApiFile  string
+	LogLevel  string
+	Interval  format.Duration
+	IndexFile string
 }
 
 type IndexTracker struct {
@@ -101,12 +101,12 @@ func New(
 
 func createDataSources(logger log.Logger, ctx context.Context, cfg Config, client contracts.ETHClient) (map[string][]DataSource, error) {
 	// Load index file.
-	byteValue, err := ioutil.ReadFile(cfg.ApiFile)
+	byteValue, err := ioutil.ReadFile(cfg.IndexFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "read index file path:%s", cfg.ApiFile)
+		return nil, errors.Wrapf(err, "read index file path:%s", cfg.IndexFile)
 	}
 	// Parse to json.
-	indexes := make(map[string][]Api)
+	indexes := make(map[string]Apis)
 	err = json.Unmarshal(byteValue, &indexes)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse index file")
@@ -115,7 +115,7 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 	dataSources := make(map[string][]DataSource)
 
 	for symbol, apis := range indexes {
-		for _, api := range apis {
+		for _, api := range apis.Endpoints {
 			api.URL = os.Expand(api.URL, func(key string) string {
 				return os.Getenv(key)
 			})
@@ -127,11 +127,6 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 				api.Type = httpSource
 			}
 
-			// Use the default itnerval when the api doesn't have custom interval.
-			if int64(api.Interval.Duration) == 0 {
-				api.Interval = cfg.Interval
-			}
-
 			// Default value for the parser.
 			if api.Parser == "" {
 				api.Parser = jsonPathParser
@@ -139,7 +134,7 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 			switch api.Type {
 			case httpSource:
 				{
-					source = NewJSONapi(logger, api.Interval.Duration, api.URL, NewParser(api))
+					source = NewJSONapi(logger, apis.Interval.Duration, api.URL, NewParser(api))
 				}
 			case ethereumSource:
 				{
@@ -154,10 +149,10 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 						return nil, errors.Wrap(err, "getting address for network id")
 					}
 					if api.Parser == uniswapParser {
-						source = NewUniswap(symbol, address, api.Interval.Duration, client)
+						source = NewUniswap(symbol, address, apis.Interval.Duration, client)
 
 					} else if api.Parser == balancerParser {
-						source = NewBalancer(symbol, address, api.Interval.Duration, client)
+						source = NewBalancer(symbol, address, apis.Interval.Duration, client)
 					} else {
 						return nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
 					}
@@ -370,13 +365,20 @@ const (
 	balancerParser ParserType = "Balancer"
 )
 
-// Api will be used in parsing index file.
-type Api struct {
-	URL      string          `json:"URL"`
-	Type     IndexType       `json:"type"`
-	Parser   ParserType      `json:"parser"`
-	Param    string          `json:"param"`
-	Interval format.Duration `json:"interval"`
+type Endpoint struct {
+	URL    string
+	Type   IndexType
+	Parser ParserType
+	Param  string
+}
+
+// Apis will be used in parsing index file.
+type Apis struct {
+	// The recommended interval for calling the Get method.
+	// Some APIs will return an error if called more often
+	// Due to API rate limiting of the provider.
+	Interval  format.Duration
+	Endpoints []Endpoint
 }
 
 func NewJSONapi(logger log.Logger, interval time.Duration, url string, parser Parser) *JSONapi {
@@ -486,7 +488,7 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 	return value, timestamp, nil
 }
 
-func NewParser(t Api) Parser {
+func NewParser(t Endpoint) Parser {
 	switch t.Parser {
 	case jsonPathParser:
 		return &JsonPathParser{
