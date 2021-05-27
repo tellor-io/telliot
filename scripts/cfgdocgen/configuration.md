@@ -14,8 +14,10 @@ Telliot commands and config file options are as the following:
 
 #### Telliot Commands
 {{range .CliDocs}}
-
-* `{{ .Name }}` {{/*Ranging over the current cli arguments and writing name, optional tag and help for each argument if any, we also will write the cli help after this loop*/}}{{range .Arguments }}\({{.Name}}{{if .Optional}}\(optional\){{end}}{{if .Help}}: {{ .Help }}{{end}}\){{end}}  \({{ .Help }}\)
+* `{{ .Name }}`
+```go
+{{ .CmdOutput }}
+```
 {{end}}
 #### .env file options:
 

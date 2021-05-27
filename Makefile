@@ -95,16 +95,14 @@ generate-config-docs: ## a help text if there is a `help` annotation for that fi
 generate-config-docs: ## 
 generate-config-docs: ## GENERATING CLI DOCS
 generate-config-docs: ## Similar to config struct docs, this will use field annotations from the cli struct and will result in docs entries
-generate-config-docs: ## per cli command consist of a command name (separated by spaces if it's a subcommand), a list of arguments and
-generate-config-docs: ## and an help text from the cli struct `help` annotation.
-generate-config-docs: ## For generating a list of arguments we take a look at the cli struct and find out the fields that contain
-generate-config-docs: ## an arg annotation. we also consider other argument annotations like `optional` and `required` if any. 
-generate-config-docs:	
-	@go run ./scripts/cfgdocgen --output docs/configuration.md
+generate-config-docs: ## per cli command consist of a command name and a command output.
+generate-config-docs:	build
+	@go run ./scripts/cfgdocgen --output docs/configuration.md --cli-bin ./telliot
 
 .PHONY: check-config-docs
 check-config-docs: ## Check that generated config docs are up to date. Mainly used in the CI.
-	@go run ./scripts/cfgdocgen --output docs/configuration.md
+check-config-docs: build
+	@go run ./scripts/cfgdocgen --output docs/configuration.md  --cli-bin ./telliot
 	SED_BIN="$(SED)" scripts/cleanup-white-noise.sh docs/configuration.md
 	$(call require_clean_work_tree,'outdated docs/configuration.md, run make generate-config-docs')
 

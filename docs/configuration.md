@@ -14,56 +14,363 @@ Telliot commands and config file options are as the following:
 
 #### Telliot Commands
 
+* `accounts`
+```go
 
-* `accounts`   \(Show accounts\)
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot accounts
 
+Show accounts
 
-* `approve` \(Address\)\(Amount\)\(Account\(optional\)\)  \(Approve tokens\)
+Flags:
+  -h, --help                  Show context-sensitive help.
 
+      --config=CONFIG-PATH    path to config file
 
-* `balance` \(Address\(optional\)\)  \(Check the balance of an address\)
+```
 
+* `approve`
+```go
 
-* `dataserver`   \(launch only a dataserver instance\)
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot approve <address> <amount> [<account>]
 
+Approve tokens
 
-* `dispute`   \(Perform commands related to disputes\)
+Arguments:
+  <address>
+  <amount>
+  [<account>]
 
+Flags:
+  -h, --help                  Show context-sensitive help.
 
-* `dispute new` \(requestId: the request id to dispute it\)\(timestamp: the submitted timestamp to dispute\)\(minerIndex: the miner index to dispute\)\(Account\(optional\)\)  \(start a new dispute\)
+      --config=CONFIG-PATH    path to config file
 
+```
 
-* `dispute show` \(Account\(optional\)\)  \(show open disputes\)
+* `balance`
+```go
 
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot balance [<address>]
 
-* `dispute vote` \(disputeId: the dispute id\)\(support: true or false\)\(Account\(optional\)\)  \(vote on a open dispute\)
+Check the balance of an address
 
+Arguments:
+  [<address>]
 
-* `migrate`   \(Migrate funds from the old oracle contract\)
+Flags:
+  -h, --help                  Show context-sensitive help.
 
+      --config=CONFIG-PATH    path to config file
 
-* `mine`   \(mine TRB and submit values\)
+```
 
+* `dataserver`
+```go
 
-* `stake`   \(Perform one of the stake operations\)
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot dataserver
 
+launch only a dataserver instance
 
-* `stake deposit` \(Account\(optional\)\)  \(deposit a stake\)
+Flags:
+  -h, --help                  Show context-sensitive help.
 
+      --config=CONFIG-PATH    path to config file
 
-* `stake request` \(Account\(optional\)\)  \(request to withdraw stake\)
+```
 
+* `dispute`
+```go
 
-* `stake status` \(Account\(optional\)\)  \(show stake status\)
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot dispute <command>
 
+Perform commands related to disputes
 
-* `stake withdraw` \(Address\)\(Account\(optional\)\)  \(withdraw stake\)
+Flags:
+  -h, --help    Show context-sensitive help.
 
+Commands:
+  dispute new [<account>]
+    start a new dispute
 
-* `transfer` \(Address\)\(Amount\)\(Account\(optional\)\)  \(Transfer tokens\)
+  dispute vote [<account>]
+    vote on a open dispute
 
+  dispute show [<account>]
+    show open disputes
 
-* `version`   \(Show the CLI version information\)
+```
+
+* `dispute new`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot dispute new [<account>]
+
+start a new dispute
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `dispute show`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot dispute show [<account>]
+
+show open disputes
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `dispute vote`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot dispute vote [<account>]
+
+vote on a open dispute
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `migrate`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot migrate
+
+Migrate funds from the old oracle contract
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `mine`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot mine
+
+mine TRB and submit values
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `stake`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot stake <command>
+
+Perform one of the stake operations
+
+Flags:
+  -h, --help    Show context-sensitive help.
+
+Commands:
+  stake deposit [<account>]
+    deposit a stake
+
+  stake request [<account>]
+    request to withdraw stake
+
+  stake withdraw <address> [<account>]
+    withdraw stake
+
+  stake status [<account>]
+    show stake status
+
+```
+
+* `stake deposit`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot stake deposit [<account>]
+
+deposit a stake
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `stake request`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot stake request [<account>]
+
+request to withdraw stake
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `stake status`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot stake status [<account>]
+
+show stake status
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `stake withdraw`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot stake withdraw <address> [<account>]
+
+withdraw stake
+
+Arguments:
+  <address>
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `transfer`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot transfer <address> <amount> [<account>]
+
+Transfer tokens
+
+Arguments:
+  <address>
+  <amount>
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `version`
+```go
+
+    The official Tellor cli tool  ()
+    -----------------------------------------
+	Website: https://tellor.io
+	Github:  https://github.com/tellor-io/telliot
+Usage: Telliot version
+
+Show the CLI version information
+
+Flags:
+  -h, --help    Show context-sensitive help.
+
+```
 
 #### .env file options:
 
@@ -74,59 +381,54 @@ Telliot commands and config file options are as the following:
 
 
 #### Config file options:
-
-* `ApiFile` -  \(default: configs/api.json\) -
-
-* `DBFile` -  \(default: db\) -
-
-* `DataServer.ListenHost` -  \(default: localhost\) -
-
-* `DataServer.ListenPort` -  \(default: 5000\) -
-
-* `EnvFile` -  \(default: configs/.env\) -
-
-* `EthClientTimeout` -  \(default: 3000\) -
-
-* `GasMax` -  \(default: 10\) -
-
-* `GasMultiplier` -  \(default: 1\) -
-
-* `HistoryFile` -  \(default: configs/saved.json\) -
-
-* `Logger` -  \(default: map[apiOracle:info dataServer:info db:info ops:info pow::info rest:info rpc:info tracker:info]\) -
-
-* `ManualDataFile` -  \(default: configs/manualData.json\) -
-
-* `Mine.Heartbeat.Duration` -  \(default: 15s\) -
-
-* `Mine.ListenHost` -  \(default: localhost\) -
-
-* `Mine.ListenPort` -  \(default: 9090\) -
-
-* `Mine.MinSubmitPeriod.Duration` -  \(default: 15m1s\) -
-
-* `Mine.MiningInterruptCheckInterval.Duration` -  \(default: 15s\) -
-
-* `Mine.ProfitThreshold` -
-
-* `Mine.RemoteDBHost` -
-
-* `Mine.RemoteDBPort` -
-
-* `ServerWhitelist` -
-
-* `Trackers.DisputeThreshold` -  \(default: 0.01\) -
-
-* `Trackers.DisputeTimeDelta.Duration` -  \(default: 5m0s\) -
-
-* `Trackers.FetchTimeout.Duration` -  \(default: 30s\) -
-
-* `Trackers.MinConfidence` -  \(default: 0.2\) -
-
-* `Trackers.Names` -  \(default: map[disputeChecker:false gas:true indexers:true]\) -
-
-* `Trackers.SleepCycle.Duration` -  \(default: 30s\) -
-
+```json
+{
+	"ApiFile": "(Required: false)  - Default: configs/api.json",
+	"DBFile": "(Required: false)  - Default: db",
+	"DataServer": {
+		"ListenHost": "(Required: false)  - Default: localhost",
+		"ListenPort": "(Required: false)  - Default: 5000"
+	},
+	"EnvFile": "(Required: false)  - Default: configs/.env",
+	"EthClientTimeout": "(Required: false)  - Default: 3000",
+	"GasMax": "(Required: false)  - Default: 10",
+	"GasMultiplier": "(Required: false)  - Default: 1",
+	"HistoryFile": "(Required: false)  - Default: configs/saved.json",
+	"Logger": "(Required: false)  - Default: map[apiOracle:info dataServer:info db:info ops:info pow::info rest:info rpc:info tracker:info]",
+	"ManualDataFile": "(Required: false)  - Default: configs/manualData.json",
+	"Mine": {
+		"Heartbeat": {
+			"Duration": "(Required: false)  - Default: 15s"
+		},
+		"ListenHost": "(Required: false)  - Default: localhost",
+		"ListenPort": "(Required: false)  - Default: 9090",
+		"MinSubmitPeriod": {
+			"Duration": "(Required: false)  - Default: 15m1s"
+		},
+		"MiningInterruptCheckInterval": {
+			"Duration": "(Required: false)  - Default: 15s"
+		},
+		"ProfitThreshold": "(Required: false)  - Default: 0",
+		"RemoteDBHost": "(Required: false)  - Default: ",
+		"RemoteDBPort": "(Required: false)  - Default: 0"
+	},
+	"ServerWhitelist": "(Required: false)  - Default: []",
+	"Trackers": {
+		"DisputeThreshold": "(Required: false)  - Default: 0.01",
+		"DisputeTimeDelta": {
+			"Duration": "(Required: false)  - Default: 5m0s"
+		},
+		"FetchTimeout": {
+			"Duration": "(Required: false)  - Default: 30s"
+		},
+		"MinConfidence": "(Required: false)  - Default: 0.2",
+		"Names": "(Required: false)  - Default: map[disputeChecker:false gas:true indexers:true]",
+		"SleepCycle": {
+			"Duration": "(Required: false)  - Default: 30s"
+		}
+	}
+}
+```
 ### LogConfig file options
 
 The logging.config file consists of two fields: \* component \* level

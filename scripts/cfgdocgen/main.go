@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -23,16 +24,9 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-type argument struct {
-	Name     string
-	Help     string
-	Optional bool
-}
-
-type cliDoc struct {
+type cliOutput struct {
 	Name      string
-	Help      string
-	Arguments []argument
+	CmdOutput string
 }
 
 type cfgDoc struct {
@@ -56,34 +50,37 @@ func main() {
 	app := kingpin.New(filepath.Base(os.Args[0]), "Telliot config docs generator.")
 	app.HelpFlag.Short('h')
 	outputFile := app.Flag("output", "Output file for the generated doc.").String()
+	cliBin := app.Flag("cli-bin", "Cli binary for generating command outputs.").Required().String()
 
+	var err error
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	if _, err := app.Parse(os.Args[1:]); err != nil {
+	if _, err = app.Parse(os.Args[1:]); err != nil {
 		level.Error(logger).Log("err", err)
 		os.Exit(1)
 	}
 
 	// Generating cli docs from the cli struct.
-	cliDocsMap := make(map[string]cliDoc)
+	cliDocsMap := make(map[string]string)
 	cli := cli.Cli()
-	if err := NewCliDocsGenerator(logger).genCliDocs("", reflect.ValueOf(cli).Elem(), cliDocsMap); err != nil {
+	if err = NewCliDocsGenerator(logger, *cliBin).genCliDocs("", reflect.ValueOf(cli).Elem(), cliDocsMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli docs", "err", err)
 		os.Exit(1)
 	}
-	cliDocs := make([]cliDoc, 0)
+	cliDocs := make([]cliOutput, 0)
 	keys := []string{}
 	for k := range cliDocsMap {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		cliDocs = append(cliDocs, cliDocsMap[k])
+		cliDocs = append(cliDocs, cliOutput{
+			Name:      k,
+			CmdOutput: cliDocsMap[k],
+		})
 	}
-
 	// Generating env docs from the .env.example file.
 	var (
 		envDocs []envDoc
-		err     error
 	)
 	if envDocs, err = genEnvDocs(); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "env docs", "err", err)
@@ -112,7 +109,7 @@ func main() {
 	}
 	err = tmpl.Execute(outf,
 		struct {
-			CliDocs []cliDoc
+			CliDocs []cliOutput
 			EnvDocs []envDoc
 			CfgDocs string
 		}{
@@ -127,15 +124,29 @@ func main() {
 	logger.Log("msg", "success")
 }
 
-func NewCliDocsGenerator(logger log.Logger) *cliDocsGenerator {
-	return &cliDocsGenerator{logger}
+func NewCliDocsGenerator(logger log.Logger, cliBin string) *cliDocsGenerator {
+	return &cliDocsGenerator{logger, cliBin}
 }
 
 type cliDocsGenerator struct {
 	logger log.Logger
+	cliBin string
 }
 
-func (self *cliDocsGenerator) genCliDocs(parent string, cli reflect.Value, docs map[string]cliDoc) error {
+func (self *cliDocsGenerator) cmdOutput(args string) string {
+	_args := strings.Split(args, " ")
+	_args = append(_args, "--help")
+	cmd := exec.Command(self.cliBin, _args...)
+	stdout, err := cmd.Output()
+	if err != nil {
+		level.Error(self.logger).Log("msg", "failed to execute telliot command", "err", err, "args", args, "cli", self.cliBin)
+		os.Exit(1)
+	}
+	return string(stdout)
+
+}
+
+func (self *cliDocsGenerator) genCliDocs(parent string, cli reflect.Value, docs map[string]string) error {
 	for i := 0; i < cli.NumField(); i++ {
 		v := cli.Field(i)
 		t := cli.Type().Field(i)
@@ -155,37 +166,21 @@ func (self *cliDocsGenerator) genCliDocs(parent string, cli reflect.Value, docs 
 				_, err = tags.Get("cmd")
 				leafFound = err != nil
 			}
-			tags, err := structtag.Parse(string(t.Tag))
-			if err != nil {
-				return errors.Wrapf(err, "%s: failed to parse tag %q", v.Type().Field(i).Name, v.Type().Field(i).Tag)
-			}
-			tag, err := tags.Get("help")
-			if err != nil {
-				return errors.Wrapf(err, "help tag missing: %s", t.Name)
-			}
+
 			if leafFound {
 				// v is a leaf in the cmd tree.
 				cmdName := strings.ToLower(t.Name)
 				if len(parent) > 0 {
 					cmdName = fmt.Sprintf("%s %s", parent, cmdName)
 				}
-				docs[cmdName] = cliDoc{
-					Name:      cmdName,
-					Arguments: self.getArguments(v),
-					Help:      tag.Value(),
-				}
-
+				docs[cmdName] = self.cmdOutput(cmdName)
 			} else {
 				parentName := strings.ToLower(t.Name)
 				if len(parent) > 0 {
 					parentName = fmt.Sprintf("%s %s", parent, parentName)
 				}
 				// Add top level command too.
-				docs[parentName] = cliDoc{
-					Name:      parentName,
-					Arguments: []argument{},
-					Help:      tag.Value(),
-				}
+				docs[parentName] = self.cmdOutput(parentName)
 				if err := self.genCliDocs(parentName, v, docs); err != nil {
 					return errors.Wrapf(err, "%s", t.Name)
 				}
@@ -198,37 +193,6 @@ func (self *cliDocsGenerator) genCliDocs(parent string, cli reflect.Value, docs 
 		}
 	}
 	return nil
-}
-
-func (self *cliDocsGenerator) getArguments(cmd reflect.Value) []argument {
-	out := make([]argument, 0)
-	for i := 0; i < cmd.NumField(); i++ {
-		// v := cmd.Field(i)
-		t := cmd.Type().Field(i)
-		tags, err := structtag.Parse(string(t.Tag))
-		if err != nil {
-			level.Debug(self.logger).Log("msg", "failed to parse tag", "field", t.Name, "tag", t.Tag, "err", err)
-			continue
-		}
-		_, err = tags.Get("arg")
-		if err != nil {
-			level.Debug(self.logger).Log("msg", "help tag missing", "field", t.Name, "err", err)
-			continue
-		}
-		_, optionalErr := tags.Get("optional")
-		helpText := ""
-		help, _ := tags.Get("help")
-		if help != nil {
-			helpText = help.Value()
-		}
-		out = append(out, argument{
-			Name:     t.Name,
-			Optional: optionalErr == nil,
-			Help:     helpText,
-		})
-
-	}
-	return out
 }
 
 func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}) error {
