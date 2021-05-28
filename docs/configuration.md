@@ -16,11 +16,6 @@ Telliot commands and config file options are as the following:
 
 * `accounts`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot accounts
 
 Show accounts
@@ -34,11 +29,6 @@ Flags:
 
 * `approve`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot approve <address> <amount> [<account>]
 
 Approve tokens
@@ -57,11 +47,6 @@ Flags:
 
 * `balance`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot balance [<address>]
 
 Check the balance of an address
@@ -78,11 +63,6 @@ Flags:
 
 * `dataserver`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot dataserver
 
 launch only a dataserver instance
@@ -96,11 +76,6 @@ Flags:
 
 * `dispute`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot dispute <command>
 
 Perform commands related to disputes
@@ -122,11 +97,6 @@ Commands:
 
 * `dispute new`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot dispute new [<account>]
 
 start a new dispute
@@ -143,11 +113,6 @@ Flags:
 
 * `dispute show`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot dispute show [<account>]
 
 show open disputes
@@ -164,11 +129,6 @@ Flags:
 
 * `dispute vote`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot dispute vote [<account>]
 
 vote on a open dispute
@@ -185,11 +145,6 @@ Flags:
 
 * `migrate`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot migrate
 
 Migrate funds from the old oracle contract
@@ -203,11 +158,6 @@ Flags:
 
 * `mine`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot mine
 
 mine TRB and submit values
@@ -221,11 +171,6 @@ Flags:
 
 * `stake`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot stake <command>
 
 Perform one of the stake operations
@@ -250,11 +195,6 @@ Commands:
 
 * `stake deposit`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot stake deposit [<account>]
 
 deposit a stake
@@ -271,11 +211,6 @@ Flags:
 
 * `stake request`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot stake request [<account>]
 
 request to withdraw stake
@@ -292,11 +227,6 @@ Flags:
 
 * `stake status`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot stake status [<account>]
 
 show stake status
@@ -313,11 +243,6 @@ Flags:
 
 * `stake withdraw`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot stake withdraw <address> [<account>]
 
 withdraw stake
@@ -335,11 +260,6 @@ Flags:
 
 * `transfer`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot transfer <address> <amount> [<account>]
 
 Transfer tokens
@@ -358,11 +278,6 @@ Flags:
 
 * `version`
 ```go
-
-    The official Tellor cli tool  ()
-    -----------------------------------------
-	Website: https://tellor.io
-	Github:  https://github.com/tellor-io/telliot
 Usage: Telliot version
 
 Show the CLI version information
