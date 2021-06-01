@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package submitter
+package tellor
 
 import (
 	"context"
@@ -28,9 +28,10 @@ import (
 	"github.com/tellor-io/telliot/pkg/transactor"
 )
 
-const ComponentName = "submitter"
+const ComponentName = "submitterTellor"
 
 type Config struct {
+	Enabled  bool
 	LogLevel string
 	// Minimum percent of profit when submitting a solution.
 	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
@@ -65,7 +66,7 @@ type Submitter struct {
 	aggregator       *aggregator.Aggregator
 }
 
-func NewSubmitter(
+func New(
 	ctx context.Context,
 	logger log.Logger,
 	cfg Config,
@@ -122,7 +123,6 @@ func (self *Submitter) Start() error {
 			if self.lastSubmitCncl != nil {
 				self.lastSubmitCncl()
 			}
-			level.Info(self.logger).Log("msg", "submitter shutdown complete")
 			return self.ctx.Err()
 		case result := <-self.resultCh:
 			if self.lastSubmitCncl != nil {

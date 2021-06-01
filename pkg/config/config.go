@@ -19,7 +19,8 @@ import (
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/mining"
-	"github.com/tellor-io/telliot/pkg/submitter"
+	"github.com/tellor-io/telliot/pkg/submitter/tellor"
+	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/tasker"
 	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
@@ -32,17 +33,18 @@ const NodeURLEnvName = "NODE_WEBSOCKET_URL"
 
 // Config is the top-level configuration that holds configs for all components.
 type Config struct {
-	Web           web.Config
-	Mining        mining.Config
-	Submitter     submitter.Config
-	ProfitTracker profit.Config
-	Tasker        tasker.Config
-	Transactor    transactor.Config
-	IndexTracker  index.Config
-	Disputer      dispute.Config
-	Ethereum      ethereum.Config
-	Aggregator    aggregator.Config
-	Db            db.Config
+	Web                   web.Config
+	Mining                mining.Config
+	SubmitterTellor       tellor.Config
+	SubmitterTellorAccess tellorAccess.Config
+	ProfitTracker         profit.Config
+	Tasker                tasker.Config
+	Transactor            transactor.Config
+	IndexTracker          index.Config
+	Disputer              dispute.Config
+	Ethereum              ethereum.Config
+	Aggregator            aggregator.Config
+	Db                    db.Config
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
 }
@@ -77,11 +79,15 @@ var defaultConfig = Config{
 		GasMax:        10,
 		GasMultiplier: 1,
 	},
-	Submitter: submitter.Config{
+	SubmitterTellor: tellor.Config{
+		Enabled:  true,
 		LogLevel: "info",
 		// MinSubmitPeriod is the time limit between each submit for a staked miner.
 		// With a 1 second delay here as a workaround to prevent a race condition in the oracle contract check.
 		MinSubmitPeriod: format.Duration{Duration: 15*time.Minute + 1*time.Second},
+	},
+	SubmitterTellorAccess: tellorAccess.Config{
+		LogLevel: "info",
 	},
 	Aggregator: aggregator.Config{
 		LogLevel:       "info",

@@ -30,7 +30,8 @@ import (
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	"github.com/tellor-io/telliot/pkg/reward"
-	"github.com/tellor-io/telliot/pkg/submitter"
+	"github.com/tellor-io/telliot/pkg/submitter/tellor"
+	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/tasker"
 	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
@@ -660,72 +661,103 @@ func (self mineCmd) Run() error {
 			profitTracker.Stop()
 		})
 
-		// Event tasker.
-		tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
-		if err != nil {
-			return errors.Wrapf(err, "creating tasker")
-		}
-		g.Add(func() error {
-			err := tasker.Start()
-			level.Info(logger).Log("msg", "tasker shutdown complete")
-			return err
-		}, func(error) {
-			tasker.Stop()
-		})
-
-		// Create a submitter for each account.
-		gasPriceTracker := gasPrice.New(logger, client)
-		for _, account := range accounts {
-			transactor, err := transactor.NewTransactor(logger, cfg.Transactor, gasPriceTracker, client, account, contract)
+		if cfg.SubmitterTellor.Enabled {
+			// Event tasker.
+			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
 			if err != nil {
-				return errors.Wrapf(err, "creating transactor")
-			}
-
-			reward := reward.NewReward(logger, aggregator, contract)
-			// Get a channel on which it listens for new data to submit.
-			submitter, submitterCh, err := submitter.NewSubmitter(
-				ctx,
-				logger,
-				cfg.Submitter,
-				client,
-				contract,
-				account,
-				reward,
-				transactor,
-				gasPriceTracker,
-				aggregator,
-			)
-			if err != nil {
-				return errors.Wrapf(err, "creating submitter")
+				return errors.Wrapf(err, "creating tasker")
 			}
 			g.Add(func() error {
-				err := submitter.Start()
-				level.Info(logger).Log("msg", "submitter shutdown complete",
-					"addr", account.Address.String(),
-				)
+				err := tasker.Start()
+				level.Info(logger).Log("msg", "tasker shutdown complete")
 				return err
 			}, func(error) {
-				submitter.Stop()
+				tasker.Stop()
 			})
 
-			// Will be used to cancel pending submissions.
-			tasker.AddSubmitCanceler(submitter)
+			// Create a submitter for each account.
+			gasPriceTracker := gasPrice.New(logger, client)
+			for _, account := range accounts {
+				transactor, err := transactor.NewTransactor(logger, cfg.Transactor, gasPriceTracker, client, account, contract)
+				if err != nil {
+					return errors.Wrapf(err, "creating transactor")
+				}
 
-			// The Miner component.
-			miner, err := mining.NewMiningManager(logger, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
-			if err != nil {
-				return errors.Wrapf(err, "creating miner")
+				reward := reward.NewReward(logger, aggregator, contract)
+				// Get a channel on which it listens for new data to submit.
+				submitter, submitterCh, err := tellor.New(
+					ctx,
+					logger,
+					cfg.SubmitterTellor,
+					client,
+					contract,
+					account,
+					reward,
+					transactor,
+					gasPriceTracker,
+					aggregator,
+				)
+				if err != nil {
+					return errors.Wrapf(err, "creating tellor submitter")
+				}
+				g.Add(func() error {
+					err := submitter.Start()
+					level.Info(logger).Log("msg", "tellor submitter shutdown complete",
+						"addr", account.Address.String(),
+					)
+					return err
+				}, func(error) {
+					submitter.Stop()
+				})
+
+				// Will be used to cancel pending submissions.
+				tasker.AddSubmitCanceler(submitter)
+
+				// The Miner component.
+				miner, err := mining.NewMiningManager(logger, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
+				if err != nil {
+					return errors.Wrapf(err, "creating miner")
+				}
+				g.Add(func() error {
+					err := miner.Start()
+					level.Info(logger).Log("msg", "miner shutdown complete",
+						"addr", account.Address.String(),
+					)
+					return err
+				}, func(error) {
+					miner.Stop()
+				})
 			}
-			g.Add(func() error {
-				err := miner.Start()
-				level.Info(logger).Log("msg", "miner shutdown complete",
-					"addr", account.Address.String(),
-				)
-				return err
-			}, func(error) {
-				miner.Stop()
-			})
 		}
+
+		if cfg.SubmitterTellorAccess.Enabled {
+			// Create a submitter for each account.
+			for _, account := range accounts {
+				submitter, err := tellorAccess.New(
+					ctx,
+					logger,
+					cfg.SubmitterTellorAccess,
+					client,
+					contract,
+					account,
+					aggregator,
+				)
+				if err != nil {
+					return errors.Wrapf(err, "creating tellor access submitter")
+				}
+				g.Add(func() error {
+					err := submitter.Start()
+					level.Info(logger).Log("msg", "tellor access submitter shutdown complete",
+						"addr", account.Address.String(),
+					)
+					return err
+				}, func(error) {
+					submitter.Stop()
+				})
+			}
+
+		}
+
 	}
 
 	if err := g.Run(); err != nil {
