@@ -141,7 +141,7 @@ func (self *Aggregator) GetValueForID(reqID int64, ts time.Time) (float64, error
 	case 23:
 		val, conf, err = self.MedianAt("ETH/PAX", ts)
 	case 24:
-		val, conf, err = self.TimeWeightedAvg("ETH/BTC", ts, 1*time.Hour)
+		val, conf, err = self.TimeWeightedAvg("ETH/BTC", ts, time.Hour)
 	case 25:
 		val, conf, err = self.MedianAt("USDC/USDT", ts)
 	case 26:
@@ -183,11 +183,11 @@ func (self *Aggregator) GetValueForID(reqID int64, ts time.Time) (float64, error
 	case 43:
 		val, conf, err = self.MedianAt("TRB/ETH", ts)
 	case 44:
-		val, conf, err = self.TimeWeightedAvg("BTC/USD", ts, 1*time.Hour)
+		val, conf, err = self.TimeWeightedAvg("BTC/USD", ts, time.Hour)
 	case 45:
 		val, conf, err = self.MedianAtEOD("TRB/USD", ts)
 	case 46:
-		val, conf, err = self.TimeWeightedAvg("ETH/USD", ts, 1*time.Hour)
+		val, conf, err = self.TimeWeightedAvg("ETH/USD", ts, time.Hour)
 	case 47:
 		val, conf, err = self.MedianAt("BSV/USD", ts)
 	case 48:
@@ -466,10 +466,11 @@ func (self *Aggregator) median(values []float64) float64 {
 // Example for 1h.
 // avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/indexTracker_interval)).
 func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]float64, float64, error) {
-	// Get the tracker interval for each endpoint.
+	// Get the tracker interval.
+	// It is the same for all endpoints of a given symbol.
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`last_over_time(indexTracker_interval{symbol="`+format.SanitizeMetricName(symbol)+`"}[12h])`,
+		`max_over_time(indexTracker_interval{symbol="`+format.SanitizeMetricName(symbol)+`"}[3h])`, // No tracker should query slower then this.
 		at,
 	)
 	if err != nil {
@@ -484,31 +485,22 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		return nil, 0, errors.New("no values for tracker interval")
 	}
 
-	var _maxLookBack float64
-	for _, interval := range trackerInterval.Value.(promql.Vector) {
-		if interval.V > _maxLookBack {
-			_maxLookBack = interval.V
-		}
-	}
-
-	maxLookBack := time.Duration(2 * _maxLookBack) // Just to be safe set the look back 2 times the tracker interval.
-
+	lookBack := time.Duration(trackerInterval.Value.(promql.Vector)[0].V + 1e+9) // Pull interval + 1 sec to avoid races.
 	var prices []float64
-	pricesVector, err := self.valuesAt(symbol, at, maxLookBack)
+	pricesVector, err := self.valuesAt(symbol, at, lookBack)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	for _, price := range pricesVector {
 		prices = append(prices, price.V)
-
 	}
 
 	fmt.Println(`avg(
 		count_over_time(` + index.ValueMetricName + `{
 			symbol="` + format.SanitizeMetricName(symbol) + `"
-		}[` + maxLookBack.String() + `]) /
-		(` + strconv.Itoa(int(maxLookBack.Nanoseconds())) + ` / ` + index.IntervalMetricName + `))`)
+		}[` + lookBack.String() + `]) /
+		(` + strconv.Itoa(int(lookBack.Nanoseconds())) + ` / ` + index.IntervalMetricName + `))`)
 
 	// Confidence level.
 	query, err = self.promqlEngine.NewInstantQuery(
@@ -516,8 +508,8 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		`avg(
 			count_over_time(`+index.ValueMetricName+`{
 				symbol="`+format.SanitizeMetricName(symbol)+`"
-			}[`+maxLookBack.String()+`]) /
-			(`+strconv.Itoa(int(maxLookBack.Nanoseconds()))+` / `+index.IntervalMetricName+`))`,
+			}[`+lookBack.String()+`]) /
+			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / `+index.IntervalMetricName+`))`,
 		at,
 	)
 	if err != nil {
