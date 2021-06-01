@@ -653,25 +653,31 @@ func (self mineCmd) Run() error {
 
 		g.Add(func() error {
 			for {
-				for i := int64(1); i <= 58; i++ {
+				// for i := int64(1); i <= 58; i++ {
+				i := int64(33)
+				select {
+				case <-ctx.Done():
+					return nil
+				default:
+				}
+				val, err := aggregator.GetValueForID(i, time.Now())
+				if err != nil {
+					level.Error(logger).Log("msg", "get value", "ID", i, "err", err)
 					select {
 					case <-ctx.Done():
 						return nil
-					default:
+					case <-ticker.C:
 					}
-					val, err := aggregator.GetValueForID(i, time.Now())
-					if err != nil {
-						level.Error(logger).Log("msg", "get value", "ID", i, "err", err)
-						continue
-					}
-					value.With(
-						prometheus.Labels{
-							"id": strconv.Itoa(int(i)),
-						},
-					).(prometheus.Gauge).Set(val)
-
-					level.Info(logger).Log("msg", "got value", "ID", i, "VAL", val)
+					continue
 				}
+				value.With(
+					prometheus.Labels{
+						"id": strconv.Itoa(int(i)),
+					},
+				).(prometheus.Gauge).Set(val)
+
+				level.Info(logger).Log("msg", "got value", "ID", i, "VAL", val)
+				// }
 				select {
 				case <-ctx.Done():
 					return nil
