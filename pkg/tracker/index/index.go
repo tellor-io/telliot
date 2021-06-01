@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -201,12 +200,8 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
 
-	h := fnv.New32a()
-	h.Write([]byte(symbol + "interval"))
-	refInterval := uint64(h.Sum32())
-
-	h.Write([]byte(symbol + "value"))
-	refVal := uint64(h.Sum32())
+	refInterval := uint64(0)
+	refVal := uint64(0)
 
 	var lastTS time.Time
 	for {
@@ -258,7 +253,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
 
-			if _, err := appender.Append(refInterval,
+			if refInterval, err = appender.Append(refInterval,
 				lbls,
 				timestamp.FromTime(time.Now()),
 				float64(interval),
@@ -300,7 +295,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			}
 
 			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "refVal", refVal, "refInterval", refInterval, "value", value, "interval", interval)
-			if _, err := appender.Append(refVal,
+			if refVal, err = appender.Append(refVal,
 				lbls,
 				timestamp.FromTime(time.Now()),
 				value,
