@@ -319,6 +319,10 @@ func (i *IndexTracker) Exec(ctx context.Context) error {
 		volume = vals[1]
 	}
 
+	if vals[0] == 0 {
+		return errors.New("datasource returned a 0 value")
+	}
+
 	//save the value into our local data window (set 0 volume for now)
 	apiOracle.SetRequestValue(i.Identifier, clck.Now(), apiOracle.PriceInfo{Price: vals[0], Volume: volume})
 	//update all the values that depend on these symbols
