@@ -65,6 +65,8 @@ generate-bindings: $(CONTRAGET)
 	@$(CONTRAGET) --addr=0x9C84391B443ea3a48788079a5f98e2EaD55c9309 --download-dst=tmp --pkg-dst=pkg/contracts --name=balancer
 	@sleep 6
 	@$(CONTRAGET) --addr=0x03E6c12eF405AC3F642B9184eDed8E1322de1a9e --download-dst=tmp --pkg-dst=pkg/contracts --name=uniswap
+	@sleep 6
+	@$(CONTRAGET) --addr=0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e --download-dst=tmp --pkg-dst=pkg/contracts --name=tellorAccess
 
 .PHONY: generate-testdata
 generate-testdata:

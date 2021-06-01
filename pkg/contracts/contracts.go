@@ -11,6 +11,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts/balancer"
 	"github.com/tellor-io/telliot/pkg/contracts/lens"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/contracts/uniswap"
 )
 
@@ -32,6 +33,10 @@ const (
 	IUniswapV2PairABI = uniswap.IUniswapV2PairABI
 	ITellorABI        = tellor.ITellorABI
 )
+
+type ITellorAccess struct {
+	*tellorAccess.TellorAccess
+}
 
 type ITellor struct {
 	*tellor.ITellor
