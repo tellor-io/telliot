@@ -29,6 +29,10 @@ Telliot commands and config file options are as the following:
 ```json
 {{.CfgDocs}}
 ```
+So the default config is as follows:
+```json
+{{.Cfg}}
+```
 ### LogConfig file options
 
 The logging.config file consists of two fields: \* component \* level

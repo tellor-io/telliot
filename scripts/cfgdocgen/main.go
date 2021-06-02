@@ -89,8 +89,9 @@ func main() {
 
 	// Generating config docs from the default config object.
 	cfgDocsMap := make(map[string]interface{})
+	cfgMap := make(map[string]interface{})
 	cfg := config.DefaultConfig()
-	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocsMap); err != nil {
+	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocsMap, cfgMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli", "err", err)
 		os.Exit(1)
 	}
@@ -98,6 +99,11 @@ func main() {
 	cfgDocs, err := json.MarshalIndent(cfgDocsMap, "", "\t")
 	if err != nil {
 		level.Error(logger).Log("msg", "marshaling config docs to json", "err", err)
+		os.Exit(1)
+	}
+	defCfg, err := json.MarshalIndent(cfgMap, "", "\t")
+	if err != nil {
+		level.Error(logger).Log("msg", "marshaling default config to json", "err", err)
 		os.Exit(1)
 	}
 
@@ -112,10 +118,12 @@ func main() {
 			CliDocs []cliOutput
 			EnvDocs []envDoc
 			CfgDocs string
+			Cfg     string
 		}{
 			CliDocs: cliDocs,
 			EnvDocs: envDocs,
 			CfgDocs: string(cfgDocs),
+			Cfg:     string(defCfg),
 		})
 	if err != nil {
 		level.Error(logger).Log("msg", "failed to execute template", "err", err)
@@ -195,7 +203,7 @@ func (self *cliDocsGenerator) genCliDocs(parent string, cli reflect.Value, docs 
 	return nil
 }
 
-func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}) error {
+func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}, defCfg map[string]interface{}) error {
 	for i := 0; i < cfg.NumField(); i++ {
 		v := cfg.Field(i)
 		t := cfg.Type().Field(i)
@@ -203,7 +211,8 @@ func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}) error {
 		case reflect.Struct:
 			cfgDocs[t.Name] = make(map[string]interface{})
 			childDoc := (cfgDocs[t.Name]).(map[string]interface{})
-			if err := genCfgDocs(v, childDoc); err != nil {
+			childCfg := (cfgDocs[t.Name]).(map[string]interface{})
+			if err := genCfgDocs(v, childDoc, childCfg); err != nil {
 				return err
 			}
 		default:
@@ -220,6 +229,7 @@ func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}) error {
 				}
 			}
 			cfgDocs[name] = doc.String()
+			defCfg[name] = doc.Default
 		}
 	}
 	return nil

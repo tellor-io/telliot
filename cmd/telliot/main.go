@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	//lint:ignore faillint it should print to console
 	// Don't show the version message when it's an help command.
 	shouldShowVersionMessage := true
 	for _, arg := range os.Args {
@@ -22,6 +21,7 @@ func main() {
 		}
 	}
 	if shouldShowVersionMessage {
+		//lint:ignore faillint it should print to console
 		fmt.Printf(cli.VersionMessage, cli.GitTag, cli.GitHash)
 	}
 	ctx := kong.Parse(cli.Cli(), kong.Name("telliot"),

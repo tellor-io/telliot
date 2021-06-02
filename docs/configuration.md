@@ -16,7 +16,7 @@ Telliot commands and config file options are as the following:
 
 * `accounts`
 ```go
-Usage: Telliot accounts
+Usage: telliot accounts
 
 Show accounts
 
@@ -29,7 +29,7 @@ Flags:
 
 * `approve`
 ```go
-Usage: Telliot approve <address> <amount> [<account>]
+Usage: telliot approve <address> <amount> [<account>]
 
 Approve tokens
 
@@ -47,7 +47,7 @@ Flags:
 
 * `balance`
 ```go
-Usage: Telliot balance [<address>]
+Usage: telliot balance [<address>]
 
 Check the balance of an address
 
@@ -63,7 +63,7 @@ Flags:
 
 * `dataserver`
 ```go
-Usage: Telliot dataserver
+Usage: telliot dataserver
 
 launch only a dataserver instance
 
@@ -76,7 +76,7 @@ Flags:
 
 * `dispute`
 ```go
-Usage: Telliot dispute <command>
+Usage: telliot dispute <command>
 
 Perform commands related to disputes
 
@@ -97,7 +97,7 @@ Commands:
 
 * `dispute new`
 ```go
-Usage: Telliot dispute new [<account>]
+Usage: telliot dispute new [<account>]
 
 start a new dispute
 
@@ -113,7 +113,7 @@ Flags:
 
 * `dispute show`
 ```go
-Usage: Telliot dispute show [<account>]
+Usage: telliot dispute show [<account>]
 
 show open disputes
 
@@ -129,7 +129,7 @@ Flags:
 
 * `dispute vote`
 ```go
-Usage: Telliot dispute vote [<account>]
+Usage: telliot dispute vote [<account>]
 
 vote on a open dispute
 
@@ -145,7 +145,7 @@ Flags:
 
 * `migrate`
 ```go
-Usage: Telliot migrate
+Usage: telliot migrate
 
 Migrate funds from the old oracle contract
 
@@ -158,7 +158,7 @@ Flags:
 
 * `mine`
 ```go
-Usage: Telliot mine
+Usage: telliot mine
 
 mine TRB and submit values
 
@@ -171,7 +171,7 @@ Flags:
 
 * `stake`
 ```go
-Usage: Telliot stake <command>
+Usage: telliot stake <command>
 
 Perform one of the stake operations
 
@@ -195,7 +195,7 @@ Commands:
 
 * `stake deposit`
 ```go
-Usage: Telliot stake deposit [<account>]
+Usage: telliot stake deposit [<account>]
 
 deposit a stake
 
@@ -211,7 +211,7 @@ Flags:
 
 * `stake request`
 ```go
-Usage: Telliot stake request [<account>]
+Usage: telliot stake request [<account>]
 
 request to withdraw stake
 
@@ -227,7 +227,7 @@ Flags:
 
 * `stake status`
 ```go
-Usage: Telliot stake status [<account>]
+Usage: telliot stake status [<account>]
 
 show stake status
 
@@ -243,7 +243,7 @@ Flags:
 
 * `stake withdraw`
 ```go
-Usage: Telliot stake withdraw <address> [<account>]
+Usage: telliot stake withdraw <address> [<account>]
 
 withdraw stake
 
@@ -260,7 +260,7 @@ Flags:
 
 * `transfer`
 ```go
-Usage: Telliot transfer <address> <amount> [<account>]
+Usage: telliot transfer <address> <amount> [<account>]
 
 Transfer tokens
 
@@ -278,7 +278,7 @@ Flags:
 
 * `version`
 ```go
-Usage: Telliot version
+Usage: telliot version
 
 Show the CLI version information
 
@@ -301,8 +301,8 @@ Flags:
 	"ApiFile": "(Required: false)  - Default: configs/api.json",
 	"DBFile": "(Required: false)  - Default: db",
 	"DataServer": {
-		"ListenHost": "(Required: false)  - Default: localhost",
-		"ListenPort": "(Required: false)  - Default: 5000"
+		"ListenHost": "localhost",
+		"ListenPort": 5000
 	},
 	"EnvFile": "(Required: false)  - Default: configs/.env",
 	"EthClientTimeout": "(Required: false)  - Default: 3000",
@@ -313,35 +313,63 @@ Flags:
 	"ManualDataFile": "(Required: false)  - Default: configs/manualData.json",
 	"Mine": {
 		"Heartbeat": {
-			"Duration": "(Required: false)  - Default: 15s"
+			"Duration": 15000000000
 		},
-		"ListenHost": "(Required: false)  - Default: localhost",
-		"ListenPort": "(Required: false)  - Default: 9090",
+		"ListenHost": "localhost",
+		"ListenPort": 9090,
 		"MinSubmitPeriod": {
-			"Duration": "(Required: false)  - Default: 15m1s"
+			"Duration": 901000000000
 		},
 		"MiningInterruptCheckInterval": {
-			"Duration": "(Required: false)  - Default: 15s"
+			"Duration": 15000000000
 		},
-		"ProfitThreshold": "(Required: false)  - Default: 0",
-		"RemoteDBHost": "(Required: false)  - Default: ",
-		"RemoteDBPort": "(Required: false)  - Default: 0"
+		"ProfitThreshold": 0,
+		"RemoteDBHost": "",
+		"RemoteDBPort": 0
 	},
 	"ServerWhitelist": "(Required: false)  - Default: []",
 	"Trackers": {
-		"DisputeThreshold": "(Required: false)  - Default: 0.01",
+		"DisputeThreshold": 0.01,
 		"DisputeTimeDelta": {
-			"Duration": "(Required: false)  - Default: 5m0s"
+			"Duration": 300000000000
 		},
 		"FetchTimeout": {
-			"Duration": "(Required: false)  - Default: 30s"
+			"Duration": 30000000000
 		},
-		"MinConfidence": "(Required: false)  - Default: 0.2",
-		"Names": "(Required: false)  - Default: map[disputeChecker:false gas:true indexers:true]",
+		"MinConfidence": 0.2,
+		"Names": {
+			"disputeChecker": false,
+			"gas": true,
+			"indexers": true
+		},
 		"SleepCycle": {
-			"Duration": "(Required: false)  - Default: 30s"
+			"Duration": 30000000000
 		}
 	}
+}
+```
+So the default config is as follows:
+```json
+{
+	"ApiFile": "configs/api.json",
+	"DBFile": "db",
+	"EnvFile": "configs/.env",
+	"EthClientTimeout": 3000,
+	"GasMax": 10,
+	"GasMultiplier": 1,
+	"HistoryFile": "configs/saved.json",
+	"Logger": {
+		"apiOracle": "info",
+		"dataServer": "info",
+		"db": "info",
+		"ops": "info",
+		"pow:": "info",
+		"rest": "info",
+		"rpc": "info",
+		"tracker": "info"
+	},
+	"ManualDataFile": "configs/manualData.json",
+	"ServerWhitelist": null
 }
 ```
 ### LogConfig file options
