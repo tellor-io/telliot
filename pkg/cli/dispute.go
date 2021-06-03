@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,10 +20,10 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	tEthereum "github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
+	psr "github.com/tellor-io/telliot/pkg/psr/tellor"
 	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 )
 
@@ -195,7 +196,7 @@ func List(
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
 	account *tEthereum.Account,
-	aggregator *aggregator.Aggregator,
+	psr *psr.Psr,
 ) error {
 	abi, err := abi.JSON(strings.NewReader(contracts.ITellorABI))
 	if err != nil {
@@ -310,7 +311,7 @@ func List(
 			client,
 			contract,
 			header.Number.Uint64(),
-			aggregator,
+			psr,
 		)
 
 		result, err := disputer.CheckValueAtTime(disputeI.RequestId.Int64(), uintVars[2], disputedValTime)
@@ -324,7 +325,7 @@ func List(
 			"msg", "got recommendation",
 			"vote", !result.WithinRange,
 			"subValue", uintVars[2].String(),
-			"range", fmt.Sprintf("%.0f to %0.f", result.Low, result.High),
+			"range", strconv.Itoa(int(result.Low))+"to"+strconv.Itoa(int(result.High)),
 		)
 
 		numToShow := 3

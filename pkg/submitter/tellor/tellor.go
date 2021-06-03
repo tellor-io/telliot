@@ -17,12 +17,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
+	psr "github.com/tellor-io/telliot/pkg/psr/tellor"
 	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/transactor"
@@ -63,7 +63,7 @@ type Submitter struct {
 	transactor       transactor.Transactor
 	reward           *reward.Reward
 	gasPriceTracker  *gasPrice.GasTracker
-	aggregator       *aggregator.Aggregator
+	psr              *psr.Psr
 }
 
 func New(
@@ -76,7 +76,7 @@ func New(
 	reward *reward.Reward,
 	transactor transactor.Transactor,
 	gasPriceTracker *gasPrice.GasTracker,
-	aggregator *aggregator.Aggregator,
+	psr *psr.Psr,
 ) (*Submitter, chan *mining.Result, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
@@ -96,7 +96,7 @@ func New(
 		contractInstance: contractInstance,
 		transactor:       transactor,
 		gasPriceTracker:  gasPriceTracker,
-		aggregator:       aggregator,
+		psr:              psr,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
 			Subsystem:   ComponentName,
@@ -120,14 +120,10 @@ func (self *Submitter) Start() error {
 	for {
 		select {
 		case <-self.ctx.Done():
-			if self.lastSubmitCncl != nil {
-				self.lastSubmitCncl()
-			}
+			self.CancelPendingSubmit()
 			return self.ctx.Err()
 		case result := <-self.resultCh:
-			if self.lastSubmitCncl != nil {
-				self.lastSubmitCncl()
-			}
+			self.CancelPendingSubmit()
 			var ctx context.Context
 			ctx, self.lastSubmitCncl = context.WithCancel(self.ctx)
 
@@ -272,7 +268,10 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 					"IDs", fmt.Sprintf("%+v", result.Work.Challenge.RequestIDs),
 					"vals", fmt.Sprintf("%+v", reqVals),
 				)
-				tx, recieipt, err := self.transactor.Transact(newChallengeReplace, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
+				f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
+					return self.contractInstance.SubmitMiningSolution(auth, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
+				}
+				tx, recieipt, err := self.transactor.Transact(self.ctx, f)
 				if err != nil {
 					self.submitFailCount.Inc()
 					level.Error(self.logger).Log("msg", "submiting a solution", "err", err)
@@ -297,7 +296,7 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 				if err != nil {
 					level.Error(self.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
 				} else {
-					self.reward.SaveGasUsed(recieipt.GasUsed, slot)
+					self.reward.SaveGasUsed(slot, recieipt.GasUsed)
 				}
 
 				return
@@ -309,7 +308,7 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 func (self *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) {
 	var currentValues [5]*big.Int
 	for i, reqID := range requestIDs {
-		val, err := self.aggregator.GetValueForIDWithDefaultGranularity(reqID.Int64(), time.Now())
+		val, err := self.psr.GetValueForID(reqID.Int64(), time.Now())
 		if err != nil {
 			return currentValues, errors.Wrapf(err, "getting value for request ID:%v", reqID)
 		}

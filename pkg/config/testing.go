@@ -16,7 +16,7 @@ func OpenTestConfig(dir string) (*Config, error) {
 		return nil, err
 	}
 	rootDir := filepath.Join(projectPath, dir)
-	cfg := defaultConfig
+	cfg := DefaultConfig
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		return nil, err

@@ -19,6 +19,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/mining"
+	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
 	"github.com/tellor-io/telliot/pkg/submitter/tellor"
 	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/tasker"
@@ -28,8 +29,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/web"
 )
-
-const NodeURLEnvName = "NODE_WEBSOCKET_URL"
 
 // Config is the top-level configuration that holds configs for all components.
 type Config struct {
@@ -44,12 +43,13 @@ type Config struct {
 	Disputer              dispute.Config
 	Ethereum              ethereum.Config
 	Aggregator            aggregator.Config
+	PsrTellor             psrTellor.Config
 	Db                    db.Config
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
 }
 
-var defaultConfig = Config{
+var DefaultConfig = Config{
 	Mining: mining.Config{
 		LogLevel:  "info",
 		Heartbeat: time.Minute,
@@ -89,9 +89,11 @@ var defaultConfig = Config{
 	SubmitterTellorAccess: tellorAccess.Config{
 		LogLevel: "info",
 	},
+	PsrTellor: psrTellor.Config{
+		MinConfidence: 0.7,
+	},
 	Aggregator: aggregator.Config{
 		LogLevel:       "info",
-		MinConfidence:  0.2,
 		ManualDataFile: "configs/manualData.json",
 	},
 
@@ -111,7 +113,7 @@ func ParseConfig(logger log.Logger, path string) (*Config, error) {
 	cfg := &Config{}
 	// DeepCopy the default config into the final config.
 	{
-		b, err := json.Marshal(defaultConfig)
+		b, err := json.Marshal(DefaultConfig)
 		if err != nil {
 			return nil, errors.Wrap(err, "marshal default config")
 		}

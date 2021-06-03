@@ -8,61 +8,59 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/aggregator"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 )
 
-func NewReward(logger log.Logger, aggr *aggregator.Aggregator, contractInstance *contracts.ITellor) *Reward {
+type ContractCaller interface {
+	GetUintVar(opts *bind.CallOpts, _data [32]byte) (*big.Int, error)
+	CurrentReward(opts *bind.CallOpts) (*big.Int, error)
+}
+
+func New(logger log.Logger, aggr aggregator.IAggregator, contractCaller ContractCaller) *Reward {
 	return &Reward{
-		aggr:             aggr,
-		logger:           logger,
-		contractInstance: contractInstance,
-		gasUsed:          make(map[int64]*big.Int),
+		aggr:           aggr,
+		logger:         logger,
+		contractCaller: contractCaller,
+		gasUsed:        make(map[int64]*big.Int),
 	}
 }
 
 type Reward struct {
-	logger           log.Logger
-	aggr             *aggregator.Aggregator
-	contractInstance *contracts.ITellor
-	gasUsed          map[int64]*big.Int
+	logger         log.Logger
+	aggr           aggregator.IAggregator
+	contractCaller ContractCaller
+	gasUsed        map[int64]*big.Int
 }
 
 // Current returns the profit in percents based on the current TRB price.
-func (self *Reward) Current(slot *big.Int, gasPrice *big.Int) (int64, error) {
+func (self *Reward) Current(slot *big.Int, gasPriceEth1e18 *big.Int) (int64, error) {
 	gasUsed, err := self.GasUsed(slot)
 	if err != nil {
 		return 0, err
 	}
-	trbAmount, err := self.contractInstance.CurrentReward(nil)
-	if err != nil {
-		return 0, errors.New("getting currentReward from the chain")
-	}
 
-	trbPrice, err := self.trbPrice()
+	rewardEth1e18, err := self.rewardInEth1e18()
 	if err != nil {
 		return 0, errors.New("getting trb current TRB price")
 	}
 
-	rewardEth := self.convertTRBtoETH(trbAmount, trbPrice)
-
-	txCost := big.NewInt(0).Mul(gasPrice, gasUsed)
-	profit := big.NewInt(0).Sub(rewardEth, txCost)
-	profitPercentFloat := float64(profit.Int64()) / float64(txCost.Int64()) * 100
+	txCostEth1e18 := big.NewInt(0).Mul(gasPriceEth1e18, gasUsed)
+	profit := big.NewInt(0).Sub(rewardEth1e18, txCostEth1e18)
+	profitPercentFloat := float64(profit.Int64()) / float64(txCostEth1e18.Int64()) * 100
 	profitPercent := int64(profitPercentFloat)
 
 	level.Debug(self.logger).Log(
 		"msg", "profit checking",
-		"reward", fmt.Sprintf("%.2e", float64(rewardEth.Int64())),
-		"txCost", fmt.Sprintf("%.2e", float64(txCost.Int64())),
+		"reward", fmt.Sprintf("%.2e", float64(rewardEth1e18.Int64())),
+		"txCost", fmt.Sprintf("%.2e", float64(txCostEth1e18.Int64())),
 		"slot", slot,
 		"gasUsed", gasUsed,
-		"gasPrice", gasPrice,
+		"gasPrice", gasPriceEth1e18,
 		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
 		"profitMargin", profitPercent,
 	)
@@ -88,15 +86,20 @@ func (e ErrNoDataForSlot) Error() string {
 }
 
 // SaveGasUsed calculates the price for a given slot.
-func (self *Reward) SaveGasUsed(_gasUsed uint64, slot *big.Int) {
+func (self *Reward) SaveGasUsed(slot *big.Int, _gasUsed uint64) {
 	gasUsed := big.NewInt(int64(_gasUsed))
 
 	self.gasUsed[slot.Int64()] = gasUsed
 	level.Info(self.logger).Log("msg", "saved transaction gas used", "amount", gasUsed.Int64(), "slot", slot.Int64())
 }
 
-func (s *Reward) trbPrice() (*big.Int, error) {
-	trbPrice, confidence, err := s.aggr.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour)
+func (self *Reward) rewardInEth1e18() (*big.Int, error) {
+	trbAmount1e18, err := self.contractCaller.CurrentReward(nil)
+	if err != nil {
+		return nil, errors.New("getting currentReward from the chain")
+	}
+
+	trbPrice, confidence, err := self.aggr.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour)
 	if err != nil {
 		return nil, errors.New("getting the trb price from the aggregator")
 	}
@@ -106,21 +109,18 @@ func (s *Reward) trbPrice() (*big.Int, error) {
 
 	}
 
-	return big.NewInt(int64(trbPrice)), nil
-}
+	rewardEth1e18 := big.NewFloat(0).Mul(big.NewFloat(0).SetInt(trbAmount1e18), big.NewFloat(trbPrice))
 
-func (s *Reward) convertTRBtoETH(trbAmount, trbPrice *big.Int) *big.Int {
-	ether := big.NewInt(params.Ether)
-	precisionUpscale := big.NewInt(0).Div(ether, big.NewInt(int64(aggregator.DefaultGranularity)))
-	trbPrice.Mul(trbPrice, precisionUpscale)
+	rewardEth1e18Int, accuracy := rewardEth1e18.Int64()
+	if accuracy != big.Exact {
+		return nil, errors.New("conversion precision loss")
+	}
 
-	eth := big.NewInt(0).Mul(trbPrice, trbAmount)
-	eth.Div(eth, big.NewInt(1e18))
-	return eth
+	return big.NewInt(rewardEth1e18Int), nil
 }
 
 func (s *Reward) Slot() (*big.Int, error) {
-	slot, err := s.contractInstance.GetUintVar(nil, ethereum.Keccak256([]byte("_SLOT_PROGRESS")))
+	slot, err := s.contractCaller.GetUintVar(nil, ethereum.Keccak256([]byte("_SLOT_PROGRESS")))
 	if err != nil {
 		return nil, errors.Wrap(err, "getting _SLOT_PROGRESS")
 	}

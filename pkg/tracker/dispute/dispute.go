@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,9 +20,9 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/format"
+	psr "github.com/tellor-io/telliot/pkg/psr/tellor"
 )
 
 const ComponentName = "dispute"
@@ -37,7 +38,7 @@ type disputeChecker struct {
 	client           contracts.ETHClient
 	contract         *contracts.ITellor
 	lastCheckedBlock uint64
-	aggregator       *aggregator.Aggregator
+	psr              *psr.Psr
 	logger           log.Logger
 }
 
@@ -47,9 +48,9 @@ func (c *disputeChecker) String() string {
 
 // ValueCheckResult holds the details regarding the disputed value.
 type ValueCheckResult struct {
-	High, Low   float64
+	High, Low   int64
 	WithinRange bool
-	Datapoints  []float64
+	Datapoints  []int64
 	Times       []time.Time
 }
 
@@ -59,13 +60,13 @@ func NewDisputeChecker(
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
 	lastCheckedBlock uint64,
-	aggregator *aggregator.Aggregator,
+	psr *psr.Psr,
 ) *disputeChecker {
 	return &disputeChecker{
 		client:           client,
 		contract:         contract,
 		cfg:              cfg,
-		aggregator:       aggregator,
+		psr:              psr,
 		lastCheckedBlock: lastCheckedBlock,
 		logger:           log.With(logger, "component", ComponentName),
 	}
@@ -136,7 +137,7 @@ func (self *disputeChecker) Exec(ctx context.Context) error {
 			if !result.WithinRange {
 				s := fmt.Sprintf("suspected incorrect value for requestID %d at %s:\n , nearest values:\n", reqID, blockTime)
 				for i, pt := range result.Datapoints {
-					s += fmt.Sprintf("\t%.0f, ", pt)
+					s += strconv.Itoa(int(pt))
 					delta := blockTime.Sub(result.Times[i])
 					if delta > 0 {
 						s += fmt.Sprintf("%s before\n", delta.String())
@@ -164,11 +165,11 @@ func (self *disputeChecker) Exec(ctx context.Context) error {
 // CheckValueAtTime queries for the details regarding the disputed value.
 func (self *disputeChecker) CheckValueAtTime(reqID int64, val *big.Int, at time.Time) (*ValueCheckResult, error) {
 	// Check the value in 5 places, spread over cfg.DisputeTimeDelta.Duration.
-	var datapoints []float64
+	var datapoints []int64
 	var times []time.Time
 	for i := 0; i < 5; i++ {
 		t := at.Add((time.Duration(i) - 2) * self.cfg.DisputeTimeDelta.Duration / 5)
-		fval, err := self.aggregator.GetValueForIDWithDefaultGranularity(reqID, t)
+		fval, err := self.psr.GetValueForID(reqID, t)
 		if err != nil {
 			return nil, err
 		}
@@ -180,8 +181,8 @@ func (self *disputeChecker) CheckValueAtTime(reqID int64, val *big.Int, at time.
 		return nil, nil
 	}
 
-	min := math.MaxFloat64
-	max := 0.0
+	min := int64(math.MaxInt64)
+	max := int64(0)
 
 	for _, dp := range datapoints {
 		if dp > max {
@@ -191,14 +192,14 @@ func (self *disputeChecker) CheckValueAtTime(reqID int64, val *big.Int, at time.
 			min = dp
 		}
 	}
-	min *= 1 - self.cfg.DisputeTimeDelta.Duration.Seconds()
-	max *= 1 + self.cfg.DisputeTimeDelta.Duration.Seconds()
+	min *= int64(psr.DefaultGranularity * (1 - self.cfg.DisputeTimeDelta.Duration.Seconds()))
+	max *= int64(psr.DefaultGranularity * (1 + self.cfg.DisputeTimeDelta.Duration.Seconds()))
 
 	bigF := new(big.Float)
 	bigF.SetInt(val)
-	floatVal, _ := bigF.Float64()
+	intVal, _ := bigF.Int64()
 
-	withinRange := (floatVal > min) && (floatVal < max)
+	withinRange := (intVal > min) && (intVal < max)
 
 	return &ValueCheckResult{
 		Low:         min,

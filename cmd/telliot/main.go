@@ -11,35 +11,31 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 )
 
-func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, *contracts.ITellor, []*ethereum.Account, error) {
-	client, err := ethereum.NewClient(logger, cfg, os.Getenv(config.NodeURLEnvName))
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, []*ethereum.Account, error) {
+	client, err := ethereum.NewClient(logger, cfg, os.Getenv(ethereum.NodeURLEnvName))
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "create rpc client instance")
+		return nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
-	contract, err := contracts.NewITellor(client)
-	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "create tellor master instance")
-	}
+
 	accounts, err := ethereum.GetAccounts()
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "creating accounts")
+		return nil, nil, errors.Wrap(err, "creating accounts")
 	}
 
 	// Issue #55, halt if client is still syncing with Ethereum network
 	s, err := client.IsSyncing(ctx)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
+		return nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
 	}
 	if s {
-		return nil, nil, nil, errors.New("ethereum node is still syncing with the network")
+		return nil, nil, errors.New("ethereum node is still syncing with the network")
 	}
 
-	return client, contract, accounts, nil
+	return client, accounts, nil
 }
 
 var CLI struct {

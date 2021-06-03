@@ -31,26 +31,24 @@ type Config struct {
 
 // Transactor takes care of sending transactions over the blockchain network.
 type Transactor interface {
-	Transact(context.Context, string, [5]*big.Int, [5]*big.Int) (*types.Transaction, *types.Receipt, error)
+	Transact(context.Context, func(*bind.TransactOpts) (*types.Transaction, error)) (*types.Transaction, *types.Receipt, error)
 }
 
 // TransactorDefault implements the Transactor interface.
 type TransactorDefault struct {
-	cfg              Config
-	logger           log.Logger
-	gasPriceTracker  *gasPrice.GasTracker
-	client           contracts.ETHClient
-	account          *ethereum.Account
-	contractInstance *contracts.ITellor
+	cfg             Config
+	logger          log.Logger
+	gasPriceTracker *gasPrice.GasTracker
+	client          contracts.ETHClient
+	account         *ethereum.Account
 }
 
-func NewTransactor(
+func New(
 	logger log.Logger,
 	cfg Config,
 	gasPriceTracker *gasPrice.GasTracker,
 	client contracts.ETHClient,
 	account *ethereum.Account,
-	contractInstance *contracts.ITellor,
 ) (*TransactorDefault, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
@@ -58,16 +56,15 @@ func NewTransactor(
 	}
 
 	return &TransactorDefault{
-		cfg:              cfg,
-		logger:           log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6]),
-		gasPriceTracker:  gasPriceTracker,
-		client:           client,
-		account:          account,
-		contractInstance: contractInstance,
+		cfg:             cfg,
+		logger:          log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6]),
+		gasPriceTracker: gasPriceTracker,
+		client:          client,
+		account:         account,
 	}, nil
 }
 
-func (self *TransactorDefault) Transact(ctx context.Context, solution string, reqIds [5]*big.Int, reqVals [5]*big.Int) (*types.Transaction, *types.Receipt, error) {
+func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*bind.TransactOpts) (*types.Transaction, error)) (*types.Transaction, *types.Receipt, error) {
 	nonce, err := self.client.NonceAt(ctx, self.account.Address)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting nonce for miner address")
@@ -139,12 +136,7 @@ func (self *TransactorDefault) Transact(ctx context.Context, solution string, re
 			auth.GasPrice = maxGasPrice
 		}
 
-		tx, err := self.contractInstance.SubmitMiningSolution(
-			auth,
-			solution,
-			reqIds,
-			reqVals,
-		)
+		tx, err := contractCall(auth)
 		if err != nil {
 			if strings.Contains(strings.ToLower(err.Error()), "nonce too low") { // Can't use error type matching because of the way the eth client is implemented.
 				IntNonce = IntNonce + 1
