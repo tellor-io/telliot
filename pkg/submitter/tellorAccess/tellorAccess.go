@@ -27,7 +27,10 @@ import (
 	"github.com/tellor-io/telliot/pkg/transactor"
 )
 
-const ComponentName = "submitterTellorAccess"
+const (
+	ComponentName             = "submitterTellorAccess"
+	percentageChangeThreshold = 0.1 // 0.1%
+)
 
 type Config struct {
 	Enabled  bool
@@ -248,12 +251,13 @@ func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
 	if !ok {
 		level.Error(self.logger).Log("msg", "last value check - no record for last value")
 	}
-	percentageChange := math.Abs((currentValue - float64(newVal)) / currentValue)
+	percentageChange := math.Abs((currentValue-float64(newVal))/currentValue) * 100
 
-	if percentageChange > 0.05 {
+	if percentageChange > percentageChangeThreshold {
 		level.Debug(logger).Log(
-			"reason", "value change more then 5%",
+			"reason", "value change more then threshold",
 			"percentageChange", percentageChange,
+			"percentageThresohld", percentageChangeThreshold,
 			"currentValue", currentValue,
 			"newValue", newVal,
 		)
