@@ -165,7 +165,7 @@ func (self *Aggregator) TimeWeightedAvg(
 		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query)
 	}
 	if len(_result.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.New("no result for values")
+		return 0, 0, errors.Errorf("no result for values query:%v", query)
 	}
 
 	result := _result.Value.(promql.Vector)[0].V
@@ -190,7 +190,7 @@ func (self *Aggregator) TimeWeightedAvg(
 	}
 
 	if len(confidence.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.New("no values for confidence")
+		return 0, 0, errors.Errorf("no result for confidence query:%v", query)
 	}
 
 	return result, confidence.Value.(promql.Vector)[0].V, err
@@ -215,7 +215,7 @@ func (self *Aggregator) VolumWeightedAvg(
 	_timeWindow := end.Sub(start).Round(time.Minute).Seconds()
 	timeWindow := strconv.Itoa(int(_timeWindow)) + "s"
 
-	q, err := self.promqlEngine.NewInstantQuery(
+	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
 			sum_over_time(
@@ -236,19 +236,19 @@ func (self *Aggregator) VolumWeightedAvg(
 	if err != nil {
 		return 0, 0, err
 	}
-	defer q.Close()
+	defer query.Close()
 
-	_result := q.Exec(self.ctx)
+	_result := query.Exec(self.ctx)
 	if _result.Err != nil {
-		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", q)
+		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query)
 	}
 	result := _result.Value.(promql.Vector)
 	if len(result) == 0 {
-		return 0, 0, errors.New("no result for values")
+		return 0, 0, errors.Errorf("no result for values query:%v", query)
 	}
 
 	// Confidence level for prices.
-	q, err = self.promqlEngine.NewInstantQuery(
+	query, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
 			count_over_time(`+index.ValueMetricName+`{
@@ -260,15 +260,15 @@ func (self *Aggregator) VolumWeightedAvg(
 	if err != nil {
 		return 0, 0, err
 	}
-	defer q.Close()
+	defer query.Close()
 
-	confidenceP := q.Exec(self.ctx)
+	confidenceP := query.Exec(self.ctx)
 	if confidenceP.Err != nil {
-		return 0, 0, errors.Wrapf(confidenceP.Err, "error evaluating query:%v", q)
+		return 0, 0, errors.Wrapf(confidenceP.Err, "error evaluating query:%v", query)
 	}
 
 	// Confidence level for volumes.
-	q, err = self.promqlEngine.NewInstantQuery(
+	query, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
 			count_over_time(`+index.ValueMetricName+`{
@@ -280,14 +280,15 @@ func (self *Aggregator) VolumWeightedAvg(
 	if err != nil {
 		return 0, 0, err
 	}
-	defer q.Close()
-	confidenceV := q.Exec(self.ctx)
+	defer query.Close()
+	confidenceV := query.Exec(self.ctx)
 	if confidenceV.Err != nil {
-		return 0, 0, errors.Wrapf(confidenceV.Err, "error evaluating query:%v", q)
+		return 0, 0, errors.Wrapf(confidenceV.Err, "error evaluating query:%v", query)
 	}
 
 	if len(confidenceP.Value.(promql.Vector)) == 0 || len(confidenceV.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.New("no result for confidence")
+		return 0, 0, errors.Errorf("no result for confidence query:%v", query)
+
 	}
 
 	// Use the smaller confidence.
@@ -331,7 +332,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		return nil, 0, errors.Wrapf(trackerInterval.Err, "error evaluating query:%v", query)
 	}
 	if len(trackerInterval.Value.(promql.Vector)) == 0 {
-		return nil, 0, errors.New("no values for tracker interval")
+		return nil, 0, errors.Errorf("no values for tracker interval query::%v", query)
 	}
 
 	lookBack := time.Duration(trackerInterval.Value.(promql.Vector)[0].V + 1e+9) // Pull interval + 1 sec to avoid races.
@@ -364,7 +365,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		return nil, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query)
 	}
 	if len(confidence.Value.(promql.Vector)) == 0 {
-		return nil, 0, errors.New("no values for confidence")
+		return nil, 0, errors.Errorf("no values for confidence query::%v", query)
 	}
 
 	return prices, confidence.Value.(promql.Vector)[0].V, nil
