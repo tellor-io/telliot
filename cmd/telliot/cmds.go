@@ -31,6 +31,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
+	psrTellorAccess "github.com/tellor-io/telliot/pkg/psr/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/submitter/tellor"
 	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
@@ -698,31 +699,31 @@ func (self mineCmd) Run() error {
 			return errors.Wrapf(err, "creating aggregator")
 		}
 
-		contract, err := contracts.NewITellor(client)
-		if err != nil {
-			return errors.Wrap(err, "create tellor contract instance")
-		}
-
-		// Profit tracker.
-		var accountAddrs []common.Address
-		for _, acc := range accounts {
-			accountAddrs = append(accountAddrs, acc.Address)
-		}
-		profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contract, accountAddrs)
-		if err != nil {
-			return errors.Wrapf(err, "creating profit tracker")
-		}
-		g.Add(func() error {
-			err := profitTracker.Start()
-			level.Info(logger).Log("msg", "profit shutdown complete")
-			return err
-		}, func(error) {
-			profitTracker.Stop()
-		})
-
 		gasPriceTracker := gasPrice.New(logger, client)
 
 		if cfg.SubmitterTellor.Enabled {
+			contract, err := contracts.NewITellor(client)
+			if err != nil {
+				return errors.Wrap(err, "create tellor contract instance")
+			}
+
+			// Profit tracker.
+			var accountAddrs []common.Address
+			for _, acc := range accounts {
+				accountAddrs = append(accountAddrs, acc.Address)
+			}
+			profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contract, accountAddrs)
+			if err != nil {
+				return errors.Wrapf(err, "creating profit tracker")
+			}
+			g.Add(func() error {
+				err := profitTracker.Start()
+				level.Info(logger).Log("msg", "profit shutdown complete")
+				return err
+			}, func(error) {
+				profitTracker.Stop()
+			})
+
 			// Event tasker.
 			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
 			if err != nil {
@@ -796,6 +797,8 @@ func (self mineCmd) Run() error {
 			if err != nil {
 				return errors.Wrap(err, "create tellor contract instance")
 			}
+			psr := psrTellorAccess.New(logger, cfg.PsrTellorAccess, aggregator)
+
 			// Create a submitter for each account.
 			for _, account := range accounts {
 				transactor, err := transactor.New(logger, cfg.Transactor, gasPriceTracker, client, account)
@@ -811,7 +814,7 @@ func (self mineCmd) Run() error {
 					contract,
 					account,
 					transactor,
-					aggregator,
+					psr,
 				)
 				if err != nil {
 					return errors.Wrapf(err, "creating tellor access submitter")

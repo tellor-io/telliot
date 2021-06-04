@@ -20,7 +20,7 @@ import (
 )
 
 const PrivateKeysEnvName = "ETH_PRIVATE_KEYS"
-const NodeURLEnvName = "NODE_WEBSOCKET_URL"
+const NodeURLEnvName = "NODE_URL"
 
 var ethAddressRE *regexp.Regexp = regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
 

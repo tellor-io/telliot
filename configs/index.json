@@ -265,7 +265,7 @@
         "interval": "1h",
         "endpoints": [
             {
-                "URL": "https://api.defillama.com/charts",
+                "URL": "https://api.llama.fi/charts",
                 "param": "$[-1:].totalLiquidityUSD"
             },
             {

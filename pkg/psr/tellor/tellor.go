@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package psr
+package tellor
 
 import (
 	"time"
@@ -13,12 +13,13 @@ import (
 )
 
 const (
+	ComponentName      = "psrTellor"
 	DefaultGranularity = 1000000
 )
 
 func New(logger log.Logger, cfg Config, aggregator *aggregator.Aggregator) *Psr {
 	return &Psr{
-		logger:     logger,
+		logger:     log.With(logger, "component", ComponentName),
 		aggregator: aggregator,
 		cfg:        cfg,
 	}

@@ -20,6 +20,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
+	psrTellorAccess "github.com/tellor-io/telliot/pkg/psr/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/submitter/tellor"
 	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/tasker"
@@ -44,6 +45,7 @@ type Config struct {
 	Ethereum              ethereum.Config
 	Aggregator            aggregator.Config
 	PsrTellor             psrTellor.Config
+	PsrTellorAccess       psrTellorAccess.Config
 	Db                    db.Config
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`

@@ -6,7 +6,6 @@ package aggregator
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -345,12 +344,6 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 	for _, price := range pricesVector {
 		prices = append(prices, price.V)
 	}
-
-	fmt.Println(`avg(
-		count_over_time(` + index.ValueMetricName + `{
-			symbol="` + format.SanitizeMetricName(symbol) + `"
-		}[` + lookBack.String() + `]) /
-		(` + strconv.Itoa(int(lookBack.Nanoseconds())) + ` / ` + index.IntervalMetricName + `))`)
 
 	// Confidence level.
 	query, err = self.promqlEngine.NewInstantQuery(

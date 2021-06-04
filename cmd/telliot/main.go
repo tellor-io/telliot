@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/go-kit/kit/log"
@@ -16,7 +17,8 @@ import (
 )
 
 func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, []*ethereum.Account, error) {
-	client, err := ethereum.NewClient(logger, cfg, os.Getenv(ethereum.NodeURLEnvName))
+	nodeURL := os.Getenv(ethereum.NodeURLEnvName)
+	client, err := ethereum.NewClient(logger, cfg, nodeURL)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create rpc client instance")
 	}
@@ -26,13 +28,15 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.
 		return nil, nil, errors.Wrap(err, "creating accounts")
 	}
 
-	// Issue #55, halt if client is still syncing with Ethereum network
-	s, err := client.IsSyncing(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
-	}
-	if s {
-		return nil, nil, errors.New("ethereum node is still syncing with the network")
+	if !strings.Contains(strings.ToLower(nodeURL), "arbitrum") { // Arbitrum nodes doesn't support sync checking.
+		// Issue #55, halt if client is still syncing with Ethereum network
+		s, err := client.IsSyncing(ctx)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
+		}
+		if s {
+			return nil, nil, errors.New("ethereum node is still syncing with the network")
+		}
 	}
 
 	return client, accounts, nil

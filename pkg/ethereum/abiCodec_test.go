@@ -4,7 +4,6 @@
 package ethereum
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -31,6 +30,5 @@ func TestABICodec(t *testing.T) {
 
 	for i := 0; i < len(data); i += 32 {
 		hex := hexutil.Encode(data[i : i+32])
-		fmt.Println(hex)
 	}
 }

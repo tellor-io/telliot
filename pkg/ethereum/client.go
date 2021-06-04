@@ -68,6 +68,11 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 	tryCount := 0
 	nextTick := time.Now().Add(errorPrintTick)
 	for tryCount < 20 {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 		err := fn(&wTo)
 		if err == nil {
 			return nil

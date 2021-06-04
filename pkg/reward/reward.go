@@ -16,6 +16,8 @@ import (
 	"github.com/tellor-io/telliot/pkg/ethereum"
 )
 
+const ComponentName = "reward"
+
 type ContractCaller interface {
 	GetUintVar(opts *bind.CallOpts, _data [32]byte) (*big.Int, error)
 	CurrentReward(opts *bind.CallOpts) (*big.Int, error)
@@ -24,7 +26,7 @@ type ContractCaller interface {
 func New(logger log.Logger, aggr aggregator.IAggregator, contractCaller ContractCaller) *Reward {
 	return &Reward{
 		aggr:           aggr,
-		logger:         logger,
+		logger:         log.With(logger, "component", ComponentName),
 		contractCaller: contractCaller,
 		gasUsed:        make(map[int64]*big.Int),
 	}

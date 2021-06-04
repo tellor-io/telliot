@@ -82,7 +82,6 @@ func (self *Tasker) AddSubmitCanceler(SubmitCanceler SubmitCanceler) {
 }
 
 func (self *Tasker) newSub(output chan *tellor.ITellorNewChallenge) (event.Subscription, error) {
-	var tellorFilterer *tellor.ITellorFilterer
 	tellorFilterer, err := tellor.NewITellorFilterer(self.contractInstance.Address, self.client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting filter instance")

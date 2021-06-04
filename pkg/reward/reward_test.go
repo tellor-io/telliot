@@ -4,7 +4,6 @@
 package reward
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -46,7 +45,6 @@ func TestProfitCalculation(t *testing.T) {
 		testutil.Ok(t, err)
 		profit := rewardAmmount*trbPrice - costTotal
 		profitPercent := (profit / costTotal) * 100
-		fmt.Println("profitPercent, float64(rewardAct)", profitPercent, float64(rewardAct))
 		testutil.Equals(t, profitPercent, float64(rewardAct))
 	}
 }
