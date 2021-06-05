@@ -372,15 +372,8 @@ So the default config is as follows:
 	"ServerWhitelist": null
 }
 ```
-### LogConfig file options
-
-The logging.config file consists of two fields: \* component \* level
-
-The component is the package.component combination.
-
-E.G. the Runner component in the tracker package would be: tracker.Runner
-
-To turn on logging, add the component and the according level. Note the default level is "INFO", so to turn down the number of logs, enter "WARN" or "ERROR"
+### Log levels
+Note the default level is "INFO", so to turn down the number of logs, enter "WARN" or "ERROR".
 
 DEBUG - logs everything in INFO and additional developer logs
 
