@@ -762,22 +762,24 @@ func (self mineCmd) Run() error {
 
 			// Create a submitter for each account.
 			for _, account := range accounts {
-				transactor, err := transactor.New(logger, cfg.Transactor, gasPriceTracker, client, account)
+				loggerWithAddr := log.With(logger, "addr", account.Address.String()[:6])
+
+				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceTracker, client, account)
 				if err != nil {
 					return errors.Wrapf(err, "creating transactor")
 				}
 
-				psr := psrTellor.New(logger, cfg.PsrTellor, aggregator)
+				psr := psrTellor.New(loggerWithAddr, cfg.PsrTellor, aggregator)
 
 				// Get a channel on which it listens for new data to submit.
 				submitter, submitterCh, err := tellor.New(
 					ctx,
-					logger,
+					loggerWithAddr,
 					cfg.SubmitterTellor,
 					client,
 					contract,
 					account,
-					reward.New(logger, aggregator, contract),
+					reward.New(loggerWithAddr, aggregator, contract),
 					transactor,
 					gasPriceTracker,
 					psr,
@@ -787,9 +789,7 @@ func (self mineCmd) Run() error {
 				}
 				g.Add(func() error {
 					err := submitter.Start()
-					level.Info(logger).Log("msg", "tellor submitter shutdown complete",
-						"addr", account.Address.String(),
-					)
+					level.Info(loggerWithAddr).Log("msg", "tellor submitter shutdown complete")
 					return err
 				}, func(error) {
 					submitter.Stop()
@@ -799,15 +799,13 @@ func (self mineCmd) Run() error {
 				tasker.AddSubmitCanceler(submitter)
 
 				// The Miner component.
-				miner, err := mining.NewMiningManager(logger, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
+				miner, err := mining.NewMiningManager(loggerWithAddr, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
 				if err != nil {
 					return errors.Wrapf(err, "creating miner")
 				}
 				g.Add(func() error {
 					err := miner.Start()
-					level.Info(logger).Log("msg", "miner shutdown complete",
-						"addr", account.Address.String(),
-					)
+					level.Info(loggerWithAddr).Log("msg", "miner shutdown complete")
 					return err
 				}, func(error) {
 					miner.Stop()
@@ -820,18 +818,19 @@ func (self mineCmd) Run() error {
 			if err != nil {
 				return errors.Wrap(err, "create tellor contract instance")
 			}
-			psr := psrTellorAccess.New(logger, cfg.PsrTellorAccess, aggregator)
 
 			// Create a submitter for each account.
 			for _, account := range accounts {
-				transactor, err := transactor.New(logger, cfg.Transactor, gasPriceTracker, client, account)
+				loggerWithAddr := log.With(logger, "addr", account.Address.String()[:6])
+				psr := psrTellorAccess.New(loggerWithAddr, cfg.PsrTellorAccess, aggregator)
+				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceTracker, client, account)
 				if err != nil {
 					return errors.Wrapf(err, "creating transactor")
 				}
 
 				submitter, err := tellorAccess.New(
 					ctx,
-					logger,
+					loggerWithAddr,
 					cfg.SubmitterTellorAccess,
 					client,
 					contract,
@@ -844,9 +843,7 @@ func (self mineCmd) Run() error {
 				}
 				g.Add(func() error {
 					err := submitter.Start()
-					level.Info(logger).Log("msg", "tellor access submitter shutdown complete",
-						"addr", account.Address.String(),
-					)
+					level.Info(loggerWithAddr).Log("msg", "tellor access submitter shutdown complete")
 					return err
 				}, func(error) {
 					submitter.Stop()

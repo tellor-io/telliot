@@ -83,7 +83,7 @@ func New(
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "apply filter logger")
 	}
-	logger = log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6])
+	logger = log.With(logger, "component", ComponentName)
 	ctx, close := context.WithCancel(ctx)
 	submitter := &Submitter{
 		ctx:              ctx,

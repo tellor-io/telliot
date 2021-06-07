@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -19,7 +18,6 @@ import (
 
 type Config struct {
 	LogLevel  string
-	Address   common.Address
 	Heartbeat time.Duration
 }
 
@@ -76,7 +74,7 @@ func NewMiningManager(
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
-	logger = log.With(logger, "component", ComponentName, "addr", cfg.Address.String()[:6])
+	logger = log.With(logger, "component", ComponentName)
 
 	group, err := SetupMiningGroup(logger, cfg, contractInstance)
 	if err != nil {

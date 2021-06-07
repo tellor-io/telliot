@@ -57,7 +57,7 @@ func New(
 
 	return &TransactorDefault{
 		cfg:             cfg,
-		logger:          log.With(logger, "component", ComponentName, "addr", account.Address.String()[:6]),
+		logger:          log.With(logger, "component", ComponentName),
 		gasPriceTracker: gasPriceTracker,
 		client:          client,
 		account:         account,
