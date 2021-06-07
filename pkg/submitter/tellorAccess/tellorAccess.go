@@ -6,7 +6,6 @@ package tellorAccess
 import (
 	"context"
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 	"sync"
@@ -29,8 +28,8 @@ import (
 )
 
 const (
-	ComponentName             = "submitterTellorAccess"
-	percentageChangeThreshold = 0.1 // 0.1%
+	ComponentName = "submitterTellorAccess"
+	// percentageChangeThreshold = 0.1 // 0.1%.
 )
 
 type Config struct {
@@ -244,44 +243,43 @@ func (self *Submitter) Submit(reqID int64) error {
 
 func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
 	return true // TODO event monitoring doesn't work on arbitrum so for now just always submit.
+	// self.mtx.Lock()
+	// defer self.mtx.Unlock()
 
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
+	// logger := log.With(self.logger, "msg", "should submit check passed", "reqID", reqID)
 
-	logger := log.With(self.logger, "msg", "should submit check passed", "reqID", reqID)
+	// if self.lastSubmitTime[reqID].IsZero() {
+	// 	level.Debug(logger).Log(
+	// 		"reason", "first submit",
+	// 	)
+	// 	return true
+	// }
 
-	if self.lastSubmitTime[reqID].IsZero() {
-		level.Debug(logger).Log(
-			"reason", "first submit",
-		)
-		return true
-	}
+	// if lastSubmitTime, ok := self.lastSubmitTime[reqID]; ok && time.Since(lastSubmitTime) > (5*time.Minute) {
+	// 	level.Debug(logger).Log(
+	// 		"reason", "more then 5 minutes since last submit",
+	// 		"timePassed", time.Since(lastSubmitTime),
+	// 	)
+	// 	return true
+	// }
 
-	if lastSubmitTime, ok := self.lastSubmitTime[reqID]; ok && time.Since(lastSubmitTime) > (5*time.Minute) {
-		level.Debug(logger).Log(
-			"reason", "more then 5 minutes since last submit",
-			"timePassed", time.Since(lastSubmitTime),
-		)
-		return true
-	}
+	// currentValue, ok := self.currentValue[reqID]
+	// if !ok {
+	// 	level.Error(self.logger).Log("msg", "last value check - no record for last value")
+	// }
+	// percentageChange := math.Abs((currentValue-float64(newVal))/currentValue) * 100
 
-	currentValue, ok := self.currentValue[reqID]
-	if !ok {
-		level.Error(self.logger).Log("msg", "last value check - no record for last value")
-	}
-	percentageChange := math.Abs((currentValue-float64(newVal))/currentValue) * 100
-
-	if percentageChange > percentageChangeThreshold {
-		level.Debug(logger).Log(
-			"reason", "value change more then threshold",
-			"percentageChange", percentageChange,
-			"percentageThresohld", percentageChangeThreshold,
-			"currentValue", currentValue,
-			"newValue", newVal,
-		)
-		return true
-	}
-	return false
+	// if percentageChange > percentageChangeThreshold {
+	// 	level.Debug(logger).Log(
+	// 		"reason", "value change more then threshold",
+	// 		"percentageChange", percentageChange,
+	// 		"percentageThresohld", percentageChangeThreshold,
+	// 		"currentValue", currentValue,
+	// 		"newValue", newVal,
+	// 	)
+	// 	return true
+	// }
+	// return false
 }
 
 func (self *Submitter) monitorVals() {

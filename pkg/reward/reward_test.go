@@ -19,7 +19,7 @@ import (
 // GAS usage of 1
 // GAS price of 1ETH
 // TRB price of 1ETH
-// the rewards percent should equal the trb reward ammount.
+// the rewards percent should equal the trb reward amount.
 // Example
 // half TRB reward or 5e17 should equal in -50% profit.
 // 1 TRB reward or 1e18 should equal in 0% profit.
@@ -36,14 +36,14 @@ func TestProfitCalculation(t *testing.T) {
 	aggregator := &MockAggr{TRBPrice: trbPrice}
 	slotNum := big.NewInt(1)
 
-	for _, rewardAmmount := range []float64{5e17, 1e18, 2e18, 3e18} {
-		contractCaller := &MockContractCaler{trbRewardAmount: big.NewInt(int64(rewardAmmount))}
+	for _, rewardAmount := range []float64{5e17, 1e18, 2e18, 3e18} {
+		contractCaller := &MockContractCaler{trbRewardAmount: big.NewInt(int64(rewardAmount))}
 		reward := New(logger, aggregator, contractCaller)
 		reward.SaveGasUsed(slotNum, uint64(gasUsed))
 
 		rewardAct, err := reward.Current(slotNum, big.NewInt(int64(gasCost)))
 		testutil.Ok(t, err)
-		profit := rewardAmmount*trbPrice - costTotal
+		profit := rewardAmount*trbPrice - costTotal
 		profitPercent := (profit / costTotal) * 100
 		testutil.Equals(t, profitPercent, float64(rewardAct))
 	}
