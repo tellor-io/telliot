@@ -53,7 +53,7 @@ func (self *GasTracker) Query(ctx context.Context) (int64, error) {
 
 	var gasPrice *big.Int
 
-	if big.NewInt(1).Cmp(netID) == 0 {
+	if netID.Int64() == 1 {
 		ctx, cncl := context.WithTimeout(ctx, 15*time.Second)
 		defer cncl()
 		resp, err := web.Fetch(ctx, "https://ethgasstation.info/json/ethgasAPI.json")

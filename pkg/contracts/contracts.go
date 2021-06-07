@@ -16,12 +16,12 @@ import (
 )
 
 const (
-	TellorAddress               = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
-	TellorAccessAddressRinkeby  = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
-	TellorAccessAddressArbitrum = "0xCf26Ce0a3a9EF0125FA53a05A00b6B68F5ddb27A"
-	TellorAccessAddress         = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
-	LensAddressMainnet          = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
-	LensAddressRinkeby          = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
+	TellorAddress                    = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
+	TellorAccessAddressRinkeby       = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
+	TellorAccessAddressArbitrumKovan = "0xCf26Ce0a3a9EF0125FA53a05A00b6B68F5ddb27A"
+	TellorAccessAddress              = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
+	LensAddressMainnet               = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
+	LensAddressRinkeby               = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
 )
 
 type (
@@ -142,7 +142,7 @@ func getTellorAccessAddress(client ETHClient) (common.Address, error) {
 	}
 	switch netID := networkID.Int64(); netID {
 	case 144545313136048:
-		return common.HexToAddress(TellorAccessAddressArbitrum), nil
+		return common.HexToAddress(TellorAccessAddressArbitrumKovan), nil
 	case 4:
 		return common.HexToAddress(TellorAccessAddressRinkeby), nil
 	default:
