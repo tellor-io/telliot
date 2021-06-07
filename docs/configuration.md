@@ -331,7 +331,6 @@ Flags:
 		"LogLevel": "info"
 	},
 	"Mining": {
-		"Address": "0x0000000000000000000000000000000000000000",
 		"Heartbeat": 60000000000,
 		"LogLevel": "info"
 	},
@@ -385,7 +384,6 @@ Here are the config defaults in json format:
 	},
 	"Mining": {
 		"LogLevel": "info",
-		"Address": "0x0000000000000000000000000000000000000000",
 		"Heartbeat": 60000000000
 	},
 	"SubmitterTellor": {
