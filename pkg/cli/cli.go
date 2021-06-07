@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package main
+package cli
 
 import (
 	"context"
@@ -9,10 +9,12 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
@@ -23,7 +25,6 @@ import (
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/aggregator"
-	"github.com/tellor-io/telliot/pkg/cli"
 	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
@@ -46,19 +47,41 @@ import (
 var GitTag string
 var GitHash string
 
-const versionMessage = `
+const VersionMessage = `
     The official Tellor cli tool %s (%s)
     -----------------------------------------
 	Website: https://tellor.io
 	Github:  https://github.com/tellor-io/telliot
 `
 
+var CLI struct {
+	Migrate  migrateCmd  `cmd:"" help:"Migrate funds from the old oracle contract"`
+	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
+	Approve  approveCmd  `cmd:"" help:"Approve tokens"`
+	Accounts accountsCmd `cmd:"" help:"Show accounts"`
+	Balance  balanceCmd  `cmd:"" help:"Check the balance of an address"`
+	Stake    struct {
+		Deposit  depositCmd  `cmd:"" help:"deposit a stake"`
+		Request  requestCmd  `cmd:"" help:"request to withdraw stake"`
+		Withdraw withdrawCmd `cmd:"" help:"withdraw stake"`
+		Status   statusCmd   `cmd:"" help:"show stake status"`
+	} `cmd:"" help:"Perform one of the stake operations"`
+	Dispute struct {
+		New  newDisputeCmd `cmd:"" help:"start a new dispute"`
+		Vote voteCmd       `cmd:"" help:"vote on a open dispute"`
+		Show showCmd       `cmd:"" help:"show open disputes"`
+	} `cmd:"" help:"Perform commands related to disputes"`
+	Dataserver dataserverCmd `cmd:"" help:"launch only a dataserver instance"`
+	Mine       mineCmd       `cmd:"" help:"mine TRB and submit values"`
+	Version    VersionCmd    `cmd:"" help:"Show the CLI version information"`
+}
+
 type VersionCmd struct {
 }
 
 func (cmd *VersionCmd) Run() error {
 	//lint:ignore faillint it should print to console
-	fmt.Printf(versionMessage, GitTag, GitHash)
+	fmt.Printf(VersionMessage, GitTag, GitHash)
 	return nil
 }
 
@@ -106,7 +129,7 @@ func (c *transferCmd) Run() error {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
 
-	return cli.Transfer(ctx, logger, client, contract, account, address.addr, amount.Int)
+	return Transfer(ctx, logger, client, contract, account, address.addr, amount.Int)
 
 }
 
@@ -146,7 +169,7 @@ func (c *approveCmd) Run() error {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
 
-	return cli.Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
+	return Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
 }
 
 type accountsCmd struct {
@@ -211,7 +234,7 @@ func (b *balanceCmd) Run() error {
 		}
 	}
 
-	return cli.Balance(ctx, logger, client, contract, addr.addr)
+	return Balance(ctx, logger, client, contract, addr.addr)
 }
 
 type depositCmd struct {
@@ -240,7 +263,7 @@ func (d depositCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return cli.Deposit(ctx, logger, client, contract, account)
+	return Deposit(ctx, logger, client, contract, account)
 
 }
 
@@ -277,7 +300,7 @@ func (w withdrawCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return cli.WithdrawStake(ctx, logger, client, contract, account)
+	return WithdrawStake(ctx, logger, client, contract, account)
 
 }
 
@@ -307,7 +330,7 @@ func (r requestCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return cli.RequestStakingWithdraw(ctx, logger, client, contract, account)
+	return RequestStakingWithdraw(ctx, logger, client, contract, account)
 }
 
 type statusCmd struct {
@@ -336,7 +359,7 @@ func (s statusCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return cli.ShowStatus(ctx, logger, client, contract, account)
+	return ShowStatus(ctx, logger, client, contract, account)
 }
 
 type migrateCmd struct {
@@ -424,7 +447,7 @@ func (n newDisputeCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return cli.Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
+	return Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
 }
 
 type voteCmd struct {
@@ -461,7 +484,7 @@ func (v voteCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return cli.Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
+	return Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
 }
 
 type showCmd struct {
@@ -516,7 +539,7 @@ func (s showCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return cli.List(ctx, cfg.Disputer, logger, client, contract, account, psr)
+	return List(ctx, cfg.Disputer, logger, client, contract, account, psr)
 }
 
 type dataserverCmd struct {
@@ -873,4 +896,30 @@ func getAccountFor(accounts []*ethereum.Account, accountNo int) (*ethereum.Accou
 		return nil, errors.New("account not found")
 	}
 	return accounts[accountNo], nil
+}
+
+func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, []*ethereum.Account, error) {
+	nodeURL := os.Getenv(ethereum.NodeURLEnvName)
+	client, err := ethereum.NewClient(logger, cfg, nodeURL)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "create rpc client instance")
+	}
+
+	accounts, err := ethereum.GetAccounts()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "creating accounts")
+	}
+
+	if !strings.Contains(strings.ToLower(nodeURL), "arbitrum") { // Arbitrum nodes doesn't support sync checking.
+		// Issue #55, halt if client is still syncing with Ethereum network
+		s, err := client.IsSyncing(ctx)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
+		}
+		if s {
+			return nil, nil, errors.New("ethereum node is still syncing with the network")
+		}
+	}
+
+	return client, accounts, nil
 }
