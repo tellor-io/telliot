@@ -43,11 +43,8 @@ jobs:
         env:
           VIXEOD_KEY: ${{ secrets.VIXEOD_KEY }}
 
-      - name: Check generated files # Ensure that they are up to date.
+      - name: Check generated files # Ensure generated files are up to date.
         run: make generate-check
-
-      - name: Check for outdated config docs
-        run: make check-config-docs
         
       - name: Building
         run: make build

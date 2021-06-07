@@ -49,7 +49,7 @@ deps: ## Ensures fresh go.mod and go.sum.
 
 .PHONY: generate
 generate: ## Generate all dynamic files.
-generate: generate-bindings
+generate: generate-bindings generate-config-docs
 
 .PHONY: generate-check
 generate-check: ## Check that all generated files are up to date. Mainly used in the CI.
@@ -98,15 +98,9 @@ generate-config-docs: ##
 generate-config-docs: ## GENERATING CLI DOCS
 generate-config-docs: ## Similar to config struct docs, this will use field annotations from the cli struct and will result in docs entries
 generate-config-docs: ## per cli command consist of a command name and a command output.
-generate-config-docs:	build
+generate-config-docs: build
 	@go run ./scripts/cfgdocgen --output docs/configuration.md --cli-bin ./telliot
-
-.PHONY: check-config-docs
-check-config-docs: ## Check that generated config docs are up to date. Mainly used in the CI.
-check-config-docs: build
-	@go run ./scripts/cfgdocgen --output docs/configuration.md  --cli-bin ./telliot
 	SED_BIN="$(SED)" scripts/cleanup-white-noise.sh docs/configuration.md
-	$(call require_clean_work_tree,'outdated docs/configuration.md, run make generate-config-docs')
 
 .PHONY: check-git
 check-git:
