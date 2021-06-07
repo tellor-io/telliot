@@ -67,13 +67,14 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 	defer cancel()
 	tryCount := 0
 	nextTick := time.Now().Add(errorPrintTick)
+	var err error
 	for tryCount < 20 {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
-		err := fn(&wTo)
+		err = fn(&wTo)
 		if err == nil {
 			return nil
 		}
@@ -83,12 +84,11 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 		if strings.Contains(strings.ToLower(err.Error()), "replacement transaction underpriced") {
 			return err
 		}
-		level.Debug(c.logger).Log("msg", "calling eth client", "err", err)
+		level.Error(c.logger).Log("msg", "calling eth client", "err", err)
 		//pause for a bit and try again
 		sleepTime := backoff[tryCount%len(backoff)]
 		tryCount++
 		if time.Now().After(nextTick) {
-			level.Error(c.logger).Log("msg", "calling eth client", "err", err)
 			nextTick = time.Now().Add(errorPrintTick)
 		}
 
@@ -98,7 +98,6 @@ func (c *clientInstance) withTimeout(ctx context.Context, fn func(*context.Conte
 			return err
 		}
 	}
-	err := fn(&wTo)
 	return err
 }
 

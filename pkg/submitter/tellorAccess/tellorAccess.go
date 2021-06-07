@@ -155,7 +155,7 @@ func (self *Submitter) Start() error {
 
 	go self.monitorVals()
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	for {
 		select {
@@ -176,7 +176,9 @@ func (self *Submitter) Stop() {
 }
 
 func (self *Submitter) Submit(reqID int64) error {
-	isReporter, err := self.contractInstance.IsReporter(&bind.CallOpts{Context: self.ctx}, self.account.Address)
+	ctx, cncl := context.WithTimeout(self.ctx, time.Minute)
+	defer cncl()
+	isReporter, err := self.contractInstance.IsReporter(&bind.CallOpts{Context: ctx}, self.account.Address)
 	if err != nil {
 		return errors.Wrap(err, "checking reporter status")
 	}
@@ -203,7 +205,7 @@ func (self *Submitter) Submit(reqID int64) error {
 		_val := big.NewInt(val)
 		return self.contractInstance.SubmitValue(auth, _reqID, _val)
 	}
-	tx, recieipt, err := self.transactor.Transact(self.ctx, f)
+	tx, recieipt, err := self.transactor.Transact(ctx, f)
 	if err != nil {
 		self.submitFailCount.Inc()
 		return errors.Wrap(err, "submiting a solution")
@@ -217,8 +219,9 @@ func (self *Submitter) Submit(reqID int64) error {
 		"txHash", tx.Hash().String(),
 		"nonce", tx.Nonce(),
 		"gasPrice", tx.GasPrice(),
+		"gasUsed", recieipt.GasUsed,
+		"gasLimit", tx.Gas(),
 		"data", fmt.Sprintf("%x", tx.Data()),
-		"value", tx.Value(),
 	)
 	self.submitCount.Inc()
 

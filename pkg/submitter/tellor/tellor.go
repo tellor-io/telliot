@@ -296,8 +296,9 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 					"txHash", tx.Hash().String(),
 					"nonce", tx.Nonce(),
 					"gasPrice", tx.GasPrice(),
+					"gasUsed", recieipt.GasUsed,
+					"gasLimit", tx.Gas(),
 					"data", fmt.Sprintf("%x", tx.Data()),
-					"value", tx.Value(),
 				)
 				self.submitCount.Inc()
 
