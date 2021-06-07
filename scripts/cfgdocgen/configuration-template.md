@@ -29,9 +29,9 @@ Telliot commands and config file options are as the following:
 ```json
 {{.CfgDocs}}
 ```
-So the default config is as follows:
+Here are the config defaults in json format:
 ```json
-{{.Cfg}}
+{{.CfgDefault}}
 ```
 ### Log levels
 Note the default level is "INFO", so to turn down the number of logs, enter "WARN" or "ERROR".

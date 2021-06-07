@@ -292,7 +292,7 @@ Flags:
 
 * `ETH_PRIVATE_KEYS` \(required\) - list of private keys separated by `,`
 
-* `NODE_URL` \(required\) - node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+* `NODE_URL` \(required\) - websocket node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
 
 
 #### Config file options:
@@ -374,10 +374,73 @@ Flags:
 	}
 }
 ```
-So the default config is as follows:
+Here are the config defaults in json format:
 ```json
 {
-	"EnvFile": "configs/.env"
+	"Web": {
+		"LogLevel": "info",
+		"ListenHost": "",
+		"ListenPort": 9090,
+		"ReadTimeout": "0s"
+	},
+	"Mining": {
+		"LogLevel": "info",
+		"Address": "0x0000000000000000000000000000000000000000",
+		"Heartbeat": 60000000000
+	},
+	"SubmitterTellor": {
+		"Enabled": true,
+		"LogLevel": "info",
+		"ProfitThreshold": 0,
+		"MinSubmitPeriod": "15m1s"
+	},
+	"SubmitterTellorAccess": {
+		"Enabled": false,
+		"LogLevel": "info"
+	},
+	"ProfitTracker": {
+		"LogLevel": "info"
+	},
+	"Tasker": {
+		"LogLevel": "info"
+	},
+	"Transactor": {
+		"LogLevel": "info",
+		"GasMax": 10,
+		"GasMultiplier": 1
+	},
+	"IndexTracker": {
+		"LogLevel": "info",
+		"Interval": "30s",
+		"IndexFile": "configs/index.json"
+	},
+	"Disputer": {
+		"LogLevel": "",
+		"DisputeTimeDelta": "0s",
+		"DisputeThreshold": 0
+	},
+	"Ethereum": {
+		"LogLevel": "info",
+		"Timeout": 3000
+	},
+	"Aggregator": {
+		"LogLevel": "info",
+		"ManualDataFile": "configs/manualData.json"
+	},
+	"PsrTellor": {
+		"MinConfidence": 0.7
+	},
+	"PsrTellorAccess": {
+		"MinConfidence": 0
+	},
+	"Db": {
+		"LogLevel": "info",
+		"Path": "db",
+		"RemoteHost": "",
+		"RemotePort": 0,
+		"RemoteTimeout": "5s"
+	},
+	"envFile": "configs/.env"
 }
 ```
 ### Log levels

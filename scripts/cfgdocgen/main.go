@@ -101,7 +101,7 @@ func main() {
 		level.Error(logger).Log("msg", "marshaling config docs to json", "err", err)
 		os.Exit(1)
 	}
-	defCfg, err := json.MarshalIndent(cfgMap, "", "\t")
+	defCfg, err := json.MarshalIndent(config.DefaultConfig, "", "\t")
 	if err != nil {
 		level.Error(logger).Log("msg", "marshaling default config to json", "err", err)
 		os.Exit(1)
@@ -115,15 +115,15 @@ func main() {
 	}
 	err = tmpl.Execute(outf,
 		struct {
-			CliDocs []cliOutput
-			EnvDocs []envDoc
-			CfgDocs string
-			Cfg     string
+			CliDocs    []cliOutput
+			EnvDocs    []envDoc
+			CfgDocs    string
+			CfgDefault string
 		}{
-			CliDocs: cliDocs,
-			EnvDocs: envDocs,
-			CfgDocs: string(cfgDocs),
-			Cfg:     string(defCfg),
+			CliDocs:    cliDocs,
+			EnvDocs:    envDocs,
+			CfgDocs:    string(cfgDocs),
+			CfgDefault: string(defCfg),
 		})
 	if err != nil {
 		level.Error(logger).Log("msg", "failed to execute template", "err", err)
