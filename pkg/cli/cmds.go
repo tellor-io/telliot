@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package main
+package cli
 
 import (
 	"context"
@@ -31,7 +31,7 @@ import (
 var GitTag string
 var GitHash string
 
-const versionMessage = `
+const VersionMessage = `
     The official Tellor cli tool %s (%s)
     -----------------------------------------
 	Website: https://tellor.io
@@ -43,7 +43,7 @@ type VersionCmd struct {
 
 func (cmd *VersionCmd) Run() error {
 	//lint:ignore faillint it should print to console
-	fmt.Printf(versionMessage, GitTag, GitHash)
+	fmt.Printf(VersionMessage, GitTag, GitHash)
 	return nil
 }
 

@@ -80,6 +80,32 @@ build:
 	@[ "${GIT_HASH}" ] || ( echo ">> GIT_HASH is not set"; exit 1 )
 	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/telliot
 
+
+.PHONY: generate-config-docs
+generate-config-docs: ## Auto generating the cli, config, and env.example documents using a golang script.
+generate-config-docs: ## 
+generate-config-docs: ## GENERATING ENV DOCS
+generate-config-docs: ## For generating env example docs, this will read the env.example file and generate docs using
+generate-config-docs: ## each line env name, env value, and comment.
+generate-config-docs: ## 
+generate-config-docs: ## GENERATING CONFIG STRUCT DOCS
+generate-config-docs: ## This will use field annotations from the default config struct and will result in docs entries
+generate-config-docs: ## per struct primitive fields consist of a name (separated by dots), an value (if provided and not nil) and
+generate-config-docs: ## a help text if there is a `help` annotation for that field.
+generate-config-docs: ## 
+generate-config-docs: ## GENERATING CLI DOCS
+generate-config-docs: ## Similar to config struct docs, this will use field annotations from the cli struct and will result in docs entries
+generate-config-docs: ## per cli command consist of a command name and a command output.
+generate-config-docs:	build
+	@go run ./scripts/cfgdocgen --output docs/configuration.md --cli-bin ./telliot
+
+.PHONY: check-config-docs
+check-config-docs: ## Check that generated config docs are up to date. Mainly used in the CI.
+check-config-docs: build
+	@go run ./scripts/cfgdocgen --output docs/configuration.md  --cli-bin ./telliot
+	SED_BIN="$(SED)" scripts/cleanup-white-noise.sh docs/configuration.md
+	$(call require_clean_work_tree,'outdated docs/configuration.md, run make generate-config-docs')
+
 .PHONY: check-git
 check-git:
 ifneq ($(GIT),)

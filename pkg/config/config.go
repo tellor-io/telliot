@@ -149,6 +149,10 @@ var defaultConfig = Config{
 	EnvFile: "configs/.env",
 }
 
+func DefaultConfig() Config {
+	return defaultConfig
+}
+
 const PrivateKeysEnvName = "ETH_PRIVATE_KEYS"
 const NodeURLEnvName = "NODE_WEBSOCKET_URL"
 

@@ -347,4 +347,3 @@ At this point, you will have 3 terminals running: 2 terminals for the `telliot` 
 let difficulty = await oracle.getUintVar("0xb12aff7664b16cb99339be399b863feecd64d14817be7e1f042f97e3f358e64e")
 difficulty.toNumber()
 ```
-

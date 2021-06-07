@@ -12,6 +12,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/ethereum/go-ethereum v1.10.2-0.20210326211520-27056f62e57e
+	github.com/fatih/structtag v1.2.0
 	github.com/go-kit/kit v0.10.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
@@ -31,4 +32,6 @@ require (
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	go.uber.org/goleak v1.1.10
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	golang.org/x/tools v0.1.1-0.20210317201901-4599a76b0b9a // indirect
+	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
