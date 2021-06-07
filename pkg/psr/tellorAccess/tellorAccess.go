@@ -35,12 +35,12 @@ type Psr struct {
 	cfg        Config
 }
 
-func (self *Psr) GetValueForID(reqID int64, ts time.Time) (int64, error) {
-	val, err := self.getValueForID(reqID, ts)
+func (self *Psr) GetValue(reqID int64, ts time.Time) (int64, error) {
+	val, err := self.getValue(reqID, ts)
 	return int64(val * DefaultGranularity), err
 }
 
-func (self *Psr) getValueForID(reqID int64, ts time.Time) (float64, error) {
+func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
 	val, err := self.aggregator.ManualValue("tellorAccess", reqID, ts)
 	if err != nil {
 		level.Error(self.logger).Log("msg", "get manual value", "reqID", reqID, "err", err)

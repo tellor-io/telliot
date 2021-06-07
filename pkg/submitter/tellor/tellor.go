@@ -59,6 +59,7 @@ type Submitter struct {
 	resultCh         chan *mining.Result
 	submitCount      prometheus.Counter
 	submitFailCount  prometheus.Counter
+	submitValue      *prometheus.GaugeVec
 	lastSubmitCncl   context.CancelFunc
 	transactor       transactor.Transactor
 	reward           *reward.Reward
@@ -111,6 +112,14 @@ func New(
 			Help:        "The total number of failed submission",
 			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		}),
+		submitValue: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: ComponentName,
+			Name:      "submit_value",
+			Help:      "The submitted value",
+		},
+			[]string{"id"},
+		),
 	}
 
 	return submitter, submitter.resultCh, nil
@@ -292,6 +301,14 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 				)
 				self.submitCount.Inc()
 
+				for i, id := range result.Work.Challenge.RequestIDs {
+					self.submitValue.With(
+						prometheus.Labels{
+							"id": id.String(),
+						},
+					).(prometheus.Gauge).Set(float64(reqVals[i].Int64()))
+				}
+
 				slot, err := self.reward.Slot()
 				if err != nil {
 					level.Error(self.logger).Log("msg", "getting _SLOT_PROGRESS for saving gas used", "err", err)
@@ -308,7 +325,7 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 func (self *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) {
 	var currentValues [5]*big.Int
 	for i, reqID := range requestIDs {
-		val, err := self.psr.GetValueForID(reqID.Int64(), time.Now())
+		val, err := self.psr.GetValue(reqID.Int64(), time.Now())
 		if err != nil {
 			return currentValues, errors.Wrapf(err, "getting value for request ID:%v", reqID)
 		}

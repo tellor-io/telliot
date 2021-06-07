@@ -169,7 +169,7 @@ func (self *disputeChecker) CheckValueAtTime(reqID int64, val *big.Int, at time.
 	var times []time.Time
 	for i := 0; i < 5; i++ {
 		t := at.Add((time.Duration(i) - 2) * self.cfg.DisputeTimeDelta.Duration / 5)
-		fval, err := self.psr.GetValueForID(reqID, t)
+		fval, err := self.psr.GetValue(reqID, t)
 		if err != nil {
 			return nil, err
 		}

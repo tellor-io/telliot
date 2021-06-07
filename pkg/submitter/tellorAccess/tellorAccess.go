@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 	"sync"
 	"time"
 
@@ -55,6 +56,7 @@ type Submitter struct {
 	transactor       transactor.Transactor
 	submitCount      prometheus.Counter
 	submitFailCount  prometheus.Counter
+	submitValue      *prometheus.GaugeVec
 	psr              *psr.Psr
 	currentValue     map[int64]float64
 	lastSubmitTime   map[int64]time.Time
@@ -104,6 +106,14 @@ func New(
 			Help:        "The total number of failed submission",
 			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		}),
+		submitValue: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "telliot",
+			Subsystem: ComponentName,
+			Name:      "submit_value",
+			Help:      "The submitted value",
+		},
+			[]string{"id"},
+		),
 	}
 
 	// Set the initial values
@@ -175,7 +185,7 @@ func (self *Submitter) Submit(reqID int64) error {
 		return errors.Wrap(err, "addr not a reporter")
 	}
 
-	val, err := self.psr.GetValueForID(reqID, time.Now())
+	val, err := self.psr.GetValue(reqID, time.Now())
 	if err != nil {
 		return errors.Wrap(err, "getting the value from the aggregator")
 	}
@@ -213,6 +223,12 @@ func (self *Submitter) Submit(reqID int64) error {
 	)
 	self.submitCount.Inc()
 
+	self.submitValue.With(
+		prometheus.Labels{
+			"id": strconv.Itoa(int(reqID)),
+		},
+	).(prometheus.Gauge).Set(float64(val))
+
 	self.mtx.Lock()
 	self.currentValue[reqID] = float64(val)
 	self.lastSubmitTime[reqID] = time.Now()
@@ -227,6 +243,8 @@ func (self *Submitter) Submit(reqID int64) error {
 }
 
 func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
+	return true // TODO event monitoring doesn't work on arbitrum so for now just always submit.
+
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
 
