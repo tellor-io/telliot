@@ -61,7 +61,7 @@ func main() {
 
 	// Generating cli docs from the cli struct.
 	cliDocsMap := make(map[string]string)
-	cli := cli.CLI
+	cli := &cli.CLI
 	if err = NewCliDocsGenerator(logger, *cliBin).genCliDocs("", reflect.ValueOf(cli).Elem(), cliDocsMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli docs", "err", err)
 		os.Exit(1)
@@ -107,7 +107,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	tmpl := template.Must(template.ParseFiles("scripts/cfgdocgen/configuration.md"))
+	tmpl := template.Must(template.ParseFiles("scripts/cfgdocgen/configuration-template.md"))
 	outf, err := os.Create(*outputFile)
 	if err != nil {
 		level.Error(logger).Log("msg", "failed to open output file, redirecting to stdout", "err", err, "output", *outputFile)
@@ -247,6 +247,11 @@ func genEnvDocs() ([]envDoc, error) {
 			help     string
 			required bool
 		)
+
+		if env == "" { // Skip empty lines.
+			continue
+		}
+
 		comment := strings.TrimSpace(strings.Split(env, "#")[1])
 		help = comment
 

@@ -24,7 +24,7 @@ func main() {
 		//lint:ignore faillint it should print to console
 		fmt.Printf(cli.VersionMessage, cli.GitTag, cli.GitHash)
 	}
-	ctx := kong.Parse(cli.CLI, kong.Name("telliot"),
+	ctx := kong.Parse(&cli.CLI, kong.Name("telliot"),
 		kong.Description("The official Tellor cli tool"),
 		kong.UsageOnError())
 
