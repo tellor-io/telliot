@@ -162,10 +162,10 @@ func (self *Aggregator) TimeWeightedAvg(
 	defer query.Close()
 	_result := query.Exec(self.ctx)
 	if _result.Err != nil {
-		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query)
+		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(_result.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.Errorf("no result for values query:%v", query)
+		return 0, 0, errors.Errorf("no result for values query:%v", query.Statement())
 	}
 
 	result := _result.Value.(promql.Vector)[0].V
@@ -186,11 +186,11 @@ func (self *Aggregator) TimeWeightedAvg(
 	defer query.Close()
 	confidence := query.Exec(self.ctx)
 	if confidence.Err != nil {
-		return 0, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query)
+		return 0, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query.Statement())
 	}
 
 	if len(confidence.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.Errorf("no result for confidence query:%v", query)
+		return 0, 0, errors.Errorf("no result for confidence query:%v", query.Statement())
 	}
 
 	return result, confidence.Value.(promql.Vector)[0].V, err
@@ -240,11 +240,11 @@ func (self *Aggregator) VolumWeightedAvg(
 
 	_result := query.Exec(self.ctx)
 	if _result.Err != nil {
-		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query)
+		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query.Statement())
 	}
 	result := _result.Value.(promql.Vector)
 	if len(result) == 0 {
-		return 0, 0, errors.Errorf("no result for values query:%v", query)
+		return 0, 0, errors.Errorf("no result for values query:%v", query.Statement())
 	}
 
 	// Confidence level for prices.
@@ -264,7 +264,7 @@ func (self *Aggregator) VolumWeightedAvg(
 
 	confidenceP := query.Exec(self.ctx)
 	if confidenceP.Err != nil {
-		return 0, 0, errors.Wrapf(confidenceP.Err, "error evaluating query:%v", query)
+		return 0, 0, errors.Wrapf(confidenceP.Err, "error evaluating query:%v", query.Statement())
 	}
 
 	// Confidence level for volumes.
@@ -283,11 +283,11 @@ func (self *Aggregator) VolumWeightedAvg(
 	defer query.Close()
 	confidenceV := query.Exec(self.ctx)
 	if confidenceV.Err != nil {
-		return 0, 0, errors.Wrapf(confidenceV.Err, "error evaluating query:%v", query)
+		return 0, 0, errors.Wrapf(confidenceV.Err, "error evaluating query:%v", query.Statement())
 	}
 
 	if len(confidenceP.Value.(promql.Vector)) == 0 || len(confidenceV.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.Errorf("no result for confidence query:%v", query)
+		return 0, 0, errors.Errorf("no result for confidence query:%v", query.Statement())
 
 	}
 
@@ -329,10 +329,10 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 	defer query.Close()
 	trackerInterval := query.Exec(self.ctx)
 	if trackerInterval.Err != nil {
-		return nil, 0, errors.Wrapf(trackerInterval.Err, "error evaluating query:%v", query)
+		return nil, 0, errors.Wrapf(trackerInterval.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(trackerInterval.Value.(promql.Vector)) == 0 {
-		return nil, 0, errors.Errorf("no values for tracker interval query::%v", query)
+		return nil, 0, errors.Errorf("no values for tracker interval query:%v", query.Statement())
 	}
 
 	lookBack := time.Duration(trackerInterval.Value.(promql.Vector)[0].V + 1e+9) // Pull interval + 1 sec to avoid races.
@@ -362,10 +362,10 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 	defer query.Close()
 	confidence := query.Exec(self.ctx)
 	if confidence.Err != nil {
-		return nil, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query)
+		return nil, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(confidence.Value.(promql.Vector)) == 0 {
-		return nil, 0, errors.Errorf("no values for confidence query::%v", query)
+		return nil, 0, errors.Errorf("no values for confidence query:%v", query.Statement())
 	}
 
 	return prices, confidence.Value.(promql.Vector)[0].V, nil
@@ -383,7 +383,7 @@ func (self *Aggregator) valuesAt(symbol string, at time.Time, lookBack time.Dura
 	defer query.Close()
 	result := query.Exec(self.ctx)
 	if result.Err != nil {
-		return nil, errors.Wrapf(result.Err, "error evaluating query:%v", query)
+		return nil, errors.Wrapf(result.Err, "error evaluating query:%v", query.Statement())
 	}
 
 	return result.Value.(promql.Vector), nil
