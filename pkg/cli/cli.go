@@ -918,5 +918,12 @@ func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.
 		}
 	}
 
+	id, err := client.NetworkID(ctx)
+	if err != nil {
+		return nil, nil, level.Error(logger).Log("msg", "get nerwork ID", "err", err)
+	}
+
+	level.Info(logger).Log("msg", "client created", "netID", id.String())
+
 	return client, accounts, nil
 }
