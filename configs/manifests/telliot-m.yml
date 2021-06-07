@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: telliot-latest
+  name: telliot-m
 spec:
   accessModes:
     - ReadWriteOnce
@@ -12,27 +12,27 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: telliot-latest
+  name: telliot-m
   labels:
-    app: telliot-latest
+    app: telliot-m
 spec:
-  serviceName: telliot-latest
+  serviceName: telliot-m
   replicas: 1
   selector:
     matchLabels:
-      app: telliot-latest
+      app: telliot-m
   template:
     metadata:
       labels:
-        app: telliot-latest
+        app: telliot-m
     spec:
       containers:
-      - name: telliot-latest
+      - name: telliot-m
         image: tellor/telliot:latest
         imagePullPolicy: Always
         args: ["mine"]
         ports:
-        - name: telliot-latest
+        - name: telliot-m
           containerPort: 9090
         volumeMounts:
         - name: configs
@@ -43,41 +43,41 @@ spec:
         - name: NODE_URL
           valueFrom:
             secretKeyRef:
-              name: telliot-latest
+              name: telliot-m
               key: NODE_URL
         - name: ETH_PRIVATE_KEYS
           valueFrom:
             secretKeyRef:
-              name: telliot-latest
+              name: telliot-m
               key: ETH_PRIVATE_KEYS
         - name: VIXEOD_KEY
           valueFrom:
             secretKeyRef:
-              name: telliot-latest
+              name: telliot-m
               key: VIXEOD_KEY
         - name: CMC_KEY
           valueFrom:
             secretKeyRef:
-              name: telliot-latest
+              name: telliot-m
               key: CMC_KEY
       volumes:
       - name: configs
         configMap:
-          name: telliot-latest
+          name: telliot-m
       - name: db
         persistentVolumeClaim:
-          claimName: telliot-latest
+          claimName: telliot-m
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: telliot-latest
+  name: telliot-m
   labels:
-    app: telliot-latest
+    app: telliot-m
 spec:
   selector:
-    app: telliot-latest
+    app: telliot-m
   ports:
-  - name: telliot-latest
+  - name: telliot-m
     port: 9090
-    targetPort: telliot-latest
+    targetPort: telliot-m

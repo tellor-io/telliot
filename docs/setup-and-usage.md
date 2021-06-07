@@ -17,10 +17,10 @@ The CLI support only linux and is provided as a pre-built binary with every rele
  - `index.json` - all api endpoint for data providers. The cli uses these provider endpoints to gather data which is then used to submit to the onchain oracle.
  - `manualdata.json` - for providing data manually. There is currently one data point which must be manually created. The rolling 3 month average of the US PCE . It is updated monthly. _Make sure to keep this file up to date._
  For testing purposes, or if you want to hardcode in a specific value, you can use the file to add manual data for a given requestID. Add the request ID, a given value \(with granularity\), and a date on which the manual data expires.
-The following example shows request ID 4, inputting a value of 9000 with a 1,000,000 granularity. Note the date is a unix timestamp.
+The following example shows request ID 4, inputting a value of 9000 with 6 digits granularity. Note the date is a unix timestamp.
 ```bash
 "4":{
-    "VALUE":9000.000000,
+    "VALUE":9000.123456,
     "DATE":1596153600
 }
 ```
@@ -99,7 +99,8 @@ Tellor     <-> (multiple   | (0xb9dD) | <-> Data Server <-> Data APIs
 ## Run with Docker - [https://hub.docker.com/u/tellor](https://hub.docker.com/u/tellor)
 
 ```bash
-docker run -v $(pwd)/local:/configs tellor/telliot:master mine
+cp configs/.env.example configs/.env # Edit the file after the copy.
+docker run -v $(pwd)/configs:/configs tellor/telliot:master mine
 ```
 
 ## Run cli in mining mode with k8s
@@ -125,21 +126,22 @@ git clone https://github.com/tellor-io/telliot
 cd telliot
 export INSTANCE_NAME=lat # Use max 3 characters due to k8s limitation for port names.
 export CFG_FOLDER=.local/configs/mine
-export DEPL_NAME=telliot-m
+export DEPL_NAME=telliot-m # This is the name of the deployment file.
+export DEPL_INSTANCE_NAME=$DEPL_NAME-$INSTANCE_NAME
 mkdir -p $CFG_FOLDER/$INSTANCE_NAME
 
 # Create the secret file.
 cp configs/.env.example $CFG_FOLDER/$INSTANCE_NAME/.env # Edit the file after the copy.
 
-cp configs/config.json $CFG_FOLDER/$INSTANCE_NAME/config.json # Optionaly edit the file after the copy if you want to change any of the defaults.
+cp touch $CFG_FOLDER/$INSTANCE_NAME/config.json # Optionaly overwrite the config defaults.
 
 # Copy the index, manual. In most cases these are used as is without editing.
 cp configs/index.json $CFG_FOLDER/$INSTANCE_NAME/index.json
 cp configs/manualData.json $CFG_FOLDER/$INSTANCE_NAME/manualData.json
 
 # Apply the configs.
-kubectl create secret generic $DEPL_NAME-$INSTANCE_NAME --from-env-file=$CFG_FOLDER/$INSTANCE_NAME/.env
-kubectl create configmap $DEPL_NAME-$INSTANCE_NAME \
+kubectl create secret generic $DEPL_INSTANCE_NAME --from-env-file=$CFG_FOLDER/$INSTANCE_NAME/.env
+kubectl create configmap $DEPL_INSTANCE_NAME \
   --from-file=$CFG_FOLDER/$INSTANCE_NAME/config.json \
   --from-file=$CFG_FOLDER/$INSTANCE_NAME/index.json \
   --from-file=$CFG_FOLDER/$INSTANCE_NAME/manualData.json \
@@ -147,7 +149,7 @@ kubectl create configmap $DEPL_NAME-$INSTANCE_NAME \
 
 # Copy the manifest and run it.
 cp configs/manifests/$DEPL_NAME.yml $CFG_FOLDER/$INSTANCE_NAME/$DEPL_NAME.yml
-sed -i "s/$DEPL_NAME/$DEPL_NAME-$INSTANCE_NAME/g" $CFG_FOLDER/$INSTANCE_NAME/$DEPL_NAME.yml
+sed -i "s/$DEPL_NAME/$DEPL_INSTANCE_NAME/g" $CFG_FOLDER/$INSTANCE_NAME/$DEPL_NAME.yml
 kubectl apply -f $CFG_FOLDER/$INSTANCE_NAME/$DEPL_NAME.yml
 ```
 
@@ -173,7 +175,6 @@ export NAME= # Put an instance name here. Something short as some properties are
 ### To delete an instance.
 
 ```bash
-export DEPL_INSTANCE_NAME=  # telliot-db-lat or  telliot-m-lat
 kubectl delete statefulsets.apps $DEPL_INSTANCE_NAME
 kubectl delete service $DEPL_INSTANCE_NAME
 kubectl delete configmap $DEPL_INSTANCE_NAME
@@ -185,11 +186,11 @@ kubectl delete persistentvolumeclaims $DEPL_INSTANCE_NAME
 
 ```bash
 export REPO= # Your docker repository name.
-docker build . -t $REPO/telliot:latest
+docker build . -t $REPO/telliot:custom
 docker push $REPO/telliot:latest
 
-sed -i "s/tellor\/telliot:master/$REPO\/telliot:latest/g" $CFG_FOLDER/$INSTANCE_NAME/telliot.yml
-kubectl apply -f $CFG_FOLDER/$INSTANCE_NAME/telliot.yml
+sed -i "s/tellor\/telliot:latest/$REPO\/telliot:custom/g" $CFG_FOLDER/$INSTANCE_NAME/telliot-m.yml
+kubectl apply -f $CFG_FOLDER/$INSTANCE_NAME/telliot-m.yml
 ```
 
 ### Optionally deploy the monitoring stack with Prometheus and Grafana.
