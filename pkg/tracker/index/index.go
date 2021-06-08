@@ -290,7 +290,7 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 			}
 			sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
 
-			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "refVal", refVal, "refInterval", refInterval, "value", value, "interval", interval)
+			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value, "interval", interval)
 			if _, err = appender.Append(0,
 				lbls,
 				timestamp.FromTime(time.Now()),
