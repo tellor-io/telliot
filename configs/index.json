@@ -95,15 +95,6 @@
             }
         ]
     },
-    "AMPL/USD/VWAP": {
-        "interval": "10m",
-        "endpoints": [
-            {
-                "URL": "https://web-api.ampleforth.org/ampl/current-vwap",
-                "param": "$.rate"
-            }
-        ]
-    },
     "ATOM/USD": {
         "endpoints": [
             {
