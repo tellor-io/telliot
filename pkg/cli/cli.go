@@ -575,6 +575,7 @@ func (self dataserverCmd) Run() error {
 		if err != nil {
 			return errors.Wrapf(err, "creating tsdb DB")
 		}
+		level.Info(logger).Log("msg", "opened local db", "path", cfg.Db.Path)
 
 		defer func() {
 			if err := tsDB.Close(); err != nil {
