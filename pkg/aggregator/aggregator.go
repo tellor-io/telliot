@@ -320,7 +320,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 	// It is the same for all endpoints of a given symbol.
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
-		`max_over_time(indexTracker_interval{symbol="`+format.SanitizeMetricName(symbol)+`"}[3h])`, // No tracker should query slower then this.
+		`last_over_time(`+index.IntervalMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`"}[3h])`, // No tracker should query slower then this.
 		at,
 	)
 	if err != nil {
