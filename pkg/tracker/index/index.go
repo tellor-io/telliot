@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -195,9 +196,6 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
 
-	refInterval := uint64(0)
-	refVal := uint64(0)
-
 	var lastTS time.Time
 	for {
 		value, ts, err := dataSource.Get(self.ctx)
@@ -248,7 +246,9 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
 
-			if refInterval, err = appender.Append(refInterval,
+			sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
+
+			if _, err = appender.Append(0,
 				lbls,
 				timestamp.FromTime(time.Now()),
 				float64(interval),
@@ -288,9 +288,10 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				labels.Label{Name: "domain", Value: source.Host},
 				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
 			}
+			sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
 
 			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "refVal", refVal, "refInterval", refInterval, "value", value, "interval", interval)
-			if refVal, err = appender.Append(refVal,
+			if _, err = appender.Append(0,
 				lbls,
 				timestamp.FromTime(time.Now()),
 				value,
