@@ -663,6 +663,7 @@ func (self mineCmd) Run() error {
 			if err != nil {
 				return errors.Wrapf(err, "opening remote tsdb DB")
 			}
+			level.Info(logger).Log("msg", "connected to remote db", "host", cfg.Db.RemoteHost, "port", cfg.Db.RemotePort)
 		} else {
 			// Open the TSDB database.
 			tsdbOptions := tsdb.DefaultOptions()
@@ -678,6 +679,7 @@ func (self mineCmd) Run() error {
 				}
 			}()
 			tsDB = _tsDB
+			level.Info(logger).Log("msg", "opened local db", "path", cfg.Db.Path)
 		}
 
 		// Web/Api server.
