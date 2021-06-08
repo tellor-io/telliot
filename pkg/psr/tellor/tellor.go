@@ -4,6 +4,7 @@
 package tellor
 
 import (
+	"math"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -37,7 +38,7 @@ type Psr struct {
 
 func (self *Psr) GetValue(reqID int64, ts time.Time) (int64, error) {
 	val, err := self.getValue(reqID, ts)
-	return int64(val * DefaultGranularity), err
+	return int64(math.Round(val * DefaultGranularity)), err
 }
 
 func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
