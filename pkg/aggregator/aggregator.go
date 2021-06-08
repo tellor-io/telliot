@@ -196,7 +196,7 @@ func (self *Aggregator) TimeWeightedAvg(
 	return result, confidence.Value.(promql.Vector)[0].V, err
 }
 
-// VolumWeightedAvg returns price,volume and confidence level for a given symbol.
+// VolumWeightedAvg returns price and confidence level for a given symbol.
 // Confidence is calculated based on maximum possible samples over the actual samples for a given period.
 // avg(maxPossibleSamplesCount/actualSamplesCount)
 // For example with 1h look back and source interval of 60sec maxPossibleSamplesCount = 36
@@ -291,7 +291,7 @@ func (self *Aggregator) VolumWeightedAvg(
 
 	}
 
-	// Use the smaller confidence.
+	// Use the smaller confidence of volume or value.
 	confidence := confidenceP.Value.(promql.Vector)[0].V
 	if confidence > confidenceV.Value.(promql.Vector)[0].V {
 		confidence = confidenceV.Value.(promql.Vector)[0].V
@@ -309,7 +309,7 @@ func (self *Aggregator) median(values []float64) float64 {
 }
 
 // valuesAt returns the value from all sources for a given symbol with the confidence level.
-// 100% confidence is when all apis have returned a value within the last 10 minutes.
+// 100% confidence is when all apis have returned a value within the last tracker interval.
 // For every missing value the calculation subtracts some confidence level.
 // Confidence is calculated actualDataPointCount/maxDataPointCount.
 //
