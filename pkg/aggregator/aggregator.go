@@ -106,7 +106,7 @@ func (self *Aggregator) MedianAt(symbol string, at time.Time) (float64, float64,
 		return 0, 0, err
 	}
 	if len(values) == 0 {
-		return 0, 0, errors.New("no values")
+		return 0, 0, errors.Errorf("no values at:%v", at)
 	}
 	median := self.median(values)
 	return median, confidence, nil
@@ -332,10 +332,10 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		return nil, 0, errors.Wrapf(trackerInterval.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(trackerInterval.Value.(promql.Vector)) == 0 {
-		return nil, 0, errors.Errorf("no values for tracker interval query:%v", query.Statement())
+		return nil, 0, errors.Errorf("no values for tracker interval at:%v, query:%v", at, query.Statement())
 	}
 
-	lookBack := time.Duration(trackerInterval.Value.(promql.Vector)[0].V + 1e+9) // Pull interval + 1 sec to avoid races.
+	lookBack := time.Duration(trackerInterval.Value.(promql.Vector)[0].V + 1e+9) // Pull interval + 1 sec to avoid races. Interval is in nanosecond granularity
 	var prices []float64
 	pricesVector, err := self.valuesAt(symbol, at, lookBack)
 	if err != nil {
@@ -353,7 +353,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 			count_over_time(`+index.ValueMetricName+`{
 				symbol="`+format.SanitizeMetricName(symbol)+`"
 			}[`+lookBack.String()+`]) /
-			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / `+index.IntervalMetricName+`))`,
+			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / last_over_time(`+index.IntervalMetricName+`[3h])))`,
 		at,
 	)
 	if err != nil {
@@ -365,7 +365,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		return nil, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(confidence.Value.(promql.Vector)) == 0 {
-		return nil, 0, errors.Errorf("no values for confidence query:%v", query.Statement())
+		return nil, 0, errors.Errorf("no values for confidence at:%v, query:%v", at, query.Statement())
 	}
 
 	return prices, confidence.Value.(promql.Vector)[0].V, nil
