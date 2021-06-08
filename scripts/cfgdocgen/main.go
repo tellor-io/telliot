@@ -89,9 +89,8 @@ func main() {
 
 	// Generating config docs from the default config object.
 	cfgDocsMap := make(map[string]interface{})
-	cfgMap := make(map[string]interface{})
 	cfg := config.DefaultConfig
-	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocsMap, cfgMap); err != nil {
+	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocsMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli", "err", err)
 		os.Exit(1)
 	}
@@ -104,6 +103,13 @@ func main() {
 	defCfg, err := json.MarshalIndent(config.DefaultConfig, "", "\t")
 	if err != nil {
 		level.Error(logger).Log("msg", "marshaling default config to json", "err", err)
+		os.Exit(1)
+	}
+
+	// Sort json keys.
+	defCfg, err = JsonRemarshal(defCfg)
+	if err != nil {
+		level.Error(logger).Log("msg", "sorting default config json", "err", err)
 		os.Exit(1)
 	}
 
@@ -203,16 +209,14 @@ func (self *cliDocsGenerator) genCliDocs(parent string, cli reflect.Value, docs 
 	return nil
 }
 
-func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}, defCfg map[string]interface{}) error {
+func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}) error {
 	for i := 0; i < cfg.NumField(); i++ {
 		v := cfg.Field(i)
 		t := cfg.Type().Field(i)
 		switch v.Kind() {
 		case reflect.Struct:
 			cfgDocs[t.Name] = make(map[string]interface{})
-			childDoc := (cfgDocs[t.Name]).(map[string]interface{})
-			childCfg := (cfgDocs[t.Name]).(map[string]interface{})
-			if err := genCfgDocs(v, childDoc, childCfg); err != nil {
+			if err := genCfgDocs(v, (cfgDocs[t.Name]).(map[string]interface{})); err != nil {
 				return err
 			}
 		default:
@@ -227,9 +231,15 @@ func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}, defCfg map[st
 				if help != nil {
 					doc.Help = help.Value()
 				}
+
+				// Respect the json name if present.
+				jsonName, _ := tags.Get("json")
+				if jsonName != nil {
+					name = jsonName.Value()
+					doc.Name = name
+				}
 			}
 			cfgDocs[name] = doc.String()
-			defCfg[name] = doc.Default
 		}
 	}
 	return nil
@@ -269,4 +279,17 @@ func genEnvDocs() ([]envDoc, error) {
 		})
 	}
 	return docs, nil
+}
+
+func JsonRemarshal(bytes []byte) ([]byte, error) {
+	var ifce interface{}
+	err := json.Unmarshal(bytes, &ifce)
+	if err != nil {
+		return []byte{}, err
+	}
+	output, err := json.MarshalIndent(ifce, "", "\t")
+	if err != nil {
+		return []byte{}, err
+	}
+	return output, nil
 }
