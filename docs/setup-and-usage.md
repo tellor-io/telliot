@@ -125,7 +125,7 @@ gcloud container clusters get-credentials main --zone europe-west2-a --project p
 git clone https://github.com/tellor-io/telliot
 cd telliot
 export INSTANCE_NAME=lat # Use max 3 characters due to k8s limitation for port names.
-export CFG_FOLDER=.local/configs/mine
+export CFG_FOLDER=.local/configs/mine # Configs will be copied to this folder.
 export DEPL_NAME=telliot-m # This is the name of the deployment file.
 export DEPL_INSTANCE_NAME=$DEPL_NAME-$INSTANCE_NAME
 mkdir -p $CFG_FOLDER/$INSTANCE_NAME
@@ -133,17 +133,16 @@ mkdir -p $CFG_FOLDER/$INSTANCE_NAME
 # Create the secret file.
 cp configs/.env.example $CFG_FOLDER/$INSTANCE_NAME/.env # Edit the file after the copy.
 
-cp touch $CFG_FOLDER/$INSTANCE_NAME/config.json # Optionaly overwrite the config defaults.
+touch $CFG_FOLDER/$INSTANCE_NAME/config.json # Create an empty file and if needed overwrite the defaults.
 
-# Copy the index, manual. In most cases these are used as is without editing.
-cp configs/index.json $CFG_FOLDER/$INSTANCE_NAME/index.json
+# Copy the manual data file.
 cp configs/manualData.json $CFG_FOLDER/$INSTANCE_NAME/manualData.json
 
 # Apply the configs.
 kubectl create secret generic $DEPL_INSTANCE_NAME --from-env-file=$CFG_FOLDER/$INSTANCE_NAME/.env
 kubectl create configmap $DEPL_INSTANCE_NAME \
+  --from-file=configs/index.json \
   --from-file=$CFG_FOLDER/$INSTANCE_NAME/config.json \
-  --from-file=$CFG_FOLDER/$INSTANCE_NAME/index.json \
   --from-file=$CFG_FOLDER/$INSTANCE_NAME/manualData.json \
   -o yaml --dry-run=client | kubectl apply -f -
 
