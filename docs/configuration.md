@@ -299,6 +299,84 @@ Flags:
 ```json
 {
 	"Aggregator": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"ManualDataFile": "(Required: false)  - Default: configs/manualData.json"
+	},
+	"Db": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"Path": "(Required: false)  - Default: db",
+		"RemoteHost": "(Required: false)  - Default: ",
+		"RemotePort": "(Required: false)  - Default: 0",
+		"RemoteTimeout": {
+			"Duration": "(Required: false)  - Default: 5s"
+		}
+	},
+	"Disputer": {
+		"DisputeThreshold": "(Required: false)  - Default: 0",
+		"DisputeTimeDelta": {
+			"Duration": "(Required: false)  - Default: 0s"
+		},
+		"LogLevel": "(Required: false)  - Default: "
+	},
+	"Ethereum": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"Timeout": "(Required: false)  - Default: 3000"
+	},
+	"IndexTracker": {
+		"IndexFile": "(Required: false)  - Default: configs/index.json",
+		"Interval": {
+			"Duration": "(Required: false)  - Default: 30s"
+		},
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Mining": {
+		"Heartbeat": "(Required: false)  - Default: 1m0s",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"ProfitTracker": {
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"PsrTellor": {
+		"MinConfidence": "(Required: false)  - Default: 0.7"
+	},
+	"PsrTellorAccess": {
+		"MinConfidence": "(Required: false)  - Default: 0"
+	},
+	"SubmitterTellor": {
+		"Enabled": "(Required: false)  - Default: true",
+		"LogLevel": "(Required: false)  - Default: info",
+		"MinSubmitPeriod": {
+			"Duration": "(Required: false)  - Default: 15m1s"
+		},
+		"ProfitThreshold": "(Required: false)  - Default: 0"
+	},
+	"SubmitterTellorAccess": {
+		"Enabled": "(Required: false)  - Default: false",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Tasker": {
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Transactor": {
+		"GasMax": "(Required: false)  - Default: 10",
+		"GasMultiplier": "(Required: false)  - Default: 1",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Web": {
+		"ListenHost": "(Required: false)  - Default: ",
+		"ListenPort": "(Required: false)  - Default: 9090",
+		"LogLevel": "(Required: false)  - Default: info",
+		"ReadTimeout": {
+			"Duration": "(Required: false)  - Default: 0s"
+		}
+	},
+	"envFile": "(Required: false)  - Default: configs/.env"
+}
+```
+Here are the config defaults in json format:
+```json
+{
+	"Aggregator": {
 		"LogLevel": "info",
 		"ManualDataFile": "configs/manualData.json"
 	},
@@ -307,27 +385,20 @@ Flags:
 		"Path": "db",
 		"RemoteHost": "",
 		"RemotePort": 0,
-		"RemoteTimeout": {
-			"Duration": 5000000000
-		}
+		"RemoteTimeout": "5s"
 	},
 	"Disputer": {
 		"DisputeThreshold": 0,
-		"DisputeTimeDelta": {
-			"Duration": 0
-		},
+		"DisputeTimeDelta": "0s",
 		"LogLevel": ""
 	},
-	"EnvFile": "(Required: false)  - Default: configs/.env",
 	"Ethereum": {
 		"LogLevel": "info",
 		"Timeout": 3000
 	},
 	"IndexTracker": {
 		"IndexFile": "configs/index.json",
-		"Interval": {
-			"Duration": 30000000000
-		},
+		"Interval": "30s",
 		"LogLevel": "info"
 	},
 	"Mining": {
@@ -346,9 +417,7 @@ Flags:
 	"SubmitterTellor": {
 		"Enabled": true,
 		"LogLevel": "info",
-		"MinSubmitPeriod": {
-			"Duration": 901000000000
-		},
+		"MinSubmitPeriod": "15m1s",
 		"ProfitThreshold": 0
 	},
 	"SubmitterTellorAccess": {
@@ -367,76 +436,7 @@ Flags:
 		"ListenHost": "",
 		"ListenPort": 9090,
 		"LogLevel": "info",
-		"ReadTimeout": {
-			"Duration": 0
-		}
-	}
-}
-```
-Here are the config defaults in json format:
-```json
-{
-	"Web": {
-		"LogLevel": "info",
-		"ListenHost": "",
-		"ListenPort": 9090,
 		"ReadTimeout": "0s"
-	},
-	"Mining": {
-		"LogLevel": "info",
-		"Heartbeat": 60000000000
-	},
-	"SubmitterTellor": {
-		"Enabled": true,
-		"LogLevel": "info",
-		"ProfitThreshold": 0,
-		"MinSubmitPeriod": "15m1s"
-	},
-	"SubmitterTellorAccess": {
-		"Enabled": false,
-		"LogLevel": "info"
-	},
-	"ProfitTracker": {
-		"LogLevel": "info"
-	},
-	"Tasker": {
-		"LogLevel": "info"
-	},
-	"Transactor": {
-		"LogLevel": "info",
-		"GasMax": 10,
-		"GasMultiplier": 1
-	},
-	"IndexTracker": {
-		"LogLevel": "info",
-		"Interval": "30s",
-		"IndexFile": "configs/index.json"
-	},
-	"Disputer": {
-		"LogLevel": "",
-		"DisputeTimeDelta": "0s",
-		"DisputeThreshold": 0
-	},
-	"Ethereum": {
-		"LogLevel": "info",
-		"Timeout": 3000
-	},
-	"Aggregator": {
-		"LogLevel": "info",
-		"ManualDataFile": "configs/manualData.json"
-	},
-	"PsrTellor": {
-		"MinConfidence": 0.7
-	},
-	"PsrTellorAccess": {
-		"MinConfidence": 0
-	},
-	"Db": {
-		"LogLevel": "info",
-		"Path": "db",
-		"RemoteHost": "",
-		"RemotePort": 0,
-		"RemoteTimeout": "5s"
 	},
 	"envFile": "configs/.env"
 }
