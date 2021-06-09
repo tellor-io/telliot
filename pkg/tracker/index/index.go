@@ -114,27 +114,30 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 
 	dataSources := make(map[string][]DataSource)
 
-	for symbol, apis := range indexes {
-		for _, api := range apis.Endpoints {
-			api.URL = os.Expand(api.URL, func(key string) string {
+	for symbol, api := range indexes {
+		for _, endpoint := range api.Endpoints {
+			endpoint.URL = os.Expand(endpoint.URL, func(key string) string {
 				return os.Getenv(key)
 			})
 
 			var source DataSource
 
 			// Default value for the api type.
-			if api.Type == "" {
-				api.Type = httpSource
+			if endpoint.Type == "" {
+				endpoint.Type = httpSource
 			}
 
 			// Default value for the parser.
-			if api.Parser == "" {
-				api.Parser = jsonPathParser
+			if endpoint.Parser == "" {
+				endpoint.Parser = jsonPathParser
 			}
-			switch api.Type {
+			switch endpoint.Type {
 			case httpSource:
 				{
-					source = NewJSONapi(logger, apis.Interval.Duration, api.URL, NewParser(api))
+					source = NewJSONapi(api.Interval.Duration, endpoint.URL, NewParser(endpoint))
+					if strings.Contains(strings.ToLower(symbol), "volume") {
+						source = NewJSONapiVolume(api.Interval.Duration, endpoint.URL, NewParser(endpoint))
+					}
 				}
 			case ethereumSource:
 				{
@@ -144,21 +147,21 @@ func createDataSources(logger log.Logger, ctx context.Context, cfg Config, clien
 						return nil, err
 					}
 					// Validate and pick an ethereum address for current network id.
-					address, err := ethereum.GetAddressForNetwork(api.URL, networkID.Int64())
+					address, err := ethereum.GetAddressForNetwork(endpoint.URL, networkID.Int64())
 					if err != nil {
 						return nil, errors.Wrap(err, "getting address for network id")
 					}
-					if api.Parser == uniswapParser {
-						source = NewUniswap(symbol, address, apis.Interval.Duration, client)
+					if endpoint.Parser == uniswapParser {
+						source = NewUniswap(symbol, address, api.Interval.Duration, client)
 
-					} else if api.Parser == balancerParser {
-						source = NewBalancer(symbol, address, apis.Interval.Duration, client)
+					} else if endpoint.Parser == balancerParser {
+						source = NewBalancer(symbol, address, api.Interval.Duration, client)
 					} else {
 						return nil, errors.Wrapf(err, "unknown source for on-chain index tracker")
 					}
 				}
 			default:
-				return nil, errors.Errorf("unknown index type for index object:%v", api.Type)
+				return nil, errors.Errorf("unknown index type for index object:%v", endpoint.Type)
 			}
 
 			dataSources[symbol] = append(dataSources[symbol], source)
@@ -179,7 +182,7 @@ func (self *IndexTracker) Run() error {
 				interval = self.cfg.Interval.Duration
 			}
 
-			go self.recordValues(delay, symbol, interval, dataSource)
+			go self.record(delay, symbol, interval, dataSource)
 			delay += time.Second
 		}
 	}
@@ -187,41 +190,19 @@ func (self *IndexTracker) Run() error {
 	return nil
 }
 
-// recordValues from all API calls.
+// record from all API calls.
 // The request delay is used to avoid rate limiting at startup
 // for when all API calls try to happen at the same time.
-func (self *IndexTracker) recordValues(delay time.Duration, symbol string, interval time.Duration, dataSource DataSource) {
+func (self *IndexTracker) record(delay time.Duration, symbol string, interval time.Duration, dataSource DataSource) {
 	time.Sleep(delay)
 
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
 
-	var lastTS time.Time
 	for {
-		value, ts, err := dataSource.Get(self.ctx)
-		if err != nil {
-			level.Error(logger).Log("msg", "getting values from data source", "err", err)
-			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
 
-		if lastTS.Equal(ts) { // Skip data that has already been added.
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-		lastTS = ts
-
+		// Record the source interval to use it for the confidence calculation.
+		// Confidence = avg(actualSamplesCount/expectedMaxSamplesCount) for a given period.
 		source, err := url.Parse(dataSource.Source())
 		if err != nil {
 			level.Error(logger).Log("msg", "parsing url from data source", "err", err)
@@ -233,9 +214,6 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				continue
 			}
 		}
-
-		// Record the source interval to use it for the confidence calculation.
-		// Confidence = avg(expectedMaxSamplesCount/actualSamplesCount) for a given period.
 		{
 			appender := self.tsDB.Appender(self.ctx)
 
@@ -276,6 +254,19 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				case <-ticker.C:
 					continue
 				}
+			}
+		}
+
+		value, err := dataSource.Get(self.ctx)
+		if err != nil {
+			level.Error(logger).Log("msg", "getting values from data source", "err", err)
+			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
 			}
 		}
 
@@ -377,9 +368,45 @@ type Apis struct {
 	Endpoints []Endpoint
 }
 
-func NewJSONapi(logger log.Logger, interval time.Duration, url string, parser Parser) *JSONapi {
+// NewJSONapiVolume are treated differently and return 0 values when the api returns the same timestamp.
+// This is to avoid double counting volumes for the same time period.
+// Another way is to skip adding the data, but this messes up the confidence calculations
+// which counts total added data points.
+func NewJSONapiVolume(interval time.Duration, url string, parser Parser) *JSONapi {
 	return &JSONapi{
-		logger:   logger,
+		url:      url,
+		interval: interval,
+		Parser:   parser,
+	}
+}
+
+type JSONapiVolume struct {
+	JSONapi
+	lastTS time.Time
+}
+
+func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
+	vals, err := web.Fetch(ctx, self.url)
+	if err != nil {
+		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
+	}
+	val, ts, err := self.Parse(vals)
+	if err != nil {
+		return 0, errors.Wrapf(err, "parsing data from API url:%v", self.url)
+	}
+
+	// Use 0 value for data that has already been added.
+	if self.lastTS.Equal(ts) {
+		val = 0
+	}
+	self.lastTS = ts
+
+	return val, nil
+
+}
+
+func NewJSONapi(interval time.Duration, url string, parser Parser) *JSONapi {
+	return &JSONapi{
 		url:      url,
 		interval: interval,
 		Parser:   parser,
@@ -393,12 +420,13 @@ type JSONapi struct {
 	Parser
 }
 
-func (self *JSONapi) Get(ctx context.Context) (float64, time.Time, error) {
+func (self *JSONapi) Get(ctx context.Context) (float64, error) {
 	vals, err := web.Fetch(ctx, self.url)
 	if err != nil {
-		return 0, time.Time{}, errors.Wrapf(err, "fetching data from API url:%v", self.url)
+		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}
-	return self.Parse(vals)
+	val, _, err := self.Parse(vals)
+	return val, nil
 }
 
 func (self *JSONapi) Interval() time.Duration {
@@ -413,7 +441,7 @@ type DataSource interface {
 	// Source returns the data source.
 	Source() string
 	// Get returns current api value.
-	Get(context.Context) (float64, time.Time, error)
+	Get(context.Context) (float64, error)
 	// The recommended interval for calling the Get method.
 	// Some APIs will return an error if called more often
 	// Due to API rate limiting of the provider.
