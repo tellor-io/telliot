@@ -302,6 +302,10 @@ func (self *Aggregator) VolumWeightedAvg(
 	}
 
 	// Confidence level for volumes.
+	resolution, err = self.resolution(symbol+"/VOLUME", end)
+	if err != nil {
+		return 0, 0, err
+	}
 	query, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
@@ -322,7 +326,6 @@ func (self *Aggregator) VolumWeightedAvg(
 
 	if len(confidenceP.Value.(promql.Vector)) == 0 || len(confidenceV.Value.(promql.Vector)) == 0 {
 		return 0, 0, errors.Errorf("no result for confidence query:%v", query.Statement())
-
 	}
 
 	// Use the smaller confidence of volume or value.
