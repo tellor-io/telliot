@@ -6,7 +6,6 @@ package aggregator
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
@@ -132,7 +131,6 @@ func (self *Aggregator) MeanAt(symbol string, at time.Time) (float64, float64, e
 	if confidenceM < confidence {
 		confidence = confidenceM
 	}
-	fmt.Println("confidence", confidence)
 	return price, confidence, nil
 }
 
