@@ -283,7 +283,7 @@ func (self *Aggregator) VolumWeightedAvg(
 	query, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
-			count_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`"}[`+timeWindow+`]) 
+			count_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`"}[`+timeWindow+`])
 			/
 			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / `+strconv.Itoa(int(resolution.Nanoseconds()))+`)
 		)`,
@@ -307,7 +307,7 @@ func (self *Aggregator) VolumWeightedAvg(
 	query, err = self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
-			count_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"}[`+timeWindow+`]) 
+			count_over_time(`+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`_VOLUME"}[`+timeWindow+`])
 			/
 			(`+strconv.Itoa(int(end.Sub(start).Nanoseconds()))+` / `+strconv.Itoa(int(resolution.Nanoseconds()))+`)
 		)`,
@@ -381,7 +381,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`avg(
-			count_over_time(`+index.ValueMetricName+`{ symbol="`+format.SanitizeMetricName(symbol)+`" }[`+lookBack.String()+`] ) 
+			count_over_time(`+index.ValueMetricName+`{ symbol="`+format.SanitizeMetricName(symbol)+`" }[`+lookBack.String()+`] )
 			/
 			(`+strconv.Itoa(int(lookBack.Nanoseconds()))+` / `+strconv.Itoa(int(resolution.Nanoseconds()))+`)
 		)`,

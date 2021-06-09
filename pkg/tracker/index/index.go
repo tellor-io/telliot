@@ -68,7 +68,7 @@ func New(
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 
-	dataSources, err := createDataSources(logger, ctx, cfg, client)
+	dataSources, err := createDataSources(ctx, cfg, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "create data sources")
 	}
@@ -99,7 +99,7 @@ func New(
 	}, nil
 }
 
-func createDataSources(logger log.Logger, ctx context.Context, cfg Config, client contracts.ETHClient) (map[string][]DataSource, error) {
+func createDataSources(ctx context.Context, cfg Config, client contracts.ETHClient) (map[string][]DataSource, error) {
 	// Load index file.
 	byteValue, err := ioutil.ReadFile(cfg.IndexFile)
 	if err != nil {
@@ -415,7 +415,6 @@ func NewJSONapi(interval time.Duration, url string, parser Parser) *JSONapi {
 
 type JSONapi struct {
 	url      string
-	logger   log.Logger
 	interval time.Duration
 	Parser
 }
@@ -426,7 +425,7 @@ func (self *JSONapi) Get(ctx context.Context) (float64, error) {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}
 	val, _, err := self.Parse(vals)
-	return val, nil
+	return val, err
 }
 
 func (self *JSONapi) Interval() time.Duration {
