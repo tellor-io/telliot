@@ -154,10 +154,6 @@
     "BNB/USD": {
         "endpoints": [
             {
-                "URL": "https://dex.binance.org/api/v1/klines?symbol=BNB_USDSB-1AC&interval=1d&limit=1",
-                "param": "$[0][4]"
-            },
-            {
                 "URL": "https://api.binance.com/api/v1/klines?symbol=BNBUSDT&interval=1d&limit=1",
                 "param": "$[0][4]"
             },
