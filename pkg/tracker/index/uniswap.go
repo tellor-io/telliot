@@ -41,14 +41,14 @@ func NewUniswap(pair string, address string, interval time.Duration, client cont
 }
 
 // Get calculates price for the provided pair.
-func (self *Uniswap) Get(ctx context.Context) (float64, time.Time, error) {
+func (self *Uniswap) Get(ctx context.Context) (float64, error) {
 	// Getting price on-chain.
 	price, err := self.getSpotPrice(ctx)
 	if err != nil {
-		return 0, time.Time{}, err
+		return 0, err
 	}
 	priceF64, _ := price.Float64()
-	return priceF64, time.Time{}, nil
+	return priceF64, nil
 }
 
 func (self *Uniswap) Interval() time.Duration {

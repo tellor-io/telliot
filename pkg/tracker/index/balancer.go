@@ -46,18 +46,18 @@ func NewBalancer(pair, address string, interval time.Duration, client contracts.
 	}
 }
 
-func (b *Balancer) Get(ctx context.Context) (float64, time.Time, error) {
+func (b *Balancer) Get(ctx context.Context) (float64, error) {
 	// Getting current pair info from input pool.
 	pair, err := b.getPair()
 	if err != nil {
-		return 0, time.Time{}, errors.Wrap(err, "getting pair info from balancer pool")
+		return 0, errors.Wrap(err, "getting pair info from balancer pool")
 	}
 	// Use balancer pool own GetSpotPrice to minimize onchain calls.
 	price, err := b.getSpotPrice(ctx, pair)
 	if err != nil {
-		return 0, time.Time{}, errors.Wrap(err, "getting price info from balancer pool")
+		return 0, errors.Wrap(err, "getting price info from balancer pool")
 	}
-	return price, time.Time{}, nil
+	return price, nil
 }
 
 func (b *Balancer) Interval() time.Duration {
