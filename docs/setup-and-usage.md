@@ -125,8 +125,8 @@ gcloud container clusters get-credentials main --zone europe-west2-a --project p
 git clone https://github.com/tellor-io/telliot
 cd telliot
 export INSTANCE_NAME=lat # Use max 3 characters due to k8s limitation for port names.
-export CFG_FOLDER=.local/configs/$INSTANCE_NAME # Configs will be copied to this folder.
 export DEPL_NAME=telliot-m # This is the name of the deployment file.
+export CFG_FOLDER=.local/configs/$DEPL_NAME-$INSTANCE_NAME # Configs will be copied to this folder.
 export DEPL_INSTANCE_NAME=$DEPL_NAME-$INSTANCE_NAME
 mkdir -p $CFG_FOLDER
 
