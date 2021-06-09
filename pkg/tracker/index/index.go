@@ -198,30 +198,9 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 
 	var lastTS time.Time
 	for {
-		value, ts, err := dataSource.Get(self.ctx)
-		if err != nil {
-			level.Error(logger).Log("msg", "getting values from data source", "err", err)
-			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
 
-		if lastTS.Equal(ts) { // Skip data that has already been added.
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-		lastTS = ts
-
+		// Record the source interval to use it for the confidence calculation.
+		// Confidence = avg(actualSamplesCount/expectedMaxSamplesCount) for a given period.
 		source, err := url.Parse(dataSource.Source())
 		if err != nil {
 			level.Error(logger).Log("msg", "parsing url from data source", "err", err)
@@ -233,9 +212,6 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				continue
 			}
 		}
-
-		// Record the source interval to use it for the confidence calculation.
-		// Confidence = avg(expectedMaxSamplesCount/actualSamplesCount) for a given period.
 		{
 			appender := self.tsDB.Appender(self.ctx)
 
@@ -278,6 +254,30 @@ func (self *IndexTracker) recordValues(delay time.Duration, symbol string, inter
 				}
 			}
 		}
+
+		value, ts, err := dataSource.Get(self.ctx)
+		if err != nil {
+			level.Error(logger).Log("msg", "getting values from data source", "err", err)
+			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
+		}
+
+		if lastTS.Equal(ts) { // Skip data that has already been added.
+			select {
+			case <-self.ctx.Done():
+				level.Debug(self.logger).Log("msg", "values record loop exited")
+				return
+			case <-ticker.C:
+				continue
+			}
+		}
+		lastTS = ts
 
 		// Record the actual value.
 		{
