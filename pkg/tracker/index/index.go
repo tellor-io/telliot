@@ -200,6 +200,7 @@ func (self *IndexTracker) record(delay time.Duration, symbol string, interval ti
 	logger := log.With(self.logger, "source", dataSource.Source())
 
 	for {
+		ts := timestamp.FromTime(time.Now())
 
 		// Record the source interval to use it for the confidence calculation.
 		// Confidence = avg(actualSamplesCount/expectedMaxSamplesCount) for a given period.
@@ -228,7 +229,7 @@ func (self *IndexTracker) record(delay time.Duration, symbol string, interval ti
 
 			if _, err = appender.Append(0,
 				lbls,
-				timestamp.FromTime(time.Now()),
+				ts,
 				float64(interval),
 			); err != nil {
 				level.Error(logger).Log("msg", "append values to the DB", "err", err)
@@ -284,7 +285,7 @@ func (self *IndexTracker) record(delay time.Duration, symbol string, interval ti
 			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value, "interval", interval)
 			if _, err = appender.Append(0,
 				lbls,
-				timestamp.FromTime(time.Now()),
+				ts,
 				value,
 			); err != nil {
 				level.Error(logger).Log("msg", "append values to the DB", "err", err)
@@ -372,16 +373,18 @@ type Apis struct {
 // This is to avoid double counting volumes for the same time period.
 // Another way is to skip adding the data, but this messes up the confidence calculations
 // which counts total added data points.
-func NewJSONapiVolume(interval time.Duration, url string, parser Parser) *JSONapi {
-	return &JSONapi{
-		url:      url,
-		interval: interval,
-		Parser:   parser,
+func NewJSONapiVolume(interval time.Duration, url string, parser Parser) *JSONapiVolume {
+	return &JSONapiVolume{
+		JSONapi: &JSONapi{
+			url:      url,
+			interval: interval,
+			Parser:   parser,
+		},
 	}
 }
 
 type JSONapiVolume struct {
-	JSONapi
+	*JSONapi
 	lastTS time.Time
 }
 
