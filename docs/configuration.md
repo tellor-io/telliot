@@ -292,84 +292,153 @@ Flags:
 
 * `ETH_PRIVATE_KEYS` \(required\) - list of private keys separated by `,`
 
-* `NODE_WEBSOCKET_URL` \(required\) - node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+* `NODE_URL` \(required\) - websocket node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
 
 
 #### Config file options:
 ```json
 {
-	"ApiFile": "(Required: false)  - Default: configs/api.json",
-	"DBFile": "(Required: false)  - Default: db",
-	"DataServer": {
-		"ListenHost": "localhost",
-		"ListenPort": 5000
+	"Aggregator": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"ManualDataFile": "(Required: false)  - Default: configs/manualData.json"
 	},
-	"EnvFile": "(Required: false)  - Default: configs/.env",
-	"EthClientTimeout": "(Required: false)  - Default: 3000",
-	"GasMax": "(Required: false)  - Default: 10",
-	"GasMultiplier": "(Required: false)  - Default: 1",
-	"HistoryFile": "(Required: false)  - Default: configs/saved.json",
-	"Logger": "(Required: false)  - Default: map[apiOracle:info dataServer:info db:info ops:info pow::info rest:info rpc:info tracker:info]",
-	"ManualDataFile": "(Required: false)  - Default: configs/manualData.json",
-	"Mine": {
-		"Heartbeat": {
-			"Duration": 15000000000
-		},
-		"ListenHost": "localhost",
-		"ListenPort": 9090,
-		"MinSubmitPeriod": {
-			"Duration": 901000000000
-		},
-		"MiningInterruptCheckInterval": {
-			"Duration": 15000000000
-		},
-		"ProfitThreshold": 0,
-		"RemoteDBHost": "",
-		"RemoteDBPort": 0
-	},
-	"ServerWhitelist": "(Required: false)  - Default: []",
-	"Trackers": {
-		"DisputeThreshold": 0.01,
-		"DisputeTimeDelta": {
-			"Duration": 300000000000
-		},
-		"FetchTimeout": {
-			"Duration": 30000000000
-		},
-		"MinConfidence": 0.2,
-		"Names": {
-			"disputeChecker": false,
-			"gas": true,
-			"indexers": true
-		},
-		"SleepCycle": {
-			"Duration": 30000000000
+	"Db": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"Path": "(Required: false)  - Default: db",
+		"RemoteHost": "(Required: false)  - Default: ",
+		"RemotePort": "(Required: false)  - Default: 0",
+		"RemoteTimeout": {
+			"Duration": "(Required: false)  - Default: 5s"
 		}
-	}
+	},
+	"Disputer": {
+		"DisputeThreshold": "(Required: false)  - Default: 0",
+		"DisputeTimeDelta": {
+			"Duration": "(Required: false)  - Default: 0s"
+		},
+		"LogLevel": "(Required: false)  - Default: "
+	},
+	"Ethereum": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"Timeout": "(Required: false)  - Default: 3000"
+	},
+	"IndexTracker": {
+		"IndexFile": "(Required: false)  - Default: configs/index.json",
+		"Interval": {
+			"Duration": "(Required: false)  - Default: 30s"
+		},
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Mining": {
+		"Heartbeat": "(Required: false)  - Default: 1m0s",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"ProfitTracker": {
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"PsrTellor": {
+		"MinConfidence": "(Required: false)  - Default: 0.7"
+	},
+	"PsrTellorAccess": {
+		"MinConfidence": "(Required: false)  - Default: 0"
+	},
+	"SubmitterTellor": {
+		"Enabled": "(Required: false)  - Default: true",
+		"LogLevel": "(Required: false)  - Default: info",
+		"MinSubmitPeriod": {
+			"Duration": "(Required: false)  - Default: 15m1s"
+		},
+		"ProfitThreshold": "(Required: false)  - Default: 0"
+	},
+	"SubmitterTellorAccess": {
+		"Enabled": "(Required: false)  - Default: false",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Tasker": {
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Transactor": {
+		"GasMax": "(Required: false)  - Default: 10",
+		"GasMultiplier": "(Required: false)  - Default: 1",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Web": {
+		"ListenHost": "(Required: false)  - Default: ",
+		"ListenPort": "(Required: false)  - Default: 9090",
+		"LogLevel": "(Required: false)  - Default: info",
+		"ReadTimeout": {
+			"Duration": "(Required: false)  - Default: 0s"
+		}
+	},
+	"envFile": "(Required: false)  - Default: configs/.env"
 }
 ```
-So the default config is as follows:
+Here are the config defaults in json format:
 ```json
 {
-	"ApiFile": "configs/api.json",
-	"DBFile": "db",
-	"EnvFile": "configs/.env",
-	"EthClientTimeout": 3000,
-	"GasMax": 10,
-	"GasMultiplier": 1,
-	"HistoryFile": "configs/saved.json",
-	"Logger": {
-		"apiOracle": "info",
-		"dataServer": "info",
-		"db": "info",
-		"ops": "info",
-		"pow:": "info",
-		"rest": "info",
-		"rpc": "info",
-		"tracker": "info"
+	"Aggregator": {
+		"LogLevel": "info",
+		"ManualDataFile": "configs/manualData.json"
 	},
-	"ManualDataFile": "configs/manualData.json",
-	"ServerWhitelist": null
+	"Db": {
+		"LogLevel": "info",
+		"Path": "db",
+		"RemoteHost": "",
+		"RemotePort": 0,
+		"RemoteTimeout": "5s"
+	},
+	"Disputer": {
+		"DisputeThreshold": 0,
+		"DisputeTimeDelta": "0s",
+		"LogLevel": ""
+	},
+	"Ethereum": {
+		"LogLevel": "info",
+		"Timeout": 3000
+	},
+	"IndexTracker": {
+		"IndexFile": "configs/index.json",
+		"Interval": "30s",
+		"LogLevel": "info"
+	},
+	"Mining": {
+		"Heartbeat": 60000000000,
+		"LogLevel": "info"
+	},
+	"ProfitTracker": {
+		"LogLevel": "info"
+	},
+	"PsrTellor": {
+		"MinConfidence": 0.7
+	},
+	"PsrTellorAccess": {
+		"MinConfidence": 0
+	},
+	"SubmitterTellor": {
+		"Enabled": true,
+		"LogLevel": "info",
+		"MinSubmitPeriod": "15m1s",
+		"ProfitThreshold": 0
+	},
+	"SubmitterTellorAccess": {
+		"Enabled": false,
+		"LogLevel": "info"
+	},
+	"Tasker": {
+		"LogLevel": "info"
+	},
+	"Transactor": {
+		"GasMax": 10,
+		"GasMultiplier": 1,
+		"LogLevel": "info"
+	},
+	"Web": {
+		"ListenHost": "",
+		"ListenPort": 9090,
+		"LogLevel": "info",
+		"ReadTimeout": "0s"
+	},
+	"envFile": "configs/.env"
 }
 ```
 ### Log levels

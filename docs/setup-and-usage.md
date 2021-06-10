@@ -1,29 +1,115 @@
 ---
-description: Here are the nuts and bolts for usinng the CLI
+description: Here are the nuts and bolts for using the CLI
 ---
 
 # Setup and usage
 
 ## Get the CLI
 
-The CLI is provided as a pre-built binary with every release and also as a docker image.
+The CLI support only linux and is provided as a pre-built binary with every release and also as a docker image.
 
-### Run manually
+[Github releases](https://github.com/tellor-io/telliot/releases)
 
-Download and run the [latest release](https://github.com/tellor-io/telliot/releases/latest)
+[https://hub.docker.com/u/tellor](https://hub.docker.com/u/tellor)
 
+## Config files.
+ - `.env` - keeps private information(private keys, api keys etc.). Most commands require some secrets and these are kept in this file as a precaution against accidental exposure. For a working setup it is required to at least add one private key in your `"ETH_PRIVATE_KEYS"` environment variable. Multiple private keys are supported separated by `,`.
+ - `index.json` - all api endpoint for data providers. The cli uses these provider endpoints to gather data which is then used to submit to the onchain oracle.
+ - `manualdata.json` - for providing data manually. There is currently one data point which must be manually created. The rolling 3 month average of the US PCE . It is updated monthly. _Make sure to keep this file up to date._
+ For testing purposes, or if you want to hardcode in a specific value, you can use the file to add manual data for a given requestID. Add the request ID, a given value \(with granularity\), and a date on which the manual data expires.
+The following example shows request ID 4, inputting a value of 9000 with 6 digits granularity. Note the date is a unix timestamp.
 ```bash
+"4":{
+    "VALUE":9000.123456,
+    "DATE":1596153600
+}
+```
+ - `config.json` - optional config file to override any of the defaults. See the [configuration page](configuration.md) for full reference.
+
+
+> by default the cli looks for these in the `./configs` folder relative to the cli folder.
+
+### Here is a quick reference how to run the cli with the default configs.
+
+```
+mkdir ./configs
+cd ./configs
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/index.json
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manualData.json
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/env.example
+mv env.example .env
+cd ../
 wget https://github.com/tellor-io/telliot/releases/latest/download/telliot
 chmod +x telliot
 ```
 
-### Run with Docker - [https://hub.docker.com/u/tellor](https://hub.docker.com/u/tellor)
+## Deposit or withdraw a stake
+
+As of now, mining requires you to deposit 500 TRB to be allowed to submit values to the oracle and earn rewards. This is a security deposit. If you are a malicious actor \(aka submit a bad value\), the community can vote to slash your 500 tokens.
+Your stake is locked for a minimum of 7 days after you run the command to request withdrawal.
+
+Run the following command to deposit your stake:
 
 ```bash
-docker run -v $(pwd)/local:/configs tellor/telliot:master mine
+./telliot stake deposit
 ```
 
-### Run with k8s
+To unstake your tokens, you need to request a withdraw:
+
+```bash
+./telliot stake request
+```
+
+One week after the request, the tokens are free to move at your discretion after running the command:
+
+```bash
+./telliot stake withdraw
+```
+
+## Start mining.
+{% hint style="info" %}
+The same instance can be used with multiple private keys in the `.env` file separated by a comma.
+{% endhint %}
+
+```bash
+./telliot mine
+```
+
+Telliot supports submiting data to different contracts and the config folder contains examples for that.
+For example:
+```bash
+./telliot mine --config=configs/configTellorAccess.json
+```
+
+## DataServer - a shared data API feeds.
+
+{% hint style="info" %}
+Advanced usage! If you are setting up a Tellor miner for the first time, it might be a good idea to skip this section and come back after you're up and running with one miner. See the [configuration page](configuration.md) for the required configs.
+{% endhint %}
+
+Some oracle feeds require 24h avarages and for these enough historical data is needed. Running a dataserver is the solution to always have enough historical data to generate these averages.
+
+The network topology of this setup looks like the diagram below.
+One ore more miners are connected to the same data server for fetching current or historical data to submit to the oracle.
+The data server pulls data from the API providers, the 5 staked miners pull data from the data server and submit on-chain to the Tellor Core smart contracts.
+
+```bash
+                            /(0xE037)\
+                Miner      | (0xcdd8) |
+Tellor     <-> (multiple   | (0xb9dD) | <-> Data Server <-> Data APIs
+(on chain)      keys)      | (0x2305) |
+                            \(0x3233)/
+```
+
+
+## Run with Docker - [https://hub.docker.com/u/tellor](https://hub.docker.com/u/tellor)
+
+```bash
+cp configs/.env.example configs/.env # Edit the file after the copy.
+docker run -v $(pwd)/configs:/configs tellor/telliot:master mine
+```
+
+## Run cli in mining mode with k8s
 
 {% hint style="info" %}
 tested with [google cloud](https://cloud.google.com), but should work with any k8s cluster.
@@ -44,68 +130,84 @@ gcloud container clusters get-credentials main --zone europe-west2-a --project p
 ```bash
 git clone https://github.com/tellor-io/telliot
 cd telliot
-export NAME=latest
-mkdir -p .local/configs/$NAME
+export INSTANCE_NAME=lat # Use max 3 characters due to k8s limitation for port names.
+export DEPL_NAME=telliot-m # This is the name of the deployment file.
+export CFG_FOLDER=.local/configs/$DEPL_NAME-$INSTANCE_NAME # Configs will be copied to this folder.
+export DEPL_INSTANCE_NAME=$DEPL_NAME-$INSTANCE_NAME
+mkdir -p $CFG_FOLDER
 
 # Create the secret file.
-cp configs/.env.example .local/configs/$NAME/.env # Edit the file after the copy.
-kubectl create secret generic telliot-$NAME --from-env-file=.local/configs/$NAME/.env
+cp configs/.env.example $CFG_FOLDER/.env # Edit the file after the copy.
 
-cp configs/config.json .local/configs/$NAME/config.json # Edit the file after the copy.
+touch $CFG_FOLDER/config.json # Create an empty file and if needed overwrite the defaults.
 
-# Copy the index, manual. These can be used as it without editing.
-cp configs/api.json .local/configs/$NAME/api.json
-cp configs/manualData.json .local/configs/$NAME/manualData.json
-# Add the configs.
-kubectl create configmap telliot-$NAME \
-  --from-file=.local/configs/$NAME/config.json \
-  --from-file=.local/configs/$NAME/api.json \
-  --from-file=.local/configs/$NAME/manualData.json \
+# Copy the manual data file.
+cp configs/manualData.json $CFG_FOLDER/manualData.json
+
+# Apply the configs.
+kubectl create secret generic $DEPL_INSTANCE_NAME --from-env-file=$CFG_FOLDER/.env
+kubectl create configmap $DEPL_INSTANCE_NAME \
+  --from-file=configs/index.json \
+  --from-file=$CFG_FOLDER/config.json \
+  --from-file=$CFG_FOLDER/manualData.json \
   -o yaml --dry-run=client | kubectl apply -f -
 
-# Copy the StatefulSet and run it.
-cp configs/manifests/telliot.yml .local/configs/$NAME/telliot.yml
-sed -i "s/telliot-main/telliot-$NAME/g" .local/configs/$NAME/telliot.yml
-kubectl apply -f .local/configs/$NAME/telliot.yml
+# Copy the manifest and run it.
+cp configs/manifests/$DEPL_NAME.yml $CFG_FOLDER/$DEPL_NAME.yml
+sed -i "s/$DEPL_NAME/$DEPL_INSTANCE_NAME/g" $CFG_FOLDER/$DEPL_NAME.yml
+kubectl apply -f $CFG_FOLDER/$DEPL_NAME.yml
 ```
 
-#### To run another instance.
+### Run the cli in dataserver mode.
 
 ```bash
-export NAME= # Put an instance name here. Something short as some properties are limited by length(e.g `export NAME=PR320`).
+export INSTANCE_NAME=lat # Use max 3 characters due to k8s limitation for port names.
+export CFG_FOLDER=.local/configs/db
+export DEPL_NAME=telliot-db
+mkdir -p $CFG_FOLDER
+
+# Run the same commands as the mining deployment.
+
+See [configuration page](configuration.md) on how to setup other instances to connect to this remote dataserver
+
+### To run another instance.
+
+```bash
+export NAME= # Put an instance name here. Something short as some properties are limited by length(e.g `export NAME=PR1`).
 # Run all the other commands from initial k8s setup.
 ```
 
-#### To delete an instance.
+### To delete an instance.
 
 ```bash
-export NAME=
-kubectl delete statefulsets.apps $NAME
-kubectl delete service $NAME
-kubectl delete configmap $NAME
-kubectl delete secret $NAME
-kubectl delete persistentvolumeclaims $NAME
+kubectl delete statefulsets.apps $DEPL_INSTANCE_NAME
+kubectl delete service $DEPL_INSTANCE_NAME
+kubectl delete configmap $DEPL_INSTANCE_NAME
+kubectl delete secret $DEPL_INSTANCE_NAME
+kubectl delete persistentvolumeclaims $DEPL_INSTANCE_NAME
 ```
 
-#### To run a custom docker image.
+### To run a custom docker image.
 
 ```bash
 export REPO= # Your docker repository name.
-docker build . -t $REPO/telliot:latest
+docker build . -t $REPO/telliot:custom
 docker push $REPO/telliot:latest
 
-sed -i "s/tellor\/telliot:master/$REPO\/telliot:latest/g" .local/configs/$NAME/telliot.yml
-kubectl apply -f .local/configs/$NAME/telliot.yml
+sed -i "s/tellor\/telliot:latest/$REPO\/telliot:custom/g" $CFG_FOLDER/telliot-m.yml
+kubectl apply -f $CFG_FOLDER/telliot-m.yml
 ```
 
-* Optionally deploy the monitoring stack with Prometheus and Grafana.
+### Optionally deploy the monitoring stack with Prometheus and Grafana.
 
 ```bash
 kubectl apply -f configs/manifests/monitoring-persist.yml
 kubectl apply -f configs/manifests/monitoring.yml
 ```
 
-* Optionally deploy the alerting manager and get alerts on your Telegram bot. this will use the alertmanager bot. see [here](https://github.com/metalmatze/alertmanager-bot) for more info and available commands.
+###  Optionally deploy the alerting manager and get alerts on your Telegram bot.
+
+This uses the alertmanager bot. see [here](https://github.com/metalmatze/alertmanager-bot) for more info and available commands.
 
 ```bash
 # Create a secret for the telegram authentication.
@@ -116,234 +218,3 @@ kubectl apply -f configs/manifests/alerting-persist.yml
 kubectl apply -f configs/manifests/alerting.yml
 ```
 
-### Download and Edit config.json
-
-`config.json` is where you will enter your wallet address and configure the CLI for your machine.
-
-```bash
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.json
-```
-
-### Create .env file
-
-Most commands require some secrets and these are kept in a separate `configs/.env`. This is a precaution so that are not accidentally exposed as part of the main config. Make a copy of the `env.example` and edit with your secrets.
-For a working setup it is required to at least add one private key in your `"ETH_PRIVATE_KEYS"` environment variable. all of public addresses can be determined from your private keys.
-
-## mine - Become a Miner
-
-{% hint style="warning" %}
-#### DISCLAIMER
-
-Mine at your own risk.
-
-Mining requires you to deposit 500 Tellor Tributes use as a security deposit. If you are a malicious actor \(aka submit a bad value\), the community can vote to slash your tokens.
-
-Mining also requires submitting on-chain transactions on Ethereum. These transactions cost gas \(ETH\) and can sometimes be significant if the cost of gas on EThereum is high \(i.e. the network is clogged\). Please reach out to the community to find the best tips for keeping gas costs under control or at least being aware of the costs.
-
-If you are building a competing client, please contact us. The miner specifications are off-chain and the validity of the mining process hinges on the consensus of the community to determine what proper values are. Competing clients that change different pieces run the risk of being disputed by the community.
-
-There is no guarantee of profit from mining. There is no promise that Tellor Tributes currently hold or will ever hold any value.
-{% endhint %}
-
-{% hint style="info" %}
-#### DISCLAIMER
-
-If you are building a competing client, please contact us. A lot of the miner specifications are off-chain and a significant portion of the mining process hinges on the consensus of the Tellor community to determine what proper values are. Competing clients that change different pieces run the risk of being disputed by the community.
-
-As an example, request ID 4 is BTC/USD. If the APIs all go down, it is the responsibility of the miner to still submit a valid BTC/USD price. If they do not, they risk being disputed and slashed. For these reasons, please contribute openly to the official telliot miner \(or an open source variant\), as consensus here is key. If your miner gets a different value than the majority of the other miners, you risk being punished!
-{% endhint %}
-
-For over a decade now, the Bitcoin network has shown how proof-of-work can incentivize individuals and companies to compete for the honor of finding block rewards and achieving consensus. This phenomenon is global and anonymous. The network is democratized and decentralized because the creators have no direct control over who is providing computing power on their network.
-
-Tellor takes this concept and applies it directly to the delivery of oracle data. Anyone who is able may start up `telliot` and begin competing for blocks. There is no whitelisting. Miners compete very much the same way that Bitcoin miners do, but with a twist. _Tellor Miners must also run a database from which to pull values to submit to the Tellor oracle._ When a "block" is found, the winners submit their data.
-
-Mining is one of the most exciting ways to help Tellor grow and become a leader in the DeFi / Oracle space. Here are a few things to consider before jumping in:
-
-As of now, mining requires you to deposit 500 Tellor Tributes. This is a security deposit. If you are a malicious actor \(aka submit a bad value\), the community can vote to slash your 500 tokens.
-
-* Mining requires access to an Ethereum node. If you don’t have your own node, you can use an Infura API endpoint.
-* Miners must hold a balance of ETH to cover gas fees, which can be significant. Please reach out to the community to find the best tips for keeping gas costs under control.
-
-The guide that follows assumes that you have access to a suitable machine running linux to use for mining. For information about what constitutes a "suitable machine", we recommend reaching out to the community.
-
-### Download the API Index and Logging Config Files
-
-Run the following commands:
-
-```bash
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/api.json
-```
-
-### Download and Edit the Manual Data Entry File
-
-Tellor currently has one data point which must be manually created. The rolling 3 month average of the US PCE . It is updated monthly. _Make sure to keep this file up to date._
-
-Run the following command:
-
-```bash
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manualData.json
-```
-
-For testing purposes, or if you want to hardcode in a specific value to enter, you can use the manualdata.json file to add manual data for a given requestID. Similar to the manual data structure, you add the request ID, a given value \(with granularity\), and a date on which the manual data expires.
-
-The following example shows request ID 4, inputting a value of 9000 with a 1,000,000 granularity. Note the date is a unix timestamp.
-
-```bash
-"4":{
-    "VALUE":9000000000,
-    "DATE":1596153600
-}
-```
-
-### Start mining.
-
-```bash
-telliot mine --config=./configs/config.json
-```
-
-## deposit - Deposit or withdraw a stake
-
-{% hint style="info" %}
-You do not need to stake 500 TRB if you plan to mine on a pool.
-{% endhint %}
-
-You will need 500 TRB to run your own server for mining. Your stake is locked for a minimum of 7 days after you run the command to request withdrawal.
-
-Run the following command to deposit your stake:
-
-```bash
-tellor stake deposit --config=./configs/config.json
-```
-
-To unstake your tokens, you need to request a withdraw:
-
-```bash
-telliot stake request --config=./configs/config.json
-```
-
-One week after the request, the tokens are free to move at your discretion after running the command:
-
-```bash
-telliot stake withdraw --config=./configs/config.json
-```
-
-## dispute - monitor submitted values
-
-Tellor as a system only functions properly if parties actively monitor the tellor network and dispute bad values. Expecting parties to manually look at every value submitted is obviously burdensome. The Tellor disputer automates this fact checking of values.
-
-The way that it works is that the dataServer component will store historical values \(e.g. the last 10 minutes\) and then compare any submitted values to the min/max of the historical values. If the value submitted is outside a certain threshold \(e.g. 10% of the min/max\), then the party will be notified and they can choose if they wish to dispute the bad value.
-
-To start the disputer, add the following line to your config file IN THE TRACKERS ARRAY:
-
-```bash
-"disputeChecker"
-```
-
-Now when running the dataServer, you will store historical values and check for whether the submitted values were within min/max of the range of historical values given a threshold \(e.g. 1% outside\). The variables for configuring the time range of the historical values and the threshold are as follows:
-
-```bash
-  disputeTimeDelta: 5,
-  disputeThreshold: 0.01,
-```
-
-Where 5 and .01 are the defaults, the variables are the amount of time in minutes to store historical values for comparison and the threshold outside the min/max of the values \(e.g. 0.01 = 1%\);
-
-If the disputer is successful and finds a submitted outside of your acceptable range, a text file containing pertinent information will be created in your working directory \(the one you're running the miner out of\) in the format: `"possible-dispute-(blocktime).txt"`
-
-## dataServer - have a dataserver running all the time.
-
-{% hint style="info" %}
-Advanced usage! If you are setting up a Tellor miner for the first time, it might be a good idea to skip this section and come back after you're up and running with one miner.
-{% endhint %}
-
-It is recommended to have a dataserver running all the time so data could be saved and also it is needed as some prices need 24h averages.
-
-In this example will a miner connected to a data server. This miner will start the mining process using multiple keys and the 1 data server will fetch required data from the internet. The network topology of this setup is as follow:
-
-```bash
-                            /(0xE037)\
-                Miner      | (0xcdd8) |
-Tellor     <-> (multiple   | (0xb9dD) | <-> Data Server <-> Internet
-(on chain)      keys)      | (0x2305) |
-                            \(0x3233)/
-```
-
-The data server pulls data from the internet, the 5 staked miners pull data from the data server and submit on-chain to the Tellor Core smart contracts. The following instructions cover setting this up locally.
-
-```bash
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/config.json
-cp config.json config1.json
-telliot dataServer --config=config1.json
-```
-
-Edit `config1.json` to include the following:
-
-```bash
-{
-    "databaseURL":"http://localhost7545",
-    "serverWhitelist": [
-                "0xE037EC8EC9ec423826750853899394dE7F024fee",
-                "0xcdd8FA31AF8475574B8909F135d510579a8087d3",
-                "0xb9dD5AfD86547Df817DA2d0Fb89334A6F8eDd891",
-                "0x230570cD052f40E14C14a81038c6f3aa685d712B",
-                "0x3233afA02644CCd048587F8ba6e99b3C00A34DcC"
-    ],
-    "serverHost": "localhost",
-    "serverPort": 5000,
-    "ethClientTimeout": 3000,
-    "trackerCycle": 10,
-    "requestData":1,
-    "gasMultiplier": 1,
-    "gasMax":10,
-    "trackers": [
-          "gas",
-          "top50",
-          "indexers"
-    ],
-    "dbFile": "./tellorDB"
-    "envFile": ".env1"
-}
-```
-
-After saving this `config1.json` file. Create a copy of this file and edit the `envFile` location to include the 5 staked miner addresses \(the command below do this for you with `cp` and `sed`\):
-
-```bash
-cp config1.json config2.json
-sed -i -e 's/.env1/.env2/' config2.json
-sed -i -e 's/tellorDB/tellorDB2/' config2.json
-```
-
-Create `.env` file with the private keys for the miner (if there are more than one private keys, must be separated by `,`).
-
-```bash
-echo "ETH_PRIVATE_KEYS=4bdc16637633fa4b4854670fbb83fa254756798009f52a1d3add27fb5f5a8e16,d32132133e03be292495035cf32e0e2ce0227728ff7ec4ef5d47ec95097ceeed" > .env1
-
-echo "NODE_WEBSOCKET_URL=wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" >> .env1
-```
-
-Finally, make 1 more copy of the config for the data server and update the `serverHost` address to `0.0.0.0`:
-
-```bash
-cp config1.json config-dataserver.json
-sed -i -e 's/\"serverHost\": \"localhost\"/\"serverHost\": \"0.0.0.0\"/' config-dataserver.json
-```
-
-The stakes have already been deposited for these Addresses so you can now move on to starting up the miner using multiple staked keys.
-
-#### Starting the Miners and Data Server
-
-You can do this in 6 separate terminals locally. Run each of the command in each of the terminals and confirm they start up correctly.
-
-| Terminal \# | Command | Description |
-| :--- | :--- | :--- |
-| 1 | ./telliot dataserver --config=config-dataserver.json | Data Server |
-| 2 | ./telliot mine -r --config=config1.json | Miner 1 (Multiple staked keys) |
-
-#### Conclusion
-
-At this point, you will have 3 terminals running: 2 terminals for the `telliot` and 1 terminal for running Ganache. You should see your miner are submitting transactions using multiple staked keys and if you want to check that the network difficulty is rising, you can use Truffle's console again and run the following commands:
-
-```bash
-let difficulty = await oracle.getUintVar("0xb12aff7664b16cb99339be399b863feecd64d14817be7e1f042f97e3f358e64e")
-difficulty.toNumber()
-```

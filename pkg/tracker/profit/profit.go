@@ -20,21 +20,22 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
-	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/logging"
 )
 
 const ComponentName = "profitTracker"
+
+type Config struct {
+	LogLevel string
+}
 
 type ProfitTracker struct {
 	client           contracts.ETHClient
 	logger           log.Logger
 	contractInstance *contracts.ITellor
 	abi              abi.ABI
-	proxy            db.DataServerProxy
 	ctx              context.Context
 	stop             context.CancelFunc
 	addrs            []common.Address
@@ -53,13 +54,12 @@ type ProfitTracker struct {
 func NewProfitTracker(
 	logger log.Logger,
 	ctx context.Context,
-	cfg *config.Config,
+	cfg Config,
 	client contracts.ETHClient,
 	contractInstance *contracts.ITellor,
-	proxy db.DataServerProxy,
 	addrs []common.Address,
 ) (*ProfitTracker, error) {
-	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
@@ -80,7 +80,6 @@ func NewProfitTracker(
 		logger:           logger,
 		contractInstance: contractInstance,
 		abi:              abi,
-		proxy:            proxy,
 		addrs:            addrs,
 		addrsMap:         addrsMap,
 		ctx:              ctx,
@@ -348,7 +347,6 @@ func (self *ProfitTracker) monitorCostFailed() {
 			}
 			level.Info(logger).Log("msg", "re-subscribed to events")
 		case event := <-events:
-
 			if event.Bloom.Test(self.abi.Events["NonceSubmitted"].ID.Bytes()) {
 				logger := log.With(logger, "block", event.Number)
 

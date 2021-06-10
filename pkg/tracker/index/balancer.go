@@ -5,10 +5,10 @@ package index
 
 import (
 	"context"
-	"encoding/json"
 	"math"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -28,39 +28,44 @@ type BalancerPair struct {
 
 // Balancer implements DataSource interface.
 type Balancer struct {
-	address string
-	token1  string
-	token2  string
-	client  contracts.ETHClient
+	address  string
+	token1   string
+	token2   string
+	client   contracts.ETHClient
+	interval time.Duration
 }
 
-func (b *Balancer) String() string {
-	return "Balancer"
-}
-
-func NewBalancer(pair, address string, client contracts.ETHClient) *Balancer {
+func NewBalancer(pair, address string, interval time.Duration, client contracts.ETHClient) *Balancer {
 	tokens := strings.Split(pair, "/")
 	return &Balancer{
-		address: address,
-		token1:  tokens[0],
-		token2:  tokens[1],
-		client:  client,
+		interval: interval,
+		address:  address,
+		token1:   tokens[0],
+		token2:   tokens[1],
+		client:   client,
 	}
 }
 
-func (b *Balancer) Get(ctx context.Context) ([]byte, error) {
+func (b *Balancer) Get(ctx context.Context) (float64, error) {
 	// Getting current pair info from input pool.
 	pair, err := b.getPair()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting pair info from balancer pool")
+		return 0, errors.Wrap(err, "getting pair info from balancer pool")
 	}
 	// Use balancer pool own GetSpotPrice to minimize onchain calls.
 	price, err := b.getSpotPrice(ctx, pair)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting price info from balancer pool")
+		return 0, errors.Wrap(err, "getting price info from balancer pool")
 	}
-	// Output to index tracker.
-	return json.Marshal([]float64{price})
+	return price, nil
+}
+
+func (b *Balancer) Interval() time.Duration {
+	return b.interval
+}
+
+func (b *Balancer) Source() string {
+	return b.address
 }
 
 func (b *Balancer) getPair() (*BalancerPair, error) {

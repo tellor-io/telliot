@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/util"
+	"github.com/tellor-io/telliot/pkg/format"
 )
 
 type TRBAmount struct {
@@ -27,7 +27,7 @@ func (a *TRBAmount) Set(v string) error {
 }
 
 func (a *TRBAmount) String() string {
-	return util.FormatERC20Balance(a.Int)
+	return format.ERC20Balance(a.Int)
 }
 
 func (a *TRBAmount) IsDefault() bool {

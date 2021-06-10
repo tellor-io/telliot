@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.15.x
+          go-version: 1.16.x
       - uses: actions/cache@v1
         with:
           path: ~/go/pkg/mod
@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 0 # Fetch all tags as well.
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.15.x
+          go-version: 1.16.x
       - uses: actions/cache@v1
         with:
           path: ~/go/pkg/mod
@@ -43,11 +43,8 @@ jobs:
         env:
           VIXEOD_KEY: ${{ secrets.VIXEOD_KEY }}
 
-      - name: Check generated files # Ensure that they are up to date.
+      - name: Check generated files # Ensure generated files are up to date.
         run: make generate-check
-
-      - name: Check for outdated config docs
-        run: make check-config-docs
         
       - name: Building
         run: make build
@@ -57,7 +54,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.15.x
+          go-version: 1.16.x
       - uses: actions/cache@v1
         with:
           path: ~/go/pkg/mod

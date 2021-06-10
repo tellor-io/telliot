@@ -61,7 +61,7 @@ func main() {
 
 	// Generating cli docs from the cli struct.
 	cliDocsMap := make(map[string]string)
-	cli := cli.Cli()
+	cli := &cli.CLI
 	if err = NewCliDocsGenerator(logger, *cliBin).genCliDocs("", reflect.ValueOf(cli).Elem(), cliDocsMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli docs", "err", err)
 		os.Exit(1)
@@ -89,9 +89,8 @@ func main() {
 
 	// Generating config docs from the default config object.
 	cfgDocsMap := make(map[string]interface{})
-	cfgMap := make(map[string]interface{})
-	cfg := config.DefaultConfig()
-	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocsMap, cfgMap); err != nil {
+	cfg := config.DefaultConfig
+	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocsMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli", "err", err)
 		os.Exit(1)
 	}
@@ -101,13 +100,20 @@ func main() {
 		level.Error(logger).Log("msg", "marshaling config docs to json", "err", err)
 		os.Exit(1)
 	}
-	defCfg, err := json.MarshalIndent(cfgMap, "", "\t")
+	defCfg, err := json.MarshalIndent(config.DefaultConfig, "", "\t")
 	if err != nil {
 		level.Error(logger).Log("msg", "marshaling default config to json", "err", err)
 		os.Exit(1)
 	}
 
-	tmpl := template.Must(template.ParseFiles("scripts/cfgdocgen/configuration.md"))
+	// Sort json keys.
+	defCfg, err = JsonRemarshal(defCfg)
+	if err != nil {
+		level.Error(logger).Log("msg", "sorting default config json", "err", err)
+		os.Exit(1)
+	}
+
+	tmpl := template.Must(template.ParseFiles("scripts/cfgdocgen/configuration-template.md"))
 	outf, err := os.Create(*outputFile)
 	if err != nil {
 		level.Error(logger).Log("msg", "failed to open output file, redirecting to stdout", "err", err, "output", *outputFile)
@@ -115,15 +121,15 @@ func main() {
 	}
 	err = tmpl.Execute(outf,
 		struct {
-			CliDocs []cliOutput
-			EnvDocs []envDoc
-			CfgDocs string
-			Cfg     string
+			CliDocs    []cliOutput
+			EnvDocs    []envDoc
+			CfgDocs    string
+			CfgDefault string
 		}{
-			CliDocs: cliDocs,
-			EnvDocs: envDocs,
-			CfgDocs: string(cfgDocs),
-			Cfg:     string(defCfg),
+			CliDocs:    cliDocs,
+			EnvDocs:    envDocs,
+			CfgDocs:    string(cfgDocs),
+			CfgDefault: string(defCfg),
 		})
 	if err != nil {
 		level.Error(logger).Log("msg", "failed to execute template", "err", err)
@@ -203,16 +209,14 @@ func (self *cliDocsGenerator) genCliDocs(parent string, cli reflect.Value, docs 
 	return nil
 }
 
-func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}, defCfg map[string]interface{}) error {
+func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}) error {
 	for i := 0; i < cfg.NumField(); i++ {
 		v := cfg.Field(i)
 		t := cfg.Type().Field(i)
 		switch v.Kind() {
 		case reflect.Struct:
 			cfgDocs[t.Name] = make(map[string]interface{})
-			childDoc := (cfgDocs[t.Name]).(map[string]interface{})
-			childCfg := (cfgDocs[t.Name]).(map[string]interface{})
-			if err := genCfgDocs(v, childDoc, childCfg); err != nil {
+			if err := genCfgDocs(v, (cfgDocs[t.Name]).(map[string]interface{})); err != nil {
 				return err
 			}
 		default:
@@ -227,9 +231,15 @@ func genCfgDocs(cfg reflect.Value, cfgDocs map[string]interface{}, defCfg map[st
 				if help != nil {
 					doc.Help = help.Value()
 				}
+
+				// Respect the json name if present.
+				jsonName, _ := tags.Get("json")
+				if jsonName != nil {
+					name = jsonName.Value()
+					doc.Name = name
+				}
 			}
 			cfgDocs[name] = doc.String()
-			defCfg[name] = doc.Default
 		}
 	}
 	return nil
@@ -247,6 +257,11 @@ func genEnvDocs() ([]envDoc, error) {
 			help     string
 			required bool
 		)
+
+		if env == "" { // Skip empty lines.
+			continue
+		}
+
 		comment := strings.TrimSpace(strings.Split(env, "#")[1])
 		help = comment
 
@@ -264,4 +279,17 @@ func genEnvDocs() ([]envDoc, error) {
 		})
 	}
 	return docs, nil
+}
+
+func JsonRemarshal(bytes []byte) ([]byte, error) {
+	var ifce interface{}
+	err := json.Unmarshal(bytes, &ifce)
+	if err != nil {
+		return []byte{}, err
+	}
+	output, err := json.MarshalIndent(ifce, "", "\t")
+	if err != nil {
+		return []byte{}, err
+	}
+	return output, nil
 }

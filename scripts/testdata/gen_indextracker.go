@@ -15,7 +15,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/tracker"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 type IndexTrackerTestData struct {
@@ -39,7 +38,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = util.SetupLoggingConfig(cfg.Logger)
+	err = format.SetupLoggingConfig(cfg.Logger)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,7 +79,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ioutil.WriteFile(filepath.Join("test", "tracker", "testdata", "test_api.json"), testdataJSON, os.ModePerm)
+	err = ioutil.WriteFile(filepath.Join("test", "tracker", "testdata", "test_index.json"), testdataJSON, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}

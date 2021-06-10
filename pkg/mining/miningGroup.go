@@ -13,10 +13,9 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/util"
 )
 
 const ComponentName = "miner"
@@ -55,7 +54,7 @@ type MiningChallenge struct {
 
 func NewHashSettings(challenge *MiningChallenge, publicAddr string) *HashSettings {
 	_string := fmt.Sprintf("%x", challenge.Challenge) + publicAddr[2:]
-	hashPrefix := util.DecodeHex(_string)
+	hashPrefix := ethereum.DecodeHex(_string)
 	return &HashSettings{
 		prefix:     hashPrefix,
 		difficulty: challenge.Difficulty,
@@ -71,22 +70,22 @@ const targetChunkTime = 200 * time.Millisecond
 const rateInitialGuess = 100e3
 
 type MiningGroup struct {
+	cfg              Config
 	Backends         []*Backend
 	LastPrinted      time.Time
 	logger           log.Logger
-	cfg              *config.Config
 	contractInstance *contracts.ITellor
 }
 
-func NewMiningGroup(logger log.Logger, cfg *config.Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
-	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+func NewMiningGroup(logger log.Logger, cfg Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 	group := &MiningGroup{
+		cfg:              cfg,
 		Backends:         make([]*Backend, len(hashers)),
 		logger:           log.With(logger, "component", ComponentName),
-		cfg:              cfg,
 		contractInstance: contractInstance,
 	}
 	for i, hasher := range hashers {
@@ -211,7 +210,7 @@ func (g *MiningGroup) getTimeOfLastNewValue() *big.Int {
 	for {
 		// Checks the last submit value in the oracle and set a timeout of 15min - (now-lastSubmit).
 		// This is because 15min after the last submit any solution will work.
-		timeOfLastNewValue, err = g.contractInstance.GetUintVar(nil, util.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
+		timeOfLastNewValue, err = g.contractInstance.GetUintVar(nil, ethereum.Keccak256([]byte("_TIME_OF_LAST_NEW_VALUE")))
 		if err == nil {
 			break
 		}
@@ -239,7 +238,7 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 		idleWorkers <- b
 	}
 
-	nextHeartbeat := g.cfg.Mine.Heartbeat.Duration
+	nextHeartbeat := g.cfg.Heartbeat
 
 	var currHashSettings *HashSettings
 	var currWork *Work
@@ -253,7 +252,7 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 		elapsed := time.Since(timeStarted)
 		if elapsed > nextHeartbeat {
 			g.PrintHashRateSummary()
-			nextHeartbeat = elapsed + g.cfg.Mine.Heartbeat.Duration
+			nextHeartbeat = elapsed + g.cfg.Heartbeat
 		}
 		select {
 		case <-ctx.Done():
