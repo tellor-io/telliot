@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package submit
+package dispute
 
 import (
 	"context"
@@ -21,61 +21,60 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/logging"
+	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
 )
 
-const ComponentName = "submitTracker"
+const ComponentName = "disputeTracker"
+
+const reorgEventWait = 3 * time.Minute
 
 type Config struct {
 	LogLevel string
 }
 
-type Submit struct {
-	ctx                  context.Context
-	close                context.CancelFunc
-	cfg                  Config
-	tsDB                 *tsdb.DB
-	client               contracts.ETHClient
-	contractTellor       *contracts.ITellor
-	contractTellorAccess *contracts.ITellorAccess
-	pendingTx            map[string]context.CancelFunc
-	mtx                  sync.Mutex
-	logger               log.Logger
+type Dispute struct {
+	logger    log.Logger
+	ctx       context.Context
+	close     context.CancelFunc
+	cfg       Config
+	tsDB      *tsdb.DB
+	client    contracts.ETHClient
+	contract  *contracts.ITellor
+	pendingTx map[string]context.CancelFunc
+	mtx       sync.Mutex
+	psrTellor *psrTellor.Psr
 }
 
 func New(
 	logger log.Logger,
+	ctx context.Context,
 	cfg Config,
 	tsDB *tsdb.DB,
 	client contracts.ETHClient,
-	contractTellor *contracts.ITellor,
-	contractTellorAccess *contracts.ITellorAccess,
-) (*Submit, error) {
+	contract *contracts.ITellor,
+	psrTellor *psrTellor.Psr,
+) (*Dispute, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 	logger = log.With(logger, "component", ComponentName)
-	return &Submit{
-		client:               client,
-		contractTellor:       contractTellor,
-		contractTellorAccess: contractTellorAccess,
-		cfg:                  cfg,
-		tsDB:                 tsDB,
-		logger:               logger,
+	ctx, close := context.WithCancel(ctx)
+
+	return &Dispute{
+		client:    client,
+		contract:  contract,
+		psrTellor: psrTellor,
+		cfg:       cfg,
+		ctx:       ctx,
+		close:     close,
+		tsDB:      tsDB,
+		logger:    logger,
+		pendingTx: make(map[string]context.CancelFunc),
 	}, nil
 }
 
-func (self *Submit) Start(ctx context.Context) error {
-	go self.monitorTellor()
-	// go self.monitorTellorAccess()
-	return nil
-}
-
-func (self *Submit) Stop() {
-	self.close()
-}
-
-func (self *Submit) monitorTellor() {
+func (self *Dispute) Start() {
 	var err error
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -129,6 +128,7 @@ func (self *Submit) monitorTellor() {
 			}
 			level.Info(logger).Log("msg", "re-subscribed to events")
 		case event := <-events:
+			level.Debug(self.logger).Log("msg", "new event", "details", fmt.Sprintf("%+v", event))
 			if event.Raw.Removed {
 				self.mtx.Lock()
 				pending, ok := self.pendingTx[event.Raw.TxHash.String()]
@@ -140,42 +140,60 @@ func (self *Submit) monitorTellor() {
 				delete(self.pendingTx, event.Raw.TxHash.String())
 				self.mtx.Unlock()
 			}
-			go func(ctx context.Context) {
-				ticker := time.NewTicker(1 * time.Minute)
+			go func() {
+				ticker := time.NewTicker(reorgEventWait) // Wait this long for any re-org events that can cancel this append.
 				defer ticker.Stop()
 
 				select {
 				case <-ticker.C:
-					if err := self.setValTellor(event); err != nil {
+					if err := self.addValTellor(event); err != nil {
 						level.Error(logger).Log(
-							"msg", "setting value",
-							"event", fmt.Sprintf("%+v", event),
+							"msg", "adding value",
 							"err", err,
 						)
 					}
-				case <-ctx.Done():
+				case <-self.ctx.Done():
 					return
 				}
 				self.mtx.Lock()
 				delete(self.pendingTx, event.Raw.TxHash.String())
 				self.mtx.Unlock()
-			}(self.ctx)
+			}()
 		}
 	}
 }
 
-func (self *Submit) setValTellor(event *tellor.TellorNonceSubmitted) error {
-	level.Debug(self.logger).Log(
-		"msg", "adding event to the db",
-		"contract", "tellor",
-		"event", fmt.Sprintf("%+v", event),
-	)
-	ts := timestamp.FromTime(time.Now())
+func (self *Dispute) Stop() {
+	self.close()
+}
 
-	for i, val := range event.Value {
-		appender := self.tsDB.Appender(self.ctx)
+func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
+	for i, valAct := range event.Value {
 		lbls := labels.Labels{
-			labels.Label{Name: "__name__", Value: "submit_value"},
+			labels.Label{Name: "__name__", Value: "oracle_value"},
+			labels.Label{Name: "contract", Value: "tellor"},
+			labels.Label{Name: "id", Value: event.RequestId[i].String()},
+			labels.Label{Name: "miner", Value: event.Miner.String()},
+		}
+		appender := self.tsDB.Appender(self.ctx)
+
+		sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
+
+		if _, err := appender.Append(0,
+			lbls,
+			timestamp.FromTime(time.Now()),
+			float64(valAct.Int64()),
+		); err != nil {
+			return errors.Wrapf(err, "append values to the DB")
+		}
+
+		valExp, err := self.psrTellor.GetValue(event.RequestId[i].Int64(), time.Now().Add(-reorgEventWait))
+		if err != nil {
+			return errors.Wrapf(err, "getting value from the PSR id:%v", event.RequestId[i].Int64())
+		}
+
+		lbls = labels.Labels{
+			labels.Label{Name: "__name__", Value: "psr_value"},
 			labels.Label{Name: "contract", Value: "tellor"},
 			labels.Label{Name: "id", Value: event.RequestId[i].String()},
 		}
@@ -184,17 +202,31 @@ func (self *Submit) setValTellor(event *tellor.TellorNonceSubmitted) error {
 
 		if _, err := appender.Append(0,
 			lbls,
-			ts,
-			float64(val.Int64()),
+			timestamp.FromTime(time.Now()),
+			float64(valExp),
 		); err != nil {
 			return errors.Wrapf(err, "append values to the DB")
 		}
+
+		err = appender.Commit()
+		if err != nil {
+			return errors.Wrapf(err, "committing DB append")
+		}
+
+		level.Debug(self.logger).Log(
+			"msg", "added dispute tracker values",
+			"id", event.RequestId[i].String(),
+			"miner", event.Miner.String(),
+			"oracleValue", valAct,
+			"psrValue", valExp,
+			"difference", ((float64(valExp)-float64(valAct.Int64()))/float64(valExp))*100,
+		)
 	}
 	return nil
 }
 
-func (self *Submit) newSubTellor(output chan *tellor.TellorNonceSubmitted) (event.Subscription, error) {
-	tellorFilterer, err := tellor.NewTellorFilterer(self.contractTellor.Address, self.client)
+func (self *Dispute) newSubTellor(output chan *tellor.TellorNonceSubmitted) (event.Subscription, error) {
+	tellorFilterer, err := tellor.NewTellorFilterer(self.contract.Address, self.client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting instance")
 	}

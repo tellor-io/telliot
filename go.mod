@@ -3,7 +3,7 @@ module github.com/tellor-io/telliot
 go 1.16
 
 require (
-	github.com/alecthomas/kong v0.2.16
+	github.com/alecthomas/kong v0.2.18-0.20210609031350-33ce628ecde8
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/bluele/gcache v0.0.2
 	github.com/btcsuite/btcd v0.21.0-beta // indirect

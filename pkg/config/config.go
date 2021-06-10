@@ -24,9 +24,9 @@ import (
 	"github.com/tellor-io/telliot/pkg/submitter/tellor"
 	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/tasker"
+	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
-	"github.com/tellor-io/telliot/pkg/tracker/submit"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/web"
 )
@@ -41,7 +41,7 @@ type Config struct {
 	Tasker                tasker.Config
 	Transactor            transactor.Config
 	IndexTracker          index.Config
-	SubmitTracker         submit.Config
+	DisputeTracker        dispute.Config
 	Ethereum              ethereum.Config
 	Aggregator            aggregator.Config
 	PsrTellor             psrTellor.Config
@@ -72,6 +72,9 @@ var DefaultConfig = Config{
 	ProfitTracker: profit.Config{
 		LogLevel: "info",
 	},
+	DisputeTracker: dispute.Config{
+		LogLevel: "info",
+	},
 	Ethereum: ethereum.Config{
 		LogLevel: "info",
 		Timeout:  3000,
@@ -92,7 +95,7 @@ var DefaultConfig = Config{
 		LogLevel: "info",
 	},
 	PsrTellor: psrTellor.Config{
-		MinConfidence: 0.7,
+		MinConfidence: 70,
 	},
 	Aggregator: aggregator.Config{
 		LogLevel:       "info",

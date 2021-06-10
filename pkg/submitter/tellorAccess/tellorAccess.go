@@ -5,11 +5,14 @@ package tellorAccess
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -100,10 +103,11 @@ func New(
 			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		}),
 		submitValue: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "telliot",
-			Subsystem: ComponentName,
-			Name:      "submit_value",
-			Help:      "The submitted value",
+			Namespace:   "telliot",
+			Subsystem:   ComponentName,
+			Name:        "submit_value",
+			Help:        "The submitted value",
+			ConstLabels: prometheus.Labels{"account": account.Address.String()},
 		},
 			[]string{"id"},
 		),
@@ -145,7 +149,7 @@ func (self *Submitter) Start() error {
 		}
 	}
 
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(2 * time.Minute)
 	defer ticker.Stop()
 	for {
 		select {
@@ -166,15 +170,15 @@ func (self *Submitter) Stop() {
 }
 
 func (self *Submitter) Submit(reqID int64) error {
-	// ctx, cncl := context.WithTimeout(self.ctx, time.Minute)
-	// defer cncl()
-	// isReporter, err := self.contract.IsReporter(&bind.CallOpts{Context: ctx}, self.account.Address)
-	// if err != nil {
-	// 	return errors.Wrap(err, "checking reporter status")
-	// }
-	// if !isReporter {
-	// 	return errors.Wrap(err, "addr not a reporter")
-	// }
+	ctx, cncl := context.WithTimeout(self.ctx, time.Minute)
+	defer cncl()
+	isReporter, err := self.contract.IsReporter(&bind.CallOpts{Context: ctx}, self.account.Address)
+	if err != nil {
+		return errors.Wrap(err, "checking reporter status")
+	}
+	if !isReporter {
+		return errors.Wrap(err, "addr not a reporter")
+	}
 
 	val, err := self.psr.GetValue(reqID, time.Now())
 	if err != nil {
@@ -190,36 +194,36 @@ func (self *Submitter) Submit(reqID int64) error {
 		"val", val,
 	)
 
-	// f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
-	// 	_reqID := big.NewInt(reqID)
-	// 	_val := big.NewInt(val)
-	// 	return self.contract.SubmitValue(auth, _reqID, _val)
-	// }
-	// tx, recieipt, err := self.transactor.Transact(ctx, f)
-	// if err != nil {
-	// 	self.submitFailCount.Inc()
-	// 	return errors.Wrap(err, "submiting a solution")
-	// }
+	f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
+		_reqID := big.NewInt(reqID)
+		_val := big.NewInt(val)
+		return self.contract.SubmitValue(auth, _reqID, _val)
+	}
+	tx, recieipt, err := self.transactor.Transact(ctx, f)
+	if err != nil {
+		self.submitFailCount.Inc()
+		return errors.Wrap(err, "submiting a solution")
+	}
 
-	// if recieipt.Status != types.ReceiptStatusSuccessful {
-	// 	self.submitFailCount.Inc()
-	// 	return errors.Wrapf(err, "submiting solution status not success status:%v, tx hash:%v", recieipt.Status, tx.Hash())
-	// }
-	// level.Info(self.logger).Log("msg", "successfully submited solution",
-	// 	"txHash", tx.Hash().String(),
-	// 	"nonce", tx.Nonce(),
-	// 	"gasPrice", tx.GasPrice(),
-	// 	"gasUsed", recieipt.GasUsed,
-	// 	"gasLimit", tx.Gas(),
-	// 	"data", fmt.Sprintf("%x", tx.Data()),
-	// )
-	// self.submitCount.Inc()
+	if recieipt.Status != types.ReceiptStatusSuccessful {
+		self.submitFailCount.Inc()
+		return errors.Wrapf(err, "submiting solution status not success status:%v, tx hash:%v", recieipt.Status, tx.Hash())
+	}
+	level.Info(self.logger).Log("msg", "successfully submited solution",
+		"txHash", tx.Hash().String(),
+		"nonce", tx.Nonce(),
+		"gasPrice", tx.GasPrice(),
+		"gasUsed", recieipt.GasUsed,
+		"gasLimit", tx.Gas(),
+		"data", fmt.Sprintf("%x", tx.Data()),
+	)
+	self.submitCount.Inc()
 
-	// self.submitValue.With(
-	// 	prometheus.Labels{
-	// 		"id": strconv.Itoa(int(reqID)),
-	// 	},
-	// ).(prometheus.Gauge).Set(float64(val))
+	self.submitValue.With(
+		prometheus.Labels{
+			"id": strconv.Itoa(int(reqID)),
+		},
+	).(prometheus.Gauge).Set(float64(val))
 
 	self.lastSubmitValue[reqID] = float64(val)
 	self.lastSubmitTime[reqID] = time.Now()
