@@ -398,7 +398,7 @@ func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
 		return 0, errors.Wrapf(err, "parsing data from API url:%v", self.url)
 	}
 
-	// Use 0 value for data that has already been added.
+	// Use 0 value for the volume as this has already been requested.
 	if self.lastTS.Equal(ts) {
 		val = 0
 	}
