@@ -5,7 +5,6 @@ package dispute
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -33,16 +32,16 @@ type Config struct {
 }
 
 type Dispute struct {
-	logger    log.Logger
-	ctx       context.Context
-	close     context.CancelFunc
-	cfg       Config
-	tsDB      *tsdb.DB
-	client    contracts.ETHClient
-	contract  *contracts.ITellor
-	pendingTx map[string]context.CancelFunc
-	mtx       sync.Mutex
-	psrTellor *psrTellor.Psr
+	logger        log.Logger
+	ctx           context.Context
+	close         context.CancelFunc
+	cfg           Config
+	tsDB          *tsdb.DB
+	client        contracts.ETHClient
+	contract      *contracts.ITellor
+	pendingAppend map[string]context.CancelFunc
+	mtx           sync.Mutex
+	psrTellor     *psrTellor.Psr
 }
 
 func New(
@@ -62,15 +61,15 @@ func New(
 	ctx, close := context.WithCancel(ctx)
 
 	return &Dispute{
-		client:    client,
-		contract:  contract,
-		psrTellor: psrTellor,
-		cfg:       cfg,
-		ctx:       ctx,
-		close:     close,
-		tsDB:      tsDB,
-		logger:    logger,
-		pendingTx: make(map[string]context.CancelFunc),
+		client:        client,
+		contract:      contract,
+		psrTellor:     psrTellor,
+		cfg:           cfg,
+		ctx:           ctx,
+		close:         close,
+		tsDB:          tsDB,
+		logger:        logger,
+		pendingAppend: make(map[string]context.CancelFunc),
 	}, nil
 }
 
@@ -128,11 +127,22 @@ func (self *Dispute) Start() {
 			}
 			level.Info(logger).Log("msg", "re-subscribed to events")
 		case event := <-events:
-			level.Debug(self.logger).Log("msg", "new event", "details", fmt.Sprintf("%+v", event))
+			level.Debug(self.logger).Log(
+				"msg", "new event",
+				"removed", event.Raw.Removed,
+				"hash", event.Raw.TxHash.String()[:6],
+				"miner", event.Miner.String()[:6],
+			)
 			if event.Raw.Removed {
 				self.removePending(event)
 			}
-			go func() {
+
+			ctx, cncl := context.WithCancel(self.ctx)
+			self.mtx.Lock()
+			self.pendingAppend[event.Raw.TxHash.String()] = cncl
+			self.mtx.Unlock()
+
+			go func(ctx context.Context) {
 				ticker := time.NewTicker(reorgEventWait) // Wait this long for any re-org events that can cancel this append.
 				defer ticker.Stop()
 
@@ -144,13 +154,14 @@ func (self *Dispute) Start() {
 							"err", err,
 						)
 					}
-				case <-self.ctx.Done():
+					self.mtx.Lock()
+					delete(self.pendingAppend, event.Raw.TxHash.String())
+					self.mtx.Unlock()
+				case <-ctx.Done():
+					level.Debug(self.logger).Log("msg", "append canceled", "hash", event.Raw.TxHash.String()[:6])
 					return
 				}
-				self.mtx.Lock()
-				delete(self.pendingTx, event.Raw.TxHash.String())
-				self.mtx.Unlock()
-			}()
+			}(ctx)
 		}
 	}
 }
@@ -160,13 +171,13 @@ func (self *Dispute) Start() {
 func (self *Dispute) removePending(event *tellor.TellorNonceSubmitted) {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-	pending, ok := self.pendingTx[event.Raw.TxHash.String()]
+	pending, ok := self.pendingAppend[event.Raw.TxHash.String()]
 	if !ok {
 		level.Error(self.logger).Log("msg", "missing pending TX for removed event")
 		return
 	}
 	pending()
-	delete(self.pendingTx, event.Raw.TxHash.String())
+	delete(self.pendingAppend, event.Raw.TxHash.String())
 }
 
 func (self *Dispute) Stop() {
