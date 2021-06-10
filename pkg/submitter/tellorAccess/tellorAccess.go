@@ -44,22 +44,22 @@ type Config struct {
  */
 
 type Submitter struct {
-	ctx              context.Context
-	mtx              sync.Mutex
-	close            context.CancelFunc
-	logger           log.Logger
-	cfg              Config
-	account          *ethereum.Account
-	client           contracts.ETHClient
-	contractInstance *contracts.ITellorAccess
-	transactor       transactor.Transactor
-	submitCount      prometheus.Counter
-	submitFailCount  prometheus.Counter
-	submitValue      *prometheus.GaugeVec
-	psr              *psr.Psr
-	currentValue     map[int64]float64
-	lastSubmitTime   map[int64]time.Time
-	reqIDs           []int64
+	ctx             context.Context
+	mtx             sync.Mutex
+	close           context.CancelFunc
+	logger          log.Logger
+	cfg             Config
+	account         *ethereum.Account
+	client          contracts.ETHClient
+	contract        *contracts.ITellorAccess
+	transactor      transactor.Transactor
+	submitCount     prometheus.Counter
+	submitFailCount prometheus.Counter
+	submitValue     *prometheus.GaugeVec
+	psr             *psr.Psr
+	currentValue    map[int64]float64
+	lastSubmitTime  map[int64]time.Time
+	reqIDs          []int64
 }
 
 func New(
@@ -67,7 +67,7 @@ func New(
 	logger log.Logger,
 	cfg Config,
 	client contracts.ETHClient,
-	contractInstance *contracts.ITellorAccess,
+	contract *contracts.ITellorAccess,
 	account *ethereum.Account,
 	transactor transactor.Transactor,
 	psr *psr.Psr,
@@ -79,18 +79,18 @@ func New(
 	logger = log.With(logger, "component", ComponentName)
 	ctx, close := context.WithCancel(ctx)
 	submitter := &Submitter{
-		ctx:              ctx,
-		close:            close,
-		client:           client,
-		cfg:              cfg,
-		account:          account,
-		logger:           logger,
-		contractInstance: contractInstance,
-		transactor:       transactor,
-		psr:              psr,
-		reqIDs:           []int64{1, 2},
-		currentValue:     make(map[int64]float64),
-		lastSubmitTime:   make(map[int64]time.Time),
+		ctx:            ctx,
+		close:          close,
+		client:         client,
+		cfg:            cfg,
+		account:        account,
+		logger:         logger,
+		contract:       contract,
+		transactor:     transactor,
+		psr:            psr,
+		reqIDs:         []int64{1, 2},
+		currentValue:   make(map[int64]float64),
+		lastSubmitTime: make(map[int64]time.Time),
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
 			Subsystem:   ComponentName,
@@ -126,7 +126,7 @@ func New(
 
 func (self *Submitter) Start() error {
 	for _, reqID := range self.reqIDs {
-		exists, val, ts, err := self.contractInstance.GetCurrentValue(&bind.CallOpts{Context: self.ctx}, big.NewInt(1))
+		exists, val, ts, err := self.contract.GetCurrentValue(&bind.CallOpts{Context: self.ctx}, big.NewInt(1))
 		if err != nil {
 			level.Error(self.logger).Log("msg", "retrieve current value", "reqID", reqID, "err", err)
 			break
@@ -178,7 +178,7 @@ func (self *Submitter) Stop() {
 func (self *Submitter) Submit(reqID int64) error {
 	ctx, cncl := context.WithTimeout(self.ctx, time.Minute)
 	defer cncl()
-	isReporter, err := self.contractInstance.IsReporter(&bind.CallOpts{Context: ctx}, self.account.Address)
+	isReporter, err := self.contract.IsReporter(&bind.CallOpts{Context: ctx}, self.account.Address)
 	if err != nil {
 		return errors.Wrap(err, "checking reporter status")
 	}
@@ -203,7 +203,7 @@ func (self *Submitter) Submit(reqID int64) error {
 	f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
 		_reqID := big.NewInt(reqID)
 		_val := big.NewInt(val)
-		return self.contractInstance.SubmitValue(auth, _reqID, _val)
+		return self.contract.SubmitValue(auth, _reqID, _val)
 	}
 	tx, recieipt, err := self.transactor.Transact(ctx, f)
 	if err != nil {
@@ -353,7 +353,7 @@ func (self *Submitter) monitorVals() {
 }
 
 func (self *Submitter) newSub(output chan *tellorAccess.TellorAccessNewValue) (event.Subscription, error) {
-	filterer, err := tellorAccess.NewTellorAccessFilterer(self.contractInstance.Address, self.client)
+	filterer, err := tellorAccess.NewTellorAccessFilterer(self.contract.Address, self.client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting filter instance")
 	}

@@ -24,9 +24,9 @@ import (
 	"github.com/tellor-io/telliot/pkg/submitter/tellor"
 	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/tasker"
-	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
+	"github.com/tellor-io/telliot/pkg/tracker/submit"
 	"github.com/tellor-io/telliot/pkg/transactor"
 	"github.com/tellor-io/telliot/pkg/web"
 )
@@ -41,7 +41,7 @@ type Config struct {
 	Tasker                tasker.Config
 	Transactor            transactor.Config
 	IndexTracker          index.Config
-	Disputer              dispute.Config
+	SubmitTracker         submit.Config
 	Ethereum              ethereum.Config
 	Aggregator            aggregator.Config
 	PsrTellor             psrTellor.Config

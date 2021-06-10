@@ -35,18 +35,18 @@ type SubmitCanceler interface {
 }
 
 type Tasker struct {
-	ctx              context.Context
-	close            context.CancelFunc
-	logger           log.Logger
-	accounts         []*ethereum.Account
-	contractInstance *contracts.ITellor
-	client           contracts.ETHClient
-	workSinks        map[string]chan *mining.Work
-	SubmitCancelers  []SubmitCanceler
-	txPending        context.CancelFunc
+	ctx             context.Context
+	close           context.CancelFunc
+	logger          log.Logger
+	accounts        []*ethereum.Account
+	contract        *contracts.ITellor
+	client          contracts.ETHClient
+	workSinks       map[string]chan *mining.Work
+	SubmitCancelers []SubmitCanceler
+	txPending       context.CancelFunc
 }
 
-func NewTasker(
+func New(
 	ctx context.Context,
 	logger log.Logger,
 	cfg Config,
@@ -65,14 +65,14 @@ func NewTasker(
 		return nil, nil, errors.Wrap(err, "apply filter logger")
 	}
 	tasker := &Tasker{
-		ctx:              ctx,
-		close:            close,
-		accounts:         accounts,
-		contractInstance: contract,
-		workSinks:        workSinks,
-		logger:           log.With(logger, "component", ComponentName),
-		client:           client,
-		SubmitCancelers:  make([]SubmitCanceler, 0),
+		ctx:             ctx,
+		close:           close,
+		accounts:        accounts,
+		contract:        contract,
+		workSinks:       workSinks,
+		logger:          log.With(logger, "component", ComponentName),
+		client:          client,
+		SubmitCancelers: make([]SubmitCanceler, 0),
 	}
 	return tasker, tasker.workSinks, nil
 }
@@ -82,7 +82,7 @@ func (self *Tasker) AddSubmitCanceler(SubmitCanceler SubmitCanceler) {
 }
 
 func (self *Tasker) newSub(output chan *tellor.ITellorNewChallenge) (event.Subscription, error) {
-	tellorFilterer, err := tellor.NewITellorFilterer(self.contractInstance.Address, self.client)
+	tellorFilterer, err := tellor.NewITellorFilterer(self.contract.Address, self.client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting filter instance")
 	}
@@ -123,7 +123,7 @@ func (self *Tasker) Start() error {
 	level.Info(self.logger).Log("msg", "starting")
 
 	// Getting current challenge from the contract.
-	newVariables, err := self.contractInstance.GetNewCurrentVariables(nil)
+	newVariables, err := self.contract.GetNewCurrentVariables(nil)
 	if err != nil {
 		level.Warn(self.logger).Log("msg", "getting new current variables", "err", err)
 		return errors.Wrap(err, "getting GetNewCurrentVariables")

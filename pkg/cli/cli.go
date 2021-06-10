@@ -69,7 +69,7 @@ var CLI struct {
 	Dispute struct {
 		New  newDisputeCmd `cmd:"" help:"start a new dispute"`
 		Vote voteCmd       `cmd:"" help:"vote on a open dispute"`
-		Show showCmd       `cmd:"" help:"show open disputes"`
+		List listCmd       `cmd:"" help:"list open disputes"`
 	} `cmd:"" help:"Perform commands related to disputes"`
 	Dataserver dataserverCmd `cmd:"" help:"launch only a dataserver instance"`
 	Mine       mineCmd       `cmd:"" help:"mine TRB and submit values"`
@@ -487,12 +487,12 @@ func (v voteCmd) Run() error {
 	return Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
 }
 
-type showCmd struct {
+type listCmd struct {
 	Config  configPath `type:"existingfile" help:"path to config file"`
 	Account int        `arg:"" optional:""`
 }
 
-func (s showCmd) Run() error {
+func (s listCmd) Run() error {
 	logger := logging.NewLogger()
 
 	cfg, err := config.ParseConfig(logger, string(s.Config))
@@ -539,7 +539,7 @@ func (s showCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return List(ctx, cfg.Disputer, logger, client, contract, account, psr)
+	return List(ctx, logger, client, contract, account, psr)
 }
 
 type dataserverCmd struct {
@@ -751,7 +751,7 @@ func (self mineCmd) Run() error {
 			})
 
 			// Event tasker.
-			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
+			tasker, taskerChs, err := tasker.New(ctx, logger, cfg.Tasker, client, contract, accounts)
 			if err != nil {
 				return errors.Wrapf(err, "creating tasker")
 			}
@@ -852,7 +852,6 @@ func (self mineCmd) Run() error {
 					submitter.Stop()
 				})
 			}
-
 		}
 
 	}
