@@ -130,15 +130,7 @@ func (self *Dispute) Start() {
 		case event := <-events:
 			level.Debug(self.logger).Log("msg", "new event", "details", fmt.Sprintf("%+v", event))
 			if event.Raw.Removed {
-				self.mtx.Lock()
-				pending, ok := self.pendingTx[event.Raw.TxHash.String()]
-				if !ok {
-					level.Error(self.logger).Log("msg", "missing pending TX for removed event")
-					continue
-				}
-				pending()
-				delete(self.pendingTx, event.Raw.TxHash.String())
-				self.mtx.Unlock()
+				self.removePending(event)
 			}
 			go func() {
 				ticker := time.NewTicker(reorgEventWait) // Wait this long for any re-org events that can cancel this append.
@@ -163,6 +155,20 @@ func (self *Dispute) Start() {
 	}
 }
 
+// removePending is extracted in a separate function to use defer for unlocking the mutex and
+// avoid forgetting to unlock it for early returns.
+func (self *Dispute) removePending(event *tellor.TellorNonceSubmitted) {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+	pending, ok := self.pendingTx[event.Raw.TxHash.String()]
+	if !ok {
+		level.Error(self.logger).Log("msg", "missing pending TX for removed event")
+		return
+	}
+	pending()
+	delete(self.pendingTx, event.Raw.TxHash.String())
+}
+
 func (self *Dispute) Stop() {
 	self.close()
 }
@@ -184,7 +190,7 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
 			timestamp.FromTime(time.Now()),
 			float64(valAct.Int64()),
 		); err != nil {
-			return errors.Wrapf(err, "append values to the DB")
+			return errors.Wrap(err, "append values to the DB")
 		}
 
 		valExp, err := self.psrTellor.GetValue(event.RequestId[i].Int64(), time.Now().Add(-reorgEventWait))
@@ -205,12 +211,12 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
 			timestamp.FromTime(time.Now()),
 			float64(valExp),
 		); err != nil {
-			return errors.Wrapf(err, "append values to the DB")
+			return errors.Wrap(err, "append values to the DB")
 		}
 
 		err = appender.Commit()
 		if err != nil {
-			return errors.Wrapf(err, "committing DB append")
+			return errors.Wrap(err, "committing DB append")
 		}
 
 		level.Debug(self.logger).Log(
