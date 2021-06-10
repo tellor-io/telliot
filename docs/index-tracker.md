@@ -10,20 +10,25 @@ The structure of the file is as follow:
 
 ```javascript
 {
-    "ALGO/USD": [
-        {
-            "URL": "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest?APIKEY=${API_KEY}",
-            "param": "$[0][4]",
-            "interval": 7200,
-        }
-    ],
+    "VIXEOD": {
+        "interval": "1m",
+        "endpoints": [
+            {
+                "URL": "https://www.quandl.com/api/v3/datasets/CHRIS/CBOE_VX1.json?api_key=${API_KEY}",
+                "param": "$.dataset.data[0][4]"
+            }
+        ]
+    },
     ...
     "AMPL/ETH": [
-        {
-          "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x7e62a502232f1feB77Adf8b8ca023cc9fB133418",
-          "type": "ethereum",
-          "parser": "Uniswap"
-        }
+        "interval": "1m",
+          "endpoints": [
+              {
+                "URL": "Mainnet:0xc5be99a02c6857f9eac67bbce58df5572498f40c,Rinkeby:0x7e62a502232f1feB77Adf8b8ca023cc9fB133418",
+                "type": "ethereum",
+                "parser": "Uniswap"
+              }
+          ]
     ],
     ...
 }
