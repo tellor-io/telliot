@@ -353,7 +353,7 @@ func confidenceInDifference(min, max float64) float64 {
 	return 1 - math.Abs(min-max)/min
 }
 
-// valuesAt returns the value from all sources for a given symbol with the confidence level.
+// valuesAtWithConfidence returns the value from all sources for a given symbol with the confidence level.
 // 100% confidence is when all apis have returned a value within the last tracker interval.
 // For every missing value the calculation subtracts some confidence level.
 // Confidence is calculated actualDataPointCount/maxDataPointCount.
