@@ -100,10 +100,10 @@ Commands:
 
 ```
 
-* `dispute new`
+* `dispute list`
 
 ```
-Usage: telliot dispute new [<account>]
+Usage: telliot dispute list [<account>]
 
 list open disputes
 
@@ -117,10 +117,10 @@ Flags:
 
 ```
 
-* `dispute show`
+* `dispute new`
 
 ```
-Usage: telliot dispute show [<account>]
+Usage: telliot dispute new [<account>]
 
 start a new dispute
 
@@ -143,20 +143,6 @@ vote on a open dispute
 
 Arguments:
   [<account>]
-
-Flags:
-  -h, --help                  Show context-sensitive help.
-
-      --config=CONFIG-PATH    path to config file
-
-```
-
-* `migrate`
-
-```
-Usage: telliot migrate
-
-Migrate funds from the old oracle contract
 
 Flags:
   -h, --help                  Show context-sensitive help.
