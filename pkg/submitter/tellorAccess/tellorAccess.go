@@ -5,22 +5,17 @@ package tellorAccess
 
 import (
 	"context"
-	"fmt"
+	"math"
 	"math/big"
-	"strconv"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
 	psr "github.com/tellor-io/telliot/pkg/psr/tellorAccess"
@@ -28,8 +23,8 @@ import (
 )
 
 const (
-	ComponentName = "submitterTellorAccess"
-	// percentageChangeThreshold = 0.1 // 0.1%.
+	ComponentName             = "submitterTellorAccess"
+	percentageChangeThreshold = 0.1 // 0.1%.
 )
 
 type Config struct {
@@ -45,7 +40,6 @@ type Config struct {
 
 type Submitter struct {
 	ctx              context.Context
-	mtx              sync.Mutex
 	close            context.CancelFunc
 	logger           log.Logger
 	cfg              Config
@@ -57,7 +51,7 @@ type Submitter struct {
 	submitFailCount  prometheus.Counter
 	submitValue      *prometheus.GaugeVec
 	psr              *psr.Psr
-	currentValue     map[int64]float64
+	lastSubmitValue  map[int64]float64
 	lastSubmitTime   map[int64]time.Time
 	reqIDs           []int64
 }
@@ -89,7 +83,7 @@ func New(
 		transactor:       transactor,
 		psr:              psr,
 		reqIDs:           []int64{1, 2},
-		currentValue:     make(map[int64]float64),
+		lastSubmitValue:  make(map[int64]float64),
 		lastSubmitTime:   make(map[int64]time.Time),
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
@@ -117,7 +111,7 @@ func New(
 
 	// Set the initial values
 	for _, reqID := range submitter.reqIDs {
-		submitter.currentValue[reqID] = 0
+		submitter.lastSubmitValue[reqID] = 0
 		submitter.lastSubmitTime[reqID] = time.Unix(0, 0)
 	}
 
@@ -135,16 +129,14 @@ func (self *Submitter) Start() error {
 			level.Error(self.logger).Log("msg", "current value doesn't exist", "reqID", reqID, "err", err)
 			break
 		}
-		self.mtx.Lock()
-		self.currentValue[reqID] = float64(val.Int64())
+		self.lastSubmitValue[reqID] = float64(val.Int64())
 		self.lastSubmitTime[reqID] = time.Unix(ts.Int64(), 0)
 		level.Debug(self.logger).Log(
 			"msg", "recorded initial values",
 			"reqID", reqID,
-			"currentValue", self.currentValue[reqID],
+			"lastSubmitValue", self.lastSubmitValue[reqID],
 			"lastSubmitTime", time.Since(self.lastSubmitTime[reqID]),
 		)
-		self.mtx.Unlock()
 	}
 
 	for _, reqID := range self.reqIDs {
@@ -153,9 +145,7 @@ func (self *Submitter) Start() error {
 		}
 	}
 
-	go self.monitorVals()
-
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -176,15 +166,15 @@ func (self *Submitter) Stop() {
 }
 
 func (self *Submitter) Submit(reqID int64) error {
-	ctx, cncl := context.WithTimeout(self.ctx, time.Minute)
-	defer cncl()
-	isReporter, err := self.contractInstance.IsReporter(&bind.CallOpts{Context: ctx}, self.account.Address)
-	if err != nil {
-		return errors.Wrap(err, "checking reporter status")
-	}
-	if !isReporter {
-		return errors.Wrap(err, "addr not a reporter")
-	}
+	// ctx, cncl := context.WithTimeout(self.ctx, time.Minute)
+	// defer cncl()
+	// isReporter, err := self.contractInstance.IsReporter(&bind.CallOpts{Context: ctx}, self.account.Address)
+	// if err != nil {
+	// 	return errors.Wrap(err, "checking reporter status")
+	// }
+	// if !isReporter {
+	// 	return errors.Wrap(err, "addr not a reporter")
+	// }
 
 	val, err := self.psr.GetValue(reqID, time.Now())
 	if err != nil {
@@ -200,166 +190,81 @@ func (self *Submitter) Submit(reqID int64) error {
 		"val", val,
 	)
 
-	f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
-		_reqID := big.NewInt(reqID)
-		_val := big.NewInt(val)
-		return self.contractInstance.SubmitValue(auth, _reqID, _val)
-	}
-	tx, recieipt, err := self.transactor.Transact(ctx, f)
-	if err != nil {
-		self.submitFailCount.Inc()
-		return errors.Wrap(err, "submiting a solution")
-	}
+	// f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
+	// 	_reqID := big.NewInt(reqID)
+	// 	_val := big.NewInt(val)
+	// 	return self.contractInstance.SubmitValue(auth, _reqID, _val)
+	// }
+	// tx, recieipt, err := self.transactor.Transact(ctx, f)
+	// if err != nil {
+	// 	self.submitFailCount.Inc()
+	// 	return errors.Wrap(err, "submiting a solution")
+	// }
 
-	if recieipt.Status != types.ReceiptStatusSuccessful {
-		self.submitFailCount.Inc()
-		return errors.Wrapf(err, "submiting solution status not success status:%v, tx hash:%v", recieipt.Status, tx.Hash())
-	}
-	level.Info(self.logger).Log("msg", "successfully submited solution",
-		"txHash", tx.Hash().String(),
-		"nonce", tx.Nonce(),
-		"gasPrice", tx.GasPrice(),
-		"gasUsed", recieipt.GasUsed,
-		"gasLimit", tx.Gas(),
-		"data", fmt.Sprintf("%x", tx.Data()),
-	)
-	self.submitCount.Inc()
+	// if recieipt.Status != types.ReceiptStatusSuccessful {
+	// 	self.submitFailCount.Inc()
+	// 	return errors.Wrapf(err, "submiting solution status not success status:%v, tx hash:%v", recieipt.Status, tx.Hash())
+	// }
+	// level.Info(self.logger).Log("msg", "successfully submited solution",
+	// 	"txHash", tx.Hash().String(),
+	// 	"nonce", tx.Nonce(),
+	// 	"gasPrice", tx.GasPrice(),
+	// 	"gasUsed", recieipt.GasUsed,
+	// 	"gasLimit", tx.Gas(),
+	// 	"data", fmt.Sprintf("%x", tx.Data()),
+	// )
+	// self.submitCount.Inc()
 
-	self.submitValue.With(
-		prometheus.Labels{
-			"id": strconv.Itoa(int(reqID)),
-		},
-	).(prometheus.Gauge).Set(float64(val))
+	// self.submitValue.With(
+	// 	prometheus.Labels{
+	// 		"id": strconv.Itoa(int(reqID)),
+	// 	},
+	// ).(prometheus.Gauge).Set(float64(val))
 
-	self.mtx.Lock()
-	self.currentValue[reqID] = float64(val)
+	self.lastSubmitValue[reqID] = float64(val)
 	self.lastSubmitTime[reqID] = time.Now()
 	level.Debug(self.logger).Log(
 		"msg", "recorded new values after a submit",
 		"reqID", reqID,
-		"currentValue", self.currentValue[reqID],
+		"lastSubmitValue", self.lastSubmitValue[reqID],
 		"lastSubmitTime", time.Since(self.lastSubmitTime[reqID]),
 	)
-	self.mtx.Unlock()
 	return nil
 }
 
 func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
-	return true // TODO event monitoring doesn't work on arbitrum so for now just always submit.
-	// self.mtx.Lock()
-	// defer self.mtx.Unlock()
+	logger := log.With(self.logger, "msg", "should submit check passed", "reqID", reqID)
 
-	// logger := log.With(self.logger, "msg", "should submit check passed", "reqID", reqID)
-
-	// if self.lastSubmitTime[reqID].IsZero() {
-	// 	level.Debug(logger).Log(
-	// 		"reason", "first submit",
-	// 	)
-	// 	return true
-	// }
-
-	// if lastSubmitTime, ok := self.lastSubmitTime[reqID]; ok && time.Since(lastSubmitTime) > (5*time.Minute) {
-	// 	level.Debug(logger).Log(
-	// 		"reason", "more then 5 minutes since last submit",
-	// 		"timePassed", time.Since(lastSubmitTime),
-	// 	)
-	// 	return true
-	// }
-
-	// currentValue, ok := self.currentValue[reqID]
-	// if !ok {
-	// 	level.Error(self.logger).Log("msg", "last value check - no record for last value")
-	// }
-	// percentageChange := math.Abs((currentValue-float64(newVal))/currentValue) * 100
-
-	// if percentageChange > percentageChangeThreshold {
-	// 	level.Debug(logger).Log(
-	// 		"reason", "value change more then threshold",
-	// 		"percentageChange", percentageChange,
-	// 		"percentageThresohld", percentageChangeThreshold,
-	// 		"currentValue", currentValue,
-	// 		"newValue", newVal,
-	// 	)
-	// 	return true
-	// }
-	// return false
-}
-
-func (self *Submitter) monitorVals() {
-	events := make(chan *tellorAccess.TellorAccessNewValue)
-	var sub event.Subscription
-	var err error
-
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-
-	// Initial subscription.
-	for {
-		select {
-		case <-self.ctx.Done():
-			return
-		default:
-		}
-		sub, err = self.newSub(events)
-		if err != nil {
-			level.Error(self.logger).Log("msg", "initial subscription to events failed")
-			<-ticker.C
-			continue
-		}
-		break
+	if self.lastSubmitTime[reqID].IsZero() {
+		level.Debug(logger).Log(
+			"reason", "first submit",
+		)
+		return true
 	}
 
-	for {
-		select {
-		case <-self.ctx.Done():
-			return
-		case err := <-sub.Err():
-			if err != nil {
-				level.Error(self.logger).Log(
-					"msg",
-					"subscription error",
-					"err", err)
-			}
+	if lastSubmitTime, ok := self.lastSubmitTime[reqID]; ok && time.Since(lastSubmitTime) > (5*time.Minute) {
+		level.Debug(logger).Log(
+			"reason", "more then 5 minutes since last submit",
+			"timePassed", time.Since(lastSubmitTime),
+		)
+		return true
+	}
 
-			// Trying to resubscribe until it succeeds.
-			for {
-				select {
-				case <-self.ctx.Done():
-					return
-				default:
-				}
-				sub, err = self.newSub(events)
-				if err != nil {
-					level.Error(self.logger).Log("msg", "re-subscribing to events failed")
-					<-ticker.C
-					continue
-				}
-				break
-			}
-			level.Info(self.logger).Log("msg", "re-subscribed to events")
-		case event := <-events:
-			if !event.Raw.Removed { // Ignore reorg events.
-				self.currentValue[event.RequestId.Int64()] = float64(event.Value.Int64())
-				self.lastSubmitTime[event.RequestId.Int64()] = time.Unix(event.Time.Int64(), 0)
-				level.Debug(self.logger).Log(
-					"msg", "recorded new values from an event",
-					"reqID", event.RequestId.Int64(),
-					"currentValue", self.currentValue[event.RequestId.Int64()],
-					"lastSubmitTime", time.Since(self.lastSubmitTime[event.RequestId.Int64()]),
-				)
-			}
-		}
+	lastSubmitValue, ok := self.lastSubmitValue[reqID]
+	if !ok {
+		level.Error(self.logger).Log("msg", "last value check - no record for last value")
 	}
-}
 
-func (self *Submitter) newSub(output chan *tellorAccess.TellorAccessNewValue) (event.Subscription, error) {
-	filterer, err := tellorAccess.NewTellorAccessFilterer(self.contractInstance.Address, self.client)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting filter instance")
+	percentageChange := math.Abs((lastSubmitValue-float64(newVal))/lastSubmitValue) * 100
+	if percentageChange > percentageChangeThreshold {
+		level.Debug(logger).Log(
+			"reason", "value change more then threshold",
+			"percentageChange", percentageChange,
+			"percentageThresohld", percentageChangeThreshold,
+			"lastSubmitValue", lastSubmitValue,
+			"newValue", newVal,
+		)
+		return true
 	}
-	sub, err := filterer.WatchNewValue(&bind.WatchOpts{Context: self.ctx}, output)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting subscription channel")
-	}
-	return sub, nil
+	return false
 }
