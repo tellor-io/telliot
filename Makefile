@@ -6,7 +6,7 @@ FILES_TO_FMT      ?= $(shell find . -name '*.go' -print)
 # The `go env GOPATH` will work for all cases for Go 1.8+.
 GOPATH      ?= $(shell go env GOPATH)
 GOBIN       ?= $(firstword $(subst :, ,${GOPATH}))/bin
-GOTEST_OPTS ?= -failfast -timeout 10m
+GOTEST_OPTS ?= --race -failfast -timeout 10m
 GOPROXY     ?= https://proxy.golang.org
 
 # Support gsed on OSX (installed via brew), falling back to sed. On Linux
