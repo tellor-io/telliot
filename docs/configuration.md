@@ -14,54 +14,452 @@ Telliot commands and config file options are as the following:
 
 #### Telliot Commands
 
-* `--logConfig` \(location of logging config file; default path is current directory\)
-* `mine` \(indicates to run the miner\)
-* `mine -r` \(indicates to mine utilizing a remote server\)
-* `dataserver` \(indicates to run the dataServer \(no mining\)\)
-* `transfer` \(AMOUNT\) \(TOADDRESS\) \(indicates transfer, toAddress is Ethereum address and amount is number of Tributes \(eg. transfer 10 0xea... \(this transfers 10 tokens\)\)\)
-* `approve` \(AMOUNT\) \(TOADDRESS\) \(amount to approve the toaddress to send this amount of tokens
-* `stake deposit` \(indicates to deposit tokens in the contract\)
-* `stake request` \(indicates you wish to withdraw your stake\)
-* `stake withdraw` \(withdraws your stake, run 1 week after request\)
-* `stake status` \(shows your staking balance\)
-* `balance` \(shows your balance\)
+* `accounts`
+
+```
+Usage: telliot accounts
+
+Show accounts
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `approve`
+
+```
+Usage: telliot approve <address> <amount> [<account>]
+
+Approve tokens
+
+Arguments:
+  <address>
+  <amount>
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `balance`
+
+```
+Usage: telliot balance [<address>]
+
+Check the balance of an address
+
+Arguments:
+  [<address>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `dataserver`
+
+```
+Usage: telliot dataserver
+
+launch only a dataserver instance
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `dispute`
+
+```
+Usage: telliot dispute <command>
+
+Perform commands related to disputes
+
+Flags:
+  -h, --help    Show context-sensitive help.
+
+Commands:
+  dispute new [<account>]
+    start a new dispute
+
+  dispute vote [<account>]
+    vote on a open dispute
+
+  dispute show [<account>]
+    show open disputes
+
+```
+
+* `dispute new`
+
+```
+Usage: telliot dispute new [<account>]
+
+start a new dispute
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `dispute show`
+
+```
+Usage: telliot dispute show [<account>]
+
+show open disputes
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `dispute vote`
+
+```
+Usage: telliot dispute vote [<account>]
+
+vote on a open dispute
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `migrate`
+
+```
+Usage: telliot migrate
+
+Migrate funds from the old oracle contract
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `mine`
+
+```
+Usage: telliot mine
+
+mine TRB and submit values
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `stake`
+
+```
+Usage: telliot stake <command>
+
+Perform one of the stake operations
+
+Flags:
+  -h, --help    Show context-sensitive help.
+
+Commands:
+  stake deposit [<account>]
+    deposit a stake
+
+  stake request [<account>]
+    request to withdraw stake
+
+  stake withdraw <address> [<account>]
+    withdraw stake
+
+  stake status [<account>]
+    show stake status
+
+```
+
+* `stake deposit`
+
+```
+Usage: telliot stake deposit [<account>]
+
+deposit a stake
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `stake request`
+
+```
+Usage: telliot stake request [<account>]
+
+request to withdraw stake
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `stake status`
+
+```
+Usage: telliot stake status [<account>]
+
+show stake status
+
+Arguments:
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `stake withdraw`
+
+```
+Usage: telliot stake withdraw <address> [<account>]
+
+withdraw stake
+
+Arguments:
+  <address>
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `transfer`
+
+```
+Usage: telliot transfer <address> <amount> [<account>]
+
+Transfer tokens
+
+Arguments:
+  <address>
+  <amount>
+  [<account>]
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
+* `version`
+
+```
+Usage: telliot version
+
+Show the CLI version information
+
+Flags:
+  -h, --help    Show context-sensitive help.
+
+```
 
 #### .env file options:
 
-* `NODE_WEBSOCKET_URL` \(required\) - node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+
 * `ETH_PRIVATE_KEYS` \(required\) - list of private keys separated by `,`
-* `$PSR$_KEY` - API key for getting a specific indexes.json api \(required if you use authenticated API's\)
+
+* `NODE_URL` \(required\) - websocket node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+
 
 #### Config file options:
-
-* `databaseURL` \(required\) - where you are reading from for the server database \(if hosted\)
-* `ethClientTimeout` \(required\) - timeout for making requests from your node
-* `trackerCycle` \(required\) - how often your database updates \(in seconds\)
-* `trackers` \(required\) - which pieces of the database you update
-* `dbFile` \(required\) - where you want to store your local database \(if self-hosting\)
-* `serverHost` \(required\) - location to host server
-* `serverWhitelist` \(required\) - whitelists which public address can access the data server
-* `fetchTimeout` - timeout for requesting data from an API
-* `requestData` - sets wether your miner request data if challenge is 0.  If yes, then you will addTip\(\) to this number.  Enter a uint number representing request id to be requested \(e.g. 2\)
-* `requestDataInterval` - min frequency at which to request data at \(in seconds, default 30\)
-* `gasMultiplier` - Multiplies the submitted gasPrice \(e.g. 2 will double gas costs\)
-* `gasMax` - a max for the gas price in gwei \(note: this max comes BEFORE the gas multiplier.  So a max gas cost of 10 gwei, can have gas prices up to 20 if gasMultiplier is 2\)
-* `heartbeat` - an integer that controls how frequently the miner process should report the hashrate \(larger is less frequent, try 1000000 to start\)
-* `numProcessors` - an integer number of CPU cores/threads to use for mining.
-* `disputeTimeDelta` - how far back to store values for min/max range - default 5 \(in minutes\)
-* `disputeThreshold` - percentage of acceptable range outside min/max for dispute checking - default
-* `psrFolder` - folder location holding your psr.json file, default working directory
-* `ProfitThreshold` - Solutions will only be submitted when the estimated profit margin is greater than the `ProfitThreshold` setting.  The estimated profit margin (%) is defined as `100*(EstimatedRewards - EstimatedTransactionCosts)/EstimatedTransaction Costs`.  Setting a ProfitThreshold of 0 will submit solutions if the transaction is estimated to break even `(EstimatedRewards = EstimatedTransactionCosts)`.   Values are estimates only.  There is no guarantee on the estimated values or making a profit.
-
-### LogConfig file options
-
-The logging.config file consists of two fields: \* component \* level
-
-The component is the package.component combination.
-
-E.G. the Runner component in the tracker package would be: tracker.Runner
-
-To turn on logging, add the component and the according level. Note the default level is "INFO", so to turn down the number of logs, enter "WARN" or "ERROR"
+```json
+{
+	"Aggregator": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"ManualDataFile": "(Required: false)  - Default: configs/manualData.json"
+	},
+	"Db": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"Path": "(Required: false)  - Default: db",
+		"RemoteHost": "(Required: false)  - Default: ",
+		"RemotePort": "(Required: false)  - Default: 0",
+		"RemoteTimeout": {
+			"Duration": "(Required: false)  - Default: 5s"
+		}
+	},
+	"Disputer": {
+		"DisputeThreshold": "(Required: false)  - Default: 0",
+		"DisputeTimeDelta": {
+			"Duration": "(Required: false)  - Default: 0s"
+		},
+		"LogLevel": "(Required: false)  - Default: "
+	},
+	"Ethereum": {
+		"LogLevel": "(Required: false)  - Default: info",
+		"Timeout": "(Required: false)  - Default: 3000"
+	},
+	"IndexTracker": {
+		"IndexFile": "(Required: false)  - Default: configs/index.json",
+		"Interval": {
+			"Duration": "(Required: false)  - Default: 30s"
+		},
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Mining": {
+		"Heartbeat": "(Required: false)  - Default: 1m0s",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"ProfitTracker": {
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"PsrTellor": {
+		"MinConfidence": "(Required: false)  - Default: 0.7"
+	},
+	"PsrTellorAccess": {
+		"MinConfidence": "(Required: false)  - Default: 0"
+	},
+	"SubmitterTellor": {
+		"Enabled": "(Required: false)  - Default: true",
+		"LogLevel": "(Required: false)  - Default: info",
+		"MinSubmitPeriod": {
+			"Duration": "(Required: false)  - Default: 15m1s"
+		},
+		"ProfitThreshold": "(Required: false)  - Default: 0"
+	},
+	"SubmitterTellorAccess": {
+		"Enabled": "(Required: false)  - Default: false",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Tasker": {
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Transactor": {
+		"GasMax": "(Required: false)  - Default: 10",
+		"GasMultiplier": "(Required: false)  - Default: 1",
+		"LogLevel": "(Required: false)  - Default: info"
+	},
+	"Web": {
+		"ListenHost": "(Required: false)  - Default: ",
+		"ListenPort": "(Required: false)  - Default: 9090",
+		"LogLevel": "(Required: false)  - Default: info",
+		"ReadTimeout": {
+			"Duration": "(Required: false)  - Default: 0s"
+		}
+	},
+	"envFile": "(Required: false)  - Default: configs/.env"
+}
+```
+Here are the config defaults in json format:
+```json
+{
+	"Aggregator": {
+		"LogLevel": "info",
+		"ManualDataFile": "configs/manualData.json"
+	},
+	"Db": {
+		"LogLevel": "info",
+		"Path": "db",
+		"RemoteHost": "",
+		"RemotePort": 0,
+		"RemoteTimeout": "5s"
+	},
+	"Disputer": {
+		"DisputeThreshold": 0,
+		"DisputeTimeDelta": "0s",
+		"LogLevel": ""
+	},
+	"Ethereum": {
+		"LogLevel": "info",
+		"Timeout": 3000
+	},
+	"IndexTracker": {
+		"IndexFile": "configs/index.json",
+		"Interval": "30s",
+		"LogLevel": "info"
+	},
+	"Mining": {
+		"Heartbeat": 60000000000,
+		"LogLevel": "info"
+	},
+	"ProfitTracker": {
+		"LogLevel": "info"
+	},
+	"PsrTellor": {
+		"MinConfidence": 0.7
+	},
+	"PsrTellorAccess": {
+		"MinConfidence": 0
+	},
+	"SubmitterTellor": {
+		"Enabled": true,
+		"LogLevel": "info",
+		"MinSubmitPeriod": "15m1s",
+		"ProfitThreshold": 0
+	},
+	"SubmitterTellorAccess": {
+		"Enabled": false,
+		"LogLevel": "info"
+	},
+	"Tasker": {
+		"LogLevel": "info"
+	},
+	"Transactor": {
+		"GasMax": 10,
+		"GasMultiplier": 1,
+		"LogLevel": "info"
+	},
+	"Web": {
+		"ListenHost": "",
+		"ListenPort": 9090,
+		"LogLevel": "info",
+		"ReadTimeout": "0s"
+	},
+	"envFile": "configs/.env"
+}
+```
+### Log levels
+Note the default level is "INFO", so to turn down the number of logs, enter "WARN" or "ERROR".
 
 DEBUG - logs everything in INFO and additional developer logs
 

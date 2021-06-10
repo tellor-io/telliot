@@ -16,14 +16,18 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 )
 
 const ComponentName = "taskerNewChallenge"
+
+type Config struct {
+	LogLevel string
+}
 
 // SubmitCanceler will be used to cancel current submits when new event arrives.
 type SubmitCanceler interface {
@@ -34,10 +38,9 @@ type Tasker struct {
 	ctx              context.Context
 	close            context.CancelFunc
 	logger           log.Logger
-	accounts         []*config.Account
+	accounts         []*ethereum.Account
 	contractInstance *contracts.ITellor
 	client           contracts.ETHClient
-	cfg              *config.Config
 	workSinks        map[string]chan *mining.Work
 	SubmitCancelers  []SubmitCanceler
 	txPending        context.CancelFunc
@@ -46,17 +49,17 @@ type Tasker struct {
 func NewTasker(
 	ctx context.Context,
 	logger log.Logger,
-	cfg *config.Config,
+	cfg Config,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	accounts []*config.Account,
+	accounts []*ethereum.Account,
 ) (*Tasker, map[string]chan *mining.Work, error) {
 	ctx, close := context.WithCancel(ctx)
 	workSinks := make(map[string]chan *mining.Work)
 	for _, acc := range accounts {
 		workSinks[acc.Address.String()] = make(chan *mining.Work)
 	}
-	logger, err := logging.ApplyFilter(*cfg, ComponentName, logger)
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		close()
 		return nil, nil, errors.Wrap(err, "apply filter logger")
@@ -68,7 +71,6 @@ func NewTasker(
 		contractInstance: contract,
 		workSinks:        workSinks,
 		logger:           log.With(logger, "component", ComponentName),
-		cfg:              cfg,
 		client:           client,
 		SubmitCancelers:  make([]SubmitCanceler, 0),
 	}
@@ -80,7 +82,6 @@ func (self *Tasker) AddSubmitCanceler(SubmitCanceler SubmitCanceler) {
 }
 
 func (self *Tasker) newSub(output chan *tellor.ITellorNewChallenge) (event.Subscription, error) {
-	var tellorFilterer *tellor.ITellorFilterer
 	tellorFilterer, err := tellor.NewITellorFilterer(self.contractInstance.Address, self.client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting filter instance")
@@ -105,7 +106,12 @@ func (self *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 			"difficulty", newChallenge.Difficulty,
 			"requestIDs", fmt.Sprintf("%+v", newChallenge.RequestIDs),
 		)
-		self.workSinks[acc.Address.String()] <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}
+
+		select {
+		case self.workSinks[acc.Address.String()] <- &mining.Work{Challenge: newChallenge, PublicAddr: acc.Address.String(), Start: uint64(rand.Int63()), N: math.MaxInt64}:
+		case <-self.ctx.Done():
+			return
+		}
 	}
 
 }
