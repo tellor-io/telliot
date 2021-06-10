@@ -15,7 +15,8 @@ Telliot commands and config file options are as the following:
 #### Telliot Commands
 {{range .CliDocs}}
 * `{{ .Name }}`
-```go
+
+```
 {{ .CmdOutput }}
 ```
 {{end}}
