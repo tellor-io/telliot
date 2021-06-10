@@ -15,7 +15,8 @@ Telliot commands and config file options are as the following:
 #### Telliot Commands
 
 * `accounts`
-```go
+
+```
 Usage: telliot accounts
 
 Show accounts
@@ -28,7 +29,8 @@ Flags:
 ```
 
 * `approve`
-```go
+
+```
 Usage: telliot approve <address> <amount> [<account>]
 
 Approve tokens
@@ -46,7 +48,8 @@ Flags:
 ```
 
 * `balance`
-```go
+
+```
 Usage: telliot balance [<address>]
 
 Check the balance of an address
@@ -62,7 +65,8 @@ Flags:
 ```
 
 * `dataserver`
-```go
+
+```
 Usage: telliot dataserver
 
 launch only a dataserver instance
@@ -75,7 +79,8 @@ Flags:
 ```
 
 * `dispute`
-```go
+
+```
 Usage: telliot dispute <command>
 
 Perform commands related to disputes
@@ -95,9 +100,10 @@ Commands:
 
 ```
 
-* `dispute list`
-```go
-Usage: telliot dispute list [<account>]
+* `dispute new`
+
+```
+Usage: telliot dispute new [<account>]
 
 list open disputes
 
@@ -111,9 +117,10 @@ Flags:
 
 ```
 
-* `dispute new`
-```go
-Usage: telliot dispute new [<account>]
+* `dispute show`
+
+```
+Usage: telliot dispute show [<account>]
 
 start a new dispute
 
@@ -128,7 +135,8 @@ Flags:
 ```
 
 * `dispute vote`
-```go
+
+```
 Usage: telliot dispute vote [<account>]
 
 vote on a open dispute
@@ -143,8 +151,23 @@ Flags:
 
 ```
 
+* `migrate`
+
+```
+Usage: telliot migrate
+
+Migrate funds from the old oracle contract
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+
+```
+
 * `mine`
-```go
+
+```
 Usage: telliot mine
 
 Submit data to oracle contracts
@@ -157,7 +180,8 @@ Flags:
 ```
 
 * `stake`
-```go
+
+```
 Usage: telliot stake <command>
 
 Perform one of the stake operations
@@ -181,7 +205,8 @@ Commands:
 ```
 
 * `stake deposit`
-```go
+
+```
 Usage: telliot stake deposit [<account>]
 
 deposit a stake
@@ -197,7 +222,8 @@ Flags:
 ```
 
 * `stake request`
-```go
+
+```
 Usage: telliot stake request [<account>]
 
 request to withdraw stake
@@ -213,7 +239,8 @@ Flags:
 ```
 
 * `stake status`
-```go
+
+```
 Usage: telliot stake status [<account>]
 
 show stake status
@@ -229,7 +256,8 @@ Flags:
 ```
 
 * `stake withdraw`
-```go
+
+```
 Usage: telliot stake withdraw <address> [<account>]
 
 withdraw stake
@@ -246,7 +274,8 @@ Flags:
 ```
 
 * `transfer`
-```go
+
+```
 Usage: telliot transfer <address> <amount> [<account>]
 
 Transfer tokens
@@ -264,7 +293,8 @@ Flags:
 ```
 
 * `version`
-```go
+
+```
 Usage: telliot version
 
 Show the CLI version information
