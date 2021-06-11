@@ -184,6 +184,7 @@ func (self *Dispute) Stop() {
 
 func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
 	for i, valAct := range event.Value {
+		ts := timestamp.FromTime(time.Now())
 		lbls := labels.Labels{
 			labels.Label{Name: "__name__", Value: "oracle_value"},
 			labels.Label{Name: "contract", Value: "tellor"},
@@ -196,7 +197,7 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
 
 		if _, err := appender.Append(0,
 			lbls,
-			timestamp.FromTime(time.Now()),
+			ts,
 			float64(valAct.Int64()),
 		); err != nil {
 			return errors.Wrap(err, "append values to the DB")
@@ -217,7 +218,7 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
 
 		if _, err := appender.Append(0,
 			lbls,
-			timestamp.FromTime(time.Now()),
+			ts,
 			float64(valExp),
 		); err != nil {
 			return errors.Wrap(err, "append values to the DB")
