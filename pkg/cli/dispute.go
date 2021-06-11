@@ -117,7 +117,7 @@ func List(
 	// 	return errors.Wrap(err, "get latest eth block header")
 	// }
 
-	// startBlock := big.NewInt(10e3 * 14) // TODO instead of this calcualte only 10 days worth of blocks in the past since disputes can be voted only 7 days in the past.
+	// startBlock := big.NewInt(10e3 * 14) // TODO instead of this calculate only 10 days worth of blocks in the past since disputes can be voted only 7 days in the past.
 	// startBlock.Sub(header.Number, startBlock)
 	// newDisputeID := abi.Events["NewDispute"].ID
 	// query := ethereum.FilterQuery{
