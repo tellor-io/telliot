@@ -29,5 +29,4 @@ require (
 	go.uber.org/goleak v1.1.10
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/tools v0.1.1-0.20210317201901-4599a76b0b9a // indirect
-	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
