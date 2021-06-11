@@ -95,17 +95,17 @@ Commands:
   dispute vote [<account>]
     vote on a open dispute
 
-  dispute show [<account>]
-    show open disputes
+  dispute list [<account>]
+    list open disputes
 
 ```
 
-* `dispute new`
+* `dispute list`
 
 ```
-Usage: telliot dispute new [<account>]
+Usage: telliot dispute list [<account>]
 
-start a new dispute
+list open disputes
 
 Arguments:
   [<account>]
@@ -117,12 +117,12 @@ Flags:
 
 ```
 
-* `dispute show`
+* `dispute new`
 
 ```
-Usage: telliot dispute show [<account>]
+Usage: telliot dispute new [<account>]
 
-show open disputes
+start a new dispute
 
 Arguments:
   [<account>]
@@ -151,26 +151,12 @@ Flags:
 
 ```
 
-* `migrate`
-
-```
-Usage: telliot migrate
-
-Migrate funds from the old oracle contract
-
-Flags:
-  -h, --help                  Show context-sensitive help.
-
-      --config=CONFIG-PATH    path to config file
-
-```
-
 * `mine`
 
 ```
 Usage: telliot mine
 
-mine TRB and submit values
+Submit data to oracle contracts
 
 Flags:
   -h, --help                  Show context-sensitive help.
@@ -328,12 +314,8 @@ Flags:
 			"Duration": "(Required: false)  - Default: 5s"
 		}
 	},
-	"Disputer": {
-		"DisputeThreshold": "(Required: false)  - Default: 0",
-		"DisputeTimeDelta": {
-			"Duration": "(Required: false)  - Default: 0s"
-		},
-		"LogLevel": "(Required: false)  - Default: "
+	"DisputeTracker": {
+		"LogLevel": "(Required: false)  - Default: info"
 	},
 	"Ethereum": {
 		"LogLevel": "(Required: false)  - Default: info",
@@ -354,7 +336,7 @@ Flags:
 		"LogLevel": "(Required: false)  - Default: info"
 	},
 	"PsrTellor": {
-		"MinConfidence": "(Required: false)  - Default: 0.7"
+		"MinConfidence": "(Required: false)  - Default: 70"
 	},
 	"PsrTellorAccess": {
 		"MinConfidence": "(Required: false)  - Default: 0"
@@ -404,10 +386,8 @@ Here are the config defaults in json format:
 		"RemotePort": 0,
 		"RemoteTimeout": "5s"
 	},
-	"Disputer": {
-		"DisputeThreshold": 0,
-		"DisputeTimeDelta": "0s",
-		"LogLevel": ""
+	"DisputeTracker": {
+		"LogLevel": "info"
 	},
 	"Ethereum": {
 		"LogLevel": "info",
@@ -426,7 +406,7 @@ Here are the config defaults in json format:
 		"LogLevel": "info"
 	},
 	"PsrTellor": {
-		"MinConfidence": 0.7
+		"MinConfidence": 70
 	},
 	"PsrTellorAccess": {
 		"MinConfidence": 0

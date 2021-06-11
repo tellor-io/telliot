@@ -131,7 +131,7 @@ func (self *Aggregator) MeanAt(symbol string, at time.Time) (float64, float64, e
 	if confidenceM < confidence {
 		confidence = confidenceM
 	}
-	return price, confidence, nil
+	return price, confidence * 100, nil
 }
 
 func (self *Aggregator) mean(vals []float64) (float64, float64) {
@@ -217,7 +217,7 @@ func (self *Aggregator) TimeWeightedAvg(
 		return 0, 0, errors.Errorf("no result for confidence query:%v", query.Statement())
 	}
 
-	return result, confidence.Value.(promql.Vector)[0].V, err
+	return result, confidence.Value.(promql.Vector)[0].V * 100, err
 }
 
 // VolumWeightedAvg returns price and confidence level for a given symbol.
@@ -333,7 +333,7 @@ func (self *Aggregator) VolumWeightedAvg(
 	}
 
 	// Return the last VWAP price.
-	return result[len(result)-1].V, confidence, nil
+	return result[len(result)-1].V, confidence * 100, nil
 }
 
 func (self *Aggregator) median(values []float64) (float64, float64) {
@@ -348,9 +348,9 @@ func (self *Aggregator) median(values []float64) (float64, float64) {
 // confidenceInDifference calculates the percentage difference between the max and min and subtract this from 100%.
 // Example:
 // min 1, max 2
-// Difference is 1 which is 100% so the final confidence is 1-1 equals 0%.
+// Difference is 1 which is 100% so the final confidence is 100-100 equals 0%.
 func confidenceInDifference(min, max float64) float64 {
-	return 1 - math.Abs(min-max)/min
+	return 100 - (math.Abs(min-max)/min)*100
 }
 
 // valuesAtWithConfidence returns the value from all sources for a given symbol with the confidence level.
@@ -399,7 +399,7 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		return nil, 0, errors.Errorf("no values for confidence at:%v, query:%v", at, query.Statement())
 	}
 
-	return prices, confidence.Value.(promql.Vector)[0].V, nil
+	return prices, confidence.Value.(promql.Vector)[0].V * 100, nil
 }
 
 // valuesAt returns all values from all indexes at a given time.

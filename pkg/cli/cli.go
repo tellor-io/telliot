@@ -36,6 +36,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/submitter/tellor"
 	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
 	"github.com/tellor-io/telliot/pkg/tasker"
+	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
@@ -51,7 +52,6 @@ const VersionMessage = `
 `
 
 var CLI struct {
-	Migrate  migrateCmd  `cmd:"" help:"Migrate funds from the old oracle contract"`
 	Transfer transferCmd `cmd:"" help:"Transfer tokens"`
 	Approve  approveCmd  `cmd:"" help:"Approve tokens"`
 	Accounts accountsCmd `cmd:"" help:"Show accounts"`
@@ -65,10 +65,10 @@ var CLI struct {
 	Dispute struct {
 		New  newDisputeCmd `cmd:"" help:"start a new dispute"`
 		Vote voteCmd       `cmd:"" help:"vote on a open dispute"`
-		Show showCmd       `cmd:"" help:"show open disputes"`
+		List listCmd       `cmd:"" help:"list open disputes"`
 	} `cmd:"" help:"Perform commands related to disputes"`
 	Dataserver dataserverCmd `cmd:"" help:"launch only a dataserver instance"`
-	Mine       mineCmd       `cmd:"" help:"mine TRB and submit values"`
+	Mine       mineCmd       `cmd:"" help:"Submit data to oracle contracts"`
 	Version    VersionCmd    `cmd:"" help:"Show the CLI version information"`
 }
 
@@ -95,24 +95,24 @@ func (c *transferCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(c.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 
 	address := ETHAddress{}
 	err = address.Set(c.Address)
 	if err != nil {
-		return errors.Wrapf(err, "parsing address argument")
+		return errors.Wrap(err, "parsing address argument")
 	}
 	amount := TRBAmount{}
 	err = amount.Set(c.Amount)
 	if err != nil {
-		return errors.Wrapf(err, "parsing amount argument")
+		return errors.Wrap(err, "parsing amount argument")
 	}
 	account, err := getAccountFor(accounts, c.Account)
 	if err != nil {
@@ -135,24 +135,24 @@ func (c *approveCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(c.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 
 	address := ETHAddress{}
 	err = address.Set(c.Address)
 	if err != nil {
-		return errors.Wrapf(err, "parsing address argument")
+		return errors.Wrap(err, "parsing address argument")
 	}
 	amount := TRBAmount{}
 	err = amount.Set(c.Amount)
 	if err != nil {
-		return errors.Wrapf(err, "parsing amount argument")
+		return errors.Wrap(err, "parsing amount argument")
 	}
 	account, err := getAccountFor(accounts, c.Account)
 	if err != nil {
@@ -176,13 +176,13 @@ func (a *accountsCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(a.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	_, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 
 	for i, account := range accounts {
@@ -202,13 +202,13 @@ func (b *balanceCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(b.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, _, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 
 	contract, err := contracts.NewITellor(client)
@@ -220,12 +220,12 @@ func (b *balanceCmd) Run() error {
 	if b.Address == "" {
 		err = addr.Set(contract.Address.String())
 		if err != nil {
-			return errors.Wrapf(err, "parsing argument")
+			return errors.Wrap(err, "parsing argument")
 		}
 	} else {
 		err = addr.Set(b.Address)
 		if err != nil {
-			return errors.Wrapf(err, "parsing argument")
+			return errors.Wrap(err, "parsing argument")
 		}
 	}
 
@@ -242,13 +242,13 @@ func (d depositCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(d.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 	account, err := getAccountFor(accounts, d.Account)
 	if err != nil {
@@ -273,19 +273,19 @@ func (w withdrawCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(w.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 
 	addr := ETHAddress{}
 	err = addr.Set(w.Address)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrap(err, "parsing argument")
 	}
 	account, err := getAccountFor(accounts, w.Account)
 	if err != nil {
@@ -309,13 +309,13 @@ func (r requestCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(r.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 	account, err := getAccountFor(accounts, r.Account)
 	if err != nil {
@@ -338,13 +338,13 @@ func (s statusCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(s.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 	account, err := getAccountFor(accounts, s.Account)
 	if err != nil {
@@ -355,46 +355,6 @@ func (s statusCmd) Run() error {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
 	return ShowStatus(ctx, logger, client, contract, account)
-}
-
-type migrateCmd struct {
-	Config configPath `type:"existingfile" help:"path to config file"`
-}
-
-func (s migrateCmd) Run() error {
-	logger := logging.NewLogger()
-
-	cfg, err := config.ParseConfig(logger, string(s.Config))
-	if err != nil {
-		return errors.Wrapf(err, "creating config")
-	}
-
-	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
-	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
-	}
-
-	contract, err := contracts.NewITellor(client)
-	if err != nil {
-		return errors.Wrap(err, "create tellor contract instance")
-	}
-
-	// Do migration for each account.
-	for _, account := range accounts {
-		level.Info(logger).Log("msg", "TRB migration", "account", account.Address.String())
-		auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
-		if err != nil {
-			return errors.Wrap(err, "prepare ethereum transaction")
-		}
-
-		tx, err := contract.Migrate(auth)
-		if err != nil {
-			return errors.Wrap(err, "contract failed")
-		}
-		level.Info(logger).Log("msg", "TRB migrated", "txHash", tx.Hash().Hex())
-	}
-	return nil
 }
 
 type newDisputeCmd struct {
@@ -410,29 +370,29 @@ func (n newDisputeCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(n.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 
 	requestID := EthereumInt{}
 	err = requestID.Set(n.requestId)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrap(err, "parsing argument")
 	}
 	timestamp := EthereumInt{}
 	err = timestamp.Set(n.timestamp)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrap(err, "parsing argument")
 	}
 	minerIndex := EthereumInt{}
 	err = minerIndex.Set(n.minerIndex)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrap(err, "parsing argument")
 	}
 	account, err := getAccountFor(accounts, n.Account)
 	if err != nil {
@@ -457,19 +417,19 @@ func (v voteCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(v.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 
 	disputeID := EthereumInt{}
 	err = disputeID.Set(v.disputeId)
 	if err != nil {
-		return errors.Wrapf(err, "parsing argument")
+		return errors.Wrap(err, "parsing argument")
 	}
 	account, err := getAccountFor(accounts, v.Account)
 	if err != nil {
@@ -482,23 +442,23 @@ func (v voteCmd) Run() error {
 	return Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
 }
 
-type showCmd struct {
+type listCmd struct {
 	Config  configPath `type:"existingfile" help:"path to config file"`
 	Account int        `arg:"" optional:""`
 }
 
-func (s showCmd) Run() error {
+func (s listCmd) Run() error {
 	logger := logging.NewLogger()
 
 	cfg, err := config.ParseConfig(logger, string(s.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	ctx := context.Background()
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 	account, err := getAccountFor(accounts, s.Account)
 	if err != nil {
@@ -510,23 +470,23 @@ func (s showCmd) Run() error {
 	if cfg.Db.RemoteHost != "" {
 		querable, err = remoteDB(cfg.Db)
 		if err != nil {
-			return errors.Wrapf(err, "opening remote tsdb DB")
+			return errors.Wrap(err, "opening remote tsdb DB")
 		}
 	} else {
 		if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
-			return errors.Wrapf(err, "creating tsdb DB folder")
+			return errors.Wrap(err, "creating tsdb DB folder")
 		}
 		tsdbOptions := tsdb.DefaultOptions()
 		tsdbOptions.NoLockfile = true
 		querable, err = tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 		if err != nil {
-			return errors.Wrapf(err, "opening tsdb DB")
+			return errors.Wrap(err, "opening tsdb DB")
 		}
 	}
 
 	aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, querable)
 	if err != nil {
-		return errors.Wrapf(err, "creating aggregator")
+		return errors.Wrap(err, "creating aggregator")
 	}
 
 	psr := psrTellor.New(logger, cfg.PsrTellor, aggregator)
@@ -534,7 +494,7 @@ func (s showCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return List(ctx, cfg.Disputer, logger, client, contract, account, psr)
+	return List(ctx, logger, client, contract, account, psr)
 }
 
 type dataserverCmd struct {
@@ -546,7 +506,7 @@ func (self dataserverCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(self.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	// Defining a global context for starting and stopping of components.
@@ -564,11 +524,11 @@ func (self dataserverCmd) Run() error {
 		// 48h are enough as the aggregator needs data only 24 hours in the past.
 		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour / time.Millisecond)
 		if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
-			return errors.Wrapf(err, "creating tsdb DB folder")
+			return errors.Wrap(err, "creating tsdb DB folder")
 		}
 		tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 		if err != nil {
-			return errors.Wrapf(err, "creating tsdb DB")
+			return errors.Wrap(err, "creating tsdb DB")
 		}
 		level.Info(logger).Log("msg", "opened local db", "path", cfg.Db.Path)
 
@@ -589,7 +549,7 @@ func (self dataserverCmd) Run() error {
 
 		index, err := index.New(logger, ctx, cfg.IndexTracker, tsDB, client)
 		if err != nil {
-			return errors.Wrapf(err, "creating index tracker")
+			return errors.Wrap(err, "creating index tracker")
 		}
 
 		g.Add(func() error {
@@ -598,6 +558,37 @@ func (self dataserverCmd) Run() error {
 			return err
 		}, func(error) {
 			index.Stop()
+		})
+
+		// Aggregator.
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB)
+		if err != nil {
+			return errors.Wrap(err, "creating aggregator")
+		}
+
+		contractTellor, err := contracts.NewITellor(client)
+		if err != nil {
+			return errors.Wrap(err, "create tellor contract instance")
+		}
+
+		disputeTracker, err := dispute.New(
+			logger,
+			ctx,
+			cfg.DisputeTracker,
+			tsDB,
+			client,
+			contractTellor,
+			psrTellor.New(logger, cfg.PsrTellor, aggregator),
+		)
+		if err != nil {
+			return errors.Wrap(err, "creating profit tracker")
+		}
+		g.Add(func() error {
+			disputeTracker.Start()
+			level.Info(logger).Log("msg", "dispute tracker shutdown complete")
+			return nil
+		}, func(error) {
+			disputeTracker.Stop()
 		})
 
 		// Web/Api server.
@@ -634,7 +625,7 @@ func (self mineCmd) Run() error {
 
 	cfg, err := config.ParseConfig(logger, string(self.Config))
 	if err != nil {
-		return errors.Wrapf(err, "creating config")
+		return errors.Wrap(err, "creating config")
 	}
 
 	// Defining a global context for starting and stopping of components.
@@ -642,7 +633,7 @@ func (self mineCmd) Run() error {
 
 	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrapf(err, "creating tellor variables")
+		return errors.Wrap(err, "creating tellor variables")
 	}
 
 	// We define our run groups here.
@@ -657,7 +648,7 @@ func (self mineCmd) Run() error {
 		if cfg.Db.RemoteHost != "" {
 			tsDB, err = remoteDB(cfg.Db)
 			if err != nil {
-				return errors.Wrapf(err, "opening remote tsdb DB")
+				return errors.Wrap(err, "opening remote tsdb DB")
 			}
 			level.Info(logger).Log("msg", "connected to remote db", "host", cfg.Db.RemoteHost, "port", cfg.Db.RemotePort)
 		} else {
@@ -667,7 +658,7 @@ func (self mineCmd) Run() error {
 			tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
 			_tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 			if err != nil {
-				return errors.Wrapf(err, "opening local tsdb DB")
+				return errors.Wrap(err, "opening local tsdb DB")
 			}
 			defer func() {
 				if err := _tsDB.Close(); err != nil {
@@ -693,13 +684,26 @@ func (self mineCmd) Run() error {
 			})
 		}
 
+		// Aggregator.
+		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB)
+		if err != nil {
+			return errors.Wrap(err, "creating aggregator")
+		}
+
+		contractTellor, err := contracts.NewITellor(client)
+		if err != nil {
+			return errors.Wrap(err, "create tellor contract instance")
+		}
+
 		// Index tracker.
-		// Run only when not using remote DB.
+		// Run only when not using remote DB as it needs to write to the local db.
 		if cfg.Db.RemoteHost == "" {
 			_tsDB, ok := tsDB.(*tsdb.DB)
 			if !ok {
-				return errors.Wrapf(err, "tsdb is not a writable DB instance")
+				return errors.New("tsdb is not a writable DB instance")
 			}
+
+			// Index Tracker.
 			index, err := index.New(logger, ctx, cfg.IndexTracker, _tsDB, client)
 			if err != nil {
 				return errors.Wrapf(err, "creating index tracker")
@@ -714,28 +718,64 @@ func (self mineCmd) Run() error {
 			})
 		}
 
-		// Aggregator.
-		aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, tsDB)
-		if err != nil {
-			return errors.Wrapf(err, "creating aggregator")
+		// Dispute tracker.
+		{
+			// When running with a remote db need to create a new instance of a local db.
+			// Otherwise use the already opened DB.
+			if cfg.Db.RemoteHost != "" {
+				// Open the TSDB database.
+				tsdbOptions := tsdb.DefaultOptions()
+				// 2 days are enough as the aggregator needs data only 24 hours in the past.
+				tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
+				_tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
+				if err != nil {
+					return errors.Wrap(err, "opening local tsdb DB")
+				}
+				defer func() {
+					if err := _tsDB.Close(); err != nil {
+						level.Error(logger).Log("msg", "closing the tsdb", "err", err)
+					}
+				}()
+				tsDB = _tsDB
+				level.Info(logger).Log("msg", "opened local db for recording disputer tracker values", "path", cfg.Db.Path)
+			}
+
+			_tsDB, ok := tsDB.(*tsdb.DB)
+			if !ok {
+				return errors.New("tsdb is not a writable DB instance")
+			}
+			disputeTracker, err := dispute.New(
+				logger,
+				ctx,
+				cfg.DisputeTracker,
+				_tsDB,
+				client,
+				contractTellor,
+				psrTellor.New(logger, cfg.PsrTellor, aggregator),
+			)
+			if err != nil {
+				return errors.Wrap(err, "creating profit tracker")
+			}
+			g.Add(func() error {
+				disputeTracker.Start()
+				level.Info(logger).Log("msg", "dispute tracker shutdown complete")
+				return nil
+			}, func(error) {
+				disputeTracker.Stop()
+			})
 		}
 
 		gasPriceTracker := gasPrice.New(logger, client)
 
 		if cfg.SubmitterTellor.Enabled {
-			contract, err := contracts.NewITellor(client)
-			if err != nil {
-				return errors.Wrap(err, "create tellor contract instance")
-			}
-
 			// Profit tracker.
 			var accountAddrs []common.Address
 			for _, acc := range accounts {
 				accountAddrs = append(accountAddrs, acc.Address)
 			}
-			profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contract, accountAddrs)
+			profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contractTellor, accountAddrs)
 			if err != nil {
-				return errors.Wrapf(err, "creating profit tracker")
+				return errors.Wrap(err, "creating profit tracker")
 			}
 			g.Add(func() error {
 				err := profitTracker.Start()
@@ -746,9 +786,9 @@ func (self mineCmd) Run() error {
 			})
 
 			// Event tasker.
-			tasker, taskerChs, err := tasker.NewTasker(ctx, logger, cfg.Tasker, client, contract, accounts)
+			tasker, taskerChs, err := tasker.New(ctx, logger, cfg.Tasker, client, contractTellor, accounts)
 			if err != nil {
-				return errors.Wrapf(err, "creating tasker")
+				return errors.Wrap(err, "creating tasker")
 			}
 			g.Add(func() error {
 				err := tasker.Start()
@@ -764,7 +804,7 @@ func (self mineCmd) Run() error {
 
 				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceTracker, client, account)
 				if err != nil {
-					return errors.Wrapf(err, "creating transactor")
+					return errors.Wrap(err, "creating transactor")
 				}
 
 				psr := psrTellor.New(loggerWithAddr, cfg.PsrTellor, aggregator)
@@ -775,15 +815,15 @@ func (self mineCmd) Run() error {
 					loggerWithAddr,
 					cfg.SubmitterTellor,
 					client,
-					contract,
+					contractTellor,
 					account,
-					reward.New(loggerWithAddr, aggregator, contract),
+					reward.New(loggerWithAddr, aggregator, contractTellor),
 					transactor,
 					gasPriceTracker,
 					psr,
 				)
 				if err != nil {
-					return errors.Wrapf(err, "creating tellor submitter")
+					return errors.Wrap(err, "creating tellor submitter")
 				}
 				g.Add(func() error {
 					err := submitter.Start()
@@ -797,9 +837,9 @@ func (self mineCmd) Run() error {
 				tasker.AddSubmitCanceler(submitter)
 
 				// The Miner component.
-				miner, err := mining.NewMiningManager(loggerWithAddr, ctx, cfg.Mining, contract, taskerChs[account.Address.String()], submitterCh, client)
+				miner, err := mining.NewMiningManager(loggerWithAddr, ctx, cfg.Mining, contractTellor, taskerChs[account.Address.String()], submitterCh, client)
 				if err != nil {
-					return errors.Wrapf(err, "creating miner")
+					return errors.Wrap(err, "creating miner")
 				}
 				g.Add(func() error {
 					err := miner.Start()
@@ -823,7 +863,7 @@ func (self mineCmd) Run() error {
 				psr := psrTellorAccess.New(loggerWithAddr, cfg.PsrTellorAccess, aggregator)
 				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceTracker, client, account)
 				if err != nil {
-					return errors.Wrapf(err, "creating transactor")
+					return errors.Wrap(err, "creating transactor")
 				}
 
 				submitter, err := tellorAccess.New(
@@ -837,7 +877,7 @@ func (self mineCmd) Run() error {
 					psr,
 				)
 				if err != nil {
-					return errors.Wrapf(err, "creating tellor access submitter")
+					return errors.Wrap(err, "creating tellor access submitter")
 				}
 				g.Add(func() error {
 					err := submitter.Start()
@@ -847,7 +887,6 @@ func (self mineCmd) Run() error {
 					submitter.Stop()
 				})
 			}
-
 		}
 
 	}

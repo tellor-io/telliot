@@ -5,207 +5,250 @@ package dispute
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
-	"math"
-	"math/big"
-	"strconv"
-	"strings"
+	"sort"
+	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/pkg/timestamp"
+	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/contracts"
-	"github.com/tellor-io/telliot/pkg/format"
-	psr "github.com/tellor-io/telliot/pkg/psr/tellor"
+	"github.com/tellor-io/telliot/pkg/contracts/tellor"
+	"github.com/tellor-io/telliot/pkg/logging"
+	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
 )
 
-const ComponentName = "dispute"
+const ComponentName = "disputeTracker"
+
+const reorgEventWait = 3 * time.Minute
 
 type Config struct {
-	LogLevel         string
-	DisputeTimeDelta format.Duration // Ignore data further than this away from the value we are checking.
-	DisputeThreshold float64         // Maximum allowed relative difference between observed and submitted value.
+	LogLevel string
 }
 
-type disputeChecker struct {
-	cfg              Config
-	client           contracts.ETHClient
-	contract         *contracts.ITellor
-	lastCheckedBlock uint64
-	psr              *psr.Psr
-	logger           log.Logger
+type Dispute struct {
+	logger        log.Logger
+	ctx           context.Context
+	close         context.CancelFunc
+	cfg           Config
+	tsDB          *tsdb.DB
+	client        contracts.ETHClient
+	contract      *contracts.ITellor
+	pendingAppend map[string]context.CancelFunc
+	mtx           sync.Mutex
+	psrTellor     *psrTellor.Psr
 }
 
-func (c *disputeChecker) String() string {
-	return "DisputeChecker"
-}
-
-// ValueCheckResult holds the details regarding the disputed value.
-type ValueCheckResult struct {
-	High, Low   int64
-	WithinRange bool
-	Datapoints  []int64
-	Times       []time.Time
-}
-
-func NewDisputeChecker(
+func New(
 	logger log.Logger,
+	ctx context.Context,
 	cfg Config,
+	tsDB *tsdb.DB,
 	client contracts.ETHClient,
 	contract *contracts.ITellor,
-	lastCheckedBlock uint64,
-	psr *psr.Psr,
-) *disputeChecker {
-	return &disputeChecker{
-		client:           client,
-		contract:         contract,
-		cfg:              cfg,
-		psr:              psr,
-		lastCheckedBlock: lastCheckedBlock,
-		logger:           log.With(logger, "component", ComponentName),
+	psrTellor *psrTellor.Psr,
+) (*Dispute, error) {
+	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply filter logger")
+	}
+	logger = log.With(logger, "component", ComponentName)
+	ctx, close := context.WithCancel(ctx)
+
+	return &Dispute{
+		client:        client,
+		contract:      contract,
+		psrTellor:     psrTellor,
+		cfg:           cfg,
+		ctx:           ctx,
+		close:         close,
+		tsDB:          tsDB,
+		logger:        logger,
+		pendingAppend: make(map[string]context.CancelFunc),
+	}, nil
+}
+
+func (self *Dispute) Start() {
+	var err error
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	logger := log.With(self.logger, "contract", "tellor")
+
+	var sub event.Subscription
+	events := make(chan *tellor.TellorNonceSubmitted)
+
+	for {
+		select {
+		case <-self.ctx.Done():
+			return
+		default:
+		}
+		sub, err = self.newSubTellor(events)
+		if err != nil {
+			level.Error(logger).Log("msg", "initial subscribing to events failed")
+			<-ticker.C
+			continue
+		}
+		break
+	}
+
+	for {
+		select {
+		case <-self.ctx.Done():
+			return
+		case err := <-sub.Err():
+			if err != nil {
+				level.Error(logger).Log(
+					"msg",
+					"subscription error",
+					"err", err)
+			}
+
+			// Trying to resubscribe until it succeeds.
+			for {
+				select {
+				case <-self.ctx.Done():
+					return
+				default:
+				}
+				sub, err = self.newSubTellor(events)
+				if err != nil {
+					level.Error(logger).Log("msg", "re-subscribing to events failed", "err", err)
+					<-ticker.C
+					continue
+				}
+				break
+			}
+			level.Info(logger).Log("msg", "re-subscribed to events")
+		case event := <-events:
+			level.Debug(self.logger).Log(
+				"msg", "new event",
+				"removed", event.Raw.Removed,
+				"hash", event.Raw.TxHash.String()[:8],
+				"miner", event.Miner.String()[:8],
+			)
+			if event.Raw.Removed {
+				self.removePending(event)
+			}
+
+			ctx, cncl := context.WithCancel(self.ctx)
+			self.mtx.Lock()
+			self.pendingAppend[event.Raw.TxHash.String()] = cncl
+			self.mtx.Unlock()
+
+			go func(ctx context.Context) {
+				ticker := time.NewTicker(reorgEventWait) // Wait this long for any re-org events that can cancel this append.
+				defer ticker.Stop()
+
+				select {
+				case <-ticker.C:
+					if err := self.addValTellor(event); err != nil {
+						level.Error(logger).Log(
+							"msg", "adding value",
+							"err", err,
+						)
+					}
+					self.removePending(event)
+				case <-ctx.Done():
+					level.Debug(self.logger).Log("msg", "append canceled", "hash", event.Raw.TxHash.String()[:8])
+					return
+				}
+			}(ctx)
+		}
 	}
 }
 
-func (self *disputeChecker) Exec(ctx context.Context) error {
-
-	header, err := self.client.HeaderByNumber(ctx, nil)
-	if err != nil {
-		return errors.Wrap(err, "get latest eth block header")
+// removePending is extracted in a separate function to use defer for unlocking the mutex and
+// avoid forgetting to unlock it for early returns.
+func (self *Dispute) removePending(event *tellor.TellorNonceSubmitted) {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+	pendingCncl, ok := self.pendingAppend[event.Raw.TxHash.String()]
+	if !ok {
+		level.Error(self.logger).Log("msg", "missing pending TX for removed event")
+		return
 	}
-	if self.lastCheckedBlock == 0 {
-		self.lastCheckedBlock = header.Number.Uint64()
-	}
+	pendingCncl()
+	delete(self.pendingAppend, event.Raw.TxHash.String())
+}
 
-	toCheck := header.Number.Uint64()
+func (self *Dispute) Stop() {
+	self.close()
+}
 
-	const blockDelay = 100
-	if toCheck-self.lastCheckedBlock < blockDelay {
-		return nil
-	}
+func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
+	for i, valAct := range event.Value {
+		ts := timestamp.FromTime(time.Now())
+		lbls := labels.Labels{
+			labels.Label{Name: "__name__", Value: "oracle_value"},
+			labels.Label{Name: "contract", Value: "tellor"},
+			labels.Label{Name: "id", Value: event.RequestId[i].String()},
+			labels.Label{Name: "miner", Value: event.Miner.String()},
+		}
+		appender := self.tsDB.Appender(self.ctx)
 
-	abi, err := abi.JSON(strings.NewReader(contracts.ITellorABI))
-	if err != nil {
-		return errors.Wrap(err, "parse abi")
-	}
+		sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
 
-	//just use nil for most of the variables, only using this object to call UnpackLog which only uses the abi
-	bar := bind.NewBoundContract(self.contract.Address, abi, nil, nil, nil)
+		if _, err := appender.Append(0,
+			lbls,
+			ts,
+			float64(valAct.Int64()),
+		); err != nil {
+			return errors.Wrap(err, "append values to the DB")
+		}
 
-	checkUntil := toCheck - blockDelay
-	nonceSubmitID := abi.Events["NonceSubmitted"].ID
-	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(int64(self.lastCheckedBlock)),
-		ToBlock:   big.NewInt(int64(checkUntil)),
-		Addresses: []common.Address{self.contract.Address},
-		Topics:    [][]common.Hash{{nonceSubmitID}},
-	}
-	logs, err := self.client.FilterLogs(ctx, query)
-	if err != nil {
-		return errors.Wrap(err, "filter eth logs")
-	}
-	blockTimes := make(map[uint64]time.Time)
-	for _, l := range logs {
-		nonceSubmit := contracts.TellorNonceSubmitted{}
-		err := bar.UnpackLog(&nonceSubmit, "NonceSubmitted", l)
+		valExp, err := self.psrTellor.GetValue(event.RequestId[i].Int64(), time.Now().Add(-reorgEventWait))
 		if err != nil {
-			return errors.Wrap(err, "unpack into object")
+			return errors.Wrapf(err, "getting value from the PSR id:%v", event.RequestId[i].Int64())
 		}
-		blockTime, ok := blockTimes[l.BlockNumber]
-		if !ok {
-			header, err := self.client.HeaderByNumber(ctx, big.NewInt(int64(l.BlockNumber)))
-			if err != nil {
-				return errors.Wrap(err, "get nonce block header")
-			}
-			blockTime = time.Unix(int64(header.Time), 0)
-			blockTimes[l.BlockNumber] = blockTime
-		}
-		for i, reqID := range nonceSubmit.RequestId {
-			result, err := self.CheckValueAtTime(nonceSubmit.RequestId[i].Int64(), nonceSubmit.Value[i], blockTime)
-			if err != nil {
-				return err
-			} else if result == nil {
-				level.Warn(self.logger).Log("msg", "no value data", "reqid", reqID, "blockTime", blockTime)
-				continue
-			}
 
-			if !result.WithinRange {
-				s := fmt.Sprintf("suspected incorrect value for requestID %d at %s:\n , nearest values:\n", reqID, blockTime)
-				for i, pt := range result.Datapoints {
-					s += strconv.Itoa(int(pt))
-					delta := blockTime.Sub(result.Times[i])
-					if delta > 0 {
-						s += fmt.Sprintf("%s before\n", delta.String())
-					} else {
-						s += fmt.Sprintf("%s after\n", (-delta).String())
-					}
-				}
-				s += fmt.Sprintf("value submitted by miner with address %s", nonceSubmit.Miner)
-				level.Error(self.logger).Log("msg", s)
-				filename := fmt.Sprintf("possible-dispute-%s.txt", blockTime)
-				err := ioutil.WriteFile(filename, []byte(s), 0655)
-				if err != nil {
-					level.Error(self.logger).Log("msg", "saving dispute data", "filename", filename, "err", err)
-				}
-			} else {
-				level.Info(self.logger).Log("msg", "value appears to be within expected range", "reqID", reqID, "value", nonceSubmit.Value, "blockTime", blockTime.String())
-			}
-
+		lbls = labels.Labels{
+			labels.Label{Name: "__name__", Value: "psr_value"},
+			labels.Label{Name: "contract", Value: "tellor"},
+			labels.Label{Name: "id", Value: event.RequestId[i].String()},
 		}
+
+		sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
+
+		if _, err := appender.Append(0,
+			lbls,
+			ts,
+			float64(valExp),
+		); err != nil {
+			return errors.Wrap(err, "append values to the DB")
+		}
+
+		err = appender.Commit()
+		if err != nil {
+			return errors.Wrap(err, "committing DB append")
+		}
+
+		level.Debug(self.logger).Log(
+			"msg", "added dispute tracker values",
+			"id", event.RequestId[i].String(),
+			"miner", event.Miner.String(),
+			"oracleValue", valAct,
+			"psrValue", valExp,
+			"difference", ((float64(valExp)-float64(valAct.Int64()))/float64(valExp))*100,
+		)
 	}
-	self.lastCheckedBlock = checkUntil
 	return nil
 }
 
-// CheckValueAtTime queries for the details regarding the disputed value.
-func (self *disputeChecker) CheckValueAtTime(reqID int64, val *big.Int, at time.Time) (*ValueCheckResult, error) {
-	// Check the value in 5 places, spread over cfg.DisputeTimeDelta.Duration.
-	var datapoints []int64
-	var times []time.Time
-	for i := 0; i < 5; i++ {
-		t := at.Add((time.Duration(i) - 2) * self.cfg.DisputeTimeDelta.Duration / 5)
-		fval, err := self.psr.GetValue(reqID, t)
-		if err != nil {
-			return nil, err
-		}
-		datapoints = append(datapoints, fval)
-		times = append(times, t)
+func (self *Dispute) newSubTellor(output chan *tellor.TellorNonceSubmitted) (event.Subscription, error) {
+	tellorFilterer, err := tellor.NewTellorFilterer(self.contract.Address, self.client)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting instance")
 	}
-
-	if len(datapoints) == 0 {
-		return nil, nil
+	sub, err := tellorFilterer.WatchNonceSubmitted(&bind.WatchOpts{Context: self.ctx}, output, nil, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting channel")
 	}
-
-	min := int64(math.MaxInt64)
-	max := int64(0)
-
-	for _, dp := range datapoints {
-		if dp > max {
-			max = dp
-		}
-		if dp < min {
-			min = dp
-		}
-	}
-	min *= int64(psr.DefaultGranularity * (1 - self.cfg.DisputeTimeDelta.Duration.Seconds()))
-	max *= int64(psr.DefaultGranularity * (1 + self.cfg.DisputeTimeDelta.Duration.Seconds()))
-
-	bigF := new(big.Float)
-	bigF.SetInt(val)
-	intVal, _ := bigF.Int64()
-
-	withinRange := (intVal > min) && (intVal < max)
-
-	return &ValueCheckResult{
-		Low:         min,
-		High:        max,
-		WithinRange: withinRange,
-		Datapoints:  datapoints,
-		Times:       times,
-	}, nil
+	return sub, nil
 }
