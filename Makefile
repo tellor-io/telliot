@@ -99,7 +99,7 @@ generate-config-docs: ## GENERATING CLI DOCS
 generate-config-docs: ## Similar to config struct docs, this will use field annotations from the cli struct and will result in docs entries
 generate-config-docs: ## per cli command consist of a command name and a command output.
 generate-config-docs: build
-	@go run ./scripts/cfgdocgen --output docs/configuration.md --cli-bin ./telliot
+	@go run ./scripts/cfgdocgen generate ./telliot docs/configuration.md
 	SED_BIN="$(SED)" scripts/cleanup-white-noise.sh docs/configuration.md
 
 .PHONY: check-git

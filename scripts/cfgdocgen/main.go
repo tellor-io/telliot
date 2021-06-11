@@ -9,19 +9,18 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 	"text/template"
 
+	"github.com/alecthomas/kong"
 	"github.com/fatih/structtag"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/cli"
 	"github.com/tellor-io/telliot/pkg/config"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 type cliOutput struct {
@@ -47,24 +46,32 @@ type envDoc struct {
 }
 
 func main() {
-	app := kingpin.New(filepath.Base(os.Args[0]), "Telliot config docs generator.")
-	app.HelpFlag.Short('h')
-	outputFile := app.Flag("output", "Output file for the generated doc.").String()
-	cliBin := app.Flag("cli-bin", "Cli binary for generating command outputs.").Required().String()
+	ctx := kong.Parse(&CLI, kong.Name("cfgdocgen"),
+		kong.Description("Config docs generator tool"),
+		kong.UsageOnError())
 
+	ctx.FatalIfErrorf(ctx.Run(*ctx))
+}
+
+var CLI struct {
+	Generate GenerateCmd `cmd:"" help:"Generate docs."`
+}
+
+type GenerateCmd struct {
+	CliBin string `arg:"" required:"" name:"cli-bin" help:"Cli binary for generating command outputs." type:"path"`
+	Output string `arg:"" optional:"" name:"output" help:"Output file for the generated doc." type:"path"`
+}
+
+func (l *GenerateCmd) Run() error {
 	var err error
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	if _, err = app.Parse(os.Args[1:]); err != nil {
-		level.Error(logger).Log("err", err)
-		os.Exit(1)
-	}
 
 	// Generating cli docs from the cli struct.
 	cliDocsMap := make(map[string]string)
 	cli := &cli.CLI
-	if err = NewCliDocsGenerator(logger, *cliBin).genCliDocs("", reflect.ValueOf(cli).Elem(), cliDocsMap); err != nil {
+	if err = NewCliDocsGenerator(logger, l.CliBin).genCliDocs("", reflect.ValueOf(cli).Elem(), cliDocsMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli docs", "err", err)
-		os.Exit(1)
+		return err
 	}
 	cliDocs := make([]cliOutput, 0)
 	keys := []string{}
@@ -84,7 +91,7 @@ func main() {
 	)
 	if envDocs, err = genEnvDocs(); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "env docs", "err", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Generating config docs from the default config object.
@@ -92,31 +99,31 @@ func main() {
 	cfg := config.DefaultConfig
 	if err := genCfgDocs(reflect.ValueOf(cfg), cfgDocsMap); err != nil {
 		level.Error(logger).Log("msg", "failed to generate", "type", "cli", "err", err)
-		os.Exit(1)
+		return err
 	}
 	// Converto to json
 	cfgDocs, err := json.MarshalIndent(cfgDocsMap, "", "\t")
 	if err != nil {
 		level.Error(logger).Log("msg", "marshaling config docs to json", "err", err)
-		os.Exit(1)
+		return err
 	}
 	defCfg, err := json.MarshalIndent(config.DefaultConfig, "", "\t")
 	if err != nil {
 		level.Error(logger).Log("msg", "marshaling default config to json", "err", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Sort json keys.
 	defCfg, err = JsonRemarshal(defCfg)
 	if err != nil {
 		level.Error(logger).Log("msg", "sorting default config json", "err", err)
-		os.Exit(1)
+		return err
 	}
 
 	tmpl := template.Must(template.ParseFiles("scripts/cfgdocgen/configuration-template.md"))
-	outf, err := os.Create(*outputFile)
+	outf, err := os.Create(l.Output)
 	if err != nil {
-		level.Error(logger).Log("msg", "failed to open output file, redirecting to stdout", "err", err, "output", *outputFile)
+		level.Error(logger).Log("msg", "failed to open output file, redirecting to stdout", "err", err, "output", l.Output)
 		outf = os.Stdout
 	}
 	err = tmpl.Execute(outf,
@@ -133,9 +140,10 @@ func main() {
 		})
 	if err != nil {
 		level.Error(logger).Log("msg", "failed to execute template", "err", err)
-		os.Exit(1)
+		return err
 	}
 	logger.Log("msg", "success")
+	return nil
 }
 
 func NewCliDocsGenerator(logger log.Logger, cliBin string) *cliDocsGenerator {
