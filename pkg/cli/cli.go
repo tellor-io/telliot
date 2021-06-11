@@ -5,7 +5,6 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -44,9 +43,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/web"
 )
 
-var GitTag string
-var GitHash string
-
 const VersionMessage = `
     The official Tellor cli tool %s (%s)
     -----------------------------------------
@@ -80,8 +76,7 @@ type VersionCmd struct {
 }
 
 func (cmd *VersionCmd) Run() error {
-	//lint:ignore faillint it should print to console
-	fmt.Printf(VersionMessage, GitTag, GitHash)
+	// The main entry point prints the version message so here just return nil and the message will be printed.
 	return nil
 }
 

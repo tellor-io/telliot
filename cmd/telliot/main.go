@@ -11,6 +11,9 @@ import (
 	"github.com/tellor-io/telliot/pkg/cli"
 )
 
+var GitTag string
+var GitHash string
+
 func main() {
 	// Don't show the version message when it's an help command.
 	shouldShowVersionMessage := true
@@ -22,7 +25,7 @@ func main() {
 	}
 	if shouldShowVersionMessage {
 		//lint:ignore faillint it should print to console
-		fmt.Printf(cli.VersionMessage, cli.GitTag, cli.GitHash)
+		fmt.Printf(cli.VersionMessage, GitTag, GitHash)
 	}
 	ctx := kong.Parse(&cli.CLI, kong.Name("telliot"),
 		kong.Description("The official Tellor cli tool"),
