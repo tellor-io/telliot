@@ -130,8 +130,8 @@ func (self *Dispute) Start() {
 			level.Debug(self.logger).Log(
 				"msg", "new event",
 				"removed", event.Raw.Removed,
-				"hash", event.Raw.TxHash.String()[:6],
-				"miner", event.Miner.String()[:6],
+				"hash", event.Raw.TxHash.String()[:8],
+				"miner", event.Miner.String()[:8],
 			)
 			if event.Raw.Removed {
 				self.removePending(event)
@@ -154,11 +154,9 @@ func (self *Dispute) Start() {
 							"err", err,
 						)
 					}
-					self.mtx.Lock()
-					delete(self.pendingAppend, event.Raw.TxHash.String())
-					self.mtx.Unlock()
+					self.removePending(event)
 				case <-ctx.Done():
-					level.Debug(self.logger).Log("msg", "append canceled", "hash", event.Raw.TxHash.String()[:6])
+					level.Debug(self.logger).Log("msg", "append canceled", "hash", event.Raw.TxHash.String()[:8])
 					return
 				}
 			}(ctx)
@@ -171,12 +169,12 @@ func (self *Dispute) Start() {
 func (self *Dispute) removePending(event *tellor.TellorNonceSubmitted) {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-	pending, ok := self.pendingAppend[event.Raw.TxHash.String()]
+	pendingCncl, ok := self.pendingAppend[event.Raw.TxHash.String()]
 	if !ok {
 		level.Error(self.logger).Log("msg", "missing pending TX for removed event")
 		return
 	}
-	pending()
+	pendingCncl()
 	delete(self.pendingAppend, event.Raw.TxHash.String())
 }
 
