@@ -116,9 +116,16 @@ func createDataSources(ctx context.Context, cfg Config, client contracts.ETHClie
 
 	for symbol, api := range indexes {
 		for _, endpoint := range api.Endpoints {
+			var err error
 			endpoint.URL = os.Expand(endpoint.URL, func(key string) string {
+				if os.Getenv(key) == "" {
+					err = errors.Errorf("missing required env variable in index url:%v", key)
+				}
 				return os.Getenv(key)
 			})
+			if err != nil {
+				return nil, err
+			}
 
 			var source DataSource
 
