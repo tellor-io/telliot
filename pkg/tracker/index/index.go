@@ -211,132 +211,105 @@ func (self *IndexTracker) record(delay time.Duration, symbol string, interval ti
 
 		// Record the source interval to use it for the confidence calculation.
 		// Confidence = avg(actualSamplesCount/expectedMaxSamplesCount) for a given period.
-		source, err := url.Parse(dataSource.Source())
-		if err != nil {
-			level.Error(logger).Log("msg", "parsing url from data source", "err", err)
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-		{
-			appender := self.tsDB.Appender(self.ctx)
-
-			lbls := labels.Labels{
-				labels.Label{Name: "__name__", Value: IntervalMetricName},
-				labels.Label{Name: "source", Value: dataSource.Source()},
-				labels.Label{Name: "domain", Value: source.Host},
-				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
-			}
-
-			sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
-
-			if _, err = appender.Append(0,
-				lbls,
-				ts,
-				float64(interval),
-			); err != nil {
-				level.Error(logger).Log("msg", "append values to the DB", "err", err)
-				select {
-				case <-self.ctx.Done():
-					level.Debug(self.logger).Log("msg", "values record loop exited")
-					return
-				case <-ticker.C:
-					continue
-				}
-			}
-
-			if err := appender.Commit(); err != nil {
-				level.Error(logger).Log("msg", "adding values to the DB", "err", err)
-				if err := appender.Rollback(); err != nil {
-					level.Error(logger).Log("msg", "rollback DB append", "err", err)
-				}
-
-				select {
-				case <-self.ctx.Done():
-					level.Debug(self.logger).Log("msg", "values record loop exited")
-					return
-				case <-ticker.C:
-					continue
-				}
-			}
+		if err := self.recordInterval(logger, ts, interval, symbol, dataSource); err != nil {
+			level.Error(logger).Log("msg", "record interval to the DB", "err", err)
 		}
 
-		value, err := dataSource.Get(self.ctx)
-		if err != nil {
-			level.Error(logger).Log("msg", "getting values from data source", "err", err)
-			self.getErrors.With(prometheus.Labels{"source": dataSource.Source()}).(prometheus.Counter).Inc()
-			select {
-			case <-self.ctx.Done():
-				level.Debug(self.logger).Log("msg", "values record loop exited")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-
-		// Record the actual value.
-		{
-			appender := self.tsDB.Appender(self.ctx)
-			lbls := labels.Labels{
-				labels.Label{Name: "__name__", Value: ValueMetricName},
-				labels.Label{Name: "source", Value: dataSource.Source()},
-				labels.Label{Name: "domain", Value: source.Host},
-				labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
-			}
-			sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
-
-			level.Debug(logger).Log("msg", "adding value to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value, "interval", interval)
-			if _, err = appender.Append(0,
-				lbls,
-				ts,
-				value,
-			); err != nil {
-				level.Error(logger).Log("msg", "append values to the DB", "err", err)
-				if err := appender.Rollback(); err != nil {
-					level.Error(logger).Log("msg", "rollback DB append", "err", err)
-				}
-				select {
-				case <-self.ctx.Done():
-					level.Debug(logger).Log("msg", "values record loop exited")
-					return
-				case <-ticker.C:
-					continue
-				}
-			}
-
-			if err := appender.Commit(); err != nil {
-				level.Error(logger).Log("msg", "adding values to the DB", "err", err)
-				select {
-				case <-self.ctx.Done():
-					level.Debug(logger).Log("msg", "values record loop exited")
-					return
-				case <-ticker.C:
-					continue
-				}
-			}
-
-			self.value.With(
-				prometheus.Labels{
-					"source": dataSource.Source(),
-					"domain": source.Host,
-					"symbol": format.SanitizeMetricName(symbol),
-				},
-			).(prometheus.Gauge).Set(value)
-
+		if err := self.recordValue(logger, ts, interval, symbol, dataSource); err != nil {
+			level.Error(logger).Log("msg", "record value to the DB", "err", err)
 		}
 
 		select {
 		case <-self.ctx.Done():
-			level.Debug(logger).Log("msg", "values record loop exited")
+			level.Debug(self.logger).Log("msg", "values record loop exited")
 			return
 		case <-ticker.C:
 			continue
 		}
 	}
+}
+
+func (self *IndexTracker) recordInterval(logger log.Logger, ts int64, interval time.Duration, symbol string, dataSource DataSource) (err error) {
+	source, err := url.Parse(dataSource.Source())
+	if err != nil {
+		return errors.Wrap(err, "parsing url from data source")
+	}
+	appender := self.tsDB.Appender(self.ctx)
+	defer func() { // An appender always needs to be committed or rolled back.
+		if err != nil {
+			if err := appender.Rollback(); err != nil {
+				level.Error(logger).Log("msg", "db rollback failed", "err", err)
+			}
+			return
+		}
+		if errC := appender.Commit(); errC != nil {
+			err = errors.Wrap(err, "db append commit failed")
+		}
+	}()
+
+	lbls := labels.Labels{
+		labels.Label{Name: "__name__", Value: IntervalMetricName},
+		labels.Label{Name: "source", Value: dataSource.Source()},
+		labels.Label{Name: "domain", Value: source.Host},
+		labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
+	}
+
+	sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
+
+	_, err = appender.Append(0, lbls, ts, float64(interval))
+	if err != nil {
+		return errors.Wrap(err, "append values to the DB")
+	}
+	return nil
+}
+
+func (self *IndexTracker) recordValue(logger log.Logger, ts int64, interval time.Duration, symbol string, dataSource DataSource) (err error) {
+	value, err := dataSource.Get(self.ctx)
+	if err != nil {
+		return errors.Wrap(err, "getting values from data source")
+	}
+
+	source, err := url.Parse(dataSource.Source())
+	if err != nil {
+		return errors.Wrap(err, "parsing url from data source")
+	}
+	appender := self.tsDB.Appender(self.ctx)
+	defer func() { // An appender always needs to be committed or rolled back.
+		if err != nil {
+			if err := appender.Rollback(); err != nil {
+				level.Error(logger).Log("msg", "db rollback failed", "err", err)
+				return
+			}
+			level.Debug(logger).Log("msg", "added interval to db", "source", dataSource.Source(), "host", source.Host, "symbol", format.SanitizeMetricName(symbol), "value", value, "interval", interval)
+			return
+		}
+		if errC := appender.Commit(); errC != nil {
+			err = errors.Wrap(err, "db append commit failed")
+		}
+	}()
+
+	lbls := labels.Labels{
+		labels.Label{Name: "__name__", Value: ValueMetricName},
+		labels.Label{Name: "source", Value: dataSource.Source()},
+		labels.Label{Name: "domain", Value: source.Host},
+		labels.Label{Name: "symbol", Value: format.SanitizeMetricName(symbol)},
+	}
+	sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
+
+	_, err = appender.Append(0, lbls, ts, value)
+	if err != nil {
+		return errors.Wrap(err, "append values to the DB")
+	}
+
+	self.value.With(
+		prometheus.Labels{
+			"source": dataSource.Source(),
+			"domain": source.Host,
+			"symbol": format.SanitizeMetricName(symbol),
+		},
+	).(prometheus.Gauge).Set(value)
+
+	return nil
 }
 
 func (self *IndexTracker) Stop() {

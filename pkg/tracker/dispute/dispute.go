@@ -182,7 +182,20 @@ func (self *Dispute) Stop() {
 	self.close()
 }
 
-func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
+func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error) {
+	appender := self.tsDB.Appender(self.ctx)
+	defer func() { // An appender always needs to be committed or rolled back.
+		if err != nil {
+			if err := appender.Rollback(); err != nil {
+				level.Error(self.logger).Log("msg", "db rollback failed", "err", err)
+			}
+			return
+		}
+		if errC := appender.Commit(); errC != nil {
+			err = errors.Wrap(err, "db append commit failed")
+		}
+	}()
+
 	for i, valAct := range event.Value {
 		ts := timestamp.FromTime(time.Now())
 		lbls := labels.Labels{
@@ -191,15 +204,11 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
 			labels.Label{Name: "id", Value: event.RequestId[i].String()},
 			labels.Label{Name: "miner", Value: event.Miner.String()},
 		}
-		appender := self.tsDB.Appender(self.ctx)
 
 		sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
 
-		if _, err := appender.Append(0,
-			lbls,
-			ts,
-			float64(valAct.Int64()),
-		); err != nil {
+		_, err = appender.Append(0, lbls, ts, float64(valAct.Int64()))
+		if err != nil {
 			return errors.Wrap(err, "append values to the DB")
 		}
 
@@ -216,17 +225,9 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) error {
 
 		sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
 
-		if _, err := appender.Append(0,
-			lbls,
-			ts,
-			float64(valExp),
-		); err != nil {
-			return errors.Wrap(err, "append values to the DB")
-		}
-
-		err = appender.Commit()
+		_, err = appender.Append(0, lbls, ts, float64(valExp))
 		if err != nil {
-			return errors.Wrap(err, "committing DB append")
+			return errors.Wrap(err, "append values to the DB")
 		}
 
 		level.Debug(self.logger).Log(
