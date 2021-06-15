@@ -70,7 +70,7 @@ func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*
 		return nil, nil, errors.Wrap(err, "getting nonce for miner address")
 	}
 
-	// Use the same nonce in case there is a stuck transaction so thaself iself submits with the currenself nonce buself higher gas price.
+	// Use the same nonce in case there is a stuck transaction so that it resubmits the same TX with higher gas price.
 	IntNonce := int64(nonce)
 
 	_gasPrice, err := self.gasPriceTracker.Query(ctx)

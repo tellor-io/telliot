@@ -184,6 +184,11 @@ func (self *Dispute) Stop() {
 
 func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error) {
 	appender := self.tsDB.Appender(self.ctx)
+
+	// Round up the time so that all appends happen with the same TS and
+	// avoid out of order samples errors.
+	ts := timestamp.FromTime(time.Now().Round(5 * time.Second))
+
 	defer func() { // An appender always needs to be committed or rolled back.
 		if err != nil {
 			if err := appender.Rollback(); err != nil {
@@ -197,7 +202,6 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error
 	}()
 
 	for i, valAct := range event.Value {
-		ts := timestamp.FromTime(time.Now())
 		lbls := labels.Labels{
 			labels.Label{Name: "__name__", Value: "oracle_value"},
 			labels.Label{Name: "contract", Value: "tellor"},
@@ -206,12 +210,10 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error
 		}
 
 		sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
-
 		_, err = appender.Append(0, lbls, ts, float64(valAct.Int64()))
 		if err != nil {
 			return errors.Wrap(err, "append values to the DB")
 		}
-
 		valExp, err := self.psrTellor.GetValue(event.RequestId[i].Int64(), time.Now().Add(-reorgEventWait))
 		if err != nil {
 			return errors.Wrapf(err, "getting value from the PSR id:%v", event.RequestId[i].Int64())
@@ -224,7 +226,6 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error
 		}
 
 		sort.Sort(lbls) // This is important! The labels need to be sorted to avoid creating the same series with duplicate reference.
-
 		_, err = appender.Append(0, lbls, ts, float64(valExp))
 		if err != nil {
 			return errors.Wrap(err, "append values to the DB")

@@ -368,7 +368,7 @@ func (self *ProfitTracker) monitorCostFailed() {
 						continue
 					}
 
-					addr, err := types.Sender(types.NewEIP155Signer(id), tx)
+					addr, err := types.Sender(types.LatestSignerForChainID(id), tx)
 					if err != nil {
 						level.Error(logger).Log("msg", "get tx sender", "err", err)
 						continue

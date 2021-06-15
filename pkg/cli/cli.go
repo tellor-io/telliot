@@ -99,9 +99,9 @@ func (c *transferCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	address := ETHAddress{}
@@ -114,7 +114,7 @@ func (c *transferCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing amount argument")
 	}
-	account, err := getAccountFor(accounts, c.Account)
+	account, err := getAccountFor(c.Account)
 	if err != nil {
 		return err
 	}
@@ -139,9 +139,9 @@ func (c *approveCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	address := ETHAddress{}
@@ -154,7 +154,7 @@ func (c *approveCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing amount argument")
 	}
-	account, err := getAccountFor(accounts, c.Account)
+	account, err := getAccountFor(c.Account)
 	if err != nil {
 		return err
 	}
@@ -174,15 +174,9 @@ type accountsCmd struct {
 func (a *accountsCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(a.Config))
+	accounts, err := ethereum.GetAccounts()
 	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
-	ctx := context.Background()
-	_, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
-	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "getting accounts")
 	}
 
 	for i, account := range accounts {
@@ -206,9 +200,9 @@ func (b *balanceCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, _, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	contract, err := contracts.NewITellor(client)
@@ -246,11 +240,11 @@ func (d depositCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(accounts, d.Account)
+	account, err := getAccountFor(d.Account)
 	if err != nil {
 		return err
 	}
@@ -277,9 +271,9 @@ func (w withdrawCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	addr := ETHAddress{}
@@ -287,7 +281,7 @@ func (w withdrawCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(accounts, w.Account)
+	account, err := getAccountFor(w.Account)
 	if err != nil {
 		return err
 	}
@@ -313,11 +307,11 @@ func (r requestCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(accounts, r.Account)
+	account, err := getAccountFor(r.Account)
 	if err != nil {
 		return err
 	}
@@ -342,11 +336,11 @@ func (s statusCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(accounts, s.Account)
+	account, err := getAccountFor(s.Account)
 	if err != nil {
 		return err
 	}
@@ -374,9 +368,9 @@ func (n newDisputeCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	requestID := EthereumInt{}
@@ -394,7 +388,7 @@ func (n newDisputeCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(accounts, n.Account)
+	account, err := getAccountFor(n.Account)
 	if err != nil {
 		return err
 	}
@@ -421,9 +415,9 @@ func (v voteCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	disputeID := EthereumInt{}
@@ -431,7 +425,7 @@ func (v voteCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(accounts, v.Account)
+	account, err := getAccountFor(v.Account)
 	if err != nil {
 		return err
 	}
@@ -456,11 +450,11 @@ func (s listCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(accounts, s.Account)
+	account, err := getAccountFor(s.Account)
 	if err != nil {
 		return err
 	}
@@ -631,9 +625,14 @@ func (self mineCmd) Run() error {
 	// Defining a global context for starting and stopping of components.
 	ctx := context.Background()
 
-	client, accounts, err := createTellorVariables(ctx, logger, cfg.Ethereum)
+	client, err := newClient(ctx, logger, cfg.Ethereum)
 	if err != nil {
-		return errors.Wrap(err, "creating tellor variables")
+		return errors.Wrap(err, "creating ethereum client")
+	}
+
+	accounts, err := ethereum.GetAccounts()
+	if err != nil {
+		return errors.Wrap(err, "getting accounts")
 	}
 
 	// We define our run groups here.
@@ -925,42 +924,41 @@ func remoteDB(cfg db.Config) (storage.SampleAndChunkQueryable, error) {
 	), nil
 }
 
-func getAccountFor(accounts []*ethereum.Account, accountNo int) (*ethereum.Account, error) {
+func getAccountFor(accountNo int) (*ethereum.Account, error) {
+	accounts, err := ethereum.GetAccounts()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting accounts")
+	}
 	if accountNo < 0 || accountNo >= len(accounts) {
 		return nil, errors.New("account not found")
 	}
 	return accounts[accountNo], nil
 }
 
-func createTellorVariables(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, []*ethereum.Account, error) {
+func newClient(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, error) {
 	nodeURL := os.Getenv(ethereum.NodeURLEnvName)
 	client, err := ethereum.NewClient(logger, cfg, nodeURL)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "create rpc client instance")
-	}
-
-	accounts, err := ethereum.GetAccounts()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "creating accounts")
+		return nil, errors.Wrap(err, "create rpc client instance")
 	}
 
 	if !strings.Contains(strings.ToLower(nodeURL), "arbitrum") { // Arbitrum nodes doesn't support sync checking.
 		// Issue #55, halt if client is still syncing with Ethereum network
 		s, err := client.IsSyncing(ctx)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "determining if Ethereum client is syncing")
+			return nil, errors.Wrap(err, "determining if Ethereum client is syncing")
 		}
 		if s {
-			return nil, nil, errors.New("ethereum node is still syncing with the network")
+			return nil, errors.New("ethereum node is still syncing with the network")
 		}
 	}
 
 	id, err := client.NetworkID(ctx)
 	if err != nil {
-		return nil, nil, level.Error(logger).Log("msg", "get nerwork ID", "err", err)
+		return nil, level.Error(logger).Log("msg", "get nerwork ID", "err", err)
 	}
 
 	level.Info(logger).Log("msg", "client created", "netID", id.String())
 
-	return client, accounts, nil
+	return client, nil
 }

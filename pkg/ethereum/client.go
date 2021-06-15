@@ -316,3 +316,13 @@ func (c *clientInstance) BlockByNumber(ctx context.Context, number *big.Int) (*t
 	})
 	return res, _err
 }
+
+func (c *clientInstance) BlockNumber(ctx context.Context) (uint64, error) {
+	var res uint64
+	_err := c.withTimeout(ctx, func(_ctx *context.Context) error {
+		r, e := c.ethClient.BlockNumber(*_ctx)
+		res = r
+		return e
+	})
+	return res, _err
+}
