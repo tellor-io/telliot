@@ -515,8 +515,8 @@ func (self dataserverCmd) Run() error {
 
 		// Open the TSDB database.
 		tsdbOptions := tsdb.DefaultOptions()
-		// 48h are enough as the aggregator needs data only 24 hours in the past.
-		tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour / time.Millisecond)
+		// 5 days are enough as the aggregator needs data only 24 hours in the past.
+		tsdbOptions.RetentionDuration = int64(5 * 24 * time.Hour / time.Millisecond)
 		if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
 			return errors.Wrap(err, "creating tsdb DB folder")
 		}
@@ -653,8 +653,8 @@ func (self mineCmd) Run() error {
 		} else {
 			// Open the TSDB database.
 			tsdbOptions := tsdb.DefaultOptions()
-			// 2 days are enough as the aggregator needs data only 24 hours in the past.
-			tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
+			// 5 days are enough as the aggregator needs data only 24 hours in the past.
+			tsdbOptions.RetentionDuration = int64(5 * 24 * time.Hour)
 			_tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 			if err != nil {
 				return errors.Wrap(err, "opening local tsdb DB")
@@ -666,6 +666,7 @@ func (self mineCmd) Run() error {
 			}()
 			tsDB = _tsDB
 			level.Info(logger).Log("msg", "opened local db", "path", cfg.Db.Path)
+			level.Warn(logger).Log("msg", "FOR NEW DB INSTANCES IT IS NORMAL TO SEE SOME QUERY ERRORS  AS THE DATABASE IS NOT YET POPULATED WITH VALUES")
 		}
 
 		// Web/Api server.
