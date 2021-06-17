@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -29,6 +30,12 @@ import (
 )
 
 const ComponentName = "submitterTellor"
+
+type ContractCaller interface {
+	GetUintVar(opts *bind.CallOpts, _data [32]byte) (*big.Int, error)
+	SubmitMiningSolution(opts *bind.TransactOpts, _nonce string, _requestId [5]*big.Int, _value [5]*big.Int) (*types.Transaction, error)
+	GetStakerInfo(opts *bind.CallOpts, _staker common.Address) (*big.Int, *big.Int, error)
+}
 
 type Config struct {
 	Enabled  bool
@@ -55,7 +62,7 @@ type Submitter struct {
 	cfg             Config
 	account         *ethereum.Account
 	client          contracts.ETHClient
-	contract        *contracts.ITellor
+	contract        ContractCaller
 	resultCh        chan *mining.Result
 	submitCount     prometheus.Counter
 	submitFailCount prometheus.Counter
@@ -72,7 +79,7 @@ func New(
 	logger log.Logger,
 	cfg Config,
 	client contracts.ETHClient,
-	contract *contracts.ITellor,
+	contract ContractCaller,
 	account *ethereum.Account,
 	reward *reward.Reward,
 	transactor transactor.Transactor,
