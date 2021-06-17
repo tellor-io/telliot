@@ -242,7 +242,7 @@ func (self *Submitter) profitPercent() (int64, error) {
 
 func (self *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {
 	go func(newChallengeReplace context.Context, result *mining.Result) {
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {

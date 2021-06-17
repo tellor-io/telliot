@@ -27,13 +27,13 @@ type SolutionSink interface {
 
 const NumProcessors = 1
 
-func SetupMiningGroup(logger log.Logger, cfg Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+func SetupMiningGroup(logger log.Logger, ctx context.Context, cfg Config, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	var hashers []Hasher
 	level.Info(logger).Log("msg", "starting CPU mining", "threads", NumProcessors)
 	for i := 0; i < NumProcessors; i++ {
 		hashers = append(hashers, NewCpuMiner(int64(i)))
 	}
-	miningGrp, err := NewMiningGroup(logger, cfg, hashers, contractInstance)
+	miningGrp, err := NewMiningGroup(logger, ctx, cfg, hashers, contractInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating new mining group")
 	}
@@ -76,7 +76,7 @@ func NewMiningManager(
 	}
 	logger = log.With(logger, "component", ComponentName)
 
-	group, err := SetupMiningGroup(logger, cfg, contractInstance)
+	group, err := SetupMiningGroup(logger, ctx, cfg, contractInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "setup MiningGroup")
 	}

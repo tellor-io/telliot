@@ -186,7 +186,7 @@ func (self *Aggregator) TimeWeightedAvg(
 		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(_result.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.Errorf("no result for values query:%v", query.Statement())
+		return 0, 0, errors.Errorf("no result for TWAP values query:%v", query.Statement())
 	}
 
 	result := _result.Value.(promql.Vector)[0].V
@@ -214,7 +214,7 @@ func (self *Aggregator) TimeWeightedAvg(
 	}
 
 	if len(confidence.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.Errorf("no result for confidence query:%v", query.Statement())
+		return 0, 0, errors.Errorf("no result for TWAP confidence query:%v", query.Statement())
 	}
 
 	return result, confidence.Value.(promql.Vector)[0].V * 100, err
@@ -270,13 +270,16 @@ func (self *Aggregator) VolumWeightedAvg(
 	}
 	defer query.Close()
 
+	// TODO: Add directly in the erros logs when this issues is fixed - https://github.com/prometheus/prometheus/issues/8949
+	qStmt := query.Statement().String()
+
 	_result := query.Exec(self.ctx)
 	if _result.Err != nil {
-		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query.Statement())
+		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", qStmt)
 	}
 	result := _result.Value.(promql.Vector)
 	if len(result) == 0 {
-		return 0, 0, errors.Errorf("no result for values query:%v", query.Statement())
+		return 0, 0, errors.Errorf("no result for VWAP values query:%v", qStmt)
 	}
 
 	// Confidence level for prices.
@@ -323,7 +326,7 @@ func (self *Aggregator) VolumWeightedAvg(
 	}
 
 	if len(confidenceP.Value.(promql.Vector)) == 0 || len(confidenceV.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.Errorf("no result for confidence query:%v", query.Statement())
+		return 0, 0, errors.Errorf("no result for VWAP confidence query:%v", query.Statement())
 	}
 
 	// Use the smaller confidence of volume or value.

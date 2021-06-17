@@ -71,19 +71,21 @@ const rateInitialGuess = 100e3
 
 type MiningGroup struct {
 	cfg              Config
+	ctx              context.Context
 	Backends         []*Backend
 	LastPrinted      time.Time
 	logger           log.Logger
 	contractInstance *contracts.ITellor
 }
 
-func NewMiningGroup(logger log.Logger, cfg Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
+func NewMiningGroup(logger log.Logger, ctx context.Context, cfg Config, hashers []Hasher, contractInstance *contracts.ITellor) (*MiningGroup, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 	group := &MiningGroup{
 		cfg:              cfg,
+		ctx:              ctx,
 		Backends:         make([]*Backend, len(hashers)),
 		logger:           log.With(logger, "component", ComponentName),
 		contractInstance: contractInstance,
@@ -304,7 +306,12 @@ func (g *MiningGroup) Mine(ctx context.Context, input chan *Work, output chan *R
 					"requestIDs", fmt.Sprintf("%+v", currWork.Challenge.RequestIDs),
 				)
 
-				output <- &Result{Work: currWork, Nonce: result.nonce}
+				select {
+				case output <- &Result{Work: currWork, Nonce: result.nonce}:
+				case <-g.ctx.Done():
+					return
+				}
+
 				currWork = nil
 				currHashSettings = nil
 			}
