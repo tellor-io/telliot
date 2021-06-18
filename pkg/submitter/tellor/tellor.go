@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -29,6 +30,12 @@ import (
 )
 
 const ComponentName = "submitterTellor"
+
+type ContractCaller interface {
+	GetUintVar(opts *bind.CallOpts, _data [32]byte) (*big.Int, error)
+	SubmitMiningSolution(opts *bind.TransactOpts, _nonce string, _requestId [5]*big.Int, _value [5]*big.Int) (*types.Transaction, error)
+	GetStakerInfo(opts *bind.CallOpts, _staker common.Address) (*big.Int, *big.Int, error)
+}
 
 type Config struct {
 	Enabled  bool
@@ -49,22 +56,22 @@ type Config struct {
  */
 
 type Submitter struct {
-	ctx              context.Context
-	close            context.CancelFunc
-	logger           log.Logger
-	cfg              Config
-	account          *ethereum.Account
-	client           contracts.ETHClient
-	contractInstance *contracts.ITellor
-	resultCh         chan *mining.Result
-	submitCount      prometheus.Counter
-	submitFailCount  prometheus.Counter
-	submitValue      *prometheus.GaugeVec
-	lastSubmitCncl   context.CancelFunc
-	transactor       transactor.Transactor
-	reward           *reward.Reward
-	gasPriceTracker  *gasPrice.GasTracker
-	psr              *psr.Psr
+	ctx             context.Context
+	close           context.CancelFunc
+	logger          log.Logger
+	cfg             Config
+	account         *ethereum.Account
+	client          contracts.ETHClient
+	contract        ContractCaller
+	resultCh        chan *mining.Result
+	submitCount     prometheus.Counter
+	submitFailCount prometheus.Counter
+	submitValue     *prometheus.GaugeVec
+	lastSubmitCncl  context.CancelFunc
+	transactor      transactor.Transactor
+	reward          *reward.Reward
+	gasPriceTracker *gasPrice.GasTracker
+	psr             *psr.Psr
 }
 
 func New(
@@ -72,7 +79,7 @@ func New(
 	logger log.Logger,
 	cfg Config,
 	client contracts.ETHClient,
-	contractInstance *contracts.ITellor,
+	contract ContractCaller,
 	account *ethereum.Account,
 	reward *reward.Reward,
 	transactor transactor.Transactor,
@@ -86,18 +93,18 @@ func New(
 	logger = log.With(logger, "component", ComponentName)
 	ctx, close := context.WithCancel(ctx)
 	submitter := &Submitter{
-		ctx:              ctx,
-		close:            close,
-		client:           client,
-		cfg:              cfg,
-		resultCh:         make(chan *mining.Result),
-		account:          account,
-		reward:           reward,
-		logger:           logger,
-		contractInstance: contractInstance,
-		transactor:       transactor,
-		gasPriceTracker:  gasPriceTracker,
-		psr:              psr,
+		ctx:             ctx,
+		close:           close,
+		client:          client,
+		cfg:             cfg,
+		resultCh:        make(chan *mining.Result),
+		account:         account,
+		reward:          reward,
+		logger:          logger,
+		contract:        contract,
+		transactor:      transactor,
+		gasPriceTracker: gasPriceTracker,
+		psr:             psr,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
 			Subsystem:   ComponentName,
@@ -242,7 +249,7 @@ func (self *Submitter) profitPercent() (int64, error) {
 
 func (self *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {
 	go func(newChallengeReplace context.Context, result *mining.Result) {
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
@@ -279,7 +286,7 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 					"vals", fmt.Sprintf("%+v", reqVals),
 				)
 				f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
-					return self.contractInstance.SubmitMiningSolution(auth, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
+					return self.contract.SubmitMiningSolution(auth, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
 				}
 				tx, recieipt, err := self.transactor.Transact(self.ctx, f)
 				if err != nil {
@@ -338,7 +345,7 @@ func (self *Submitter) requestVals(requestIDs [5]*big.Int) ([5]*big.Int, error) 
 
 func (self *Submitter) minerStatus() (int64, error) {
 	// Check if the staked account is in dispute before sending a transaction.
-	statusID, _, err := self.contractInstance.GetStakerInfo(&bind.CallOpts{}, self.account.Address)
+	statusID, _, err := self.contract.GetStakerInfo(&bind.CallOpts{}, self.account.Address)
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting staker info from contract addr:%v", self.account.Address)
 	}
@@ -351,7 +358,7 @@ func (self *Submitter) lastSubmit() (time.Duration, *time.Time, error) {
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "decoding address")
 	}
-	last, err := self.contractInstance.GetUintVar(nil, ethereum.Keccak256(decoded))
+	last, err := self.contract.GetUintVar(nil, ethereum.Keccak256(decoded))
 
 	if err != nil {
 		return 0, nil, errors.Wrapf(err, "getting last submit time for:%v", self.account.Address.String())

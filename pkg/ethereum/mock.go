@@ -529,6 +529,10 @@ func (c *mockClient) BlockByNumber(ctx context.Context, number *big.Int) (*types
 	return nil, nil
 }
 
+func (c *mockClient) BlockNumber(ctx context.Context) (uint64, error) {
+	return 0, nil
+}
+
 // ABICodec holds abi definitions for encoding/decoding contract methods and events.
 type ABICodec struct {
 	abiStruct abi.ABI

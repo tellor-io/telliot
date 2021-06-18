@@ -201,7 +201,15 @@ func (self *IndexTracker) Run() error {
 // The request delay is used to avoid rate limiting at startup
 // for when all API calls try to happen at the same time.
 func (self *IndexTracker) record(delay time.Duration, symbol string, interval time.Duration, dataSource DataSource) {
-	time.Sleep(delay)
+	delayTicker := time.NewTicker(delay)
+	select {
+	case <-delayTicker.C:
+		break
+	case <-self.ctx.Done():
+		level.Debug(self.logger).Log("msg", "values record loop exited")
+		return
+	}
+	delayTicker.Stop()
 
 	ticker := time.NewTicker(interval)
 	logger := log.With(self.logger, "source", dataSource.Source())
