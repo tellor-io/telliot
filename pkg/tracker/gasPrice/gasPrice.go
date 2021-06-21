@@ -22,6 +22,7 @@ const ComponentName = "gasTracker"
 // GasTracker is the struct that maintains the latest gasprices.
 // note the prices are actually stored in the DB.
 type GasTracker struct {
+	netID  int64
 	client contracts.ETHClient
 	logger log.Logger
 }
@@ -37,23 +38,28 @@ func (self *GasTracker) String() string {
 	return "GasTracker"
 }
 
-func New(logger log.Logger, client contracts.ETHClient) *GasTracker {
+func New(logger log.Logger, client contracts.ETHClient) (*GasTracker, error) {
+	ctx, cncl := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cncl()
+	netID, err := client.NetworkID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get network id")
+	}
+
 	return &GasTracker{
+		netID:  netID.Int64(),
 		client: client,
 		logger: log.With(logger, "component", ComponentName),
-	}
+	}, nil
 
 }
 
 func (self *GasTracker) Query(ctx context.Context) (int64, error) {
-	netID, err := self.client.NetworkID(ctx)
-	if err != nil {
-		return 0, errors.Wrap(err, "get network id")
-	}
 
 	var gasPrice *big.Int
+	var err error
 
-	if netID.Int64() == 1 {
+	if self.netID == 1 {
 		ctx, cncl := context.WithTimeout(ctx, 15*time.Second)
 		defer cncl()
 		resp, err := web.Fetch(ctx, "https://ethgasstation.info/json/ethgasAPI.json")
