@@ -36,6 +36,7 @@ type Transactor interface {
 
 // TransactorDefault implements the Transactor interface.
 type TransactorDefault struct {
+	netID           *big.Int
 	cfg             Config
 	logger          log.Logger
 	gasPriceTracker *gasPrice.GasTracker
@@ -55,7 +56,15 @@ func New(
 		return nil, errors.Wrap(err, "apply filter logger")
 	}
 
+	ctx, cncl := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cncl()
+	netID, err := client.NetworkID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting network id")
+	}
+
 	return &TransactorDefault{
+		netID:           netID,
 		cfg:             cfg,
 		logger:          log.With(logger, "component", ComponentName),
 		gasPriceTracker: gasPriceTracker,
@@ -100,11 +109,7 @@ func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*
 			continue
 		}
 
-		netID, err := self.client.NetworkID(ctx)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "getting network id")
-		}
-		auth, err := bind.NewKeyedTransactorWithChainID(self.account.PrivateKey, netID)
+		auth, err := bind.NewKeyedTransactorWithChainID(self.account.PrivateKey, self.netID)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "creating transactor")
 		}

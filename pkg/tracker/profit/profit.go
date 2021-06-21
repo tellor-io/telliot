@@ -32,6 +32,7 @@ type Config struct {
 }
 
 type ProfitTracker struct {
+	netID            *big.Int
 	client           contracts.ETHClient
 	logger           log.Logger
 	contractInstance *contracts.ITellor
@@ -74,8 +75,16 @@ func NewProfitTracker(
 	for _, addr := range addrs {
 		addrsMap[addr] = struct{}{}
 	}
+
+	netID, err := client.NetworkID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get nerwork ID")
+	}
+
 	ctx, cncl := context.WithCancel(ctx)
+
 	return &ProfitTracker{
+		netID:            netID,
 		client:           client,
 		logger:           logger,
 		contractInstance: contractInstance,
@@ -362,13 +371,7 @@ func (self *ProfitTracker) monitorCostFailed() {
 					logger := log.With(logger, "tx", tx.Hash())
 					level.Debug(logger).Log("msg", "processing TX")
 
-					id, err := self.client.NetworkID(self.ctx)
-					if err != nil {
-						level.Error(logger).Log("msg", "get nerwork ID", "err", err)
-						continue
-					}
-
-					addr, err := types.Sender(types.LatestSignerForChainID(id), tx)
+					addr, err := types.Sender(types.LatestSignerForChainID(self.netID), tx)
 					if err != nil {
 						level.Error(logger).Log("msg", "get tx sender", "err", err)
 						continue
