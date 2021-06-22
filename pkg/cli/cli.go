@@ -8,12 +8,10 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
@@ -96,7 +94,7 @@ func (c *transferCmd) Run() error {
 
 	ctx := context.Background()
 
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -131,7 +129,7 @@ func (c *approveCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -187,7 +185,7 @@ func (b *balanceCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -222,7 +220,7 @@ func (d depositCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -248,7 +246,7 @@ func (w withdrawCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -279,7 +277,7 @@ func (r requestCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -303,7 +301,7 @@ func (s statusCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -330,7 +328,7 @@ func (n newDisputeCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -372,7 +370,7 @@ func (v voteCmd) Run() error {
 	logger := logging.NewLogger()
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -407,7 +405,7 @@ func (s listCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -493,7 +491,7 @@ func (self dataserverCmd) Run() error {
 
 		// The client is needed when the api requests data from the blockchain.
 		// TODO create an eth client only if the api config file has eth address.
-		client, err := newClient(ctx, logger)
+		client, err := ethereum.NewClient(ctx, logger)
 		if err != nil {
 			return errors.Wrap(err, "creating ethereum client")
 		}
@@ -582,7 +580,7 @@ func (self mineCmd) Run() error {
 	// Defining a global context for starting and stopping of components.
 	ctx := context.Background()
 
-	client, err := newClient(ctx, logger)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -894,33 +892,4 @@ func getAccountFor(accountNo int) (*ethereum.Account, error) {
 		return nil, errors.New("account not found")
 	}
 	return accounts[accountNo], nil
-}
-
-func newClient(ctx context.Context, logger log.Logger) (*ethclient.Client, error) {
-	nodeURL := os.Getenv(ethereum.NodeURLEnvName)
-
-	client, err := ethclient.DialContext(ctx, nodeURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "create rpc client instance")
-	}
-
-	if !strings.Contains(strings.ToLower(nodeURL), "arbitrum") { // Arbitrum nodes doesn't support sync checking.
-		// Issue #55, halt if client is still syncing with Ethereum network
-		s, err := client.SyncProgress(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "determining if Ethereum client is syncing")
-		}
-		if s != nil {
-			return nil, errors.New("ethereum node is still syncing with the network")
-		}
-	}
-
-	id, err := client.NetworkID(ctx)
-	if err != nil {
-		return nil, level.Error(logger).Log("msg", "get nerwork ID", "err", err)
-	}
-
-	level.Info(logger).Log("msg", "client created", "netID", id.String())
-
-	return client, nil
 }

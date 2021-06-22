@@ -16,6 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 )
 
@@ -162,4 +164,33 @@ func GetAccounts() ([]*Account, error) {
 		accounts[i] = &Account{Address: publicAddress, PrivateKey: privateKey}
 	}
 	return accounts, nil
+}
+
+func NewClient(ctx context.Context, logger log.Logger) (*ethclient.Client, error) {
+	nodeURL := os.Getenv(NodeURLEnvName)
+
+	client, err := ethclient.DialContext(ctx, nodeURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "create rpc client instance")
+	}
+
+	if !strings.Contains(strings.ToLower(nodeURL), "arbitrum") { // Arbitrum nodes doesn't support sync checking.
+		// Issue #55, halt if client is still syncing with Ethereum network
+		s, err := client.SyncProgress(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "determining if Ethereum client is syncing")
+		}
+		if s != nil {
+			return nil, errors.New("ethereum node is still syncing with the network")
+		}
+	}
+
+	id, err := client.NetworkID(ctx)
+	if err != nil {
+		return nil, level.Error(logger).Log("msg", "get nerwork ID", "err", err)
+	}
+
+	level.Info(logger).Log("msg", "client created", "netID", id.String())
+
+	return client, nil
 }
