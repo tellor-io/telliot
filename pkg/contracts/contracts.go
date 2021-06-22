@@ -15,6 +15,7 @@ import (
 
 const (
 	TellorAddress                      = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
+	TellorAddressGoerli                = "0x90bbE2155deb3d454696Ce659B52B831e754431C"
 	TellorAccessAddressRinkeby         = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
 	TellorAccessAddressArbitrumTestnet = "0xCf26Ce0a3a9EF0125FA53a05A00b6B68F5ddb27A"
 	TellorAccessAddress                = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
@@ -47,27 +48,16 @@ type ITellor struct {
 	Address common.Address
 }
 
-func getLensAddress(client *ethclient.Client) (common.Address, error) {
-	networkID, err := client.NetworkID(context.Background())
-	if err != nil {
-		return common.Address{}, err
-	}
-	switch netID := networkID.Int64(); netID {
-	case 1:
-		return common.HexToAddress(LensAddressMainnet), nil
-	case 4:
-		return common.HexToAddress(LensAddressRinkeby), nil
-	default:
-		return common.Address{}, errors.Errorf("contract address for current network id not found:%v", netID)
-	}
-}
-
 func NewITellor(client *ethclient.Client) (*ITellor, error) {
-	tellorInstance, err := tellor.NewITellor(common.HexToAddress(TellorAddress), client)
+	conractAddr, err := GetTellorAddress(client)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating lens address")
+	}
+	tellorInstance, err := tellor.NewITellor(conractAddr, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating telllor interface")
 	}
-	contractAddr, err := getLensAddress(client)
+	contractAddr, err := GetLensAddress(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating lens address")
 	}
@@ -81,7 +71,7 @@ func NewITellor(client *ethclient.Client) (*ITellor, error) {
 }
 
 func NewITellorAccess(client *ethclient.Client) (*ITellorAccess, error) {
-	conractAddr, err := getTellorAccessAddress(client)
+	conractAddr, err := GetTellorAccessAddress(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating lens address")
 	}
@@ -93,7 +83,7 @@ func NewITellorAccess(client *ethclient.Client) (*ITellorAccess, error) {
 	return &ITellorAccess{Address: common.HexToAddress(TellorAccessAddress), TellorAccess: tellorInstance}, nil
 }
 
-func getTellorAccessAddress(client *ethclient.Client) (common.Address, error) {
+func GetTellorAccessAddress(client *ethclient.Client) (common.Address, error) {
 	networkID, err := client.NetworkID(context.Background())
 	if err != nil {
 		return common.Address{}, err
@@ -103,6 +93,39 @@ func getTellorAccessAddress(client *ethclient.Client) (common.Address, error) {
 		return common.HexToAddress(TellorAccessAddressArbitrumTestnet), nil
 	case 4:
 		return common.HexToAddress(TellorAccessAddressRinkeby), nil
+	default:
+		return common.Address{}, errors.Errorf("contract address for current network id not found:%v", netID)
+	}
+}
+
+func GetTellorAddress(client *ethclient.Client) (common.Address, error) {
+	networkID, err := client.NetworkID(context.Background())
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	switch netID := networkID.Int64(); netID {
+	case 1:
+		return common.HexToAddress(TellorAddress), nil
+	case 4:
+		return common.HexToAddress(TellorAddress), nil
+	case 5:
+		return common.HexToAddress(TellorAddressGoerli), nil
+	default:
+		return common.Address{}, errors.Errorf("network id not supported id:%v", netID)
+	}
+}
+
+func GetLensAddress(client *ethclient.Client) (common.Address, error) {
+	networkID, err := client.NetworkID(context.Background())
+	if err != nil {
+		return common.Address{}, err
+	}
+	switch netID := networkID.Int64(); netID {
+	case 1:
+		return common.HexToAddress(LensAddressMainnet), nil
+	case 4:
+		return common.HexToAddress(LensAddressRinkeby), nil
 	default:
 		return common.Address{}, errors.Errorf("contract address for current network id not found:%v", netID)
 	}
