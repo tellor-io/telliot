@@ -765,7 +765,10 @@ func (self mineCmd) Run() error {
 			})
 		}
 
-		gasPriceTracker := gasPrice.New(logger, client)
+		gasPriceTracker, err := gasPrice.New(logger, client)
+		if err != nil {
+			return errors.Wrap(err, "creating gas price tracker")
+		}
 
 		if cfg.SubmitterTellor.Enabled {
 			// Profit tracker.
