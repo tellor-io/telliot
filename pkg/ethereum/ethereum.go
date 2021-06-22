@@ -140,6 +140,17 @@ func (a *Account) GetPrivateKey() *ecdsa.PrivateKey {
 	return a.PrivateKey
 }
 
+func GetAccountFor(accountNo int) (*Account, error) {
+	accounts, err := GetAccounts()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting accounts")
+	}
+	if accountNo < 0 || accountNo >= len(accounts) {
+		return nil, errors.New("account not found")
+	}
+	return accounts[accountNo], nil
+}
+
 // GetAccounts returns a slice of Account from private keys in
 // PrivateKeysEnvName environment variable.
 func GetAccounts() ([]*Account, error) {

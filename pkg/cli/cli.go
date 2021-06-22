@@ -5,9 +5,7 @@ package cli
 
 import (
 	"context"
-	"net/url"
 	"os"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -16,11 +14,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
-	promConfig "github.com/prometheus/common/config"
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/config"
@@ -109,7 +103,7 @@ func (c *transferCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing amount argument")
 	}
-	account, err := getAccountFor(c.Account)
+	account, err := ethereum.GetAccountFor(c.Account)
 	if err != nil {
 		return err
 	}
@@ -144,7 +138,7 @@ func (c *approveCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing amount argument")
 	}
-	account, err := getAccountFor(c.Account)
+	account, err := ethereum.GetAccountFor(c.Account)
 	if err != nil {
 		return err
 	}
@@ -224,7 +218,7 @@ func (d depositCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(d.Account)
+	account, err := ethereum.GetAccountFor(d.Account)
 	if err != nil {
 		return err
 	}
@@ -256,7 +250,7 @@ func (w withdrawCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(w.Account)
+	account, err := ethereum.GetAccountFor(w.Account)
 	if err != nil {
 		return err
 	}
@@ -281,7 +275,7 @@ func (r requestCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(r.Account)
+	account, err := ethereum.GetAccountFor(r.Account)
 	if err != nil {
 		return err
 	}
@@ -305,7 +299,7 @@ func (s statusCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(s.Account)
+	account, err := ethereum.GetAccountFor(s.Account)
 	if err != nil {
 		return err
 	}
@@ -348,7 +342,7 @@ func (n newDisputeCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(n.Account)
+	account, err := ethereum.GetAccountFor(n.Account)
 	if err != nil {
 		return err
 	}
@@ -380,7 +374,7 @@ func (v voteCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(v.Account)
+	account, err := ethereum.GetAccountFor(v.Account)
 	if err != nil {
 		return err
 	}
@@ -409,7 +403,7 @@ func (s listCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(s.Account)
+	account, err := ethereum.GetAccountFor(s.Account)
 	if err != nil {
 		return err
 	}
@@ -417,7 +411,7 @@ func (s listCmd) Run() error {
 	// Open the TSDB database.
 	var querable storage.SampleAndChunkQueryable
 	if cfg.Db.RemoteHost != "" {
-		querable, err = remoteDB(cfg.Db)
+		querable, err = db.NewRemoteDB(cfg.Db)
 		if err != nil {
 			return errors.Wrap(err, "opening remote tsdb DB")
 		}
@@ -600,7 +594,7 @@ func (self mineCmd) Run() error {
 		// Open a local or remote instance of the TSDB database.
 		var tsDB storage.SampleAndChunkQueryable
 		if cfg.Db.RemoteHost != "" {
-			tsDB, err = remoteDB(cfg.Db)
+			tsDB, err = db.NewRemoteDB(cfg.Db)
 			if err != nil {
 				return errors.Wrap(err, "opening remote tsdb DB")
 			}
@@ -856,40 +850,4 @@ func (self mineCmd) Run() error {
 
 	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
-}
-
-func remoteDB(cfg db.Config) (storage.SampleAndChunkQueryable, error) {
-
-	url, err := url.Parse("http://" + cfg.RemoteHost + ":" + strconv.Itoa(int(cfg.RemotePort)) + "/api/v1/read")
-	if err != nil {
-		return nil, err
-	}
-	client, err := remote.NewReadClient("", &remote.ClientConfig{
-		URL:     &promConfig.URL{URL: url},
-		Timeout: model.Duration(cfg.RemoteTimeout.Duration),
-		HTTPClientConfig: promConfig.HTTPClientConfig{
-			FollowRedirects: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return remote.NewSampleAndChunkQueryableClient(
-		client,
-		labels.Labels{},
-		[]*labels.Matcher{},
-		true,
-		func() (i int64, err error) { return 0, nil },
-	), nil
-}
-
-func getAccountFor(accountNo int) (*ethereum.Account, error) {
-	accounts, err := ethereum.GetAccounts()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting accounts")
-	}
-	if accountNo < 0 || accountNo >= len(accounts) {
-		return nil, errors.New("account not found")
-	}
-	return accounts[accountNo], nil
 }
