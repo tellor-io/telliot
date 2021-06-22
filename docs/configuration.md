@@ -317,10 +317,6 @@ Flags:
 	"DisputeTracker": {
 		"LogLevel": "(Required: false)  - Default: info"
 	},
-	"Ethereum": {
-		"LogLevel": "(Required: false)  - Default: info",
-		"Timeout": "(Required: false)  - Default: 3000"
-	},
 	"IndexTracker": {
 		"IndexFile": "(Required: false)  - Default: configs/index.json",
 		"Interval": {
@@ -388,10 +384,6 @@ Here are the config defaults in json format:
 	},
 	"DisputeTracker": {
 		"LogLevel": "info"
-	},
-	"Ethereum": {
-		"LogLevel": "info",
-		"Timeout": 3000
 	},
 	"IndexTracker": {
 		"IndexFile": "configs/index.json",

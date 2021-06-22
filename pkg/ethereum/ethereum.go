@@ -15,12 +15,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/contracts"
 )
 
 const PrivateKeysEnvName = "ETH_PRIVATE_KEYS"
 const NodeURLEnvName = "NODE_URL"
+const ComponentName = "ethereum"
 
 var ethAddressRE *regexp.Regexp = regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
 
@@ -75,7 +76,7 @@ func DecodeHex(s string) []byte {
 
 func PrepareEthTransaction(
 	ctx context.Context,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	account *Account,
 ) (*bind.TransactOpts, error) {
 

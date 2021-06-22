@@ -14,6 +14,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -138,14 +139,14 @@ func (e *mockError) Error() string {
 }
 
 // NewMockClient returns instance of mock client.
-func NewMockClient() contracts.ETHClient {
+func NewMockClient() bind.ContractCaller {
 	return &mockClient{
 		logger: log.With(logging.NewLogger(), "component", ComponentName),
 	}
 }
 
 // NewMockClientWithValues creates a mock client with default values to return for calls.
-func NewMockClientWithValues(opts *MockOptions) contracts.ETHClient {
+func NewMockClientWithValues(opts *MockOptions) bind.ContractCaller {
 	codec, err := BuildCodec(logging.NewLogger())
 	if err != nil {
 		panic(err)

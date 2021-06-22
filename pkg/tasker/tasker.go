@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -40,7 +41,7 @@ type Tasker struct {
 	logger          log.Logger
 	accounts        []*ethereum.Account
 	contract        *contracts.ITellor
-	client          contracts.ETHClient
+	client          *ethclient.Client
 	workSinks       map[string]chan *mining.Work
 	SubmitCancelers []SubmitCanceler
 	txPending       context.CancelFunc
@@ -50,7 +51,7 @@ func New(
 	ctx context.Context,
 	logger log.Logger,
 	cfg Config,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	accounts []*ethereum.Account,
 ) (*Tasker, map[string]chan *mining.Work, error) {

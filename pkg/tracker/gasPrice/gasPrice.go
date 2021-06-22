@@ -9,11 +9,11 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/web"
 )
 
@@ -23,7 +23,7 @@ const ComponentName = "gasTracker"
 // note the prices are actually stored in the DB.
 type GasTracker struct {
 	netID  int64
-	client contracts.ETHClient
+	client *ethclient.Client
 	logger log.Logger
 }
 
@@ -38,7 +38,7 @@ func (self *GasTracker) String() string {
 	return "GasTracker"
 }
 
-func New(logger log.Logger, client contracts.ETHClient) (*GasTracker, error) {
+func New(logger log.Logger, client *ethclient.Client) (*GasTracker, error) {
 	ctx, cncl := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cncl()
 	netID, err := client.NetworkID(ctx)

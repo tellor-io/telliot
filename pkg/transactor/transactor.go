@@ -11,11 +11,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
@@ -40,7 +40,7 @@ type TransactorDefault struct {
 	cfg             Config
 	logger          log.Logger
 	gasPriceTracker *gasPrice.GasTracker
-	client          contracts.ETHClient
+	client          *ethclient.Client
 	account         *ethereum.Account
 }
 
@@ -48,7 +48,7 @@ func New(
 	logger log.Logger,
 	cfg Config,
 	gasPriceTracker *gasPrice.GasTracker,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	account *ethereum.Account,
 ) (*TransactorDefault, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
@@ -74,7 +74,7 @@ func New(
 }
 
 func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*bind.TransactOpts) (*types.Transaction, error)) (*types.Transaction, *types.Receipt, error) {
-	nonce, err := self.client.NonceAt(ctx, self.account.Address)
+	nonce, err := self.client.NonceAt(ctx, self.account.Address, nil)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting nonce for miner address")
 	}

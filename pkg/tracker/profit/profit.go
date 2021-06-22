@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -33,7 +34,7 @@ type Config struct {
 
 type ProfitTracker struct {
 	netID            *big.Int
-	client           contracts.ETHClient
+	client           *ethclient.Client
 	logger           log.Logger
 	contractInstance *contracts.ITellor
 	abi              abi.ABI
@@ -56,7 +57,7 @@ func NewProfitTracker(
 	logger log.Logger,
 	ctx context.Context,
 	cfg Config,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contractInstance *contracts.ITellor,
 	addrs []common.Address,
 ) (*ProfitTracker, error) {

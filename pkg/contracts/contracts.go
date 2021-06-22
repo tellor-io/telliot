@@ -2,11 +2,9 @@ package contracts
 
 import (
 	"context"
-	"math/big"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts/balancer"
 	"github.com/tellor-io/telliot/pkg/contracts/lens"
@@ -49,48 +47,7 @@ type ITellor struct {
 	Address common.Address
 }
 
-// ETHClient is the main abstraction interface for client operations.
-type ETHClient interface {
-
-	// Close the client.
-	Close()
-
-	// CodeAt returns the code of the given account. This is needed to differentiate
-	// between contract internal errors and the local chain being out of sync.
-	CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
-
-	// TransactionReceipt implements the geth backend DeployBackend interface.
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
-
-	// ContractCall executes an Ethereum contract call with the specified data as the
-	// input.
-	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
-	NonceAt(ctx context.Context, address common.Address) (uint64, error)
-	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
-
-	// PendingCodeAt returns the code of the given account in the pending state.
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-
-	//PendingNonceAt gets the given address's nonce for submitting transactions
-	PendingNonceAt(ctx context.Context, address common.Address) (uint64, error)
-	EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error)
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-
-	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
-	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
-	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error)
-	BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error)
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
-	IsSyncing(ctx context.Context) (bool, error)
-	NetworkID(ctx context.Context) (*big.Int, error)
-	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
-	TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
-	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
-	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-	BlockNumber(ctx context.Context) (uint64, error)
-}
-
-func getLensAddress(client ETHClient) (common.Address, error) {
+func getLensAddress(client *ethclient.Client) (common.Address, error) {
 	networkID, err := client.NetworkID(context.Background())
 	if err != nil {
 		return common.Address{}, err
@@ -105,7 +62,7 @@ func getLensAddress(client ETHClient) (common.Address, error) {
 	}
 }
 
-func NewITellor(client ETHClient) (*ITellor, error) {
+func NewITellor(client *ethclient.Client) (*ITellor, error) {
 	tellorInstance, err := tellor.NewITellor(common.HexToAddress(TellorAddress), client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating telllor interface")
@@ -123,7 +80,7 @@ func NewITellor(client ETHClient) (*ITellor, error) {
 	return &ITellor{Address: common.HexToAddress(TellorAddress), ITellor: tellorInstance, Main: lensInstance}, nil
 }
 
-func NewITellorAccess(client ETHClient) (*ITellorAccess, error) {
+func NewITellorAccess(client *ethclient.Client) (*ITellorAccess, error) {
 	conractAddr, err := getTellorAccessAddress(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating lens address")
@@ -136,7 +93,7 @@ func NewITellorAccess(client ETHClient) (*ITellorAccess, error) {
 	return &ITellorAccess{Address: common.HexToAddress(TellorAccessAddress), TellorAccess: tellorInstance}, nil
 }
 
-func getTellorAccessAddress(client ETHClient) (common.Address, error) {
+func getTellorAccessAddress(client *ethclient.Client) (common.Address, error) {
 	networkID, err := client.NetworkID(context.Background())
 	if err != nil {
 		return common.Address{}, err

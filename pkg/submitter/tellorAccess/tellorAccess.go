@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -47,7 +48,7 @@ type Submitter struct {
 	logger          log.Logger
 	cfg             Config
 	account         *ethereum.Account
-	client          contracts.ETHClient
+	client          *ethclient.Client
 	contract        *contracts.ITellorAccess
 	transactor      transactor.Transactor
 	submitCount     prometheus.Counter
@@ -63,7 +64,7 @@ func New(
 	ctx context.Context,
 	logger log.Logger,
 	cfg Config,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellorAccess,
 	account *ethereum.Account,
 	transactor transactor.Transactor,

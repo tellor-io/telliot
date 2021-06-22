@@ -8,6 +8,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -20,7 +21,7 @@ import (
 func Dispute(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *tEthereum.Account,
 	requestId *big.Int,
@@ -65,7 +66,7 @@ func Dispute(
 func Vote(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *tEthereum.Account,
 	disputeId *big.Int,
@@ -97,7 +98,7 @@ func Vote(
 func List(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *tEthereum.Account,
 	psr *psr.Psr,
