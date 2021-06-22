@@ -95,14 +95,6 @@
             }
         ]
     },
-    "AMPL/ETH/VWAP": {
-        "endpoints": [
-            {
-                "URL": "https://min-api.cryptocompare.com/data/dayAvg?fsym=AMPL&tsym=USD",
-                "param": "$.USD"
-            }
-        ]
-    },
     "ATOM/USD": {
         "endpoints": [
             {
