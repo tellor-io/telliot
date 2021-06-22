@@ -343,7 +343,15 @@ func (self *Aggregator) median(values []float64) (float64, float64) {
 	sort.Slice(values, func(i, j int) bool {
 		return values[i] < values[j]
 	})
-	price := values[len(values)/2]
+
+	position := len(values) / 2
+
+	price := values[position]
+	// When number of values is odd need to use the mean
+	// of the 2 middle values.
+	if len(values)%2 != 0 {
+		price = (values[position-1] + values[position]) / 2
+	}
 
 	return price, confidenceInDifference(values[0], values[len(values)-1])
 }
