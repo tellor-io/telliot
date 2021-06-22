@@ -8,6 +8,31 @@ NOTE: As semantic versioning states all 0.y.z releases can contain breaking chan
 
 We use _breaking :warning:_ to mark changes that are not backward compatible \(relates only to v0.y.z releases.\)
 
+## [v5.8.0](https://github.com/tellor-io/telliot/releases/tag/v5.8.0) - 2021.06.15
+
+### Changed
+* [\#440](https://github.com/tellor-io/telliot/pull/440) Completely refactored the internal architecture to make it more modular, easier to understand and maintain. In this gigantic PR also added a submitter for the new tellor access oracle. All config files now follow a new structure so see the latest [docs](https://docs.tellor.io/tellor/telliot) for more details.
+
+* [\#461](https://github.com/tellor-io/telliot/pull/461) Data ID 57 - TVL now uses different API endpoints to return consistent values and to include only TVL from ethereum and the aggregation is switched from Mean to Median.
+
+* Data ID 41 is now using the default granularity of 6 digits after the decimal point. For example 113.406333 should be submitted as 113406333.
+
+### Added
+* [\#432](https://github.com/tellor-io/telliot/pull/432) At startup it prints the current version and git tag.
+
+* [\#452](https://github.com/tellor-io/telliot/pull/452) At startup it prints a message when the cli has a new release to notify people that they can upgrade.
+
+* [\#434](https://github.com/tellor-io/telliot/pull/434) Added k8s deployments for alertmanager and telegram bot alerting.
+
+* [\#441](https://github.com/tellor-io/telliot/pull/441) Auto generating the docs from the code itself for the CLI args and the configs so now they will be allways up to date. Added a check in the CI to make sure the docs are regenerated on any code changes.
+
+* [\#446](https://github.com/tellor-io/telliot/pull/446) Added a new dispute tracker module which tracks all submitted values in the oracle and exposes metrics to allow comparing the values. Eventually will also add settings and docs how to create alerting so that people submitting values can set an elrt when submitted values looks different than what is expected.
+
+### Fixed
+* [\#448](https://github.com/tellor-io/telliot/pull/448) Return an error at startup when an entry in the index.json file contains an env variable, but the variable is not set.
+
+* [\#463](https://github.com/tellor-io/telliot/pull/463) When aggregating a median of odd values count, use use mean for the 2 middle numbers.
+
 ## [v5.7.0](https://github.com/tellor-io/telliot/releases/tag/v5.7.0) - 2021.02.23
 
 ### Changed
@@ -26,7 +51,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ### Added
 * [\#406](https://github.com/tellor-io/telliot/pull/406) Added new command  `migrate` to migrate old tokens for the new one.
 ### Fixed
-* [\#410](https://github.com/tellor-io/telliot/pull/410) Fixed all most submit races, causing fewer submission errors. More effort will be dedicated to completely removing them in the next release.
+* [\#410](https://github.com/tellor-io/telliot/pull/410) Fixed most submit races, causing fewer submission errors. More effort will be dedicated to completely removing them in the next release.
 
 ## [v5.6.0](https://github.com/tellor-io/telliot/releases/tag/v5.6.0) - 2021.02.08
 
