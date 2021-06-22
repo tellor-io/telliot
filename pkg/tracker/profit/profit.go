@@ -27,6 +27,8 @@ import (
 
 const ComponentName = "profitTracker"
 
+const DefaultRetry = 30 * time.Second
+
 type Config struct {
 	LogLevel string
 }
@@ -160,7 +162,7 @@ func (self *ProfitTracker) Stop() {
 
 func (self *ProfitTracker) monitorReward() {
 	var err error
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 	var sub event.Subscription
 	events := make(chan *tellor.TellorTransferred)
@@ -231,7 +233,7 @@ func (self *ProfitTracker) monitorReward() {
 
 func (self *ProfitTracker) monitorCost() {
 	var err error
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 
 	logger := log.With(self.logger, "event", "NonceSubmitted")
@@ -303,7 +305,7 @@ func (self *ProfitTracker) monitorCost() {
 
 func (self *ProfitTracker) monitorCostFailed() {
 	var err error
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 
 	logger := log.With(self.logger, "event", "NewHead")
@@ -421,7 +423,7 @@ func (self *ProfitTracker) monitorCostFailed() {
 }
 
 func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor.TellorNonceSubmitted) {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 	for {
 		select {
@@ -466,7 +468,7 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 }
 
 func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tellor.TellorTransferred) {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 	for {
 		select {
