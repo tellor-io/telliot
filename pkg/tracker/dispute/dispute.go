@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -37,7 +38,7 @@ type Dispute struct {
 	close         context.CancelFunc
 	cfg           Config
 	tsDB          *tsdb.DB
-	client        contracts.ETHClient
+	client        *ethclient.Client
 	contract      *contracts.ITellor
 	pendingAppend map[string]context.CancelFunc
 	mtx           sync.Mutex
@@ -49,7 +50,7 @@ func New(
 	ctx context.Context,
 	cfg Config,
 	tsDB *tsdb.DB,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	psrTellor *psrTellor.Psr,
 ) (*Dispute, error) {

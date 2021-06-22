@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -45,7 +46,7 @@ func printStakeStatus(logger log.Logger, bigStatus *big.Int, started *big.Int) {
 func Deposit(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *ethereum.Account,
 ) error {
@@ -95,7 +96,7 @@ func Deposit(
 func ShowStatus(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *ethereum.Account,
 ) error {
@@ -111,7 +112,7 @@ func ShowStatus(
 func RequestStakingWithdraw(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *ethereum.Account,
 ) error {
@@ -142,7 +143,7 @@ func RequestStakingWithdraw(
 func WithdrawStake(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *ethereum.Account,
 ) error {

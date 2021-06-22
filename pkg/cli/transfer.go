@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -21,7 +22,7 @@ import (
 func prepareTransfer(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	tellor *contracts.ITellor,
 	account *ethereum.Account,
 	amt *big.Int,
@@ -46,7 +47,7 @@ func prepareTransfer(
 func Transfer(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	tellor *contracts.ITellor,
 	account *ethereum.Account,
 	toAddress common.Address,
@@ -73,7 +74,7 @@ func Transfer(
 func Approve(
 	ctx context.Context,
 	logger log.Logger,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	tellor *contracts.ITellor,
 	account *ethereum.Account,
 	spender common.Address,
@@ -92,7 +93,7 @@ func Approve(
 	return nil
 }
 
-func Balance(ctx context.Context, logger log.Logger, client contracts.ETHClient, tellor *contracts.ITellor,
+func Balance(ctx context.Context, logger log.Logger, client *ethclient.Client, tellor *contracts.ITellor,
 	addr common.Address) error {
 	ethBalance, err := client.BalanceAt(ctx, addr, nil)
 	if err != nil {

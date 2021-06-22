@@ -5,10 +5,7 @@ package cli
 
 import (
 	"context"
-	"net/url"
 	"os"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -17,11 +14,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
-	promConfig "github.com/prometheus/common/config"
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/config"
@@ -93,13 +86,9 @@ type transferCmd tokenCmd
 func (c *transferCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(c.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -114,7 +103,7 @@ func (c *transferCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing amount argument")
 	}
-	account, err := getAccountFor(c.Account)
+	account, err := ethereum.GetAccountFor(c.Account)
 	if err != nil {
 		return err
 	}
@@ -133,13 +122,8 @@ type approveCmd tokenCmd
 func (c *approveCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(c.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -154,7 +138,7 @@ func (c *approveCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing amount argument")
 	}
-	account, err := getAccountFor(c.Account)
+	account, err := ethereum.GetAccountFor(c.Account)
 	if err != nil {
 		return err
 	}
@@ -194,13 +178,8 @@ type balanceCmd struct {
 func (b *balanceCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(b.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -234,17 +213,12 @@ type depositCmd struct {
 func (d depositCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(d.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(d.Account)
+	account, err := ethereum.GetAccountFor(d.Account)
 	if err != nil {
 		return err
 	}
@@ -265,13 +239,8 @@ type withdrawCmd struct {
 func (w withdrawCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(w.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -281,7 +250,7 @@ func (w withdrawCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(w.Account)
+	account, err := ethereum.GetAccountFor(w.Account)
 	if err != nil {
 		return err
 	}
@@ -301,17 +270,12 @@ type requestCmd struct {
 func (r requestCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(r.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(r.Account)
+	account, err := ethereum.GetAccountFor(r.Account)
 	if err != nil {
 		return err
 	}
@@ -330,17 +294,12 @@ type statusCmd struct {
 func (s statusCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(s.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(s.Account)
+	account, err := ethereum.GetAccountFor(s.Account)
 	if err != nil {
 		return err
 	}
@@ -362,13 +321,8 @@ type newDisputeCmd struct {
 func (n newDisputeCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(n.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -388,7 +342,7 @@ func (n newDisputeCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(n.Account)
+	account, err := ethereum.GetAccountFor(n.Account)
 	if err != nil {
 		return err
 	}
@@ -409,13 +363,8 @@ type voteCmd struct {
 func (v voteCmd) Run() error {
 	logger := logging.NewLogger()
 
-	cfg, err := config.ParseConfig(logger, string(v.Config))
-	if err != nil {
-		return errors.Wrap(err, "creating config")
-	}
-
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -425,7 +374,7 @@ func (v voteCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := getAccountFor(v.Account)
+	account, err := ethereum.GetAccountFor(v.Account)
 	if err != nil {
 		return err
 	}
@@ -450,11 +399,11 @@ func (s listCmd) Run() error {
 	}
 
 	ctx := context.Background()
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := getAccountFor(s.Account)
+	account, err := ethereum.GetAccountFor(s.Account)
 	if err != nil {
 		return err
 	}
@@ -462,7 +411,7 @@ func (s listCmd) Run() error {
 	// Open the TSDB database.
 	var querable storage.SampleAndChunkQueryable
 	if cfg.Db.RemoteHost != "" {
-		querable, err = remoteDB(cfg.Db)
+		querable, err = db.NewRemoteDB(cfg.Db)
 		if err != nil {
 			return errors.Wrap(err, "opening remote tsdb DB")
 		}
@@ -536,9 +485,9 @@ func (self dataserverCmd) Run() error {
 
 		// The client is needed when the api requests data from the blockchain.
 		// TODO create an eth client only if the api config file has eth address.
-		client, err := ethereum.NewClient(logger, cfg.Ethereum, os.Getenv(ethereum.NodeURLEnvName))
+		client, err := ethereum.NewClient(ctx, logger)
 		if err != nil {
-			return errors.Wrap(err, "create rpc client instance")
+			return errors.Wrap(err, "creating ethereum client")
 		}
 
 		index, err := index.New(logger, ctx, cfg.IndexTracker, tsDB, client)
@@ -625,7 +574,7 @@ func (self mineCmd) Run() error {
 	// Defining a global context for starting and stopping of components.
 	ctx := context.Background()
 
-	client, err := newClient(ctx, logger, cfg.Ethereum)
+	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
@@ -645,7 +594,7 @@ func (self mineCmd) Run() error {
 		// Open a local or remote instance of the TSDB database.
 		var tsDB storage.SampleAndChunkQueryable
 		if cfg.Db.RemoteHost != "" {
-			tsDB, err = remoteDB(cfg.Db)
+			tsDB, err = db.NewRemoteDB(cfg.Db)
 			if err != nil {
 				return errors.Wrap(err, "opening remote tsdb DB")
 			}
@@ -901,68 +850,4 @@ func (self mineCmd) Run() error {
 
 	level.Info(logger).Log("msg", "main shutdown complete")
 	return nil
-}
-
-func remoteDB(cfg db.Config) (storage.SampleAndChunkQueryable, error) {
-
-	url, err := url.Parse("http://" + cfg.RemoteHost + ":" + strconv.Itoa(int(cfg.RemotePort)) + "/api/v1/read")
-	if err != nil {
-		return nil, err
-	}
-	client, err := remote.NewReadClient("", &remote.ClientConfig{
-		URL:     &promConfig.URL{URL: url},
-		Timeout: model.Duration(cfg.RemoteTimeout.Duration),
-		HTTPClientConfig: promConfig.HTTPClientConfig{
-			FollowRedirects: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return remote.NewSampleAndChunkQueryableClient(
-		client,
-		labels.Labels{},
-		[]*labels.Matcher{},
-		true,
-		func() (i int64, err error) { return 0, nil },
-	), nil
-}
-
-func getAccountFor(accountNo int) (*ethereum.Account, error) {
-	accounts, err := ethereum.GetAccounts()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting accounts")
-	}
-	if accountNo < 0 || accountNo >= len(accounts) {
-		return nil, errors.New("account not found")
-	}
-	return accounts[accountNo], nil
-}
-
-func newClient(ctx context.Context, logger log.Logger, cfg ethereum.Config) (contracts.ETHClient, error) {
-	nodeURL := os.Getenv(ethereum.NodeURLEnvName)
-	client, err := ethereum.NewClient(logger, cfg, nodeURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "create rpc client instance")
-	}
-
-	if !strings.Contains(strings.ToLower(nodeURL), "arbitrum") { // Arbitrum nodes doesn't support sync checking.
-		// Issue #55, halt if client is still syncing with Ethereum network
-		s, err := client.IsSyncing(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "determining if Ethereum client is syncing")
-		}
-		if s {
-			return nil, errors.New("ethereum node is still syncing with the network")
-		}
-	}
-
-	id, err := client.NetworkID(ctx)
-	if err != nil {
-		return nil, level.Error(logger).Log("msg", "get nerwork ID", "err", err)
-	}
-
-	level.Info(logger).Log("msg", "client created", "netID", id.String())
-
-	return client, nil
 }

@@ -13,12 +13,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
@@ -61,7 +61,7 @@ type Submitter struct {
 	logger          log.Logger
 	cfg             Config
 	account         *ethereum.Account
-	client          contracts.ETHClient
+	client          *ethclient.Client
 	contract        ContractCaller
 	resultCh        chan *mining.Result
 	submitCount     prometheus.Counter
@@ -78,7 +78,7 @@ func New(
 	ctx context.Context,
 	logger log.Logger,
 	cfg Config,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract ContractCaller,
 	account *ethereum.Account,
 	reward *reward.Reward,

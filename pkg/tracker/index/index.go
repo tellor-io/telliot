@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/itchyny/gojq"
@@ -24,7 +25,6 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/tsdb"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
@@ -62,7 +62,7 @@ func New(
 	ctx context.Context,
 	cfg Config,
 	tsDB *tsdb.DB,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 ) (*IndexTracker, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
@@ -100,7 +100,7 @@ func New(
 	}, nil
 }
 
-func createDataSources(ctx context.Context, cfg Config, client contracts.ETHClient) (map[string][]DataSource, error) {
+func createDataSources(ctx context.Context, cfg Config, client *ethclient.Client) (map[string][]DataSource, error) {
 	// Load index file.
 	byteValue, err := ioutil.ReadFile(cfg.IndexFile)
 	if err != nil {

@@ -14,7 +14,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	balancer "github.com/tellor-io/telliot/pkg/contracts/balancer"
 )
 
@@ -31,11 +30,11 @@ type Balancer struct {
 	address  string
 	token1   string
 	token2   string
-	client   contracts.ETHClient
+	client   bind.ContractCaller
 	interval time.Duration
 }
 
-func NewBalancer(pair, address string, interval time.Duration, client contracts.ETHClient) *Balancer {
+func NewBalancer(pair, address string, interval time.Duration, client bind.ContractCaller) *Balancer {
 	tokens := strings.Split(pair, "/")
 	return &Balancer{
 		interval: interval,

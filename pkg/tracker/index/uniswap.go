@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/tellor-io/telliot/pkg/contracts"
 	uniswap "github.com/tellor-io/telliot/pkg/contracts/uniswap"
 )
 
@@ -24,12 +23,12 @@ type Uniswap struct {
 	symbol0  string
 	symbol1  string
 	address  string
-	client   contracts.ETHClient
+	client   bind.ContractCaller
 	interval time.Duration
 }
 
 // NewUniswap creates new Uniswap for provided pair and pair address.
-func NewUniswap(pair string, address string, interval time.Duration, client contracts.ETHClient) *Uniswap {
+func NewUniswap(pair string, address string, interval time.Duration, client bind.ContractCaller) *Uniswap {
 	symbols := strings.Split(pair, "/")
 	return &Uniswap{
 		interval: interval,

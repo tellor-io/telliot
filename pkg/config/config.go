@@ -16,7 +16,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/db"
-	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
@@ -42,7 +41,6 @@ type Config struct {
 	Transactor            transactor.Config
 	IndexTracker          index.Config
 	DisputeTracker        dispute.Config
-	Ethereum              ethereum.Config
 	Aggregator            aggregator.Config
 	PsrTellor             psrTellor.Config
 	PsrTellorAccess       psrTellorAccess.Config
@@ -74,10 +72,6 @@ var DefaultConfig = Config{
 	},
 	DisputeTracker: dispute.Config{
 		LogLevel: "info",
-	},
-	Ethereum: ethereum.Config{
-		LogLevel: "info",
-		Timeout:  3000,
 	},
 	Transactor: transactor.Config{
 		LogLevel:      "info",
