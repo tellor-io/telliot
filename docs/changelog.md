@@ -11,7 +11,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ## [v5.8.0](https://github.com/tellor-io/telliot/releases/tag/v5.8.0) - 2021.06.15
 
 ### Changed
-* [\#440](https://github.com/tellor-io/telliot/pull/440) Complitely refactored the internal architecture to make it more modular, easier to understand and maintain. In this gigantic PR also added a submitter for the new tellor access oracle. All config files now follow a new structure so see the latest [docs](https://docs.tellor.io/tellor/telliot) for more details.
+* [\#440](https://github.com/tellor-io/telliot/pull/440) Completely refactored the internal architecture to make it more modular, easier to understand and maintain. In this gigantic PR also added a submitter for the new tellor access oracle. All config files now follow a new structure so see the latest [docs](https://docs.tellor.io/tellor/telliot) for more details.
 
 * [\#461](https://github.com/tellor-io/telliot/pull/461) Data ID 57 - TVL now uses different API endpoints to return consistent values and to include only TVL from ethereum and the aggregation is switched from Mean to Median.
 
@@ -51,7 +51,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ### Added
 * [\#406](https://github.com/tellor-io/telliot/pull/406) Added new command  `migrate` to migrate old tokens for the new one.
 ### Fixed
-* [\#410](https://github.com/tellor-io/telliot/pull/410) Fixed all most submit races, causing fewer submission errors. More effort will be dedicated to completely removing them in the next release.
+* [\#410](https://github.com/tellor-io/telliot/pull/410) Fixed most submit races, causing fewer submission errors. More effort will be dedicated to completely removing them in the next release.
 
 ## [v5.6.0](https://github.com/tellor-io/telliot/releases/tag/v5.6.0) - 2021.02.08
 
