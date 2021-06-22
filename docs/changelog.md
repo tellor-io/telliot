@@ -13,6 +13,10 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ### Changed
 * [\#440](https://github.com/tellor-io/telliot/pull/440) Complitely refactored the internal architecture to make it more modular, easier to understand and maintain. In this gigantic PR also added a submitter for the new tellor access oracle. All config files now follow a new structure so see the latest [docs](https://docs.tellor.io/tellor/telliot) for more details.
 
+* [\#461](https://github.com/tellor-io/telliot/pull/461) Data ID 57 - TVL now uses different API endpoints to return consistent values and to include only TVL from ethereum and the aggregation is switched from Mean to Median.
+
+* Data ID 41 is now using the default granularity of 6 digits after the decimal point. For example 113.406333 should be submitted as 113406333.
+
 ### Added
 * [\#432](https://github.com/tellor-io/telliot/pull/432) At startup it prints the current version and git tag.
 
@@ -26,6 +30,8 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 
 ### Fixed
 * [\#448](https://github.com/tellor-io/telliot/pull/448) Return an error at startup when an entry in the index.json file contains an env variable, but the variable is not set.
+
+* [\#463](https://github.com/tellor-io/telliot/pull/463) When aggregating a median of odd values count, use use mean for the 2 middle numbers.
 
 ## [v5.7.0](https://github.com/tellor-io/telliot/releases/tag/v5.7.0) - 2021.02.23
 
