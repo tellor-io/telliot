@@ -17,6 +17,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/itchyny/gojq"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -337,6 +338,7 @@ type ParserType string
 
 const (
 	jsonPathParser ParserType = "jsonPath"
+	jqParser       ParserType = "jq"
 	uniswapParser  ParserType = "Uniswap"
 	balancerParser ParserType = "Balancer"
 )
@@ -447,28 +449,82 @@ type JsonPathParser struct {
 }
 
 func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
-	var output interface{}
+	var inputToParse interface{}
 
 	maxErrL := len(string(input)) - 1
 	if maxErrL > 200 {
 		maxErrL = 200
 	}
 
+	err := json.Unmarshal(input, &inputToParse)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "json marshal:%v", string(input)[:maxErrL])
+	}
+
+	output, err := jsonpath.Read(inputToParse, self.param)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "json path read:%v", string(input)[:maxErrL])
+	}
+
+	value, timestamp, err := parseInterface(output)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "parse interface:%v", string(input)[:maxErrL])
+	}
+
+	return value, timestamp, nil
+}
+
+type JqParser struct {
+	param string
+}
+
+func (self *JqParser) Parse(input []byte) (float64, time.Time, error) {
+	var inputToParse interface{}
+
+	maxErrL := len(string(input)) - 1
+	if maxErrL > 200 {
+		maxErrL = 200
+	}
+
+	err := json.Unmarshal(input, &inputToParse)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "json marshal:%v", string(input)[:maxErrL])
+	}
+
+	query, err := gojq.Parse(self.param)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "jq read:%v", string(input)[:maxErrL])
+	}
+	iter := query.Run(inputToParse)
+
+	output, ok := iter.Next()
+	if !ok {
+		return 0, time.Time{}, errors.Wrapf(err, "jq iterate:%v", string(input)[:maxErrL])
+	}
+
+	_, ok = iter.Next()
+	if ok {
+		return 0, time.Time{}, errors.Errorf("jq parsing contains multiple values:%v", string(input)[:maxErrL])
+	}
+
+	if err, ok := output.(error); ok {
+		return 0, time.Time{}, errors.Wrapf(err, "jq parse:%v", string(input)[:maxErrL])
+	}
+
+	value, timestamp, err := parseInterface(output)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "parse interface:%v", string(input)[:maxErrL])
+	}
+
+	return value, timestamp, nil
+}
+
+func parseInterface(data interface{}) (float64, time.Time, error) {
 	timestamp := time.Now()
-
-	err := json.Unmarshal(input, &output)
-	if err != nil {
-		return 0, timestamp, errors.Wrapf(err, "json marshal:%v", string(input)[:maxErrL])
-	}
-
-	output, err = jsonpath.Read(output, self.param)
-	if err != nil {
-		return 0, timestamp, errors.Wrapf(err, "json path read:%v", string(input)[:maxErrL])
-	}
 
 	// Expect result to be a slice of float or a single float value.
 	var resultList []interface{}
-	switch result := output.(type) {
+	switch result := data.(type) {
 	case []interface{}:
 		resultList = result
 	default:
@@ -499,6 +555,7 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 			}
 		}
 	}
+
 	return value, timestamp, nil
 }
 
@@ -506,6 +563,10 @@ func NewParser(t Endpoint) Parser {
 	switch t.Parser {
 	case jsonPathParser:
 		return &JsonPathParser{
+			param: t.Param,
+		}
+	case jqParser:
+		return &JqParser{
 			param: t.Param,
 		}
 	default:

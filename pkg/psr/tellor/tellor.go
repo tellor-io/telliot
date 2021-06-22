@@ -168,7 +168,7 @@ func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
 	case 56:
 		val, conf, err = self.aggregator.MedianAt("VIXEOD", ts)
 	case 57:
-		val, conf, err = self.aggregator.MeanAt("DEFITVL", ts)
+		val, conf, err = self.aggregator.MedianAt("DEFITVL", ts)
 	case 58:
 		val, conf, err = self.aggregator.MeanAt("DEFIMCAP", ts)
 	default:

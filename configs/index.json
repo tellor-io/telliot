@@ -252,8 +252,14 @@
         "interval": "1h",
         "endpoints": [
             {
-                "URL": "https://api.llama.fi/charts",
-                "param": "$[-1:].totalLiquidityUSD"
+                "URL": "https://api.llama.fi/protocols",
+                "parser": "jq",
+                "param": "map( select(.chain==\"Ethereum\") | .tvl ) | add"
+            },
+            {
+                "URL": "https://openapi.debank.com/v1/protocol/list",
+                "parser": "jq",
+                "param": "map( select(.chain==\"eth\") | .tvl ) | add"
             },
             {
                 "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
