@@ -237,7 +237,7 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error
 			"miner", event.Miner.String(),
 			"oracleValue", valAct,
 			"psrValue", valExp,
-			"difference", ((float64(valExp)-float64(valAct.Int64()))/float64(valExp))*100,
+			"difference", PercentageChange(valAct.Int64(), valExp),
 		)
 	}
 	return nil
@@ -253,4 +253,10 @@ func (self *Dispute) newSubTellor(output chan *tellor.TellorNonceSubmitted) (eve
 		return nil, errors.Wrap(err, "getting channel")
 	}
 	return sub, nil
+}
+
+func PercentageChange(old, new int64) (delta float64) {
+	diff := float64(new - old)
+	delta = (diff / float64(old)) * 100
+	return
 }
