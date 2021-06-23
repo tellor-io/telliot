@@ -62,7 +62,7 @@ func (self *GasTracker) Query(ctx context.Context) (int64, error) {
 	if self.netID == 1 {
 		ctx, cncl := context.WithTimeout(ctx, 15*time.Second)
 		defer cncl()
-		resp, err := web.Fetch(ctx, "https://ethgasstation.info/json/ethgasAPI.json")
+		resp, err := web.Fetch(ctx, "https://ethgasstation.info/json/ethgasAPI.json", nil)
 		if err != nil {
 			level.Error(self.logger).Log("msg", "fetching eth gas price falling back to client suggested price", "err", err)
 			gasPrice, err = self.client.SuggestGasPrice(ctx)

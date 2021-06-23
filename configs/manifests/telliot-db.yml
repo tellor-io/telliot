@@ -55,6 +55,11 @@ spec:
             secretKeyRef:
               name: telliot-db
               key: CMC_KEY
+        - name: RAPID_KEY
+          valueFrom:
+            secretKeyRef:
+              name: telliot-db
+              key: RAPID_KEY
       volumes:
       - name: configs
         configMap:

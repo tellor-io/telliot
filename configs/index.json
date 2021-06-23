@@ -95,6 +95,20 @@
             }
         ]
     },
+    "AMPL/USD/VWAP": {
+        "interval": "10m",
+        "endpoints": [
+            {
+                "Type": "bravenewcoin",
+                "URL": "https://bravenewcoin.p.rapidapi.com/ohlcv?size=1&indexId=551cdbbe-2a97-4af8-b6bc-3254210ed021&indexType=GWA&rapidapi-key=$RAPID_KEY",
+                "param": "$.content[0][vwap]"
+            },
+            {
+                "URL": "https://min-api.cryptocompare.com/data/dayAvg?fsym=AMPL&tsym=USD",
+                "param": "$.USD"
+            }
+        ]
+    },
     "ATOM/USD": {
         "endpoints": [
             {

@@ -13,16 +13,25 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Fetch(ctx context.Context, url string) ([]byte, error) {
+func Fetch(ctx context.Context, url string, headers map[string]string) ([]byte, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := http.Client{Transport: tr}
 	ticker := time.NewTicker(1 * time.Second)
 
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+
 	var errFinal error
 	for i := 0; i < 5; i++ {
-		r, err := client.Get(url)
+		r, err := client.Do(req)
 		if err != nil {
 			errFinal = errors.Wrap(err, "fetching data")
 			select {
