@@ -579,6 +579,12 @@ func (self mineCmd) Run() error {
 		return errors.Wrap(err, "creating ethereum client")
 	}
 
+	_netID, err := client.NetworkID(ctx)
+	if err != nil {
+		return errors.Wrap(err, "getting network ID")
+	}
+	netID := _netID.Int64()
+
 	accounts, err := ethereum.GetAccounts()
 	if err != nil {
 		return errors.Wrap(err, "getting accounts")
@@ -639,11 +645,6 @@ func (self mineCmd) Run() error {
 			return errors.Wrap(err, "creating aggregator")
 		}
 
-		contractTellor, err := contracts.NewITellor(client)
-		if err != nil {
-			return errors.Wrap(err, "create tellor contract instance")
-		}
-
 		// Index tracker.
 		// Run only when not using remote DB as it needs to write to the local db.
 		if cfg.Db.RemoteHost == "" {
@@ -668,7 +669,8 @@ func (self mineCmd) Run() error {
 		}
 
 		// Dispute tracker.
-		{
+		// Run it only for mainnet or rinkeby as the tellor oracle exists only on those networks.
+		if netID == 1 || netID == 4 {
 			// When running with a remote db need to create a new instance of a local db.
 			// Otherwise use the already opened DB.
 			if cfg.Db.RemoteHost != "" {
@@ -693,6 +695,12 @@ func (self mineCmd) Run() error {
 			if !ok {
 				return errors.New("tsdb is not a writable DB instance")
 			}
+
+			contractTellor, err := contracts.NewITellor(client)
+			if err != nil {
+				return errors.Wrap(err, "create tellor contract instance")
+			}
+
 			disputeTracker, err := dispute.New(
 				logger,
 				ctx,
@@ -725,6 +733,12 @@ func (self mineCmd) Run() error {
 			for _, acc := range accounts {
 				accountAddrs = append(accountAddrs, acc.Address)
 			}
+
+			contractTellor, err := contracts.NewITellor(client)
+			if err != nil {
+				return errors.Wrap(err, "create tellor contract instance")
+			}
+
 			profitTracker, err := profit.NewProfitTracker(logger, ctx, cfg.ProfitTracker, client, contractTellor, accountAddrs)
 			if err != nil {
 				return errors.Wrap(err, "creating profit tracker")
@@ -806,7 +820,7 @@ func (self mineCmd) Run() error {
 		if cfg.SubmitterTellorAccess.Enabled {
 			contract, err := contracts.NewITellorAccess(client)
 			if err != nil {
-				return errors.Wrap(err, "create tellor contract instance")
+				return errors.Wrap(err, "create contract instance")
 			}
 
 			// Create a submitter for each account.

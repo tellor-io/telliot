@@ -26,6 +26,8 @@ import (
 
 const ComponentName = "taskerNewChallenge"
 
+const defaultDelay = 10 * time.Second
+
 type Config struct {
 	LogLevel string
 }
@@ -119,7 +121,7 @@ func (self *Tasker) sendWork(challenge *tellor.ITellorNewChallenge) {
 
 func (self *Tasker) Start() error {
 	var err error
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(defaultDelay)
 	defer ticker.Stop()
 	level.Info(self.logger).Log("msg", "starting")
 
@@ -205,7 +207,7 @@ func (self *Tasker) Start() error {
 }
 
 func (self *Tasker) sendWhenConfirmed(ctx context.Context, vLog *tellor.ITellorNewChallenge) {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(defaultDelay)
 	defer ticker.Stop()
 	for {
 		select {

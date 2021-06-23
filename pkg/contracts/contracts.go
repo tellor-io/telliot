@@ -17,7 +17,7 @@ const (
 	TellorAddress                      = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
 	TellorAddressGoerli                = "0x90bbE2155deb3d454696Ce659B52B831e754431C"
 	TellorAccessAddressRinkeby         = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
-	TellorAccessAddressArbitrumTestnet = "0xCf26Ce0a3a9EF0125FA53a05A00b6B68F5ddb27A"
+	TellorAccessAddressArbitrumTestnet = "0x7A1e398A228271D1B8b1fb1ede678A3e4c79f50A"
 	TellorAccessAddress                = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
 	LensAddressMainnet                 = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
 	LensAddressRinkeby                 = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
@@ -51,15 +51,15 @@ type ITellor struct {
 func NewITellor(client *ethclient.Client) (*ITellor, error) {
 	conractAddr, err := GetTellorAddress(client)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating lens address")
+		return nil, errors.Wrap(err, "getting contract address")
 	}
 	tellorInstance, err := tellor.NewITellor(conractAddr, client)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating telllor interface")
+		return nil, errors.Wrap(err, "creating contract interface")
 	}
 	contractAddr, err := GetLensAddress(client)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating lens address")
+		return nil, errors.Wrap(err, "getting contract address")
 	}
 
 	lensInstance, err := lens.NewMain(contractAddr, client)
@@ -73,7 +73,7 @@ func NewITellor(client *ethclient.Client) (*ITellor, error) {
 func NewITellorAccess(client *ethclient.Client) (*ITellorAccess, error) {
 	conractAddr, err := GetTellorAccessAddress(client)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating lens address")
+		return nil, errors.Wrap(err, "getting contract address")
 	}
 	tellorInstance, err := tellorAccess.NewTellorAccess(conractAddr, client)
 	if err != nil {

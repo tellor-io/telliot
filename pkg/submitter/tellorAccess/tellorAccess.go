@@ -127,11 +127,11 @@ func (self *Submitter) Start() error {
 	for _, reqID := range self.reqIDs {
 		exists, val, ts, err := self.contract.GetCurrentValue(&bind.CallOpts{Context: self.ctx}, big.NewInt(1))
 		if err != nil {
-			level.Error(self.logger).Log("msg", "retrieve current value", "reqID", reqID, "err", err)
+			level.Error(self.logger).Log("msg", "retrieve current value while checking for last submit", "reqID", reqID, "err", err)
 			break
 		}
 		if !exists {
-			level.Error(self.logger).Log("msg", "current value doesn't exist", "reqID", reqID, "err", err)
+			level.Error(self.logger).Log("msg", "current value doesn't exist for checking for last submit", "reqID", reqID)
 			break
 		}
 		self.lastSubmitValue[reqID] = float64(val.Int64())
@@ -150,7 +150,7 @@ func (self *Submitter) Start() error {
 		}
 	}
 
-	ticker := time.NewTicker(2 * time.Minute)
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	for {
 		select {
@@ -178,7 +178,7 @@ func (self *Submitter) Submit(reqID int64) error {
 		return errors.Wrap(err, "checking reporter status")
 	}
 	if !isReporter {
-		return errors.Wrap(err, "addr not a reporter")
+		return errors.New("addr not a reporter")
 	}
 
 	val, err := self.psr.GetValue(reqID, time.Now())
