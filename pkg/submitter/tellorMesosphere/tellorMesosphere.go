@@ -241,14 +241,14 @@ func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
 	logger := log.With(self.logger, "msg", "should submit check passed", "reqID", reqID)
 
 	if self.lastSubmitTime[reqID].IsZero() {
-		level.Debug(logger).Log(
+		level.Info(logger).Log(
 			"reason", "first submit",
 		)
 		return true
 	}
 
 	if lastSubmitTime, ok := self.lastSubmitTime[reqID]; ok && time.Since(lastSubmitTime) > (5*time.Minute) {
-		level.Debug(logger).Log(
+		level.Info(logger).Log(
 			"reason", "more then 5 minutes since last submit",
 			"timePassed", time.Since(lastSubmitTime),
 		)
@@ -262,7 +262,7 @@ func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
 
 	percentageChange := math.Abs((lastSubmitValue-float64(newVal))/lastSubmitValue) * 100
 	if percentageChange > percentageChangeThreshold {
-		level.Debug(logger).Log(
+		level.Info(logger).Log(
 			"reason", "value change more then threshold",
 			"percentageChange", percentageChange,
 			"percentageThresohld", percentageChangeThreshold,
