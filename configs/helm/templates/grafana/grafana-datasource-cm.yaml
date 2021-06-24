@@ -14,7 +14,7 @@ data:
       type: prometheus
       access: proxy
       orgId: 1
-      url: http://prometheus.default:{{ .Values.prometheus.service.port }}
+      url: http://{{ template "prometheus.fullname" . }}:{{ .Values.prometheus.service.port }}
       isDefault: true
       jsonData:
          graphiteVersion: "1.1"

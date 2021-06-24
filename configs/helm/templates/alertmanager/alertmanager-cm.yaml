@@ -18,5 +18,5 @@ data:
       - name: alertmananger-bot
         webhook_configs:
           - send_resolved: true
-            url: "http://alertmanager-bot:{{ .Values.alertmanager.bot.service.port }}"
+            url: "http://{{ template "alertmanager.fullname" . }}-bot:{{ .Values.alertmanager.bot.service.port }}"
 {{- end }}

@@ -16,7 +16,7 @@ data:
       alertmanagers:
         - static_configs:
           - targets:
-            - alertmanager:9093
+            - {{ template "alertmanager.fullname" . }}:{{ .Values.alertmanager.service.port }}
             
     scrape_configs:
     - job_name: endpoints

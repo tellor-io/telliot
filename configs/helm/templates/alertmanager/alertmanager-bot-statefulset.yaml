@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - args:
-        - --alertmanager.url=http://alertmanager:9093
+        - --alertmanager.url=http://{{ template "alertmanager.fullname" . }}:{{ .Values.alertmanager.container.port }}
         - --log.level=info
         - --store=bolt
         - --bolt.path=/data/bot.db
