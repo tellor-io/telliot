@@ -1,0 +1,65 @@
+{
+	"Aggregator": {
+		"LogLevel": "info",
+		"ManualDataFile": "configs/manualData.json"
+	},
+	"Db": {
+		"LogLevel": "info",
+		"Path": "db",
+		"RemoteHost": "",
+		"RemotePort": 0,
+		"RemoteTimeout": "5s"
+	},
+	"Disputer": {
+		"DisputeThreshold": 1,
+		"DisputeTimeDelta": "10s",
+		"LogLevel": "info"
+	},
+	"Ethereum": {
+		"LogLevel": "info",
+		"Timeout": 3000
+	},
+	"IndexTracker": {
+		"IndexFile": "configs/index.json",
+		"Interval": "30s",
+		"LogLevel": "info"
+	},
+	"Mining": {
+		"Heartbeat": 60000000000,
+		"LogLevel": "info"
+	},
+	"ProfitTracker": {
+		"LogLevel": "info"
+	},
+	"PsrTellor": {
+		"MinConfidence": 0.7
+	},
+	"PsrTellorAccess": {
+		"MinConfidence": 0
+	},
+	"SubmitterTellor": {
+		"Enabled": true,
+		"LogLevel": "info",
+		"MinSubmitPeriod": "15m1s",
+		"ProfitThreshold": 0
+	},
+	"SubmitterTellorAccess": {
+		"Enabled": false,
+		"LogLevel": "info"
+	},
+	"Tasker": {
+		"LogLevel": "info"
+	},
+	"Transactor": {
+		"GasMax": 10,
+		"GasMultiplier": 1,
+		"LogLevel": "info"
+	},
+	"Web": {
+		"ListenHost": "0.0.0.0",
+		"ListenPort": 9090,
+		"LogLevel": "info",
+		"ReadTimeout": "0s"
+	},
+	"envFile": "configs/.env"
+}

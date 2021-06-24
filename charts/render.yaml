@@ -1,0 +1,2068 @@
+---
+# Source: telliot/templates/alertmanager/alertmanager-bot-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-bot
+type: Opaque
+data:
+  admin: ""
+  token: ""
+---
+# Source: telliot/templates/telliot/telliot-env-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: telliot-env-secret
+type: Opaque
+data:
+  ETH_PRIVATE_KEYS: "eeeee6653cdcacc36e3c400ceeeef2aefd59e2642c2f7f298047eeeeeeeeeeee,9643c732204f2a7c9bdb74e2fa08e36d6a4ae8378b983064848b76318fb6507d" # required list of private keys separated by `,`   
+  NODE_URL: "wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" # required websocket node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+---
+# Source: telliot/templates/telliot/telliot-env-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: telliot-env-secret
+type: Opaque
+data:
+  ETH_PRIVATE_KEYS: "eeeee6653cdcacc36e3c400ceeeef2aefd59e2642c2f7f298047eeeeeeeeeeee,9643c732204f2a7c9bdb74e2fa08e36d6a4ae8378b983064848b76318fb6507d" # required list of private keys separated by `,`   
+  NODE_URL: "wss://mainnet.infura.io/v3/ws/xxxxxxxxxxxxx" # required websocket node URL \(e.g [wss://mainnet.infura.io/bbbb](wss://mainnet.infura.io/bbbb) or [wss://localhost:8546](ws://localhost:8546) if own node\)
+---
+# Source: telliot/templates/alertmanager/alertmanager-cm.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: def-prometheus-config
+data:
+  config.yml: |-
+    global:
+    templates:
+      - "/etc/alertmanager/*.tmpl"
+    route:
+      receiver: alertmananger-bot
+      group_by: ["alertname", "priority"]
+      group_wait: 10s
+      repeat_interval: 30m
+
+    receivers:
+      - name: alertmananger-bot
+        webhook_configs:
+          - send_resolved: true
+            url: "http://alertmanager-bot:8080"
+---
+# Source: telliot/templates/grafana/grafana-datasource-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: def-grafana-datasource-provision
+data:
+  prometheus-datasource.yaml: |
+    apiVersion: 1
+    deleteDatasources:
+      - name: prometheus
+        orgId: 1
+    datasources:
+    - name: prometheus
+      type: prometheus
+      access: proxy
+      orgId: 1
+      url: http://prometheus.default:9090
+      isDefault: true
+      jsonData:
+         graphiteVersion: "1.1"
+         tlsAuth: false
+         tlsAuthWithCACert: false
+      secureJsonData:
+        tlsCACert: "..."
+        tlsClientCert: "..."
+        tlsClientKey: "..."
+      version: 1
+      editable: true
+---
+# Source: telliot/templates/prometheus/prometheus-cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: def-prometheus
+data:
+  prometheus.yaml: |-
+    global:
+      scrape_interval: 5s
+
+    rule_files:
+    - /etc/prometheus/alerts/*.yaml
+
+    # Alerting specifies settings related to the Alertmanager
+    alerting:
+      alertmanagers:
+        - static_configs:
+          - targets:
+            - alertmanager:9093
+            
+    scrape_configs:
+    - job_name: endpoints
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+      kubernetes_sd_configs:
+      - role: endpoints
+
+      relabel_configs:
+      - action: keep
+        source_labels: [__meta_kubernetes_service_label_app]
+        regex: telliot.*|prometheus|export.*
+      - action: replace
+        source_labels: [__meta_kubernetes_service_label_app]
+        target_label: job
+      - action: labeldrop
+        regex: __meta_kubernetes_namespace|__meta_kubernetes_pod_node_name|__meta_kubernetes_pod_label_node
+  telliot.yaml: |-
+    groups:
+      - name: telliot
+        rules:
+          - alert: SubmitError
+            expr: rate(telliot_mining_submit_fails_total[5m])>1
+            for: 5m
+            labels:
+              severity: page
+            annotations:
+              summary: "Submit failed (account: {{ $labels.account }})"
+              description: "There was a failed submit in the last 5 minutes"
+---
+# Source: telliot/templates/telliot/telliot-cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: def-telliot-db
+data:
+  configRemote.json: |-
+    {
+        "DB": {
+            "RemoteHost": "localhost",
+            "RemotePort": 9090
+        }
+    }
+  configTellorAccess.json: |-
+    {
+        "SubmitterTellor": {
+            "Enabled": false
+        },
+        "SubmitterTellorAccess": {
+            "Enabled": true
+        }
+    }
+  config.json: |-
+    {
+    	"Aggregator": {
+    		"LogLevel": "info",
+    		"ManualDataFile": "configs/manualData.json"
+    	},
+    	"Db": {
+    		"LogLevel": "info",
+    		"Path": "db",
+    		"RemoteHost": "",
+    		"RemotePort": 0,
+    		"RemoteTimeout": "5s"
+    	},
+    	"Disputer": {
+    		"DisputeThreshold": 1,
+    		"DisputeTimeDelta": "10s",
+    		"LogLevel": "info"
+    	},
+    	"Ethereum": {
+    		"LogLevel": "info",
+    		"Timeout": 3000
+    	},
+    	"IndexTracker": {
+    		"IndexFile": "configs/index.json",
+    		"Interval": "30s",
+    		"LogLevel": "info"
+    	},
+    	"Mining": {
+    		"Heartbeat": 60000000000,
+    		"LogLevel": "info"
+    	},
+    	"ProfitTracker": {
+    		"LogLevel": "info"
+    	},
+    	"PsrTellor": {
+    		"MinConfidence": 0.7
+    	},
+    	"PsrTellorAccess": {
+    		"MinConfidence": 0
+    	},
+    	"SubmitterTellor": {
+    		"Enabled": true,
+    		"LogLevel": "info",
+    		"MinSubmitPeriod": "15m1s",
+    		"ProfitThreshold": 0
+    	},
+    	"SubmitterTellorAccess": {
+    		"Enabled": false,
+    		"LogLevel": "info"
+    	},
+    	"Tasker": {
+    		"LogLevel": "info"
+    	},
+    	"Transactor": {
+    		"GasMax": 10,
+    		"GasMultiplier": 1,
+    		"LogLevel": "info"
+    	},
+    	"Web": {
+    		"ListenHost": "0.0.0.0",
+    		"ListenPort": 9090,
+    		"LogLevel": "info",
+    		"ReadTimeout": "0s"
+    	},
+    	"envFile": "configs/.env"
+    }
+  index.json: |-
+    {
+        "ALGO/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "AMPL/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPBTC",
+                    "param": "$[6]"
+                }
+            ]
+        },
+        "AMPL/BTC/VOLUME": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPBTC/last",
+                    "param": "$[5,0]"
+                }
+            ]
+        },
+        "AMPL/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUSD",
+                    "param": "$[6]"
+                },
+                {
+                    "URL": "https://ftx.com/api/markets/AMPL/USD",
+                    "param": "$.result.price"
+                }
+            ]
+        },
+        "AMPL/USD/VOLUME": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPUSD/last",
+                    "param": "$[5,0]"
+                },
+                {
+                    "URL": "https://ftx.com/api/markets/AMPL/USD/candles?resolution=60&limit=1",
+                    "param": "$.result[0][volume,time]"
+                }
+            ]
+        },
+        "AMPL/USDT": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUST",
+                    "param": "$[6]"
+                },
+                {
+                    "URL": "https://ftx.com/api/markets/AMPL/USDT",
+                    "param": "$.result.price"
+                },
+                {
+                    "URL": "https://www.mxc.com/open/api/v2/market/ticker?symbol=AMPL_USDT",
+                    "param": "$.data[0][last]"
+                }
+            ]
+        },
+        "AMPL/USDT/VOLUME": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPUST/last",
+                    "param": "$[5,0]"
+                },
+                {
+                    "URL": "https://ftx.com/api/markets/AMPL/USDT/candles?resolution=60&limit=1",
+                    "param": "$.result[0][volume,time]"
+                },
+                {
+                    "URL": "https://www.mxc.com/open/api/v2/market/kline?symbol=AMPL_USDT&interval=1m",
+                    "param": "$.data[-1:][5,0]"
+                }
+            ]
+        },
+        "AMPL/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://www.mxc.com/open/api/v2/market/ticker?symbol=AMPL_ETH",
+                    "param": "$.data[0][last]"
+                }
+            ]
+        },
+        "AMPL/ETH/VOLUME": {
+            "endpoints": [
+                {
+                    "URL": "https://www.mxc.com/open/api/v2/market/kline?symbol=AMPL_ETH&interval=1m",
+                    "param": "$.data[-1:][5,0]"
+                }
+            ]
+        },
+        "ATOM/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ATOMUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ATOMUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=cosmos&vs_currencies=usd",
+                    "param": "$.cosmos.usd"
+                },
+                {
+                    "URL": "https://api.pro.coinbase.com/products/ATOM-USD/ticker",
+                    "param": "$.price"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=ATOMUSD",
+                    "param": "$.result.ATOMUSD.c[0]"
+                }
+            ]
+        },
+        "BAT/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BATUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "BCH/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=BCHUSD",
+                    "param": "$.result.BCHUSD[p][0]"
+                }
+            ]
+        },
+        "BNB/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BNBBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "BNB/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BNBETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "BNB/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BNBUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd",
+                    "param": "$.binancecoin.usd"
+                }
+            ]
+        },
+        "BSV/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash-sv&vs_currencies=usd",
+                    "param": "$[\"bitcoin-cash-sv\"][\"usd\"]"
+                }
+            ]
+        },
+        "BTC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.pro.coinbase.com/products/BTC-USD/ticker",
+                    "param": "$.price"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BTCUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coindesk.com/v1/bpi/currentprice.json",
+                    "param": "$.bpi.USD.rate"
+                },
+                {
+                    "URL": "https://api.coinpaprika.com/v1/tickers/btc-bitcoin",
+                    "param": "$.quotes.USD.price"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=XBTUSD",
+                    "param": "$.result.XXBTZUSD.c[0]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
+                    "param": "$.bitcoin.usd"
+                },
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/ticker/tBTCUSD",
+                    "param": "$[6]"
+                }
+            ]
+        },
+        "BTCDOMINANCE": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/global",
+                    "param": "$.data.market_cap_percentage.btc"
+                }
+            ]
+        },
+        "COS/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=COSUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "DAI/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=DAIUSD",
+                    "param": "$.result.DAIUSD.p[0]"
+                }
+            ]
+        },
+        "DASH/BNB": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=DASHBNB&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "DEFIMCAP": {
+            "interval": "30m",
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/global/decentralized_finance_defi",
+                    "param": "$.data.defi_market_cap"
+                },
+                {
+                    "URL": "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest?CMC_PRO_API_KEY=${CMC_KEY}",
+                    "param": "$.data.defi_market_cap"
+                }
+            ]
+        },
+        "DEFITVL": {
+            "interval": "1h",
+            "endpoints": [
+                {
+                    "URL": "https://api.llama.fi/charts",
+                    "param": "$[-1:].totalLiquidityUSD"
+                },
+                {
+                    "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
+                    "param": "$.All.total"
+                }
+            ]
+        },
+        "EOS/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=eos&vs_currencies=usd",
+                    "param": "$.eos.usd"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=EOSUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ETC/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETCETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ETC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETCUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ETH/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.pro.coinbase.com/products/ETH-BTC/ticker",
+                    "param": "$.price"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=ETHXBT",
+                    "param": "$.result.XETHXXBT.c[0]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=btc",
+                    "param": "$.ethereum.btc"
+                }
+            ]
+        },
+        "ETH/PAX": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETHPAX&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ETH/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.pro.coinbase.com/products/ETH-USD/ticker",
+                    "param": "$[price]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=ETHUSD",
+                    "param": "$.result.XETHZUSD.c[0]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
+                    "param": "$.ethereum.usd"
+                }
+            ]
+        },
+        "GNO/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=GNOUSD",
+                    "param": "$.result.GNOUSD.p[0]"
+                }
+            ]
+        },
+        "GNT/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=GNTETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "IOTA/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=IOTAUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "LINK/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=LINKBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "LINK/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=LINKUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=LINKUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "LTC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd",
+                    "param": "$.litecoin.usd"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=LTCUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "MAKER/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd",
+                    "param": "$.maker.usd"
+                }
+            ]
+        },
+        "MATIC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=MATICUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coinpaprika.com/v1/tickers/matic-matic-network",
+                    "param": "$.quotes.USD.price"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd",
+                    "param": "$[\"matic-network\"][\"usd\"]"
+                }
+            ]
+        },
+        "OGN/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=origin-protocol&vs_currencies=usd",
+                    "param": "$[\"origin-protocol\"][\"usd\"]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=OGNUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "RCN/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=RCNBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "REP/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=REPBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "REP/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=augur&vs_currencies=usd",
+                    "param": "$.augur.usd"
+                }
+            ]
+        },
+        "STEEM/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=STEEMBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "TRB/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=eth",
+                    "param": "$.tellor.eth"
+                }
+            ]
+        },
+        "TRB/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd",
+                    "param": "$.tellor.usd"
+                }
+            ]
+        },
+        "TRX/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=TRXETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "TUSD/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=true-usd&vs_currencies=eth",
+                    "param": "$[\"true-usd\"][\"eth\"]"
+                }
+            ]
+        },
+        "USDC/USDT": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=USDCUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "VIXEOD": {
+            "endpoints": [
+                {
+                    "URL": "https://www.quandl.com/api/v3/datasets/CHRIS/CBOE_VX1.json?api_key=${VIXEOD_KEY}",
+                    "param": "$.dataset.data[0][4]"
+                }
+            ]
+        },
+        "WAN/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=WANBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "WAVES/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=WAVESBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "WAVES/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=waves&vs_currencies=usd",
+                    "param": "$.waves.usd"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=WAVESUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "XAU/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD",
+                    "param": "$[0].spreadProfilePrices[0].ask"
+                }
+            ]
+        },
+        "XFT/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=offshift&vs_currencies=usd",
+                    "param": "$.offshift.usd"
+                }
+            ]
+        },
+        "XLM/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=XLMBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "XMR/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=XMRETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "XMR/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd",
+                    "param": "$.monero.usd"
+                }
+            ]
+        },
+        "XRP/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=XRPBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "XRP/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=XRPUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=XRPUSD",
+                    "param": "$.result.XXRPZUSD.c[0]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",
+                    "param": "$.ripple.usd"
+                }
+            ]
+        },
+        "XTZ/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd",
+                    "param": "$.tezos.usd"
+                }
+            ]
+        },
+        "ZEC/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ZECETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ZEC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ZECUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ZRX/BNB": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXBNB&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ZRX/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        }
+    }
+  manualData.json: |-
+    {
+        "tellor": {
+            "41": {
+                "VALUE": 113.40633333333334,
+                "DATE": 1624604400
+            }
+        },
+        "tellorAccess": {}
+    }
+---
+# Source: telliot/templates/telliot/telliot-cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: def-telliot-m
+data:
+  configRemote.json: |-
+    {
+        "DB": {
+            "RemoteHost": "localhost",
+            "RemotePort": 9090
+        }
+    }
+  configTellorAccess.json: |-
+    {
+        "SubmitterTellor": {
+            "Enabled": false
+        },
+        "SubmitterTellorAccess": {
+            "Enabled": true
+        }
+    }
+  config.json: |-
+    {
+    	"Aggregator": {
+    		"LogLevel": "info",
+    		"ManualDataFile": "configs/manualData.json"
+    	},
+    	"Db": {
+    		"LogLevel": "info",
+    		"Path": "db",
+    		"RemoteHost": "",
+    		"RemotePort": 0,
+    		"RemoteTimeout": "5s"
+    	},
+    	"Disputer": {
+    		"DisputeThreshold": 1,
+    		"DisputeTimeDelta": "10s",
+    		"LogLevel": "info"
+    	},
+    	"Ethereum": {
+    		"LogLevel": "info",
+    		"Timeout": 3000
+    	},
+    	"IndexTracker": {
+    		"IndexFile": "configs/index.json",
+    		"Interval": "30s",
+    		"LogLevel": "info"
+    	},
+    	"Mining": {
+    		"Heartbeat": 60000000000,
+    		"LogLevel": "info"
+    	},
+    	"ProfitTracker": {
+    		"LogLevel": "info"
+    	},
+    	"PsrTellor": {
+    		"MinConfidence": 0.7
+    	},
+    	"PsrTellorAccess": {
+    		"MinConfidence": 0
+    	},
+    	"SubmitterTellor": {
+    		"Enabled": true,
+    		"LogLevel": "info",
+    		"MinSubmitPeriod": "15m1s",
+    		"ProfitThreshold": 0
+    	},
+    	"SubmitterTellorAccess": {
+    		"Enabled": false,
+    		"LogLevel": "info"
+    	},
+    	"Tasker": {
+    		"LogLevel": "info"
+    	},
+    	"Transactor": {
+    		"GasMax": 10,
+    		"GasMultiplier": 1,
+    		"LogLevel": "info"
+    	},
+    	"Web": {
+    		"ListenHost": "0.0.0.0",
+    		"ListenPort": 9090,
+    		"LogLevel": "info",
+    		"ReadTimeout": "0s"
+    	},
+    	"envFile": "configs/.env"
+    }
+  index.json: |-
+    {
+        "ALGO/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ALGOUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "AMPL/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPBTC",
+                    "param": "$[6]"
+                }
+            ]
+        },
+        "AMPL/BTC/VOLUME": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPBTC/last",
+                    "param": "$[5,0]"
+                }
+            ]
+        },
+        "AMPL/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUSD",
+                    "param": "$[6]"
+                },
+                {
+                    "URL": "https://ftx.com/api/markets/AMPL/USD",
+                    "param": "$.result.price"
+                }
+            ]
+        },
+        "AMPL/USD/VOLUME": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPUSD/last",
+                    "param": "$[5,0]"
+                },
+                {
+                    "URL": "https://ftx.com/api/markets/AMPL/USD/candles?resolution=60&limit=1",
+                    "param": "$.result[0][volume,time]"
+                }
+            ]
+        },
+        "AMPL/USDT": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/ticker/tAMPUST",
+                    "param": "$[6]"
+                },
+                {
+                    "URL": "https://ftx.com/api/markets/AMPL/USDT",
+                    "param": "$.result.price"
+                },
+                {
+                    "URL": "https://www.mxc.com/open/api/v2/market/ticker?symbol=AMPL_USDT",
+                    "param": "$.data[0][last]"
+                }
+            ]
+        },
+        "AMPL/USDT/VOLUME": {
+            "endpoints": [
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/candles/trade:1m:tAMPUST/last",
+                    "param": "$[5,0]"
+                },
+                {
+                    "URL": "https://ftx.com/api/markets/AMPL/USDT/candles?resolution=60&limit=1",
+                    "param": "$.result[0][volume,time]"
+                },
+                {
+                    "URL": "https://www.mxc.com/open/api/v2/market/kline?symbol=AMPL_USDT&interval=1m",
+                    "param": "$.data[-1:][5,0]"
+                }
+            ]
+        },
+        "AMPL/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://www.mxc.com/open/api/v2/market/ticker?symbol=AMPL_ETH",
+                    "param": "$.data[0][last]"
+                }
+            ]
+        },
+        "AMPL/ETH/VOLUME": {
+            "endpoints": [
+                {
+                    "URL": "https://www.mxc.com/open/api/v2/market/kline?symbol=AMPL_ETH&interval=1m",
+                    "param": "$.data[-1:][5,0]"
+                }
+            ]
+        },
+        "ATOM/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ATOMUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ATOMUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=cosmos&vs_currencies=usd",
+                    "param": "$.cosmos.usd"
+                },
+                {
+                    "URL": "https://api.pro.coinbase.com/products/ATOM-USD/ticker",
+                    "param": "$.price"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=ATOMUSD",
+                    "param": "$.result.ATOMUSD.c[0]"
+                }
+            ]
+        },
+        "BAT/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BATUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "BCH/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=BCHUSD",
+                    "param": "$.result.BCHUSD[p][0]"
+                }
+            ]
+        },
+        "BNB/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BNBBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "BNB/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BNBETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "BNB/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BNBUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd",
+                    "param": "$.binancecoin.usd"
+                }
+            ]
+        },
+        "BSV/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash-sv&vs_currencies=usd",
+                    "param": "$[\"bitcoin-cash-sv\"][\"usd\"]"
+                }
+            ]
+        },
+        "BTC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.pro.coinbase.com/products/BTC-USD/ticker",
+                    "param": "$.price"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=BTCUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coindesk.com/v1/bpi/currentprice.json",
+                    "param": "$.bpi.USD.rate"
+                },
+                {
+                    "URL": "https://api.coinpaprika.com/v1/tickers/btc-bitcoin",
+                    "param": "$.quotes.USD.price"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=XBTUSD",
+                    "param": "$.result.XXBTZUSD.c[0]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
+                    "param": "$.bitcoin.usd"
+                },
+                {
+                    "URL": "https://api-pub.bitfinex.com/v2/ticker/tBTCUSD",
+                    "param": "$[6]"
+                }
+            ]
+        },
+        "BTCDOMINANCE": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/global",
+                    "param": "$.data.market_cap_percentage.btc"
+                }
+            ]
+        },
+        "COS/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=COSUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "DAI/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=DAIUSD",
+                    "param": "$.result.DAIUSD.p[0]"
+                }
+            ]
+        },
+        "DASH/BNB": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=DASHBNB&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "DEFIMCAP": {
+            "interval": "30m",
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/global/decentralized_finance_defi",
+                    "param": "$.data.defi_market_cap"
+                },
+                {
+                    "URL": "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest?CMC_PRO_API_KEY=${CMC_KEY}",
+                    "param": "$.data.defi_market_cap"
+                }
+            ]
+        },
+        "DEFITVL": {
+            "interval": "1h",
+            "endpoints": [
+                {
+                    "URL": "https://api.llama.fi/charts",
+                    "param": "$[-1:].totalLiquidityUSD"
+                },
+                {
+                    "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
+                    "param": "$.All.total"
+                }
+            ]
+        },
+        "EOS/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=eos&vs_currencies=usd",
+                    "param": "$.eos.usd"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=EOSUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ETC/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETCETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ETC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETCUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ETH/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.pro.coinbase.com/products/ETH-BTC/ticker",
+                    "param": "$.price"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=ETHXBT",
+                    "param": "$.result.XETHXXBT.c[0]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETHBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=btc",
+                    "param": "$.ethereum.btc"
+                }
+            ]
+        },
+        "ETH/PAX": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETHPAX&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ETH/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.pro.coinbase.com/products/ETH-USD/ticker",
+                    "param": "$[price]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETHUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ETHUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=ETHUSD",
+                    "param": "$.result.XETHZUSD.c[0]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
+                    "param": "$.ethereum.usd"
+                }
+            ]
+        },
+        "GNO/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=GNOUSD",
+                    "param": "$.result.GNOUSD.p[0]"
+                }
+            ]
+        },
+        "GNT/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=GNTETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "IOTA/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=IOTAUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "LINK/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=LINKBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "LINK/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=LINKUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=LINKUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "LTC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd",
+                    "param": "$.litecoin.usd"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=LTCUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "MAKER/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd",
+                    "param": "$.maker.usd"
+                }
+            ]
+        },
+        "MATIC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=MATICUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.coinpaprika.com/v1/tickers/matic-matic-network",
+                    "param": "$.quotes.USD.price"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd",
+                    "param": "$[\"matic-network\"][\"usd\"]"
+                }
+            ]
+        },
+        "OGN/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=origin-protocol&vs_currencies=usd",
+                    "param": "$[\"origin-protocol\"][\"usd\"]"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=OGNUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "RCN/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=RCNBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "REP/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=REPBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "REP/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=augur&vs_currencies=usd",
+                    "param": "$.augur.usd"
+                }
+            ]
+        },
+        "STEEM/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=STEEMBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "TRB/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=eth",
+                    "param": "$.tellor.eth"
+                }
+            ]
+        },
+        "TRB/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd",
+                    "param": "$.tellor.usd"
+                }
+            ]
+        },
+        "TRX/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=TRXETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "TUSD/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=true-usd&vs_currencies=eth",
+                    "param": "$[\"true-usd\"][\"eth\"]"
+                }
+            ]
+        },
+        "USDC/USDT": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=USDCUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "VIXEOD": {
+            "endpoints": [
+                {
+                    "URL": "https://www.quandl.com/api/v3/datasets/CHRIS/CBOE_VX1.json?api_key=${VIXEOD_KEY}",
+                    "param": "$.dataset.data[0][4]"
+                }
+            ]
+        },
+        "WAN/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=WANBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "WAVES/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=WAVESBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "WAVES/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=waves&vs_currencies=usd",
+                    "param": "$.waves.usd"
+                },
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=WAVESUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "XAU/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD",
+                    "param": "$[0].spreadProfilePrices[0].ask"
+                }
+            ]
+        },
+        "XFT/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=offshift&vs_currencies=usd",
+                    "param": "$.offshift.usd"
+                }
+            ]
+        },
+        "XLM/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=XLMBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "XMR/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=XMRETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "XMR/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd",
+                    "param": "$.monero.usd"
+                }
+            ]
+        },
+        "XRP/BTC": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=XRPBTC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "XRP/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=XRPUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                },
+                {
+                    "URL": "https://api.kraken.com/0/public/Ticker?pair=XRPUSD",
+                    "param": "$.result.XXRPZUSD.c[0]"
+                },
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",
+                    "param": "$.ripple.usd"
+                }
+            ]
+        },
+        "XTZ/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd",
+                    "param": "$.tezos.usd"
+                }
+            ]
+        },
+        "ZEC/ETH": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ZECETH&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ZEC/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ZECUSDC&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ZRX/BNB": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXBNB&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        },
+        "ZRX/USD": {
+            "endpoints": [
+                {
+                    "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1",
+                    "param": "$[0][4]"
+                }
+            ]
+        }
+    }
+  manualData.json: |-
+    {
+        "tellor": {
+            "41": {
+                "VALUE": 113.40633333333334,
+                "DATE": 1624604400
+            }
+        },
+        "tellorAccess": {}
+    }
+---
+# Source: telliot/templates/alertmanager/alertmanager-bot-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: def-prometheus-bot
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: telliot/templates/grafana/grafana-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: def-grafana
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Source: telliot/templates/prometheus/prometheus-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: def-prometheus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Source: telliot/templates/telliot/telliot-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: def-telliot-db
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Source: telliot/templates/telliot/telliot-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: def-telliot-m
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Source: telliot/templates/alertmanager/alertmanager-bot-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: def-prometheus-bot
+spec:
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: def-prometheus-bot
+---
+# Source: telliot/templates/alertmanager/alertmanager-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: def-prometheus
+spec:
+  selector: 
+    app: def-prometheus
+  type: NodePort  
+  ports:
+    - port: 9093
+      targetPort: 9093
+      nodePort: 31000
+---
+# Source: telliot/templates/grafana/grafana-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: def-grafana
+spec:
+  type: LoadBalancer
+  selector:
+    app: def-grafana
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+---
+# Source: telliot/templates/prometheus/prometheus-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: def-prometheus
+  labels:
+    app: def-prometheus
+spec:
+  ports:
+  - name: def-prometheus
+    port: 9090
+    targetPort: def-prometheus
+  selector:
+    app: def-prometheus
+---
+# Source: telliot/templates/telliot/telliot-svc.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: def-telliot-db
+  labels:
+    app: def-telliot-db
+spec:
+  selector:
+    app: def-telliot-db
+  ports:
+  - name: def-telliot-db
+    port: 9090
+    targetPort: 9090
+---
+# Source: telliot/templates/telliot/telliot-svc.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: def-telliot-m
+  labels:
+    app: def-telliot-m
+spec:
+  selector:
+    app: def-telliot-m
+  ports:
+  - name: def-telliot-m
+    port: 9090
+    targetPort: 9090
+---
+# Source: telliot/templates/alertmanager/alertmanager-bot-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: def-prometheus-bot
+  name: def-prometheus-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: def-prometheus-bot
+  serviceName: def-prometheus-bot
+  template:
+    metadata:
+      labels:
+        app: def-prometheus-bot
+      name: def-prometheus-bot
+    spec:
+      containers:
+      - args:
+        - --alertmanager.url=http://alertmanager:9093
+        - --log.level=info
+        - --store=bolt
+        - --bolt.path=/data/bot.db
+        env:
+        - name: TELEGRAM_ADMIN
+          valueFrom:
+            secretKeyRef:
+              key: admin
+              name: def-prometheus-bot
+        - name: TELEGRAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: token
+              name: def-prometheus-bot
+        image: 
+        imagePullPolicy: IfNotPresent
+        name: def-prometheus-bot
+        ports:
+        - containerPort: 8080
+          name: http
+        volumeMounts:
+        - mountPath: /data
+          name: def-prometheus-bot
+      restartPolicy: Always
+      volumes:
+      - name: def-prometheus-bot
+        persistentVolumeClaim:
+          claimName: def-prometheus-bot
+---
+# Source: telliot/templates/alertmanager/alertmanager-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: def-prometheus
+spec:
+  serviceName: def-prometheus
+  replicas: 1
+  selector:
+    matchLabels:
+      app: def-prometheus
+  template:
+    metadata:
+      name: def-prometheus
+      labels:
+        app: def-prometheus
+    spec:
+      containers:
+      - name: def-prometheus
+        image: 
+        args:
+          - "--config.file=/etc/alertmanager/config.yml"
+          - "--storage.path=/alertmanager"
+        ports:
+        - name: def-prometheus
+          containerPort: 9093
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/alertmanager
+      volumes:
+      - name: config-volume
+        configMap:
+          name: def-prometheus-config
+      - name: templates-volume
+        configMap:
+          name: def-prometheus-templates
+---
+# Source: telliot/templates/grafana/grafana-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: def-grafana
+  labels:
+    app: def-grafana
+spec:
+  serviceName: def-grafana
+  replicas: 1
+  selector:
+    matchLabels:
+        app: def-grafana
+  template:
+    metadata:
+      labels:
+        app: def-grafana
+    spec:
+      securityContext:
+        runAsUser: 472
+        fsGroup: 472
+      containers:
+      - image: grafana/grafana:7.3.6
+        name: def-grafana
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: GF_SERVER_ROOT_URL
+            value: "http://monitor.tellor.io/"
+          - name: GF_SERVER_SERVE_FROM_SUB_PATH
+            value: "true"
+          - name: GF_AUTH_ANONYMOUS_ENABLED
+            value: "true"
+          - name: GF_AUTH_ANONYMOUS_ORG_NAME
+            value: "Main Org." # Don't change or it will disable anonymous access.
+          - name: GF_USERS_VIEWERS_CAN_EDIT
+            value: "false"
+        volumeMounts:
+        - name: def-grafana
+          mountPath: /var/lib/grafana
+        - name: def-grafana-datasource-provision
+          mountPath: /etc/grafana/provisioning/datasources
+        ports:
+        - name: def-grafana
+          containerPort: 3000
+      volumes:
+      - name: def-grafana
+        persistentVolumeClaim:
+          claimName: def-grafana
+      - name: def-grafana-datasource-provision
+        configMap:
+          name: def-grafana-datasource-provision
+---
+# Source: telliot/templates/prometheus/prometheus-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: def-prometheus
+  labels:
+    app: def-prometheus
+spec:
+  serviceName: def-prometheus
+  replicas: 1
+  selector:
+    matchLabels:
+      app: def-prometheus
+  template:
+    metadata:
+      labels:
+        app: def-prometheus
+    spec:
+      serviceAccountName: def-prometheus
+      securityContext:
+        runAsUser: 0
+      containers:
+      - image: prom/prometheus:v2.24.0
+        args:
+        - "--config.file=/etc/prometheus/config/prometheus.yaml"
+        - "--storage.tsdb.path=/data"
+        - "--storage.tsdb.retention.size=40GB" 
+        - "--web.enable-lifecycle" 
+        - "--web.enable-admin-api"
+        name: def-prometheus
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus/config
+        - name: prometheus-telliot-rules
+          mountPath: /etc/prometheus/alerts
+        - name: storage
+          mountPath: /data
+          subPath: prometheus-data
+        ports:
+        - name: def-prometheus
+          containerPort: 9090
+      volumes:
+      - name: config-volume
+        configMap:
+          name: def-prometheus
+      - name: prometheus-telliot-rules
+        configMap:
+          name: prometheus-telliot-rules
+      - name: storage
+        persistentVolumeClaim:
+          claimName: def-prometheus
+      terminationGracePeriodSeconds: 300
+---
+# Source: telliot/templates/telliot/telliot-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: def-telliot-db
+  labels:
+    app: def-telliot-db
+spec:
+  serviceName: def-telliot-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: def-telliot-db
+  template:
+    metadata:
+      labels:
+        app: def-telliot-db
+    spec:
+      containers:
+      - name: def-telliot-db
+        image: 
+        imagePullPolicy: Always
+        args: ["dataserver"]
+        ports:
+        - name: def-telliot-db
+          containerPort: 9090
+        volumeMounts:
+        - name: config
+          mountPath: "/configs"
+        - name: db
+          mountPath: "/db"
+        env:
+        - name: ETH_PRIVATE_KEYS
+          valueFrom:
+            secretKeyRef:
+              name: def-telliot-db
+              key: ETH_PRIVATE_KEYS
+        - name: NODE_URL
+          valueFrom:
+            secretKeyRef:
+              name: def-telliot-db
+              key: NODE_URL
+      volumes:
+      - name: config
+        configMap:
+          name: def-telliot-db
+      - name: db
+        persistentVolumeClaim:
+          claimName: def-telliot-db
+---
+# Source: telliot/templates/telliot/telliot-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: def-telliot-m
+  labels:
+    app: def-telliot-m
+spec:
+  serviceName: def-telliot-m
+  replicas: 1
+  selector:
+    matchLabels:
+      app: def-telliot-m
+  template:
+    metadata:
+      labels:
+        app: def-telliot-m
+    spec:
+      containers:
+      - name: def-telliot-m
+        image: 
+        imagePullPolicy: Always
+        args: ["mine"]
+        ports:
+        - name: def-telliot-m
+          containerPort: 9090
+        volumeMounts:
+        - name: config
+          mountPath: "/configs"
+        - name: db
+          mountPath: "/db"
+        env:
+        - name: ETH_PRIVATE_KEYS
+          valueFrom:
+            secretKeyRef:
+              name: def-telliot-m
+              key: ETH_PRIVATE_KEYS
+        - name: NODE_URL
+          valueFrom:
+            secretKeyRef:
+              name: def-telliot-m
+              key: NODE_URL
+      volumes:
+      - name: config
+        configMap:
+          name: def-telliot-m
+      - name: db
+        persistentVolumeClaim:
+          claimName: def-telliot-m

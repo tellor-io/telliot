@@ -1,0 +1,8 @@
+{
+    "SubmitterTellor": {
+        "Enabled": false
+    },
+    "SubmitterTellorAccess": {
+        "Enabled": true
+    }
+}

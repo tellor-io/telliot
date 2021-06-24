@@ -1,0 +1,12 @@
+{{- if .Values.prometheus.persist }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "prometheus.fullname" . }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ print .Values.prometheus.storage "Gi" }}
+{{- end }}

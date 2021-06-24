@@ -1,0 +1,51 @@
+telliot:
+  container:
+    image: tellor/telliot:latest
+    port: 9090
+  service:
+    port: 9090
+  modes:
+    - dataServer
+    - mine
+  storage: 2Gi
+
+grafana:
+  name: grafana
+  enabled: true
+  persist: true
+  service:
+    port: 80
+  container:
+    port: 3000
+    image: grafana/grafana:7.3.6
+  fullnameOverride: Null
+  storage: 5Gi
+
+alertmanager:
+  enabled: true
+  container:
+    image: prom/alertmanager:v0.19.0
+    port: 9093
+  service:
+    port: 9093
+  bot:
+    service:
+      port: 8080
+    container:
+      image: metalmatze/alertmanager-bot:0.4.3
+      port: 8080
+    storage: 1Gi
+    enabled: true
+    telegram:
+      token: Null
+      admin: Null
+
+prometheus:
+  enabled: true
+  persist: true
+  service:
+    port: 9090
+  container:
+    port: 9090
+    image: prom/prometheus:v2.24.0
+  storage: 50 # In gigabytes, do not add units (gb,mb,kb,etc..) to this value
