@@ -105,14 +105,27 @@ var DefaultConfig = Config{
 }
 
 func ParseConfig(logger log.Logger, path string) (*Config, error) {
+
+	cfg := &Config{}
+
+	cfgI, err := DeеpCopy(logger, path, cfg, DefaultConfig)
+	cfg = cfgI.(*Config)
+
+	if err := godotenv.Load(cfg.EnvFile); err != nil && !os.IsNotExist(err) {
+		return nil, errors.Wrap(err, "loading env vars from env file")
+	}
+
+	return cfg, err
+}
+
+func DeеpCopy(logger log.Logger, path string, cfg, cfgDefault interface{}) (interface{}, error) {
 	if path == "" {
 		path = filepath.Join("configs", "config.json")
 	}
 
-	cfg := &Config{}
 	// DeepCopy the default config into the final config.
 	{
-		b, err := json.Marshal(DefaultConfig)
+		b, err := json.Marshal(cfgDefault)
 		if err != nil {
 			return nil, errors.Wrap(err, "marshal default config")
 		}
@@ -144,10 +157,6 @@ func ParseConfig(logger log.Logger, path string) (*Config, error) {
 			}
 
 		}
-	}
-
-	if err := godotenv.Load(cfg.EnvFile); err != nil && !os.IsNotExist(err) {
-		return nil, errors.Wrap(err, "loading env vars from env file")
 	}
 
 	return cfg, nil
