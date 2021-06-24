@@ -1,3 +1,6 @@
+// Copyright (c) The Tellor Authors.
+// Licensed under the MIT License.
+
 package math
 
 func PercentageChange(old, new int64) (delta float64) {
