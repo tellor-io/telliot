@@ -334,7 +334,7 @@ Flags:
 	"PsrTellor": {
 		"MinConfidence": "(Required: false)  - Default: 70"
 	},
-	"PsrTellorAccess": {
+	"PsrTellorMesosphere": {
 		"MinConfidence": "(Required: false)  - Default: 0"
 	},
 	"SubmitterTellor": {
@@ -345,7 +345,7 @@ Flags:
 		},
 		"ProfitThreshold": "(Required: false)  - Default: 0"
 	},
-	"SubmitterTellorAccess": {
+	"SubmitterTellorMesosphere": {
 		"Enabled": "(Required: false)  - Default: false",
 		"LogLevel": "(Required: false)  - Default: info"
 	},
@@ -400,7 +400,7 @@ Here are the config defaults in json format:
 	"PsrTellor": {
 		"MinConfidence": 70
 	},
-	"PsrTellorAccess": {
+	"PsrTellorMesosphere": {
 		"MinConfidence": 0
 	},
 	"SubmitterTellor": {
@@ -409,7 +409,7 @@ Here are the config defaults in json format:
 		"MinSubmitPeriod": "15m1s",
 		"ProfitThreshold": 0
 	},
-	"SubmitterTellorAccess": {
+	"SubmitterTellorMesosphere": {
 		"Enabled": false,
 		"LogLevel": "info"
 	},

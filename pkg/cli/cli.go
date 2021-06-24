@@ -24,10 +24,10 @@ import (
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
-	psrTellorAccess "github.com/tellor-io/telliot/pkg/psr/tellorAccess"
+	psrTellorMesosphere "github.com/tellor-io/telliot/pkg/psr/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/reward"
 	"github.com/tellor-io/telliot/pkg/submitter/tellor"
-	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
+	"github.com/tellor-io/telliot/pkg/submitter/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/tasker"
 	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
@@ -817,8 +817,8 @@ func (self mineCmd) Run() error {
 			}
 		}
 
-		if cfg.SubmitterTellorAccess.Enabled {
-			contract, err := contracts.NewITellorAccess(client)
+		if cfg.SubmitterTellorMesosphere.Enabled {
+			contract, err := contracts.NewITellorMesosphere(client)
 			if err != nil {
 				return errors.Wrap(err, "create contract instance")
 			}
@@ -826,16 +826,16 @@ func (self mineCmd) Run() error {
 			// Create a submitter for each account.
 			for _, account := range accounts {
 				loggerWithAddr := log.With(logger, "addr", account.Address.String()[:6])
-				psr := psrTellorAccess.New(loggerWithAddr, cfg.PsrTellorAccess, aggregator)
+				psr := psrTellorMesosphere.New(loggerWithAddr, cfg.PsrTellorMesosphere, aggregator)
 				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceTracker, client, account)
 				if err != nil {
 					return errors.Wrap(err, "creating transactor")
 				}
 
-				submitter, err := tellorAccess.New(
+				submitter, err := tellorMesosphere.New(
 					ctx,
 					loggerWithAddr,
-					cfg.SubmitterTellorAccess,
+					cfg.SubmitterTellorMesosphere,
 					client,
 					contract,
 					account,
@@ -843,11 +843,11 @@ func (self mineCmd) Run() error {
 					psr,
 				)
 				if err != nil {
-					return errors.Wrap(err, "creating tellor access submitter")
+					return errors.Wrap(err, "creating tellor mesosphere submitter")
 				}
 				g.Add(func() error {
 					err := submitter.Start()
-					level.Info(loggerWithAddr).Log("msg", "tellor access submitter shutdown complete")
+					level.Info(loggerWithAddr).Log("msg", "tellor mesosphere submitter shutdown complete")
 					return err
 				}, func(error) {
 					submitter.Stop()

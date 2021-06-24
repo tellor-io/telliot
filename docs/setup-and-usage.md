@@ -78,7 +78,7 @@ The same instance can be used with multiple private keys in the `.env` file sepa
 Telliot supports submiting data to different contracts and the config folder contains examples for that.
 For example:
 ```bash
-./telliot mine --config=configs/configTellorAccess.json
+./telliot mine --config=configs/configTellorMesosphere.json
 ```
 
 ## DataServer - a shared data API feeds.

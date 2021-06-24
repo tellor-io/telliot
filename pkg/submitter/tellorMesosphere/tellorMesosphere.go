@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tellorAccess
+package tellorMesosphere
 
 import (
 	"context"
@@ -22,13 +22,13 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/logging"
-	psr "github.com/tellor-io/telliot/pkg/psr/tellorAccess"
+	psr "github.com/tellor-io/telliot/pkg/psr/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/transactor"
 )
 
 const (
-	ComponentName             = "submitterTellorAccess"
-	percentageChangeThreshold = 0.1 // 0.1%.
+	ComponentName             = "submitterTellorMesosphere"
+	percentageChangeThreshold = 0.05 // 0.05%.
 )
 
 type Config struct {
@@ -49,7 +49,7 @@ type Submitter struct {
 	cfg             Config
 	account         *ethereum.Account
 	client          *ethclient.Client
-	contract        *contracts.ITellorAccess
+	contract        *contracts.ITellorMesosphere
 	transactor      transactor.Transactor
 	submitCount     prometheus.Counter
 	submitFailCount prometheus.Counter
@@ -65,7 +65,7 @@ func New(
 	logger log.Logger,
 	cfg Config,
 	client *ethclient.Client,
-	contract *contracts.ITellorAccess,
+	contract *contracts.ITellorMesosphere,
 	account *ethereum.Account,
 	transactor transactor.Transactor,
 	psr *psr.Psr,
