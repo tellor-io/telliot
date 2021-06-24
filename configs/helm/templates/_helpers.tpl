@@ -50,10 +50,10 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{- define "alertmanager.fullname" -}}
-{{- if .Values.prometheus.fullnameOverride }}
-{{- .Values.prometheus.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- if .Values.alertmanager.fullnameOverride }}
+{{- .Values.alertmanager.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- $name := default "prometheus" .Values.prometheus.nameOverride }}
+{{- $name := default "alertmanager" .Values.alertmanager.nameOverride }}
 {{- if contains $name .Release.Name }}
 {{- .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- else }}

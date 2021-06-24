@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: {{ template "alertmanager.fullname" . }}
-        image: 
+        image: {{ .Values.alertmanager.container.image }}
         args:
           - "--config.file=/etc/alertmanager/config.yml"
           - "--storage.path=/alertmanager"

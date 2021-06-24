@@ -35,7 +35,7 @@ spec:
             secretKeyRef:
               key: token
               name: {{ template "alertmanager.fullname" . }}-bot
-        image: {{ .Values.alertmanager.bot.image }}
+        image: {{ .Values.alertmanager.bot.container.image }}
         imagePullPolicy: IfNotPresent
         name: {{ template "alertmanager.fullname" . }}-bot
         ports:

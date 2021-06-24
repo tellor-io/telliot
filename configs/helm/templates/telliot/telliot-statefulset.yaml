@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: {{ $modeName }}
-        image: {{ $.Values.telliot.image }}
+        image: {{ $.Values.telliot.container.image }}
         imagePullPolicy: Always
         args: ["{{ $index | lower }}"]
         ports:

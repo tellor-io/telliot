@@ -11,5 +11,5 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.telliot.storage }}
+      storage: {{ $.Values.telliot.storage }}
 {{- end }}
