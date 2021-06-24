@@ -28,7 +28,8 @@ import (
 
 const (
 	ComponentName             = "submitterTellorMesosphere"
-	percentageChangeThreshold = 0.05 // 0.05%.
+	percentageChangeThreshold = 0.05        // 0.05%.
+	minTimeSubmitThershold    = time.Minute // Don't submit more often than this.
 )
 
 type Config struct {
@@ -150,7 +151,7 @@ func (self *Submitter) Start() error {
 		}
 	}
 
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(minTimeSubmitThershold)
 	defer ticker.Stop()
 	for {
 		select {
