@@ -4,7 +4,7 @@ telliot:
     port: 9090
   service:
     port: 9090
-  modes:
+  modes: # Add mine, dataServer or both to this array
     - dataServer
     - mine
   storage: 2Gi
