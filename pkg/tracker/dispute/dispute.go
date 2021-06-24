@@ -21,6 +21,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/math"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
 )
 
@@ -238,7 +239,7 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error
 			"miner", event.Miner.String(),
 			"oracleValue", valAct,
 			"psrValue", valExp,
-			"difference", PercentageChange(valAct.Int64(), valExp),
+			"difference", math.PercentageChange(valAct.Int64(), valExp),
 		)
 	}
 	return nil
@@ -254,10 +255,4 @@ func (self *Dispute) newSubTellor(output chan *tellor.TellorNonceSubmitted) (eve
 		return nil, errors.Wrap(err, "getting channel")
 	}
 	return sub, nil
-}
-
-func PercentageChange(old, new int64) (delta float64) {
-	diff := float64(new - old)
-	delta = (diff / float64(old)) * 100
-	return
 }
