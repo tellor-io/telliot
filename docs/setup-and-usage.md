@@ -36,8 +36,8 @@ mkdir ./configs
 cd ./configs
 wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/index.json
 wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manualData.json
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/env.example
-mv env.example .env
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/.env.example
+mv .env.example .env
 cd ../
 wget https://github.com/tellor-io/telliot/releases/latest/download/telliot
 chmod +x telliot
