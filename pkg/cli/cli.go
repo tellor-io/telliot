@@ -668,50 +668,45 @@ func (self mineCmd) Run() error {
 		}
 
 		// Dispute tracker.
+		// Run it only when not connected to a remote DB.
+		// A remote DB already runs a dispute tracker so no need to run another one.
 		{
-			// When running with a remote db need to create a new instance of a local db.
-			// Otherwise use the already opened DB.
 			if cfg.Db.RemoteHost != "" {
 				// Open the TSDB database.
 				tsdbOptions := tsdb.DefaultOptions()
 				// 2 days are enough as the aggregator needs data only 24 hours in the past.
 				tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
-				_tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
+				tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
 				if err != nil {
 					return errors.Wrap(err, "opening local tsdb DB")
 				}
 				defer func() {
-					if err := _tsDB.Close(); err != nil {
+					if err := tsDB.Close(); err != nil {
 						level.Error(logger).Log("msg", "closing the tsdb", "err", err)
 					}
 				}()
-				tsDB = _tsDB
 				level.Info(logger).Log("msg", "opened local db for recording disputer tracker values", "path", cfg.Db.Path)
-			}
 
-			_tsDB, ok := tsDB.(*tsdb.DB)
-			if !ok {
-				return errors.New("tsdb is not a writable DB instance")
+				disputeTracker, err := dispute.New(
+					logger,
+					ctx,
+					cfg.DisputeTracker,
+					tsDB,
+					client,
+					contractTellor,
+					psrTellor.New(logger, cfg.PsrTellor, aggregator),
+				)
+				if err != nil {
+					return errors.Wrap(err, "creating profit tracker")
+				}
+				g.Add(func() error {
+					disputeTracker.Start()
+					level.Info(logger).Log("msg", "dispute tracker shutdown complete")
+					return nil
+				}, func(error) {
+					disputeTracker.Stop()
+				})
 			}
-			disputeTracker, err := dispute.New(
-				logger,
-				ctx,
-				cfg.DisputeTracker,
-				_tsDB,
-				client,
-				contractTellor,
-				psrTellor.New(logger, cfg.PsrTellor, aggregator),
-			)
-			if err != nil {
-				return errors.Wrap(err, "creating profit tracker")
-			}
-			g.Add(func() error {
-				disputeTracker.Start()
-				level.Info(logger).Log("msg", "dispute tracker shutdown complete")
-				return nil
-			}, func(error) {
-				disputeTracker.Stop()
-			})
 		}
 
 		gasPriceTracker, err := gasPrice.New(logger, client)
