@@ -213,7 +213,7 @@ func (self *Tasker) sendWhenConfirmed(ctx context.Context, vLog *tellor.ITellorN
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-ticker.C:
 		}
 		// Send the event only when the tx that emitted the event has been confirmed.
 		receipt, err := self.client.TransactionReceipt(ctx, vLog.Raw.TxHash)
@@ -232,9 +232,6 @@ func (self *Tasker) sendWhenConfirmed(ctx context.Context, vLog *tellor.ITellorN
 		} else {
 			level.Debug(self.logger).Log("msg", "transaction not yet mined", "tx", vLog.Raw.TxHash)
 		}
-
-		<-ticker.C
-		continue
 	}
 }
 
