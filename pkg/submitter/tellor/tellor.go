@@ -288,7 +288,13 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 				f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
 					return self.contract.SubmitMiningSolution(auth, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
 				}
-				tx, recieipt, err := self.transactor.Transact(self.ctx, f)
+				tx, recieipt, err := self.transactor.Transact(newChallengeReplace, f)
+				select {
+				case <-newChallengeReplace.Done():
+					level.Info(self.logger).Log("msg", "pending submit canceled")
+					return
+				default:
+				}
 				if err != nil {
 					self.submitFailCount.Inc()
 					level.Error(self.logger).Log("msg", "submiting a solution", "err", err)
