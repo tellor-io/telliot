@@ -151,7 +151,7 @@ func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*
 				level.Warn(self.logger).Log("msg", "last transaction is stuck so will increase the gas price and try to resend")
 				finalError = err
 			} else {
-				finalError = errors.Wrap(err, "contract call SubmitMiningSolution")
+				finalError = errors.Wrap(err, "contract call")
 			}
 
 			delay := 15 * time.Second

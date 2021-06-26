@@ -15,12 +15,14 @@ import (
 
 const (
 	TellorAddress                          = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
-	TellorAddressGoerli                    = "0x90bbE2155deb3d454696Ce659B52B831e754431C"
+	TellorAddressGoerli                    = "0xA0238859b8626cCd6981438200Eded52F05dB37A"
+	TellorAddressHardhat                   = "0x8920050E1126125a27A4EaC5122AD3586c056E51"
 	TellorMesosphereAddressRinkeby         = "0xB2a25FD022526c64823FF1bF03bf348Fd0787f2a"
 	TellorMesosphereAddressArbitrumTestnet = "0x7A1e398A228271D1B8b1fb1ede678A3e4c79f50A"
 	TellorMesosphereAddress                = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
 	LensAddressMainnet                     = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
 	LensAddressRinkeby                     = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
+	LensAddressHardhat                     = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
 )
 
 type (
@@ -105,9 +107,11 @@ func GetTellorAddress(client *ethclient.Client) (common.Address, error) {
 	}
 
 	switch netID := networkID.Int64(); netID {
+	case 31337:
+		return common.HexToAddress(TellorAddressHardhat), nil
+	case 4: // Rinkeby has the same address as mainnet.
+		fallthrough
 	case 1:
-		return common.HexToAddress(TellorAddress), nil
-	case 4:
 		return common.HexToAddress(TellorAddress), nil
 	case 5:
 		return common.HexToAddress(TellorAddressGoerli), nil
@@ -122,6 +126,8 @@ func GetLensAddress(client *ethclient.Client) (common.Address, error) {
 		return common.Address{}, err
 	}
 	switch netID := networkID.Int64(); netID {
+	case 31337:
+		return common.HexToAddress(LensAddressHardhat), nil
 	case 1:
 		return common.HexToAddress(LensAddressMainnet), nil
 	case 4:
