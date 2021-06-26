@@ -9,7 +9,7 @@ spec:
   ports:
   - name: {{ template "prometheus.fullname" . }}
     port: {{ .Values.prometheus.service.port }}
-    targetPort: {{ template "prometheus.fullname" . }}
+    targetPort: {{ .Values.prometheus.container.port }}
   selector:
     app: {{ template "prometheus.fullname" . }}
 {{- end }}

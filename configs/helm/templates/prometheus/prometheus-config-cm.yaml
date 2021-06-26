@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ template "prometheus.fullname" . }}
+  name: {{ template "prometheus.fullname" . }}-config
 data:
   prometheus.yaml: |-
     global:
@@ -37,6 +37,4 @@ data:
         target_label: job
       - action: labeldrop
         regex: __meta_kubernetes_namespace|__meta_kubernetes_pod_node_name|__meta_kubernetes_pod_label_node
-  telliot.yaml: |-
-{{ .Files.Get "files/telliot.yaml" | indent 4 }}
 {{- end }}

@@ -6,6 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  # storageClassName: {{ .Values.prometheus.storageClassName }}
   resources:
     requests:
       storage: {{ print .Values.prometheus.storage "Gi" }}

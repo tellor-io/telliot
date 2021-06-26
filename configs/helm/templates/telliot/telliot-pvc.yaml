@@ -12,4 +12,5 @@ spec:
   resources:
     requests:
       storage: {{ $.Values.telliot.storage }}
+      # storageClassName: {{ $.Values.telliot.storageClassName }}
 {{- end }}

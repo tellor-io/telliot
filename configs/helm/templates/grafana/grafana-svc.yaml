@@ -11,4 +11,5 @@ spec:
   - protocol: TCP
     port: {{ .Values.grafana.service.port }}
     targetPort: {{ .Values.grafana.container.port }}
+    name: http
 {{- end }}

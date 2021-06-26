@@ -8,17 +8,25 @@ telliot:
     - dataServer
     - mine
   storage: 2Gi
+  storageClassName: microk8s-hostpath
 
 grafana:
-  name: grafana
   enabled: true
   persist: true
+  serveFromSubPath: false
+  rootUrl: http://grafana.node1.local/
   service:
     port: 80
+  ingress:
+    class: nginx
+    hostname: monitor.tellor.io
+    path: /
+    tls:
+      enabled: false
+      secret: grafana-tls-secret
   container:
     port: 3000
     image: grafana/grafana:7.3.6
-  fullnameOverride: Null
   storage: 5Gi
 
 alertmanager:
@@ -49,3 +57,4 @@ prometheus:
     port: 9090
     image: prom/prometheus:v2.24.0
   storage: 50 # In gigabytes, do not add units (gb,mb,kb,etc..) to this value
+  storageClassName: microk8s-hostpath

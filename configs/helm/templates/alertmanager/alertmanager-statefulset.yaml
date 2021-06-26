@@ -22,7 +22,7 @@ spec:
           - "--config.file=/etc/alertmanager/config.yml"
           - "--storage.path=/alertmanager"
         ports:
-        - name: {{ template "alertmanager.fullname" . }}
+        - name: http
           containerPort: {{ .Values.alertmanager.container.port }}
         volumeMounts:
         - name: config-volume

@@ -42,10 +42,10 @@ spec:
       volumes:
       - name: config-volume
         configMap:
-          name: {{ template "prometheus.fullname" . }}
+          name: {{ template "prometheus.fullname" . }}-config
       - name: prometheus-telliot-rules
         configMap:
-          name: prometheus-telliot-rules
+          name: {{ template "prometheus.fullname" . }}-rules
       - name: storage
         persistentVolumeClaim:
           claimName: {{ template "prometheus.fullname" . }}
