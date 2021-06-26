@@ -275,6 +275,11 @@ func (self *IndexTracker) recordInterval(logger log.Logger, ts int64, interval t
 func (self *IndexTracker) recordValue(logger log.Logger, ts int64, interval time.Duration, symbol string, dataSource DataSource) (err error) {
 	value, err := dataSource.Get(self.ctx)
 	if err != nil {
+		self.getErrors.With(
+			prometheus.Labels{
+				"source": dataSource.Source(),
+			},
+		).Inc()
 		return errors.Wrap(err, "getting values from data source")
 	}
 
