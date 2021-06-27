@@ -83,10 +83,14 @@ type tokenCmd struct {
 
 type transferCmd tokenCmd
 
-func (c *transferCmd) Run() error {
+func (self *transferCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
 
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
@@ -94,16 +98,16 @@ func (c *transferCmd) Run() error {
 	}
 
 	address := ETHAddress{}
-	err = address.Set(c.Address)
+	err = address.Set(self.Address)
 	if err != nil {
 		return errors.Wrap(err, "parsing address argument")
 	}
 	amount := TRBAmount{}
-	err = amount.Set(c.Amount)
+	err = amount.Set(self.Amount)
 	if err != nil {
 		return errors.Wrap(err, "parsing amount argument")
 	}
-	account, err := ethereum.GetAccountFor(c.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
@@ -119,26 +123,31 @@ func (c *transferCmd) Run() error {
 
 type approveCmd tokenCmd
 
-func (c *approveCmd) Run() error {
+func (self *approveCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	address := ETHAddress{}
-	err = address.Set(c.Address)
+	err = address.Set(self.Address)
 	if err != nil {
 		return errors.Wrap(err, "parsing address argument")
 	}
 	amount := TRBAmount{}
-	err = amount.Set(c.Amount)
+	err = amount.Set(self.Amount)
 	if err != nil {
 		return errors.Wrap(err, "parsing amount argument")
 	}
-	account, err := ethereum.GetAccountFor(c.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
@@ -155,8 +164,13 @@ type accountsCmd struct {
 	Config configPath `type:"existingfile" help:"path to config file"`
 }
 
-func (a *accountsCmd) Run() error {
+func (self *accountsCmd) Run() error {
 	logger := logging.NewLogger()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
 
 	accounts, err := ethereum.GetAccounts()
 	if err != nil {
@@ -175,10 +189,15 @@ type balanceCmd struct {
 	Address string     `arg:"" optional:""`
 }
 
-func (b *balanceCmd) Run() error {
+func (self *balanceCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
@@ -190,13 +209,13 @@ func (b *balanceCmd) Run() error {
 	}
 
 	addr := ETHAddress{}
-	if b.Address == "" {
+	if self.Address == "" {
 		err = addr.Set(contract.Address.String())
 		if err != nil {
 			return errors.Wrap(err, "parsing argument")
 		}
 	} else {
-		err = addr.Set(b.Address)
+		err = addr.Set(self.Address)
 		if err != nil {
 			return errors.Wrap(err, "parsing argument")
 		}
@@ -210,15 +229,19 @@ type depositCmd struct {
 	Account int        `arg:"" optional:""`
 }
 
-func (d depositCmd) Run() error {
+func (self depositCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := ethereum.GetAccountFor(d.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
@@ -236,21 +259,26 @@ type withdrawCmd struct {
 	Account int        `arg:"" optional:""`
 }
 
-func (w withdrawCmd) Run() error {
+func (self withdrawCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	addr := ETHAddress{}
-	err = addr.Set(w.Address)
+	err = addr.Set(self.Address)
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := ethereum.GetAccountFor(w.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
@@ -267,15 +295,20 @@ type requestCmd struct {
 	Account int        `arg:"" optional:""`
 }
 
-func (r requestCmd) Run() error {
+func (self requestCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := ethereum.GetAccountFor(r.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
@@ -291,15 +324,20 @@ type statusCmd struct {
 	Account int        `arg:"" optional:""`
 }
 
-func (s statusCmd) Run() error {
+func (self statusCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := ethereum.GetAccountFor(s.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
@@ -318,31 +356,36 @@ type newDisputeCmd struct {
 	Account    int        `arg:"" optional:""`
 }
 
-func (n newDisputeCmd) Run() error {
+func (self newDisputeCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	requestID := EthereumInt{}
-	err = requestID.Set(n.requestId)
+	err = requestID.Set(self.requestId)
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
 	timestamp := EthereumInt{}
-	err = timestamp.Set(n.timestamp)
+	err = timestamp.Set(self.timestamp)
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
 	minerIndex := EthereumInt{}
-	err = minerIndex.Set(n.minerIndex)
+	err = minerIndex.Set(self.minerIndex)
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := ethereum.GetAccountFor(n.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
@@ -360,21 +403,26 @@ type voteCmd struct {
 	Account   int        `arg:"" optional:""`
 }
 
-func (v voteCmd) Run() error {
+func (self voteCmd) Run() error {
 	logger := logging.NewLogger()
-
 	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
 
 	disputeID := EthereumInt{}
-	err = disputeID.Set(v.disputeId)
+	err = disputeID.Set(self.disputeId)
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
-	account, err := ethereum.GetAccountFor(v.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
@@ -382,7 +430,7 @@ func (v voteCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return Vote(ctx, logger, client, contract, account, disputeID.Int, v.support)
+	return Vote(ctx, logger, client, contract, account, disputeID.Int, self.support)
 }
 
 type listCmd struct {
@@ -390,20 +438,20 @@ type listCmd struct {
 	Account int        `arg:"" optional:""`
 }
 
-func (s listCmd) Run() error {
+func (self listCmd) Run() error {
 	logger := logging.NewLogger()
+	ctx := context.Background()
 
-	cfg, err := config.ParseConfig(logger, string(s.Config))
+	cfg, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
 	if err != nil {
 		return errors.Wrap(err, "creating config")
 	}
 
-	ctx := context.Background()
 	client, err := ethereum.NewClient(ctx, logger)
 	if err != nil {
 		return errors.Wrap(err, "creating ethereum client")
 	}
-	account, err := ethereum.GetAccountFor(s.Account)
+	account, err := ethereum.GetAccountFor(self.Account)
 	if err != nil {
 		return err
 	}
