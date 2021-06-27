@@ -579,12 +579,6 @@ func (self mineCmd) Run() error {
 		return errors.Wrap(err, "creating ethereum client")
 	}
 
-	_netID, err := client.NetworkID(ctx)
-	if err != nil {
-		return errors.Wrap(err, "getting network ID")
-	}
-	netID := _netID.Int64()
-
 	accounts, err := ethereum.GetAccounts()
 	if err != nil {
 		return errors.Wrap(err, "getting accounts")
@@ -621,7 +615,7 @@ func (self mineCmd) Run() error {
 			}()
 			tsDB = _tsDB
 			level.Info(logger).Log("msg", "opened local db", "path", cfg.Db.Path)
-			level.Warn(logger).Log("msg", "FOR NEW DB INSTANCES IT IS NORMAL TO SEE SOME QUERY ERRORS  AS THE DATABASE IS NOT YET POPULATED WITH VALUES")
+			level.Warn(logger).Log("msg", "FOR NEW DB INSTANCES IT IS NORMAL TO SEE SOME QUERY ERRORS AS THE DATABASE IS NOT YET POPULATED WITH VALUES")
 		}
 
 		// Web/Api server.
@@ -666,60 +660,44 @@ func (self mineCmd) Run() error {
 			}, func(error) {
 				index.Stop()
 			})
-		}
 
-		// Dispute tracker.
-		// Run it only for mainnet or rinkeby as the tellor oracle exists only on those networks.
-		if netID == 1 || netID == 4 {
-			// When running with a remote db need to create a new instance of a local db.
-			// Otherwise use the already opened DB.
-			if cfg.Db.RemoteHost != "" {
-				// Open the TSDB database.
-				tsdbOptions := tsdb.DefaultOptions()
-				// 2 days are enough as the aggregator needs data only 24 hours in the past.
-				tsdbOptions.RetentionDuration = int64(2 * 24 * time.Hour)
-				_tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
+			_netID, err := client.NetworkID(ctx)
+			if err != nil {
+				return errors.Wrap(err, "getting network ID")
+			}
+			netID := _netID.Int64()
+
+			// Dispute tracker.
+			// Run it only when not connected to a remote DB.
+			// A remote DB already runs a dispute tracker so no need to run another one.
+			// Also run and only for mainnet or rinkeby as the tellor oracle exists only on those networks.
+			if netID == 1 || netID == 4 {
+				contractTellor, err := contracts.NewITellor(client)
 				if err != nil {
-					return errors.Wrap(err, "opening local tsdb DB")
+					return errors.Wrap(err, "create tellor contract instance")
 				}
-				defer func() {
-					if err := _tsDB.Close(); err != nil {
-						level.Error(logger).Log("msg", "closing the tsdb", "err", err)
-					}
-				}()
-				tsDB = _tsDB
-				level.Info(logger).Log("msg", "opened local db for recording disputer tracker values", "path", cfg.Db.Path)
+
+				disputeTracker, err := dispute.New(
+					logger,
+					ctx,
+					cfg.DisputeTracker,
+					_tsDB,
+					client,
+					contractTellor,
+					psrTellor.New(logger, cfg.PsrTellor, aggregator),
+				)
+				if err != nil {
+					return errors.Wrap(err, "creating profit tracker")
+				}
+				g.Add(func() error {
+					disputeTracker.Start()
+					level.Info(logger).Log("msg", "dispute tracker shutdown complete")
+					return nil
+				}, func(error) {
+					disputeTracker.Stop()
+				})
 			}
 
-			_tsDB, ok := tsDB.(*tsdb.DB)
-			if !ok {
-				return errors.New("tsdb is not a writable DB instance")
-			}
-
-			contractTellor, err := contracts.NewITellor(client)
-			if err != nil {
-				return errors.Wrap(err, "create tellor contract instance")
-			}
-
-			disputeTracker, err := dispute.New(
-				logger,
-				ctx,
-				cfg.DisputeTracker,
-				_tsDB,
-				client,
-				contractTellor,
-				psrTellor.New(logger, cfg.PsrTellor, aggregator),
-			)
-			if err != nil {
-				return errors.Wrap(err, "creating profit tracker")
-			}
-			g.Add(func() error {
-				disputeTracker.Start()
-				level.Info(logger).Log("msg", "dispute tracker shutdown complete")
-				return nil
-			}, func(error) {
-				disputeTracker.Stop()
-			})
 		}
 
 		gasPriceTracker, err := gasPrice.New(logger, client)
