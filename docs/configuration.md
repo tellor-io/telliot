@@ -317,6 +317,11 @@ Flags:
 	"DisputeTracker": {
 		"LogLevel": "Required:false, Default:info"
 	},
+	"GasStation": {
+		"TimeWait": {
+			"Duration": "Required:false, Default:1m0s"
+		}
+	},
 	"IndexTracker": {
 		"IndexFile": "Required:false, Default:configs/index.json",
 		"Interval": {
@@ -388,6 +393,9 @@ Here are the config defaults in json format:
 	},
 	"DisputeTracker": {
 		"LogLevel": "info"
+	},
+	"GasStation": {
+		"TimeWait": "1m0s"
 	},
 	"IndexTracker": {
 		"IndexFile": "configs/index.json",

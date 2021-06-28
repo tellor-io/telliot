@@ -21,11 +21,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
+	"github.com/tellor-io/telliot/pkg/gasPrice"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psr "github.com/tellor-io/telliot/pkg/psr/tellor"
 	"github.com/tellor-io/telliot/pkg/reward"
-	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/transactor"
 )
 
@@ -65,7 +65,7 @@ type Submitter struct {
 	lastSubmitCncl  context.CancelFunc
 	transactor      transactor.Transactor
 	reward          *reward.Reward
-	gasPriceTracker *gasPrice.GasTracker
+	gasPriceQuerier gasPrice.GasPriceQuerier
 	psr             *psr.Psr
 }
 
@@ -78,7 +78,7 @@ func New(
 	account *ethereum.Account,
 	reward *reward.Reward,
 	transactor transactor.Transactor,
-	gasPriceTracker *gasPrice.GasTracker,
+	gasPriceQuerier gasPrice.GasPriceQuerier,
 	psr *psr.Psr,
 ) (*Submitter, chan *mining.Result, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
@@ -98,7 +98,7 @@ func New(
 		logger:          logger,
 		contract:        contract,
 		transactor:      transactor,
-		gasPriceTracker: gasPriceTracker,
+		gasPriceQuerier: gasPriceQuerier,
 		psr:             psr,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
@@ -225,7 +225,7 @@ func (self *Submitter) profitPercent() (int64, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting current slot")
 	}
-	gasPrice, err := self.gasPriceTracker.Query(self.ctx)
+	gasPrice, err := self.gasPriceQuerier.Query(self.ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting current Gas price")
 	}
@@ -239,7 +239,7 @@ func (self *Submitter) profitPercent() (int64, error) {
 		slot.SetInt64(0)
 	}
 
-	return self.reward.Current(slot, big.NewInt(int64(gasPrice)))
+	return self.reward.Current(slot, gasPrice)
 }
 
 func (self *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {

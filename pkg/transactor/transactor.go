@@ -17,8 +17,8 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/gasPrice"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 )
 
 const ComponentName = "transactor"
@@ -39,7 +39,7 @@ type TransactorDefault struct {
 	netID           *big.Int
 	cfg             Config
 	logger          log.Logger
-	gasPriceTracker *gasPrice.GasTracker
+	gasPriceQuerier gasPrice.GasPriceQuerier
 	client          *ethclient.Client
 	account         *ethereum.Account
 }
@@ -47,7 +47,7 @@ type TransactorDefault struct {
 func New(
 	logger log.Logger,
 	cfg Config,
-	gasPriceTracker *gasPrice.GasTracker,
+	gasPriceQuerier gasPrice.GasPriceQuerier,
 	client *ethclient.Client,
 	account *ethereum.Account,
 ) (*TransactorDefault, error) {
@@ -67,7 +67,7 @@ func New(
 		netID:           netID,
 		cfg:             cfg,
 		logger:          log.With(logger, "component", ComponentName),
-		gasPriceTracker: gasPriceTracker,
+		gasPriceQuerier: gasPriceQuerier,
 		client:          client,
 		account:         account,
 	}, nil
@@ -82,11 +82,10 @@ func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*
 	// Use the same nonce in case there is a stuck transaction so that it resubmits the same TX with higher gas price.
 	IntNonce := int64(nonce)
 
-	_gasPrice, err := self.gasPriceTracker.Query(ctx)
+	gasPrice, err := self.gasPriceQuerier.Query(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting data from the db")
 	}
-	gasPrice := big.NewInt(int64(_gasPrice))
 
 	mul := self.cfg.GasMultiplier
 	if mul > 0 {

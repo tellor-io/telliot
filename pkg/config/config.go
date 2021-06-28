@@ -17,6 +17,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/format"
+	"github.com/tellor-io/telliot/pkg/gasPrice/gasStation"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
 	psrTellorMesosphere "github.com/tellor-io/telliot/pkg/psr/tellorMesosphere"
@@ -45,6 +46,7 @@ type Config struct {
 	PsrTellor                 psrTellor.Config
 	PsrTellorMesosphere       psrTellorMesosphere.Config
 	Db                        db.Config
+	GasStation                gasStation.Config
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
 }
@@ -96,7 +98,9 @@ var DefaultConfig = Config{
 		LogLevel:       "info",
 		ManualDataFile: "configs/manualData.json",
 	},
-
+	GasStation: gasStation.Config{
+		TimeWait: format.Duration{Duration: time.Minute},
+	},
 	IndexTracker: index.Config{
 		LogLevel:  "info",
 		Interval:  format.Duration{Duration: 30 * time.Second},

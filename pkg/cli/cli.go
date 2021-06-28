@@ -21,6 +21,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/gasPrice/gasStation"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
@@ -30,7 +31,6 @@ import (
 	"github.com/tellor-io/telliot/pkg/submitter/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/tasker"
 	"github.com/tellor-io/telliot/pkg/tracker/dispute"
-	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
 	"github.com/tellor-io/telliot/pkg/tracker/profit"
 	"github.com/tellor-io/telliot/pkg/transactor"
@@ -748,7 +748,7 @@ func (self mineCmd) Run() error {
 
 		}
 
-		gasPriceTracker, err := gasPrice.New(logger, client)
+		gasPriceQuerier, err := gasStation.New(logger, cfg.GasStation, client)
 		if err != nil {
 			return errors.Wrap(err, "creating gas price tracker")
 		}
@@ -794,7 +794,7 @@ func (self mineCmd) Run() error {
 			for _, account := range accounts {
 				loggerWithAddr := log.With(logger, "addr", account.Address.String()[:6])
 
-				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceTracker, client, account)
+				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceQuerier, client, account)
 				if err != nil {
 					return errors.Wrap(err, "creating transactor")
 				}
@@ -811,7 +811,7 @@ func (self mineCmd) Run() error {
 					account,
 					reward.New(loggerWithAddr, aggregator, contractTellor),
 					transactor,
-					gasPriceTracker,
+					gasPriceQuerier,
 					psr,
 				)
 				if err != nil {
@@ -853,7 +853,7 @@ func (self mineCmd) Run() error {
 			for _, account := range accounts {
 				loggerWithAddr := log.With(logger, "addr", account.Address.String()[:6])
 				psr := psrTellorMesosphere.New(loggerWithAddr, cfg.PsrTellorMesosphere, aggregator)
-				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceTracker, client, account)
+				transactor, err := transactor.New(loggerWithAddr, cfg.Transactor, gasPriceQuerier, client, account)
 				if err != nil {
 					return errors.Wrap(err, "creating transactor")
 				}
