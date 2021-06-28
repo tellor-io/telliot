@@ -302,70 +302,74 @@ Flags:
 ```json
 {
 	"Aggregator": {
-		"LogLevel": "(Required: false)  - Default: info",
-		"ManualDataFile": "(Required: false)  - Default: configs/manualData.json"
+		"LogLevel": "Required:false, Default:info",
+		"ManualDataFile": "Required:false, Default:configs/manualData.json"
 	},
 	"Db": {
-		"LogLevel": "(Required: false)  - Default: info",
-		"Path": "(Required: false)  - Default: db",
-		"RemoteHost": "(Required: false)  - Default: ",
-		"RemotePort": "(Required: false)  - Default: 0",
+		"LogLevel": "Required:false, Default:info",
+		"Path": "Required:false, Default:db",
+		"RemoteHost": "Required:false, Default:",
+		"RemotePort": "Required:false, Default:0",
 		"RemoteTimeout": {
-			"Duration": "(Required: false)  - Default: 5s"
+			"Duration": "Required:false, Default:5s"
 		}
 	},
 	"DisputeTracker": {
-		"LogLevel": "(Required: false)  - Default: info"
+		"LogLevel": "Required:false, Default:info"
 	},
 	"IndexTracker": {
-		"IndexFile": "(Required: false)  - Default: configs/index.json",
+		"IndexFile": "Required:false, Default:configs/index.json",
 		"Interval": {
-			"Duration": "(Required: false)  - Default: 30s"
+			"Duration": "Required:false, Default:30s"
 		},
-		"LogLevel": "(Required: false)  - Default: info"
+		"LogLevel": "Required:false, Default:info"
 	},
 	"Mining": {
-		"Heartbeat": "(Required: false)  - Default: 1m0s",
-		"LogLevel": "(Required: false)  - Default: info"
+		"Heartbeat": "Required:false, Default:1m0s",
+		"LogLevel": "Required:false, Default:info"
 	},
 	"ProfitTracker": {
-		"LogLevel": "(Required: false)  - Default: info"
+		"LogLevel": "Required:false, Default:info"
 	},
 	"PsrTellor": {
-		"MinConfidence": "(Required: false)  - Default: 70"
+		"MinConfidence": "Required:false, Default:70"
 	},
 	"PsrTellorMesosphere": {
-		"MinConfidence": "(Required: false)  - Default: 0"
+		"MinConfidence": "Required:false, Default:0"
 	},
 	"SubmitterTellor": {
-		"Enabled": "(Required: false)  - Default: true",
-		"LogLevel": "(Required: false)  - Default: info",
+		"Enabled": "Required:false, Default:true",
+		"LogLevel": "Required:false, Default:info",
 		"MinSubmitPeriod": {
-			"Duration": "(Required: false)  - Default: 15m1s"
+			"Duration": "Required:false, Default:15m1s"
 		},
-		"ProfitThreshold": "(Required: false)  - Default: 0"
+		"ProfitThreshold": "Required:false, Default:0, Description:Minimum percent of profit when submitting a solution. For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH a ProfitThreshold of 200% or more will wait until the reward is increased or the gas cost is lowered a ProfitThreshold of 199% or less will submit."
 	},
 	"SubmitterTellorMesosphere": {
-		"Enabled": "(Required: false)  - Default: false",
-		"LogLevel": "(Required: false)  - Default: info"
+		"Enabled": "Required:false, Default:false",
+		"LogLevel": "Required:false, Default:info",
+		"MinSubmitPeriod": {
+			"Duration": "Required:false, Default:15s"
+		},
+		"MinSubmitPriceChange": "Required:false, Default:0.05, Description: Submit only if that price changed at least that much percent."
 	},
 	"Tasker": {
-		"LogLevel": "(Required: false)  - Default: info"
+		"LogLevel": "Required:false, Default:info"
 	},
 	"Transactor": {
-		"GasMax": "(Required: false)  - Default: 10",
-		"GasMultiplier": "(Required: false)  - Default: 1",
-		"LogLevel": "(Required: false)  - Default: info"
+		"GasMax": "Required:false, Default:10",
+		"GasMultiplier": "Required:false, Default:1",
+		"LogLevel": "Required:false, Default:info"
 	},
 	"Web": {
-		"ListenHost": "(Required: false)  - Default: ",
-		"ListenPort": "(Required: false)  - Default: 9090",
-		"LogLevel": "(Required: false)  - Default: info",
+		"ListenHost": "Required:false, Default:",
+		"ListenPort": "Required:false, Default:9090",
+		"LogLevel": "Required:false, Default:info",
 		"ReadTimeout": {
-			"Duration": "(Required: false)  - Default: 0s"
+			"Duration": "Required:false, Default:0s"
 		}
 	},
-	"envFile": "(Required: false)  - Default: configs/.env"
+	"envFile": "Required:false, Default:configs/.env"
 }
 ```
 Here are the config defaults in json format:
@@ -411,7 +415,9 @@ Here are the config defaults in json format:
 	},
 	"SubmitterTellorMesosphere": {
 		"Enabled": false,
-		"LogLevel": "info"
+		"LogLevel": "info",
+		"MinSubmitPeriod": "15s",
+		"MinSubmitPriceChange": 0.05
 	},
 	"Tasker": {
 		"LogLevel": "info"

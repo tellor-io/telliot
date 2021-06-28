@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/math"
 	psr "github.com/tellor-io/telliot/pkg/psr/tellorMesosphere"
@@ -27,14 +28,14 @@ import (
 )
 
 const (
-	ComponentName             = "submitterTellorMesosphere"
-	percentageChangeThreshold = 0.05        // 0.05%.
-	minTimeSubmitThershold    = time.Minute // Don't submit more often than this.
+	ComponentName = "submitterTellorMesosphere"
 )
 
 type Config struct {
-	Enabled  bool
-	LogLevel string
+	Enabled              bool
+	LogLevel             string
+	MinSubmitPeriod      format.Duration `help:"The time limit between each submit for a staked miner."`
+	MinSubmitPriceChange float64         `help:" Submit only if that price changed at least that much percent."`
 }
 
 /**
@@ -151,7 +152,7 @@ func (self *Submitter) Start() error {
 		}
 	}
 
-	ticker := time.NewTicker(minTimeSubmitThershold)
+	ticker := time.NewTicker(self.cfg.MinSubmitPeriod.Duration)
 	defer ticker.Stop()
 	for {
 		select {
@@ -262,11 +263,11 @@ func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
 	}
 
 	percentageChange := math.PercentageChange(lastSubmitValue, newVal)
-	if percentageChange > percentageChangeThreshold {
+	if percentageChange > self.cfg.MinSubmitPriceChange {
 		level.Info(logger).Log(
 			"reason", "value change more then threshold",
 			"percentageChange", percentageChange,
-			"percentageThresohld", percentageChangeThreshold,
+			"percentageThresohld", self.cfg.MinSubmitPriceChange,
 			"lastSubmitValue", lastSubmitValue,
 			"newValue", newVal,
 		)

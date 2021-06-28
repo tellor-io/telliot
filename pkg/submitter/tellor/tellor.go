@@ -38,15 +38,10 @@ type ContractCaller interface {
 }
 
 type Config struct {
-	Enabled  bool
-	LogLevel string
-	// Minimum percent of profit when submitting a solution.
-	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
-	// a ProfitThreshold of 200% or more will wait until the reward is increased or
-	// the gas cost is lowered.
-	// a ProfitThreshold of 199% or less will submit
-	ProfitThreshold uint64
-	MinSubmitPeriod format.Duration
+	Enabled         bool
+	LogLevel        string
+	ProfitThreshold uint64          `help:"Minimum percent of profit when submitting a solution. For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH a ProfitThreshold of 200% or more will wait until the reward is increased or the gas cost is lowered a ProfitThreshold of 199% or less will submit."`
+	MinSubmitPeriod format.Duration `help:"The time limit between each submit for a staked miner."`
 }
 
 /**

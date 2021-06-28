@@ -81,12 +81,13 @@ var DefaultConfig = Config{
 	SubmitterTellor: tellor.Config{
 		Enabled:  true,
 		LogLevel: "info",
-		// MinSubmitPeriod is the time limit between each submit for a staked miner.
 		// With a 1 second delay here as a workaround to prevent a race condition in the oracle contract check.
 		MinSubmitPeriod: format.Duration{Duration: 15*time.Minute + 1*time.Second},
 	},
 	SubmitterTellorMesosphere: tellorMesosphere.Config{
-		LogLevel: "info",
+		LogLevel:             "info",
+		MinSubmitPeriod:      format.Duration{Duration: 15 * time.Second},
+		MinSubmitPriceChange: 0.05,
 	},
 	PsrTellor: psrTellor.Config{
 		MinConfidence: 70,
