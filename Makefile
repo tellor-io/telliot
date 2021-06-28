@@ -66,7 +66,7 @@ generate-bindings: $(CONTRAGET)
 	@sleep 6
 	@$(CONTRAGET) --addr=0x03E6c12eF405AC3F642B9184eDed8E1322de1a9e --download-dst=tmp --pkg-dst=pkg/contracts --name=uniswap
 	@sleep 6
-	@$(CONTRAGET) --addr=0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e --download-dst=tmp --pkg-dst=pkg/contracts --name=tellorAccess
+	@$(CONTRAGET) --addr=0xB2a25FD022526c64823FF1bF03bf348Fd0787f2a --download-dst=tmp --pkg-dst=pkg/contracts --name=tellorMesosphere
 
 .PHONY: generate-testdata
 generate-testdata:

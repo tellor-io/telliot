@@ -36,7 +36,12 @@ type cfgDoc struct {
 }
 
 func (c *cfgDoc) String() string {
-	return fmt.Sprintf("(Required: %v) %s - Default: %v", c.Required, c.Help, c.Default)
+	d := fmt.Sprintf("Required:%v, Default:%v", c.Required, c.Default)
+	if c.Help != "" {
+		d += fmt.Sprintf(", Description:%s", c.Help)
+
+	}
+	return d
 }
 
 type envDoc struct {

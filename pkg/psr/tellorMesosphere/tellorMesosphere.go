@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tellorAccess
+package tellorMesosphere
 
 import (
 	"math"
@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ComponentName      = "psrTellorAccess"
+	ComponentName      = "psrTellorMesosphere"
 	DefaultGranularity = 1000000
 )
 
@@ -42,7 +42,7 @@ func (self *Psr) GetValue(reqID int64, ts time.Time) (int64, error) {
 }
 
 func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
-	val, err := self.aggregator.ManualValue("tellorAccess", reqID, ts)
+	val, err := self.aggregator.ManualValue("tellorMesosphere", reqID, ts)
 	if err != nil {
 		level.Error(self.logger).Log("msg", "get manual value", "reqID", reqID, "err", err)
 	}

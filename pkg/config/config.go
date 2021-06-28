@@ -17,11 +17,12 @@ import (
 	"github.com/tellor-io/telliot/pkg/aggregator"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/format"
+	"github.com/tellor-io/telliot/pkg/gasPrice/gasStation"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
-	psrTellorAccess "github.com/tellor-io/telliot/pkg/psr/tellorAccess"
+	psrTellorMesosphere "github.com/tellor-io/telliot/pkg/psr/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/submitter/tellor"
-	"github.com/tellor-io/telliot/pkg/submitter/tellorAccess"
+	"github.com/tellor-io/telliot/pkg/submitter/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/tasker"
 	"github.com/tellor-io/telliot/pkg/tracker/dispute"
 	"github.com/tellor-io/telliot/pkg/tracker/index"
@@ -32,19 +33,20 @@ import (
 
 // Config is the top-level configuration that holds configs for all components.
 type Config struct {
-	Web                   web.Config
-	Mining                mining.Config
-	SubmitterTellor       tellor.Config
-	SubmitterTellorAccess tellorAccess.Config
-	ProfitTracker         profit.Config
-	Tasker                tasker.Config
-	Transactor            transactor.Config
-	IndexTracker          index.Config
-	DisputeTracker        dispute.Config
-	Aggregator            aggregator.Config
-	PsrTellor             psrTellor.Config
-	PsrTellorAccess       psrTellorAccess.Config
-	Db                    db.Config
+	Web                       web.Config
+	Mining                    mining.Config
+	SubmitterTellor           tellor.Config
+	SubmitterTellorMesosphere tellorMesosphere.Config
+	ProfitTracker             profit.Config
+	Tasker                    tasker.Config
+	Transactor                transactor.Config
+	IndexTracker              index.Config
+	DisputeTracker            dispute.Config
+	Aggregator                aggregator.Config
+	PsrTellor                 psrTellor.Config
+	PsrTellorMesosphere       psrTellorMesosphere.Config
+	Db                        db.Config
+	GasStation                gasStation.Config
 	// EnvFile location that include all private details like private key etc.
 	EnvFile string `json:"envFile"`
 }
@@ -81,12 +83,13 @@ var DefaultConfig = Config{
 	SubmitterTellor: tellor.Config{
 		Enabled:  true,
 		LogLevel: "info",
-		// MinSubmitPeriod is the time limit between each submit for a staked miner.
 		// With a 1 second delay here as a workaround to prevent a race condition in the oracle contract check.
 		MinSubmitPeriod: format.Duration{Duration: 15*time.Minute + 1*time.Second},
 	},
-	SubmitterTellorAccess: tellorAccess.Config{
-		LogLevel: "info",
+	SubmitterTellorMesosphere: tellorMesosphere.Config{
+		LogLevel:             "info",
+		MinSubmitPeriod:      format.Duration{Duration: 15 * time.Second},
+		MinSubmitPriceChange: 0.05,
 	},
 	PsrTellor: psrTellor.Config{
 		MinConfidence: 70,
@@ -95,7 +98,9 @@ var DefaultConfig = Config{
 		LogLevel:       "info",
 		ManualDataFile: "configs/manualData.json",
 	},
-
+	GasStation: gasStation.Config{
+		TimeWait: format.Duration{Duration: time.Minute},
+	},
 	IndexTracker: index.Config{
 		LogLevel:  "info",
 		Interval:  format.Duration{Duration: 30 * time.Second},
@@ -105,14 +110,27 @@ var DefaultConfig = Config{
 }
 
 func ParseConfig(logger log.Logger, path string) (*Config, error) {
+
+	cfg := &Config{}
+
+	cfgI, err := DeеpCopy(logger, path, cfg, DefaultConfig)
+	cfg = cfgI.(*Config)
+
+	if err := godotenv.Load(cfg.EnvFile); err != nil && !os.IsNotExist(err) {
+		return nil, errors.Wrap(err, "loading env vars from env file")
+	}
+
+	return cfg, err
+}
+
+func DeеpCopy(logger log.Logger, path string, cfg, cfgDefault interface{}) (interface{}, error) {
 	if path == "" {
 		path = filepath.Join("configs", "config.json")
 	}
 
-	cfg := &Config{}
 	// DeepCopy the default config into the final config.
 	{
-		b, err := json.Marshal(DefaultConfig)
+		b, err := json.Marshal(cfgDefault)
 		if err != nil {
 			return nil, errors.Wrap(err, "marshal default config")
 		}
@@ -144,10 +162,6 @@ func ParseConfig(logger log.Logger, path string) (*Config, error) {
 			}
 
 		}
-	}
-
-	if err := godotenv.Load(cfg.EnvFile); err != nil && !os.IsNotExist(err) {
-		return nil, errors.Wrap(err, "loading env vars from env file")
 	}
 
 	return cfg, nil

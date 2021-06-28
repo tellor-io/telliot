@@ -431,7 +431,7 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 		case <-self.ctx.Done():
 			level.Debug(logger).Log("msg", "transaction confirmation check canceled")
 			return
-		default:
+		case <-ticker.C:
 		}
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
@@ -462,9 +462,6 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 		}
 
 		level.Debug(logger).Log("msg", "transaction not yet mined")
-
-		<-ticker.C
-		continue
 	}
 }
 
@@ -476,7 +473,7 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 		case <-self.ctx.Done():
 			level.Debug(logger).Log("msg", "transaction confirmation check canceled")
 			return
-		default:
+		case <-ticker.C:
 		}
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
@@ -506,10 +503,7 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 			self.balances.With(prometheus.Labels{"addr": event.To.String(), "token": "TRB"}).(prometheus.Gauge).Set(balance)
 			return
 		}
-
 		level.Debug(logger).Log("msg", "transaction not yet mined")
-		<-ticker.C
-		continue
 	}
 }
 

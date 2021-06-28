@@ -275,6 +275,11 @@ func (self *IndexTracker) recordInterval(logger log.Logger, ts int64, interval t
 func (self *IndexTracker) recordValue(logger log.Logger, ts int64, interval time.Duration, symbol string, dataSource DataSource) (err error) {
 	value, err := dataSource.Get(self.ctx)
 	if err != nil {
+		self.getErrors.With(
+			prometheus.Labels{
+				"source": dataSource.Source(),
+			},
+		).Inc()
 		return errors.Wrap(err, "getting values from data source")
 	}
 
@@ -379,7 +384,7 @@ type JSONapiVolume struct {
 }
 
 func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
-	vals, err := web.Fetch(ctx, self.url)
+	vals, err := web.Get(ctx, self.url, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}
@@ -413,7 +418,7 @@ type JSONapi struct {
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, error) {
-	vals, err := web.Fetch(ctx, self.url)
+	vals, err := web.Get(ctx, self.url, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}
