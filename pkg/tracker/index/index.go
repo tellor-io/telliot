@@ -384,7 +384,7 @@ type JSONapiVolume struct {
 }
 
 func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
-	vals, err := web.Fetch(ctx, self.url)
+	vals, err := web.Get(ctx, self.url, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}
@@ -418,7 +418,7 @@ type JSONapi struct {
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, error) {
-	vals, err := web.Fetch(ctx, self.url)
+	vals, err := web.Get(ctx, self.url, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}

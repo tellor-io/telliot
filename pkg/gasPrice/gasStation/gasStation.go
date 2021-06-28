@@ -78,7 +78,7 @@ func (self *GasStation) Query(ctx context.Context) (gasPriceFinal *big.Int, errF
 
 	ctx, cncl := context.WithTimeout(ctx, 15*time.Second)
 	defer cncl()
-	resp, err := web.Fetch(ctx, "https://ethgasstation.info/json/ethgasAPI.json")
+	resp, err := web.Get(ctx, "https://ethgasstation.info/json/ethgasAPI.json", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch price from provider")
 	}
