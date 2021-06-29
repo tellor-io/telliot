@@ -135,11 +135,12 @@ helm install $INSTANCE_NAME . \
     --namespace tellor --create-namespace 
 ```
 
-This will install a mining and dataServer instance of telliot as well as Grafana, Alertmanager, and Prometheus
-
 Keep in mind this command is using all default values.
+
 ## Values
- 
+
+The default helm values will install a mining and dataServer instance of telliot, as well grafana, alertmanager, and prometheus
+
 To override these values during installation include `--set $key=$value` in the helm upgrade command.
 
 For example, to run only a dataserver instance of telliot using my own image with 5Gi of storage using no monitoring:
