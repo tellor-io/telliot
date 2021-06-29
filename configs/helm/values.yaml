@@ -7,6 +7,7 @@ telliot:
   modes: # Add mine, dataServer or both to this array
     - dataServer
     - mine
+  uniqueConfiguration: false
   storage: 2Gi
   storageClassName: microk8s-hostpath
 
@@ -37,13 +38,13 @@ alertmanager:
   service:
     port: 9093
   bot:
+    enabled: false
     service:
       port: 8080
     container:
       image: metalmatze/alertmanager-bot:0.4.3
       port: 8080
     storage: 1Gi
-    enabled: true
     telegram:
       token: Null
       admin: Null

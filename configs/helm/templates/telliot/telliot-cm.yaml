@@ -11,12 +11,11 @@ data:
 {{- $path := printf "%s/%s" "files" ($modeName | lower) }}
 {{- else }}
 {{- $path := "files" }}
-  configRemote.json: |-
-{{ $.Files.Get (printf "%s/%s" $path "configRemote.json") | indent 4 }}
-  configTellorAccess.json: |-
-{{ $.Files.Get (printf "%s/%s" $path "configTellorAccess.json") | indent 4 }}
+{{- $globdata := $.Files.Glob (printf "%s/%s" $path "config.json") }}
+{{- if $globdata }}
   config.json: |-
 {{ $.Files.Get (printf "%s/%s" $path "config.json") | indent 4 }}
+{{- end }}
   index.json: |-
 {{ $.Files.Get (printf "%s/%s" $path "index.json") | indent 4 }}
   manualData.json: |-
