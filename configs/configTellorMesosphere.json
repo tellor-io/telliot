@@ -2,7 +2,7 @@
     "SubmitterTellor": {
         "Enabled": false
     },
-    "SubmitterTellorAccess": {
+    "SubmitterTellorMesosphere": {
         "Enabled": true
     }
 }

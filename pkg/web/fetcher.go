@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Fetch(ctx context.Context, url string, headers map[string]string) ([]byte, error) {
+func Get(ctx context.Context, url string, headers map[string]string) ([]byte, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}

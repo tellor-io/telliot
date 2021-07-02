@@ -21,11 +21,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
+	"github.com/tellor-io/telliot/pkg/gasPrice"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
 	psr "github.com/tellor-io/telliot/pkg/psr/tellor"
 	"github.com/tellor-io/telliot/pkg/reward"
-	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 	"github.com/tellor-io/telliot/pkg/transactor"
 )
 
@@ -38,15 +38,10 @@ type ContractCaller interface {
 }
 
 type Config struct {
-	Enabled  bool
-	LogLevel string
-	// Minimum percent of profit when submitting a solution.
-	// For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH
-	// a ProfitThreshold of 200% or more will wait until the reward is increased or
-	// the gas cost is lowered.
-	// a ProfitThreshold of 199% or less will submit
-	ProfitThreshold uint64
-	MinSubmitPeriod format.Duration
+	Enabled         bool
+	LogLevel        string
+	ProfitThreshold uint64          `help:"Minimum percent of profit when submitting a solution. For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH a ProfitThreshold of 200% or more will wait until the reward is increased or the gas cost is lowered a ProfitThreshold of 199% or less will submit."`
+	MinSubmitPeriod format.Duration `help:"The time limit between each submit for a staked miner."`
 }
 
 /**
@@ -70,7 +65,7 @@ type Submitter struct {
 	lastSubmitCncl  context.CancelFunc
 	transactor      transactor.Transactor
 	reward          *reward.Reward
-	gasPriceTracker *gasPrice.GasTracker
+	gasPriceQuerier gasPrice.GasPriceQuerier
 	psr             *psr.Psr
 }
 
@@ -83,7 +78,7 @@ func New(
 	account *ethereum.Account,
 	reward *reward.Reward,
 	transactor transactor.Transactor,
-	gasPriceTracker *gasPrice.GasTracker,
+	gasPriceQuerier gasPrice.GasPriceQuerier,
 	psr *psr.Psr,
 ) (*Submitter, chan *mining.Result, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
@@ -103,7 +98,7 @@ func New(
 		logger:          logger,
 		contract:        contract,
 		transactor:      transactor,
-		gasPriceTracker: gasPriceTracker,
+		gasPriceQuerier: gasPriceQuerier,
 		psr:             psr,
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
@@ -230,7 +225,7 @@ func (self *Submitter) profitPercent() (int64, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting current slot")
 	}
-	gasPrice, err := self.gasPriceTracker.Query(self.ctx)
+	gasPrice, err := self.gasPriceQuerier.Query(self.ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "getting current Gas price")
 	}
@@ -244,7 +239,7 @@ func (self *Submitter) profitPercent() (int64, error) {
 		slot.SetInt64(0)
 	}
 
-	return self.reward.Current(slot, big.NewInt(int64(gasPrice)))
+	return self.reward.Current(slot, gasPrice)
 }
 
 func (self *Submitter) Submit(newChallengeReplace context.Context, result *mining.Result) {
@@ -288,7 +283,13 @@ func (self *Submitter) Submit(newChallengeReplace context.Context, result *minin
 				f := func(auth *bind.TransactOpts) (*types.Transaction, error) {
 					return self.contract.SubmitMiningSolution(auth, result.Nonce, result.Work.Challenge.RequestIDs, reqVals)
 				}
-				tx, recieipt, err := self.transactor.Transact(self.ctx, f)
+				tx, recieipt, err := self.transactor.Transact(newChallengeReplace, f)
+				select {
+				case <-newChallengeReplace.Done():
+					level.Info(self.logger).Log("msg", "pending submit canceled")
+					return
+				default:
+				}
 				if err != nil {
 					self.submitFailCount.Inc()
 					level.Error(self.logger).Log("msg", "submiting a solution", "err", err)
