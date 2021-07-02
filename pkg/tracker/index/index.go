@@ -120,6 +120,8 @@ func createDataSources(ctx context.Context, cfg Config, client *ethclient.Client
 	for symbol, api := range indexes {
 		for _, endpoint := range api.Endpoints {
 			var err error
+
+			endpoint.URL = web.ExpandTimeVars(endpoint.URL)
 			endpoint.URL = os.Expand(endpoint.URL, func(key string) string {
 				if os.Getenv(key) == "" {
 					err = errors.Errorf("missing required env variable in index url:%v", key)
@@ -462,7 +464,7 @@ func (self *Bravenewcoin) Get(ctx context.Context) (float64, error) {
 	headers["authorization"] = "Bearer " + self.bearerToken
 	headers["x-rapidapi-host"] = "bravenewcoin.p.rapidapi.com"
 
-	vals, err := web.Fetch(ctx, self.url, headers)
+	vals, err := web.Get(ctx, self.url, headers)
 	if err != nil {
 		// Refresh the bearer token and try again
 		bearerToken, err := getBearer(self.apiKey)
@@ -470,7 +472,7 @@ func (self *Bravenewcoin) Get(ctx context.Context) (float64, error) {
 			return 0, errors.Wrap(err, "get rapid bearer token")
 		}
 		self.bearerToken = bearerToken
-		vals, err = web.Fetch(ctx, self.url, headers)
+		vals, err = web.Get(ctx, self.url, headers)
 		if err != nil {
 			return 0, errors.Wrapf(err, "fetching data rapid API url:%v", self.url)
 		}

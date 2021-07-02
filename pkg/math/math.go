@@ -3,9 +3,8 @@
 
 package math
 
-import "math"
-
 func PercentageChange(old, new int64) (delta float64) {
 	diff := float64(new - old)
-	return math.Abs((diff / float64(old)) * 100)
+	delta = (diff / float64(old)) * 100
+	return
 }

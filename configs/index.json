@@ -104,8 +104,8 @@
                 "param": "$.content[0][vwap]"
             },
             {
-                "URL": "https://min-api.cryptocompare.com/data/dayAvg?fsym=AMPL&tsym=USD",
-                "param": "$.USD"
+                "URL": "https://api.anyblock.tools/market/AMPL_USD_via_ALL/daily-volume?roundDay=false&debug=false&access_token=$ANYBLOCK_KEY&start=$NOW&end=$EOD",
+                "param": "$.overallVWAP"
             }
         ]
     },
