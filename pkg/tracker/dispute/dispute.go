@@ -239,7 +239,7 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error
 			"miner", event.Miner.String(),
 			"oracleValue", valAct,
 			"psrValue", valExp,
-			"difference", math.PercentageChange(valAct.Int64(), valExp),
+			"difference", math.PercentageDiff(float64(valAct.Int64()), float64(valExp)),
 		)
 	}
 	return nil
