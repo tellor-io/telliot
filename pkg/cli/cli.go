@@ -5,11 +5,14 @@ package cli
 
 import (
 	"context"
+	"math/big"
 	"os"
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
@@ -21,6 +24,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/db"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	tEthereum "github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/gasPrice/gasStation"
 	"github.com/tellor-io/telliot/pkg/logging"
 	"github.com/tellor-io/telliot/pkg/mining"
@@ -56,9 +60,10 @@ var CLI struct {
 		Status   statusCmd   `cmd:"" help:"show stake status"`
 	} `cmd:"" help:"Perform one of the stake operations"`
 	Dispute struct {
-		New  newDisputeCmd `cmd:"" help:"start a new dispute"`
-		Vote voteCmd       `cmd:"" help:"vote on a open dispute"`
-		List listCmd       `cmd:"" help:"list open disputes"`
+		New   newDisputeCmd `cmd:"" help:"start a new dispute"`
+		Vote  voteCmd       `cmd:"" help:"vote on a open dispute"`
+		List  listCmd       `cmd:"" help:"list open disputes"`
+		Tally tallyCmd      `cmd:"" help:"tally votes for a dispute ID"`
 	} `cmd:"" help:"Perform commands related to disputes"`
 	Dataserver dataserverCmd `cmd:"" help:"launch only a dataserver instance"`
 	Mine       mineCmd       `cmd:"" help:"Submit data to oracle contracts"`
@@ -75,10 +80,11 @@ func (cmd *VersionCmd) Run() error {
 
 type configPath string
 type tokenCmd struct {
-	Config  configPath `type:"existingfile" help:"path to config file"`
-	Address string     `arg:""`
-	Amount  string     `arg:""`
-	Account int        `arg:"" optional:""`
+	Config   configPath `type:"existingfile" help:"path to config file"`
+	Address  string     `arg:""`
+	Amount   string     `arg:""`
+	Account  int        `optional:""`
+	GasPrice int        `optional:"" help:"gas price in gwei at which to run the command"`
 }
 
 type transferCmd tokenCmd
@@ -117,7 +123,7 @@ func (self *transferCmd) Run() error {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
 
-	return Transfer(ctx, logger, client, contract, account, address.addr, amount.Int)
+	return Transfer(ctx, logger, client, contract, account, address.addr, amount.Int, self.GasPrice)
 
 }
 
@@ -157,7 +163,7 @@ func (self *approveCmd) Run() error {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
 
-	return Approve(ctx, logger, client, contract, account, address.addr, amount.Int)
+	return Approve(ctx, logger, client, contract, account, address.addr, amount.Int, self.GasPrice)
 }
 
 type accountsCmd struct {
@@ -225,8 +231,9 @@ func (self *balanceCmd) Run() error {
 }
 
 type depositCmd struct {
-	Config  configPath `type:"existingfile" help:"path to config file"`
-	Account int        `arg:"" optional:""`
+	Config   configPath `type:"existingfile" help:"path to config file"`
+	Account  int        `optional:""`
+	GasPrice int        `optional:"" help:"gas price in gwei at which to run the command"`
 }
 
 func (self depositCmd) Run() error {
@@ -249,14 +256,15 @@ func (self depositCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return Deposit(ctx, logger, client, contract, account)
+	return Deposit(ctx, logger, client, contract, account, self.GasPrice)
 
 }
 
 type withdrawCmd struct {
-	Config  configPath `type:"existingfile" help:"path to config file"`
-	Address string     `arg:"" required:""`
-	Account int        `arg:"" optional:""`
+	Config   configPath `type:"existingfile" help:"path to config file"`
+	Address  string     `arg:"" required:""`
+	Account  int        `optional:""`
+	GasPrice int        `optional:"" help:"gas price in gwei at which to run the command"`
 }
 
 func (self withdrawCmd) Run() error {
@@ -286,13 +294,14 @@ func (self withdrawCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return WithdrawStake(ctx, logger, client, contract, account)
+	return WithdrawStake(ctx, logger, client, contract, account, self.GasPrice)
 
 }
 
 type requestCmd struct {
-	Config  configPath `type:"existingfile" help:"path to config file"`
-	Account int        `arg:"" optional:""`
+	Config   configPath `type:"existingfile" help:"path to config file"`
+	Account  int        `optional:""`
+	GasPrice int        `optional:"" help:"gas price in gwei at which to run the command"`
 }
 
 func (self requestCmd) Run() error {
@@ -316,12 +325,12 @@ func (self requestCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return RequestStakingWithdraw(ctx, logger, client, contract, account)
+	return RequestStakingWithdraw(ctx, logger, client, contract, account, self.GasPrice)
 }
 
 type statusCmd struct {
 	Config  configPath `type:"existingfile" help:"path to config file"`
-	Account int        `arg:"" optional:""`
+	Account int        `optional:""`
 }
 
 func (self statusCmd) Run() error {
@@ -350,10 +359,11 @@ func (self statusCmd) Run() error {
 
 type newDisputeCmd struct {
 	Config     configPath `type:"existingfile" help:"path to config file"`
-	requestId  string     `arg:""  help:"the request id to dispute it"`
-	timestamp  string     `arg:""  help:"the submitted timestamp to dispute"`
-	minerIndex string     `arg:""  help:"the miner index to dispute"`
-	Account    int        `arg:"" optional:""`
+	RequestID  string     `arg:""  help:"the request id to dispute it"`
+	Timestamp  string     `arg:""  help:"the submitted timestamp to dispute"`
+	MinerIndex string     `arg:""  help:"the miner index to dispute"`
+	Account    int        `optional:""`
+	GasPrice   int        `optional:"" help:"gas price in gwei at which to run the command"`
 }
 
 func (self newDisputeCmd) Run() error {
@@ -371,17 +381,17 @@ func (self newDisputeCmd) Run() error {
 	}
 
 	requestID := EthereumInt{}
-	err = requestID.Set(self.requestId)
+	err = requestID.Set(self.RequestID)
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
 	timestamp := EthereumInt{}
-	err = timestamp.Set(self.timestamp)
+	err = timestamp.Set(self.Timestamp)
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
 	minerIndex := EthereumInt{}
-	err = minerIndex.Set(self.minerIndex)
+	err = minerIndex.Set(self.MinerIndex)
 	if err != nil {
 		return errors.Wrap(err, "parsing argument")
 	}
@@ -393,14 +403,15 @@ func (self newDisputeCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int)
+	return Dispute(ctx, logger, client, contract, account, requestID.Int, timestamp.Int, minerIndex.Int, self.GasPrice)
 }
 
 type voteCmd struct {
 	Config    configPath `type:"existingfile" help:"path to config file"`
-	disputeId string     `arg:""  help:"the dispute id"`
+	disputeId string     `arg:"" required:"" help:"the dispute id"`
 	support   bool       `arg:""  help:"true or false"`
-	Account   int        `arg:"" optional:""`
+	Account   int        `optional:""`
+	GasPrice  int        `optional:"" help:"gas price in gwei at which to run the command"`
 }
 
 func (self voteCmd) Run() error {
@@ -430,12 +441,91 @@ func (self voteCmd) Run() error {
 	if err != nil {
 		return errors.Wrap(err, "create tellor contract instance")
 	}
-	return Vote(ctx, logger, client, contract, account, disputeID.Int, self.support)
+
+	voted, err := contract.DidVote(&bind.CallOpts{Context: ctx}, disputeID.Int, contract.Address)
+	if err != nil {
+		return errors.Wrapf(err, "check if you've already voted")
+	}
+	if voted {
+		level.Info(logger).Log("msg", "you have already voted on this dispute")
+		return nil
+	}
+
+	var gasPrice *big.Int
+	if self.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(self.GasPrice) * params.GWei)
+	}
+
+	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account, gasPrice)
+	if err != nil {
+		return errors.Wrapf(err, "prepare ethereum transaction")
+	}
+	tx, err := contract.Vote(auth, disputeID.Int, self.support)
+	if err != nil {
+		return errors.Wrapf(err, "submit vote transaction")
+	}
+
+	level.Info(logger).Log("msg", "vote submitted with transaction", "tx", tx.Hash().Hex())
+	return nil
+}
+
+type tallyCmd struct {
+	Config    configPath `type:"existingfile" help:"path to config file"`
+	DisputeID string     `arg:"" help:"the dispute id"`
+	Account   int        `optional:""`
+	GasPrice  int        `optional:"" help:"gas price in gwei at which to run the command"`
+}
+
+func (self tallyCmd) Run() error {
+	logger := logging.NewLogger()
+	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
+	client, err := ethereum.NewClient(ctx, logger)
+	if err != nil {
+		return errors.Wrap(err, "creating ethereum client")
+	}
+
+	disputeID := EthereumInt{}
+	err = disputeID.Set(self.DisputeID)
+	if err != nil {
+		return errors.Wrap(err, "parsing argument")
+	}
+	account, err := ethereum.GetAccountFor(self.Account)
+	if err != nil {
+		return err
+	}
+	contract, err := contracts.NewITellor(client)
+	if err != nil {
+		return errors.Wrap(err, "create tellor contract instance")
+	}
+
+	var gasPrice *big.Int
+	if self.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(self.GasPrice) * params.GWei)
+	}
+
+	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account, gasPrice)
+	if err != nil {
+		return errors.Wrapf(err, "prepare ethereum transaction")
+	}
+
+	tx, err := contract.TallyVotes(auth, disputeID.Int)
+	if err != nil {
+		return errors.Wrapf(err, "run tally votes if you've already voted")
+	}
+
+	level.Info(logger).Log("msg", "tally votes submitted", "tx", tx.Hash().Hex())
+	return nil
 }
 
 type listCmd struct {
 	Config  configPath `type:"existingfile" help:"path to config file"`
-	Account int        `arg:"" optional:""`
+	Account int        `optional:""`
 }
 
 func (self listCmd) Run() error {

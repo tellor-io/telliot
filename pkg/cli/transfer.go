@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -26,6 +27,7 @@ func prepareTransfer(
 	tellor *contracts.ITellor,
 	account *ethereum.Account,
 	amt *big.Int,
+	_gasPrice int,
 ) (*bind.TransactOpts, error) {
 	balance, err := tellor.BalanceOf(nil, account.Address)
 	if err != nil {
@@ -37,7 +39,13 @@ func prepareTransfer(
 			format.ERC20Balance(balance),
 			format.ERC20Balance(amt))
 	}
-	auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
+
+	var gasPrice *big.Int
+	if _gasPrice > 0 {
+		gasPrice = big.NewInt(int64(_gasPrice) * params.GWei)
+	}
+
+	auth, err := ethereum.PrepareEthTransaction(ctx, client, account, gasPrice)
 	if err != nil {
 		return nil, errors.Wrap(err, "preparing ethereum transaction")
 	}
@@ -52,8 +60,9 @@ func Transfer(
 	account *ethereum.Account,
 	toAddress common.Address,
 	amt *big.Int,
+	gasPrice int,
 ) error {
-	auth, err := prepareTransfer(ctx, logger, client, tellor, account, amt)
+	auth, err := prepareTransfer(ctx, logger, client, tellor, account, amt, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "preparing transfer")
 	}
@@ -79,8 +88,9 @@ func Approve(
 	account *ethereum.Account,
 	spender common.Address,
 	amt *big.Int,
+	gasPrice int,
 ) error {
-	auth, err := prepareTransfer(ctx, logger, client, tellor, account, amt)
+	auth, err := prepareTransfer(ctx, logger, client, tellor, account, amt, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "preparing transfer")
 	}

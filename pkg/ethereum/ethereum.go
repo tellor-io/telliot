@@ -80,6 +80,7 @@ func PrepareEthTransaction(
 	ctx context.Context,
 	client *ethclient.Client,
 	account *Account,
+	gasPrice *big.Int,
 ) (*bind.TransactOpts, error) {
 
 	nonce, err := client.PendingNonceAt(ctx, account.GetAddress())
@@ -87,9 +88,11 @@ func PrepareEthTransaction(
 		return nil, errors.Wrap(err, "getting pending nonce")
 	}
 
-	gasPrice, err := client.SuggestGasPrice(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting gas price")
+	if gasPrice == nil {
+		gasPrice, err = client.SuggestGasPrice(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting gas price")
+		}
 	}
 
 	ethBalance, err := client.BalanceAt(ctx, account.GetAddress(), nil)

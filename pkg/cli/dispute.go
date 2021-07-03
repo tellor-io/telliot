@@ -7,8 +7,8 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -27,6 +27,7 @@ func Dispute(
 	requestId *big.Int,
 	timestamp *big.Int,
 	minerIndex *big.Int,
+	_gasPrice int,
 ) error {
 
 	if !minerIndex.IsUint64() || minerIndex.Uint64() > 4 {
@@ -37,9 +38,8 @@ func Dispute(
 	if err != nil {
 		return errors.Wrap(err, "fetch balance")
 	}
-	var asBytes32 [32]byte
-	copy(asBytes32[:], crypto.Keccak256([]byte("_DISPUTE_FEE")))
-	disputeCost, err := contract.GetUintVar(nil, asBytes32)
+
+	disputeCost, err := contract.GetUintVar(nil, tEthereum.Keccak256([]byte("_DISPUTE_FEE")))
 	if err != nil {
 		return errors.Wrap(err, "get dispute cost")
 	}
@@ -50,7 +50,12 @@ func Dispute(
 			format.ERC20Balance(disputeCost))
 	}
 
-	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account)
+	var gasPrice *big.Int
+	if _gasPrice > 0 {
+		gasPrice = big.NewInt(int64(_gasPrice) * params.GWei)
+	}
+
+	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account, gasPrice)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
@@ -60,38 +65,6 @@ func Dispute(
 		return errors.Wrap(err, "send dispute txn")
 	}
 	level.Info(logger).Log("msg", "dispute started", "txn", tx.Hash().Hex())
-	return nil
-}
-
-func Vote(
-	ctx context.Context,
-	logger log.Logger,
-	client *ethclient.Client,
-	contract *contracts.ITellor,
-	account *tEthereum.Account,
-	disputeId *big.Int,
-	supportsDispute bool,
-) error {
-
-	voted, err := contract.DidVote(nil, disputeId, contract.Address)
-	if err != nil {
-		return errors.Wrapf(err, "check if you've already voted")
-	}
-	if voted {
-		level.Info(logger).Log("msg", "you have already voted on this dispute")
-		return nil
-	}
-
-	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account)
-	if err != nil {
-		return errors.Wrapf(err, "prepare ethereum transaction")
-	}
-	tx, err := contract.Vote(auth, disputeId, supportsDispute)
-	if err != nil {
-		return errors.Wrapf(err, "submit vote transaction")
-	}
-
-	level.Info(logger).Log("msg", "vote submitted with transaction", "tx", tx.Hash().Hex())
 	return nil
 }
 

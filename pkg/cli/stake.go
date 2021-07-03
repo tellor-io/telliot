@@ -8,8 +8,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -49,6 +49,7 @@ func Deposit(
 	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *ethereum.Account,
+	_gasPrice int,
 ) error {
 
 	balance, err := contract.BalanceOf(nil, account.Address)
@@ -66,10 +67,7 @@ func Deposit(
 		return nil
 	}
 
-	dat := crypto.Keccak256([]byte("_STAKE_AMOUNT"))
-	var dat32 [32]byte
-	copy(dat32[:], dat)
-	stakeAmt, err := contract.GetUintVar(nil, dat32)
+	stakeAmt, err := contract.GetUintVar(nil, ethereum.Keccak256([]byte("_STAKE_AMOUNT")))
 	if err != nil {
 		return errors.Wrap(err, "fetching stake amount")
 	}
@@ -80,7 +78,12 @@ func Deposit(
 			format.ERC20Balance(stakeAmt))
 	}
 
-	auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
+	var gasPrice *big.Int
+	if _gasPrice > 0 {
+		gasPrice = big.NewInt(int64(_gasPrice) * params.GWei)
+	}
+
+	auth, err := ethereum.PrepareEthTransaction(ctx, client, account, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
@@ -115,6 +118,7 @@ func RequestStakingWithdraw(
 	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *ethereum.Account,
+	_gasPrice int,
 ) error {
 
 	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
@@ -126,7 +130,12 @@ func RequestStakingWithdraw(
 		return nil
 	}
 
-	auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
+	var gasPrice *big.Int
+	if _gasPrice > 0 {
+		gasPrice = big.NewInt(int64(_gasPrice) * params.GWei)
+	}
+
+	auth, err := ethereum.PrepareEthTransaction(ctx, client, account, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
@@ -146,6 +155,7 @@ func WithdrawStake(
 	client *ethclient.Client,
 	contract *contracts.ITellor,
 	account *ethereum.Account,
+	_gasPrice int,
 ) error {
 	status, startTime, err := contract.GetStakerInfo(nil, account.Address)
 	if err != nil {
@@ -157,7 +167,12 @@ func WithdrawStake(
 		return nil
 	}
 
-	auth, err := ethereum.PrepareEthTransaction(ctx, client, account)
+	var gasPrice *big.Int
+	if _gasPrice > 0 {
+		gasPrice = big.NewInt(int64(_gasPrice) * params.GWei)
+	}
+
+	auth, err := ethereum.PrepareEthTransaction(ctx, client, account, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "prepare ethereum transaction")
 	}
