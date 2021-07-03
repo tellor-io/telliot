@@ -6,6 +6,7 @@ package tellorMesosphere
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"time"
@@ -22,7 +23,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/math"
+	mathU "github.com/tellor-io/telliot/pkg/math"
 	psr "github.com/tellor-io/telliot/pkg/psr/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/transactor"
 )
@@ -57,7 +58,7 @@ type Submitter struct {
 	submitFailCount prometheus.Counter
 	submitValue     *prometheus.GaugeVec
 	psr             *psr.Psr
-	lastSubmitValue map[int64]int64
+	lastSubmitValue map[int64]float64
 	lastSubmitTime  map[int64]time.Time
 	reqIDs          []int64
 }
@@ -89,7 +90,7 @@ func New(
 		transactor:      transactor,
 		psr:             psr,
 		reqIDs:          []int64{1, 2},
-		lastSubmitValue: make(map[int64]int64),
+		lastSubmitValue: make(map[int64]float64),
 		lastSubmitTime:  make(map[int64]time.Time),
 		submitCount: promauto.NewCounter(prometheus.CounterOpts{
 			Namespace:   "telliot",
@@ -136,7 +137,7 @@ func (self *Submitter) Start() error {
 			level.Error(self.logger).Log("msg", "current value doesn't exist for checking for last submit", "reqID", reqID)
 			break
 		}
-		self.lastSubmitValue[reqID] = val.Int64()
+		self.lastSubmitValue[reqID] = float64(val.Int64())
 		self.lastSubmitTime[reqID] = time.Unix(ts.Int64(), 0)
 		level.Debug(self.logger).Log(
 			"msg", "recorded initial values",
@@ -188,7 +189,7 @@ func (self *Submitter) Submit(reqID int64) error {
 		return errors.Wrap(err, "getting the value from the aggregator")
 	}
 
-	if !self.shouldSubmit(reqID, val) {
+	if !self.shouldSubmit(reqID, float64(val)) {
 		return nil
 	}
 	level.Info(self.logger).Log(
@@ -228,7 +229,7 @@ func (self *Submitter) Submit(reqID int64) error {
 		},
 	).(prometheus.Gauge).Set(float64(val))
 
-	self.lastSubmitValue[reqID] = val
+	self.lastSubmitValue[reqID] = float64(val)
 	self.lastSubmitTime[reqID] = time.Now()
 	level.Debug(self.logger).Log(
 		"msg", "recorded new values after a submit",
@@ -239,7 +240,7 @@ func (self *Submitter) Submit(reqID int64) error {
 	return nil
 }
 
-func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
+func (self *Submitter) shouldSubmit(reqID int64, newVal float64) bool {
 	logger := log.With(self.logger, "msg", "should submit check passed", "reqID", reqID)
 
 	if self.lastSubmitTime[reqID].IsZero() {
@@ -262,11 +263,11 @@ func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
 		level.Error(self.logger).Log("msg", "last value check - no record for last value")
 	}
 
-	percentageChange := math.PercentageChange(lastSubmitValue, newVal)
-	if percentageChange > self.cfg.MinSubmitPriceChange {
+	PercentageDiff := math.Abs(mathU.PercentageDiff(lastSubmitValue, newVal))
+	if PercentageDiff > self.cfg.MinSubmitPriceChange {
 		level.Info(logger).Log(
 			"reason", "value change more then threshold",
-			"percentageChange", percentageChange,
+			"PercentageDiff", PercentageDiff,
 			"percentageThresohld", self.cfg.MinSubmitPriceChange,
 			"lastSubmitValue", lastSubmitValue,
 			"newValue", newVal,

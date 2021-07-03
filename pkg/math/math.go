@@ -3,8 +3,11 @@
 
 package math
 
-func PercentageChange(old, new int64) (delta float64) {
+func PercentageDiff(old, new float64) (delta float64) {
 	diff := float64(new - old)
-	delta = (diff / float64(old)) * 100
-	return
+
+	if old > new {
+		return (diff / float64(old)) * 100
+	}
+	return (diff / float64(new)) * 100
 }
