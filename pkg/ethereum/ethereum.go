@@ -80,6 +80,7 @@ func PrepareEthTransaction(
 	ctx context.Context,
 	client *ethclient.Client,
 	account *Account,
+	gasPrice *big.Int,
 ) (*bind.TransactOpts, error) {
 
 	nonce, err := client.PendingNonceAt(ctx, account.GetAddress())
@@ -87,9 +88,11 @@ func PrepareEthTransaction(
 		return nil, errors.Wrap(err, "getting pending nonce")
 	}
 
-	gasPrice, err := client.SuggestGasPrice(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting gas price")
+	if gasPrice == nil {
+		gasPrice, err = client.SuggestGasPrice(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting gas price")
+		}
 	}
 
 	ethBalance, err := client.BalanceAt(ctx, account.GetAddress(), nil)
@@ -113,8 +116,8 @@ func PrepareEthTransaction(
 		return nil, errors.Wrap(err, "creating transactor")
 	}
 	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)      // in wei
-	auth.GasLimit = uint64(3000000) // in units
+	auth.Value = big.NewInt(0)        // in wei
+	auth.GasLimit = uint64(3_000_000) // in units
 	auth.GasPrice = gasPrice
 	return auth, nil
 }
@@ -140,15 +143,18 @@ func (a *Account) GetPrivateKey() *ecdsa.PrivateKey {
 	return a.PrivateKey
 }
 
-func GetAccountFor(accountNo int) (*Account, error) {
+func GetAccountByPubAddess(pubAddr string) (*Account, error) {
 	accounts, err := GetAccounts()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting accounts")
 	}
-	if accountNo < 0 || accountNo >= len(accounts) {
-		return nil, errors.New("account not found")
+
+	for i, addr := range accounts {
+		if addr.Address.Hex() == pubAddr {
+			return accounts[i], nil
+		}
 	}
-	return accounts[accountNo], nil
+	return nil, errors.Errorf("account not found:%v", pubAddr)
 }
 
 // GetAccounts returns a slice of Account from private keys in

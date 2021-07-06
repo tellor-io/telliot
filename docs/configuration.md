@@ -31,19 +31,20 @@ Flags:
 * `approve`
 
 ```
-Usage: telliot approve <address> <amount> [<account>]
+Usage: telliot approve --from=STRING --to=STRING <amount>
 
 Approve tokens
 
 Arguments:
-  <address>
   <amount>
-  [<account>]
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
+      --from=STRING
+      --to=STRING
 
 ```
 
@@ -89,26 +90,29 @@ Flags:
   -h, --help    Show context-sensitive help.
 
 Commands:
-  dispute new [<account>]
+  dispute new <addr> <request-id> <timestamp> <miner-index>
     start a new dispute
 
-  dispute vote [<account>]
+  dispute vote <addr> <dispute-id> <support>
     vote on a open dispute
 
-  dispute list [<account>]
+  dispute list <addr>
     list open disputes
+
+  dispute tally <dispute-id>
+    tally votes for a dispute ID
 
 ```
 
 * `dispute list`
 
 ```
-Usage: telliot dispute list [<account>]
+Usage: telliot dispute list <addr>
 
 list open disputes
 
 Arguments:
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
@@ -120,34 +124,59 @@ Flags:
 * `dispute new`
 
 ```
-Usage: telliot dispute new [<account>]
+Usage: telliot dispute new <addr> <request-id> <timestamp> <miner-index>
 
 start a new dispute
 
 Arguments:
-  [<account>]
+  <addr>
+  <request-id>     the request id to dispute it
+  <timestamp>      the submitted timestamp to dispute
+  <miner-index>    the miner index to dispute
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
+
+```
+
+* `dispute tally`
+
+```
+Usage: telliot dispute tally <dispute-id>
+
+tally votes for a dispute ID
+
+Arguments:
+  <dispute-id>    the dispute id
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
 * `dispute vote`
 
 ```
-Usage: telliot dispute vote [<account>]
+Usage: telliot dispute vote <addr> <dispute-id> <support>
 
 vote on a open dispute
 
 Arguments:
-  [<account>]
+  <addr>
+  <dispute-id>    the dispute id
+  <support>       true or false
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
@@ -176,16 +205,16 @@ Flags:
   -h, --help    Show context-sensitive help.
 
 Commands:
-  stake deposit [<account>]
+  stake deposit <addr>
     deposit a stake
 
-  stake request [<account>]
+  stake request <addr>
     request to withdraw stake
 
-  stake withdraw <address> [<account>]
+  stake withdraw <addr>
     withdraw stake
 
-  stake status [<account>]
+  stake status <addr>
     show stake status
 
 ```
@@ -193,46 +222,48 @@ Commands:
 * `stake deposit`
 
 ```
-Usage: telliot stake deposit [<account>]
+Usage: telliot stake deposit <addr>
 
 deposit a stake
 
 Arguments:
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
 * `stake request`
 
 ```
-Usage: telliot stake request [<account>]
+Usage: telliot stake request <addr>
 
 request to withdraw stake
 
 Arguments:
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
 * `stake status`
 
 ```
-Usage: telliot stake status [<account>]
+Usage: telliot stake status <addr>
 
 show stake status
 
 Arguments:
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
@@ -244,37 +275,38 @@ Flags:
 * `stake withdraw`
 
 ```
-Usage: telliot stake withdraw <address> [<account>]
+Usage: telliot stake withdraw <addr>
 
 withdraw stake
 
 Arguments:
-  <address>
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
 * `transfer`
 
 ```
-Usage: telliot transfer <address> <amount> [<account>]
+Usage: telliot transfer --from=STRING --to=STRING <amount>
 
 Transfer tokens
 
 Arguments:
-  <address>
   <amount>
-  [<account>]
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
+      --from=STRING
+      --to=STRING
 
 ```
 
