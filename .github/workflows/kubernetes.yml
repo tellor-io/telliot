@@ -1,6 +1,7 @@
 on:
   workflow_run:
     workflows: ["Docker"]
+    branches: [ibac/kubernetes_improvements]
     types: 
       - completed
 jobs:
