@@ -1,11 +1,15 @@
 name: Kubernetes
 
+# on:
+#   workflow_run:
+#     workflows: ["Docker"]
+#     branches: [ibac/kubernetes_improvements]
+#     types: 
+#       - completed
 on:
-  workflow_run:
-    workflows: ["Docker"]
+  push:
     branches: [ibac/kubernetes_improvements]
-    types: 
-      - completed
+
 jobs:
   deploy-on-docker-push:
     runs-on: self-hosted
@@ -29,6 +33,7 @@ jobs:
         gcloud components install kubectl
         gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "${{ secrets.GKE_ZONE }}"
         ls -lah ~/.kube/
+        kubectl config get-contexts
     - name: Deploy
       uses: WyriHaximus/github-action-helm3@v2
       with:
