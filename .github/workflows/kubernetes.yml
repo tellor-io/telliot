@@ -25,6 +25,8 @@ jobs:
         version: '347.0.0'
         service_account_key: ${{ secrets.GKE_SA_KEY }}
         project_id: ${{ secrets.GKE_PROJECT }}
+    - name: install helm
+      uses: azure/setup-helm@v1
     - run: |-
         mkdir configs/helm/files
         cp configs/index.json configs/manualData.json configs/helm/files
@@ -34,7 +36,4 @@ jobs:
         gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "${{ secrets.GKE_ZONE }}"
         ls -lah ~/.kube/
         kubectl config get-contexts
-    - name: Deploy
-      uses: WyriHaximus/github-action-helm3@v2
-      with:
-        exec: helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.image=imaginebeingatcomputers/telliot:latest
+        helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.image=imaginebeingatcomputers/telliot:latest
