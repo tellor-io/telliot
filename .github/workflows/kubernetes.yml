@@ -26,12 +26,8 @@ jobs:
         cp configs/index.json configs/manualData.json configs/helm/files
         echo "NODE_URL=${{ secrets.NODE_URL }}" >> configs/helm/files/.env
         echo "ETH_PRIVATE_KEYS=${{ secrets.ETH_PRIVATE_KEYS }}" >> configs/helm/files/.env
-        export KUBECONFIG=/tmp/kubeconfig
-        gcloud components install kubectl
-        gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "${{ secrets.GKE_ZONE }}"
-        echo "KUBECONFIG=$(cat /tmp/kubeconfig)" >> $GITHUB_ENV
     - name: Deploy
       uses: WyriHaximus/github-action-helm3@v2
       with:
         exec: helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.image=imaginebeingatcomputers/telliot:latest
-        kubeconfig: $KUBECONFIG
+        kubeconfig: ${{ secrets.KUBECONFIG }}
