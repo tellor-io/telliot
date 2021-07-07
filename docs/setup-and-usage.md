@@ -131,7 +131,7 @@ After you have moved your configuration files to config/helm/files, you can inst
 
 ```bash
 export INSTANCE_NAME=lat
-helm install $INSTANCE_NAME . \
+helm install $INSTANCE_NAME configs/helm/ \
     --namespace tellor --create-namespace 
 ```
 

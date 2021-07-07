@@ -1,19 +1,16 @@
 name: Kubernetes
 
-# on:
-#   workflow_run:
-#     workflows: ["Docker"]
-#     branches: [ibac/kubernetes_improvements]
-#     types: 
-#       - completed
 on:
-  push:
-    branches: [ibac/kubernetes_improvements]
+  workflow_run:
+    workflows: ["Docker"]
+    branches: [master]
+    types: 
+      - completed
 
 jobs:
   deploy-on-docker-push:
-    runs-on: self-hosted
-    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -33,8 +30,9 @@ jobs:
         echo "NODE_URL=${{ secrets.NODE_URL }}" >> configs/helm/files/.env
         echo "ETH_PRIVATE_KEYS=${{ secrets.ETH_PRIVATE_KEYS }}" >> configs/helm/files/.env
         echo "CMC_KEY=${{ secrets.CMC_KEY }}" >> configs/helm/files/.env
+        echo "VIXEOD_KEY=${{ secrets.VIXEOD_KEY }}" >> configs/helm/files/.env
         gcloud components install kubectl
         gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "${{ secrets.GKE_ZONE }}"
         ls -lah ~/.kube/
         kubectl config get-contexts
-        helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.container.image=imaginebeingatcomputers/telliot:latest --timeout 10m0s
+        helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.container.image=tellor/telliot:latest --timeout 10m0s
