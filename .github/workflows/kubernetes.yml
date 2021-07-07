@@ -1,3 +1,5 @@
+name: Kubernetes
+
 on:
   workflow_run:
     workflows: ["Docker"]
@@ -27,7 +29,6 @@ jobs:
         echo "NODE_URL=${{ secrets.NODE_URL }}" >> configs/helm/files/.env
         echo "ETH_PRIVATE_KEYS=${{ secrets.ETH_PRIVATE_KEYS }}" >> configs/helm/files/.env
     - name: Deploy
-      uses: WyriHaximus/github-action-helm3@v2\
+      uses: WyriHaximus/github-action-helm3@v2
       with:
         exec: helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.image=imaginebeingatcomputers/telliot:latest
-        
