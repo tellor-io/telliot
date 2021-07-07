@@ -37,4 +37,4 @@ jobs:
         gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "${{ secrets.GKE_ZONE }}"
         ls -lah ~/.kube/
         kubectl config get-contexts
-        helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.image=imaginebeingatcomputers/telliot:latest --timeout 10m0s
+        helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.container.image=imaginebeingatcomputers/telliot:latest --timeout 10m0s
