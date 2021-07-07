@@ -30,3 +30,4 @@ jobs:
       uses: WyriHaximus/github-action-helm3@v2\
       with:
         exec: helm upgrade --install ${{ secrets.INSTANCE_NAME }} configs/helm/ --install --wait --namespace=tellor --set telliot.image=imaginebeingatcomputers/telliot:latest
+        
