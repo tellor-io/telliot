@@ -125,6 +125,13 @@ These files should be:
 - index.json
 - manualData.json
 
+Run the following to use the default configuration files:
+
+```bash
+cp configs/index.json configs/manualData.json configs/helm/files/
+cp configs/.env.example configs/.env # you will need to edit this file with your own secrets after copying
+```
+
 Optionally you can also include config.json if you would like to override any default config values.
 
 ## Usage
@@ -143,11 +150,11 @@ Keep in mind this command is using all default values.
 
 ## Values
 
-The default helm values will install a mining and dataServer instance of telliot, as well grafana, alertmanager, and prometheus
+The default helm values will install a mining and dataServer instance of telliot. Grafana, Alertmanager, and Prometheus are disabled by default.
 
 To override these values during installation include `--set $key=$value` in the helm upgrade command.
 
-For example, to run only a dataserver instance of telliot using my own image with 5Gi of storage using no monitoring:
+For example, to run a dataserver instance of telliot using a custom image with 5Gi of storage and the monitoring/alerting stack:
 
 ```bash
 export INSTANCE_NAME=lat
@@ -156,9 +163,9 @@ helm install $INSTANCE_NAME configs/helm/ \
     --set "telliot.container.image=mytelliot:01" \
     --set "telliot.storage=5Gi" \
     --set "telliot.modes={dataServer}" \
-    --set "grafana.enabled=false" \
-    --set "alertmanager.enabled=false"
-    --set "prometheus.enabled=false"
+    --set "grafana.enabled=true" \
+    --set "alertmanager.enabled=true"
+    --set "prometheus.enabled=true"
 ```
 
 If I instead only wanted to run a mining instance of telliot:
@@ -183,11 +190,11 @@ You can also modify these values directly in values.yaml before installation.
 | alertmanager.bot.telegram.token  | string | `nil`                                 | Telegram token                                                                               |
 | alertmanager.container.image     | string | `"prom/alertmanager:v0.19.0"`         | Docker image for alertmanager                                                                |
 | alertmanager.container.port      | int    | `9093`                                |                                                                                              |
-| alertmanager.enabled             | bool   | `true`                                |                                                                                              |
+| alertmanager.enabled             | bool   | `false`                               |                                                                                              |
 | alertmanager.service.port        | int    | `9093`                                |                                                                                              |
 | grafana.container.image          | string | `"grafana/grafana:7.3.6"`             | Docker image for grafana                                                                     |
 | grafana.container.port           | int    | `3000`                                |                                                                                              |
-| grafana.enabled                  | bool   | `true`                                |                                                                                              |
+| grafana.enabled                  | bool   | `false`                               |                                                                                              |
 | grafana.ingress.class            | string | `"nginx"`                             | Ingress class to use for grafana                                                             |
 | grafana.ingress.hostname         | string | `"monitor.tellor.io"`                 | Hostname to use for accessing grafana                                                        |
 | grafana.ingress.path             | string | `"/"`                                 | Subpath to access grafana                                                                    |
@@ -198,12 +205,12 @@ You can also modify these values directly in values.yaml before installation.
 | grafana.storage                  | string | `"5Gi"`                               | Grafana persistent storage size                                                              |
 | prometheus.container.image       | string | `"prom/prometheus:v2.24.0"`           | Docker image for prometheus                                                                  |
 | prometheus.container.port        | int    | `9090`                                |                                                                                              |
-| prometheus.enabled               | bool   | `true`                                |                                                                                              |
+| prometheus.enabled               | bool   | `false`                               |                                                                                              |
 | prometheus.persist               | bool   | `true`                                | Enable persistance for prometheus configuration                                              |
 | prometheus.service.port          | int    | `9090`                                |                                                                                              |
 | prometheus.storage               | int    | `50`                                  | Prometheus storage size in GB                                                                |
 | telliot.uniqueConfiguration      | bool   | `false`                               | Whether to utilize unique configurations for dataServer and mine. <sup>[1](#footnote1)</sup> |
-| telliot.container.image          | string | `"tellor/telliot:latest"`             | Docker image for telliot                                                                     |
+| telliot.container.image          | string | `"tellor/telliot:master"`             | Docker image for telliot                                                                     |
 | telliot.container.port           | int    | `9090`                                |                                                                                              |
 | telliot.modes                    | string | `"{dataServer,mine}"`                 | Array of commands to spawn separate instances of telliot instances with                      |
 | telliot.service.port             | int    | `9090`                                |                                                                                              |
