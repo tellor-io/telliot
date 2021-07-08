@@ -118,7 +118,7 @@ func (e ErrNoDataForSlot) Error() string {
 func (self *RewardQuerier) GasUsed(ctx context.Context, slot *big.Int) (*big.Int, error) {
 	query, err := self.engine.NewInstantQuery(
 		self.tsDB,
-		`last_over_time(gas_usage_estimated{slot="`+slot.String()+`"}[1d]) - `+`last_over_time(gas_usage_actual{slot="`+slot.String()+`"}[1d])`,
+		`last_over_time(gas_usage_estimated{slot="`+slot.String()+`"}[1d]) - `+`last_over_time(refund{slot="`+slot.String()+`"}[1d])`,
 		time.Now(),
 	)
 	if err != nil {

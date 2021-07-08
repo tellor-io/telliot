@@ -5,7 +5,6 @@ package reward
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/big"
 	"strings"
@@ -171,8 +170,12 @@ func (self *RewardTracker) recordGasUsage(event *tellor.TellorNonceSubmitted) er
 	if err != nil {
 		return errors.Wrap(err, "receipt retrieval")
 	} else if receipt != nil && receipt.Status == types.ReceiptStatusSuccessful {
+		tx, _, err := self.client.TransactionByHash(self.ctx, event.Raw.TxHash)
+		if err != nil {
+			return errors.Wrap(err, "tx retrieval")
+		}
 		level.Debug(self.logger).Log("msg", "adding gas used", "gasUsed", receipt.GasUsed)
-		if err := self.addGasUsed(event.Slot.String(), receipt.GasUsed); err != nil {
+		if err := self.addRefundValue(event.Slot.String(), tx.Gas()-receipt.GasUsed); err != nil {
 			return errors.Wrap(err, "adding gas used")
 		}
 		return nil
@@ -241,9 +244,9 @@ func (self *RewardTracker) addGasEstimation(slot *big.Int, gasEstimation uint64)
 	return nil
 }
 
-func (self *RewardTracker) addGasUsed(slot string, gasUsed uint64) error {
+func (self *RewardTracker) addRefundValue(slot string, gasUsed uint64) error {
 	lbls := labels.Labels{
-		labels.Label{Name: "__name__", Value: "gas_usage_actual"},
+		labels.Label{Name: "__name__", Value: "refund"},
 		labels.Label{Name: "slot", Value: slot},
 	}
 	if err := db.Add(self.ctx, self.tsDB, lbls, float64(gasUsed)); err != nil {
@@ -262,84 +265,6 @@ func (self *RewardTracker) nonceSubmittedSub(output chan *tellor.TellorNonceSubm
 		return nil, errors.Wrap(err, "getting channel")
 	}
 	return sub, nil
-}
-
-// Current returns the profit in percents based on the current TRB price.
-func (self *RewardTracker) Current(ctx context.Context, slot *big.Int, gasPriceEth1e18 *big.Int) (int64, error) {
-	gasUsed, err := self.GasUsed(ctx, slot)
-	if err != nil {
-		return 0, err
-	}
-
-	rewardEth1e18, err := self.rewardInEth1e18()
-	if err != nil {
-		return 0, errors.New("getting trb current TRB price")
-	}
-
-	txCostEth1e18 := big.NewInt(0).Mul(gasPriceEth1e18, gasUsed)
-	profit := big.NewInt(0).Sub(rewardEth1e18, txCostEth1e18)
-	profitPercentFloat := float64(profit.Int64()) / float64(txCostEth1e18.Int64()) * 100
-	profitPercent := int64(profitPercentFloat)
-
-	level.Debug(self.logger).Log(
-		"msg", "profit checking",
-		"reward", fmt.Sprintf("%.2e", float64(rewardEth1e18.Int64())),
-		"txCost", fmt.Sprintf("%.2e", float64(txCostEth1e18.Int64())),
-		"slot", slot,
-		"gasUsed", gasUsed,
-		"gasPrice", gasPriceEth1e18,
-		"profit", fmt.Sprintf("%.2e", float64(profit.Int64())),
-		"profitMargin", profitPercent,
-	)
-
-	return profitPercent, nil
-}
-
-// GasUsed estimates the gas needed by the transaction.
-func (self *RewardTracker) GasUsed(ctx context.Context, slot *big.Int) (*big.Int, error) {
-	query, err := self.engine.NewInstantQuery(
-		self.tsDB,
-		`last_over_time(gas_usage_estimation{slot="`+slot.String()+`"}[1d]) - `+`last_over_time(gas_usage_actual{slot="`+slot.String()+`"}[1d])`,
-		time.Now(),
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer query.Close()
-	refund := query.Exec(self.ctx)
-	if refund.Err != nil {
-		return nil, errors.Wrapf(refund.Err, "error evaluating query:%v", query.Statement())
-	}
-	if len(refund.Value.(promql.Vector)) == 0 {
-		return nil, errors.Errorf("no vals for refund interval query:%v", query.Statement())
-	}
-	return big.NewInt(int64(refund.Value.(promql.Vector)[0].V)), nil
-}
-
-func (self *RewardTracker) rewardInEth1e18() (*big.Int, error) {
-	trbAmount1e18, err := self.contractInstance.CurrentReward(nil)
-	if err != nil {
-		return nil, errors.New("getting currentReward from the chain")
-	}
-
-	trbPrice, confidence, err := self.aggr.TimeWeightedAvg("TRB/ETH", time.Now(), time.Hour)
-	if err != nil {
-		return nil, errors.New("getting the trb price from the aggregator")
-	}
-
-	if confidence < 0.5 {
-		return nil, errors.New("trb price confidence too low")
-
-	}
-
-	rewardEth1e18 := big.NewFloat(0).Mul(big.NewFloat(0).SetInt(trbAmount1e18), big.NewFloat(trbPrice))
-
-	rewardEth1e18Int, accuracy := rewardEth1e18.Int64()
-	if accuracy != big.Exact {
-		return nil, errors.New("conversion precision loss")
-	}
-
-	return big.NewInt(rewardEth1e18Int), nil
 }
 
 func (self *RewardTracker) Slot() (*big.Int, error) {
