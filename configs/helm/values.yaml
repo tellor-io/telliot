@@ -1,6 +1,6 @@
 telliot:
   container:
-    image: tellor/telliot:v5.8.0
+    image: tellor/telliot:master
     port: 9090
   service:
     port: 9090
