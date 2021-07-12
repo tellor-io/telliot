@@ -19,6 +19,8 @@ const (
 	TellorAddressHardhat                   = "0x8920050E1126125a27A4EaC5122AD3586c056E51"
 	TellorMesosphereAddressRinkeby         = "0xB2a25FD022526c64823FF1bF03bf348Fd0787f2a"
 	TellorMesosphereAddressArbitrumTestnet = "0x7A1e398A228271D1B8b1fb1ede678A3e4c79f50A"
+	TellorMesosphereAddressPolygonTestnet  = "0x32704dCEb8dA339516f4AE561Cd40a6cBE6d98c9"
+	TellorMesosphereAddressPolygonMainnet  = "0xACC2d27400029904919ea54fFc0b18Bf07C57875"
 	TellorMesosphereAddress                = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
 	LensAddressMainnet                     = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
 	LensAddressRinkeby                     = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
@@ -95,6 +97,10 @@ func GetTellorMesosphereAddress(client *ethclient.Client) (common.Address, error
 		return common.HexToAddress(TellorMesosphereAddressArbitrumTestnet), nil
 	case 4:
 		return common.HexToAddress(TellorMesosphereAddressRinkeby), nil
+	case 80001:
+		return common.HexToAddress(TellorMesosphereAddressPolygonTestnet), nil
+	case 137:
+		return common.HexToAddress(TellorMesosphereAddressPolygonMainnet), nil
 	default:
 		return common.Address{}, errors.Errorf("contract address for current network id not found:%v", netID)
 	}
