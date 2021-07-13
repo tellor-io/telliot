@@ -129,7 +129,7 @@ Run the following to use the default configuration files:
 
 ```bash
 cp configs/index.json configs/manualData.json configs/helm/files/
-cp configs/.env.example configs/.env # you will need to edit this file with your own secrets after copying
+cp configs/.env.example configs/helm/files/.env # you will need to edit this file with your own secrets after copying
 ```
 
 Optionally you can also include config.json if you would like to override any default config values.
