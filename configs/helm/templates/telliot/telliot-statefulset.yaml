@@ -39,12 +39,14 @@ spec:
         {{- $path := "files" }}
         {{- $file := $.Files.Get (printf "%s/%s" $path ".env") | trimSuffix "\n" }}
         {{- range $line := splitList "\n" $file }}
+        {{- if and (contains "=" $line) (not (hasPrefix "#" $line)) }}
         {{- $kv := splitList "=" $line }}
         - name: {{ first $kv }}
           valueFrom:
             secretKeyRef:
               name: {{ $modeName }}
               key: {{ first $kv }}
+        {{- end }}
         {{- end }}
         {{- end }}
       volumes:
