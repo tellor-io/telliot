@@ -200,23 +200,20 @@ You can also modify these values directly in values.yaml before installation.
 | grafana.ingress.path             | string | `"/"`                                 | Subpath to access grafana                                                                    |
 | grafana.ingress.tls.enabled      | bool   | `false`                               | Enable/Disable TLS for grafana                                                               |
 | grafana.ingress.tls.secret       | string | `"grafana-tls-secret"`                | Name of TLS secret to use for grafana                                                        |
-| grafana.persist                  | bool   | `true`                                | Enable persistance for grafana configuration                                                 |
+| grafana.persist                  | bool   | `true`                                | Enable persistence for grafana configuration                                                 |
 | grafana.service.port             | int    | `80`                                  |                                                                                              |
 | grafana.storage                  | string | `"5Gi"`                               | Grafana persistent storage size                                                              |
 | prometheus.container.image       | string | `"prom/prometheus:v2.24.0"`           | Docker image for prometheus                                                                  |
 | prometheus.container.port        | int    | `9090`                                |                                                                                              |
 | prometheus.enabled               | bool   | `false`                               |                                                                                              |
-| prometheus.persist               | bool   | `true`                                | Enable persistance for prometheus configuration                                              |
+| prometheus.persist               | bool   | `true`                                | Enable persistence for prometheus                                            |
 | prometheus.service.port          | int    | `9090`                                |                                                                                              |
-| prometheus.storage               | int    | `50`                                  | Prometheus storage size in GB                                                                |
-| telliot.uniqueConfiguration      | bool   | `false`                               | Whether to utilize unique configurations for dataServer and mine. <sup>[1](#footnote1)</sup> |
+| prometheus.storage               | int    | `50`                                  |                                                                |
 | telliot.container.image          | string | `"tellor/telliot:master"`             | Docker image for telliot                                                                     |
 | telliot.container.port           | int    | `9090`                                |                                                                                              |
 | telliot.modes                    | string | `"{dataServer,mine}"`                 | Array of commands to spawn separate instances of telliot instances with                      |
 | telliot.service.port             | int    | `9090`                                |                                                                                              |
 | telliot.storage                  | string | `"2Gi"`                               | telliot persistent storage size                                                              |
-
-<a name="footnote1">1</a>: If this value is set to true, you will need to provide configurations for both modes under config/helm/files/mine and config/helm/files/dataServer.
 
 ## Upgrade
 
