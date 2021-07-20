@@ -4,4 +4,4 @@ repos:
     hooks:
       - id: helm-docs
         args:
-          - ./configs/helm/
+          - configs/helm/
