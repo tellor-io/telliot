@@ -6,3 +6,4 @@ repos:
         args:
           # Make the tool search for charts only under the `example-charts` directory
           - --chart-search-root=configs
+          - --output-file ../../docs/helm-values.md

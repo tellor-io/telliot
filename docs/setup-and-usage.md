@@ -189,7 +189,7 @@ helm install $INSTANCE_NAME configs/helm/ \
     --set "telliot.modes={mine}" \
 ```
 
-A full list of values and their description can be found [here](https://github.com/tellor-io/telliot/blob/master/configs/helm/README.md)
+A full list of values and their description can be found [here](https://github.com/tellor-io/telliot/blob/master/docs/helm-values.md)
 
 ## Upgrade
 

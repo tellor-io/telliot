@@ -84,7 +84,7 @@ build:
 
 .PHONY: generate-helm-readme
 generate-helm-readme: 
-	helm-docs configs/helm
+	helm-docs --output-file ../../docs/helm-values.md  --chart-search-root configs 
 
 .PHONY: generate-config-docs
 generate-config-docs: ## Auto generating the cli, config, and env.example documents using a golang script.
