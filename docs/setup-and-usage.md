@@ -134,16 +134,16 @@ cp configs/.env.example configs/helm/files/.env # you will need to edit this fil
 
 Optionally you can also include config.json if you would like to override any default config values.
 
-If you would like to use separate .env or config.json files for the mining and dataServer instances, copy those files under their respective directory in config/helm/files.
-For example to use a unique config.json and .env for mining and dataServer instances run:
+If you would like to use separate .env or config.json files for the mining and dataserver instances, copy those files under their respective directory in config/helm/files.
+For example to use a unique config.json and .env for mining and dataserver instances run:
 
 ```bash
 # Mining instance
 cp configs/config.json configs/helm/files/mine/
 cp configs/.env.example configs/helm/files/mine/.env
-# dataServer instance
-cp configs/config.json configs/helm/files/dataServer/
-cp configs/.env.example configs/helm/files/dataServer/.env
+# dataserver instance
+cp configs/config.json configs/helm/files/dataserver/
+cp configs/.env.example configs/helm/files/dataserver/.env
 ```
 
 ## Usage
@@ -162,7 +162,7 @@ Keep in mind this command is using all default values.
 
 ## Values
 
-The default helm values will install a mining and dataServer instance of telliot. Grafana, Alertmanager, and Prometheus are disabled by default.
+The default helm values will install a mining instance of telliot.
 
 To override these values during installation include `--set $key=$value` in the helm upgrade command.
 
@@ -174,7 +174,7 @@ helm install $INSTANCE_NAME configs/helm/ \
     --namespace tellor --create-namespace \
     --set "telliot.container.image=mytelliot:01" \
     --set "telliot.storage=5Gi" \
-    --set "telliot.modes={dataServer}" \
+    --set "telliot.modes={dataserver}" \
     --set "grafana.enabled=true" \
     --set "alertmanager.enabled=true"
     --set "prometheus.enabled=true"
