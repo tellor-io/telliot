@@ -82,6 +82,9 @@ build:
 	@[ "${GIT_HASH}" ] || ( echo ">> GIT_HASH is not set"; exit 1 )
 	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/telliot
 
+.PHONY: generate-helm-readme
+generate-helm-readme: 
+	helm-docs configs/helm
 
 .PHONY: generate-config-docs
 generate-config-docs: ## Auto generating the cli, config, and env.example documents using a golang script.

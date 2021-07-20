@@ -7,18 +7,17 @@ kind: ConfigMap
 metadata:
   name: {{ $modeName }}
 data:
-{{- if $.Values.telliot.uniqueConfiguration }}
-{{- $path := printf "%s/%s" "files" ($modeName | lower) }}
-{{- else }}
+{{- $modePath := printf "%s/%s" "files" ((get $val "mode")| lower) }}
 {{- $path := "files" }}
-{{- $globdata := $.Files.Glob (printf "%s/%s" $path "config.json") }}
-{{- if $globdata }}
+{{- $modeConfig := $.Files.Glob (printf "%s/%s" $modePath "config.json") }}
+{{- if $modeConfig }}
   config.json: |-
+{{ $.Files.Get (printf "%s/%s" $modePath "config.json") | indent 4 }}
+{{- else }}
 {{ $.Files.Get (printf "%s/%s" $path "config.json") | indent 4 }}
 {{- end }}
   index.json: |-
 {{ $.Files.Get (printf "%s/%s" $path "index.json") | indent 4 }}
   manualData.json: |-
 {{ $.Files.Get (printf "%s/%s" $path "manualData.json") | indent 4 }}
-{{- end }}
 {{- end }}

@@ -1,6 +1,6 @@
 telliot:
   container:
-    # -- Docker image for telliot  
+    # -- Docker image for telliot
     image: tellor/telliot:master
     port: 9090
   service:
@@ -8,10 +8,8 @@ telliot:
   # -- Array of commands to spawn separate instances of telliot instances with
   modes:
     - mine
-  uniqueConfiguration: false
   # -- telliot persistent storage size
   storage: 2Gi
-  storageClassName: manual
 
 grafana:
   enabled: false
@@ -48,19 +46,19 @@ alertmanager:
   service:
     port: 9093
   bot:
-    # -- Whether to enable alertmanager 
+    # -- Whether to enable alertmanager
     enabled: false
     service:
       port: 8080
     container:
-      # -- Docker image for alertmanager 
+      # -- Docker image for alertmanager
       image: metalmatze/alertmanager-bot:0.4.3
       port: 8080
     storage: 1Gi
     telegram:
       # -- Telegram token
       token: Null
-      # -- Telegram admin username 
+      # -- Telegram admin username
       admin: Null
 
 prometheus:
@@ -73,6 +71,5 @@ prometheus:
     port: 9090
     # -- Docker image for prometheus
     image: prom/prometheus:v2.24.0
-  # -- Prometheus storage size in GB 
+  # -- Prometheus storage size in GB
   storage: 50
-  storageClassName: manual

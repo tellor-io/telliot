@@ -134,6 +134,18 @@ cp configs/.env.example configs/helm/files/.env # you will need to edit this fil
 
 Optionally you can also include config.json if you would like to override any default config values.
 
+If you would like to use separate .env or config.json files for the mining and dataServer instances, copy those files under their respective directory in config/helm/files.
+For example to use a unique config.json and .env for mining and dataServer instances run:
+
+```bash
+# Mining instance
+cp configs/config.json configs/helm/files/mine/
+cp configs/.env.example configs/helm/files/mine/.env
+# dataServer instance
+cp configs/config.json configs/helm/files/dataServer/
+cp configs/.env.example configs/helm/files/dataServer/.env
+```
+
 ## Usage
 
 After you have moved your configuration files to config/helm/files, you can install this chart using the following command:
