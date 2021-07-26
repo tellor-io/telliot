@@ -49,7 +49,7 @@ deps: ## Ensures fresh go.mod and go.sum.
 
 .PHONY: generate
 generate: ## Generate all dynamic files.
-generate: generate-bindings generate-config-docs generate-helm-readme
+generate: generate-bindings generate-config-docs generate-helm-docs
 
 .PHONY: generate-check
 generate-check: ## Check that all generated files are up to date. Mainly used in the CI.
