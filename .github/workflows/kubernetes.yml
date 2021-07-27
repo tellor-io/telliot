@@ -1,11 +1,13 @@
 name: Kubernetes
 
 on:
-  workflow_run:
-    workflows: ["Docker"]
-    branches: [master]
-    types:
-      - completed
+  workflow_dispatch
+  # on:
+  # workflow_run:
+  #   workflows: ["Docker"]
+  #   branches: [master]
+  #   types:
+  #     - completed
 
 jobs:
   deploy-on-docker-push:
