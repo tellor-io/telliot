@@ -31,7 +31,7 @@ jobs:
           echo "NODE_URL=${{ secrets.NODE_URL }}" >> configs/helm/files/.env
           echo "ETH_PRIVATE_KEYS=${{ secrets.ETH_PRIVATE_KEYS }}" >> configs/helm/files/.env
           echo "CMC_KEY=${{ secrets.CMC_KEY }}" >> configs/helm/files/.env
-          # echo "VIXEOD_KEY=${{ secrets.VIXEOD_KEY }}" >> configs/helm/files/.env
+          echo "VIXEOD_KEY=${{ secrets.VIXEOD_KEY }}" >> configs/helm/files/.env
           gcloud components install kubectl
           gcloud container clusters get-credentials "${{ secrets.GKE_CLUSTER }}" --zone "${{ secrets.GKE_ZONE }}"
           ls -lah ~/.kube/
