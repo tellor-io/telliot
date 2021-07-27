@@ -82,8 +82,8 @@ build:
 	@[ "${GIT_HASH}" ] || ( echo ">> GIT_HASH is not set"; exit 1 )
 	go build -ldflags "-X main.GitTag=$(GIT_TAG) -X main.GitHash=$(GIT_HASH) -s -w" ./cmd/telliot
 
-.PHONY: generate-helm-readme
-generate-helm-readme: 
+.PHONY: generate-helm-docs
+generate-helm-docs: 
 	helm-docs --output-file ../../docs/helm-values.md  --chart-search-root configs 
 
 .PHONY: generate-config-docs
