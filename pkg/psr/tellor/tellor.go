@@ -171,6 +171,8 @@ func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
 		val, conf, err = self.aggregator.MedianAt("DEFITVL", ts)
 	case 58:
 		val, conf, err = self.aggregator.MeanAt("DEFIMCAP", ts)
+	case 59:
+		val, conf, err = self.aggregator.MedianAt("ETH/JPY", ts)
 	default:
 		return 0, errors.Errorf("undeclared request ID:%v", reqID)
 	}
