@@ -8,6 +8,22 @@ NOTE: As semantic versioning states all 0.y.z releases can contain breaking chan
 
 We use _breaking :warning:_ to mark changes that are not backward compatible \(relates only to v0.y.z releases.\)
 
+## [v5.9.0](https://github.com/tellor-io/telliot/releases/tag/v5.9.0) - 2021.08.04
+
+### Changed
+* [\#479](https://github.com/tellor-io/telliot/pull/479) Update personal consumption expenditures index (PCE) from the [Bureau of Economic Analysis](https://www.bea.gov/news/2021/personal-income-and-outlays-june-2021-and-annual-update).
+* [\#469](https://github.com/tellor-io/telliot/pull/469) Update PCE index.
+
+### Added
+* [\#477](https://github.com/tellor-io/telliot/pull/477) Add support for ETH/JPY data. Add bash script for getting latest telliot release.
+* [\#474](https://github.com/tellor-io/telliot/pull/474) Add polygon addresses.
+* [\#471](https://github.com/tellor-io/telliot/pull/471) Add command to tally votes. Add optional gasPrice argument to all commands.
+
+### Fixed
+* [\#482](https://github.com/tellor-io/telliot/pull/482) Fix ID 28.
+* [\#470](https://github.com/tellor-io/telliot/pull/470) Fix percentage difference function for negative change.
+* [\#466](https://github.com/tellor-io/telliot/pull/466) Fix various access bugs.
+
 ## [v5.8.0](https://github.com/tellor-io/telliot/releases/tag/v5.8.0) - 2021.06.15
 
 ### Changed
