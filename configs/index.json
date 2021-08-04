@@ -638,8 +638,8 @@
     "ZRX/BNB": {
         "endpoints": [
             {
-                "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXBNB&interval=1d&limit=1",
-                "param": "$[0][4]"
+                "URL": "https://api.coingecko.com/api/v3/simple/price?ids=0x&vs_currencies=bnb",
+                "param": "$[\"0x\"][\"bnb\"]"
             }
         ]
     },
@@ -648,6 +648,22 @@
             {
                 "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1",
                 "param": "$[0][4]"
+            }
+        ]
+    },
+    "ETH/JPY": {
+        "endpoints": [
+            {
+                "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=jpy&include_last_updated_at=true",
+                "param": "$.ethereum.jpy"
+            },
+            {
+                "URL": "https://api.bitflyer.com/v1/getticker?product_code=ETH_JPY",
+                "param": "$.ltp"
+            },
+            {
+                "URL": "https://api-pub.bitfinex.com/v2/ticker/tETHJPY",
+                "param": "$[6]"
             }
         ]
     }
