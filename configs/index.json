@@ -638,8 +638,8 @@
     "ZRX/BNB": {
         "endpoints": [
             {
-                "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXBNB&interval=1d&limit=1",
-                "param": "$[0][4]"
+                "URL": "https://api.coingecko.com/api/v3/simple/price?ids=0x&vs_currencies=bnb",
+                "param": "$[\"0x\"][\"bnb\"]"
             }
         ]
     },
