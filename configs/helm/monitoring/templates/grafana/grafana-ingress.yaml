@@ -8,7 +8,6 @@ metadata:
 {{- if ne .Values.grafana.ingress.path "/" }}
     nginx.ingress.kubernetes.io/rewrite-target: /$2
 {{- end }}
-
 spec:
 {{- if .Values.grafana.ingress.tls.enabled }}
   tls:
