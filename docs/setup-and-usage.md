@@ -166,30 +166,39 @@ The default helm values will install a mining instance of telliot.
 
 To override these values during installation include `--set $key=$value` in the helm upgrade command.
 
-For example, to run a dataserver instance of telliot using a custom image with 5Gi of storage and the monitoring/alerting stack:
+For example, to run a dataserver instance of telliot using a custom image with 5Gi of storage:
 
 ```bash
 export INSTANCE_NAME=lat
-helm install $INSTANCE_NAME configs/helm/ \
+helm install $INSTANCE_NAME configs/helm/telliot \
     --namespace tellor --create-namespace \
-    --set "telliot.container.image=mytelliot:01" \
-    --set "telliot.storage=5Gi" \
-    --set "telliot.modes={dataserver}" \
-    --set "grafana.enabled=true" \
-    --set "alertmanager.enabled=true"
-    --set "prometheus.enabled=true"
+    --set "container.image=mytelliot:01" \
+    --set "storage=5Gi" \
+    --set "modes={dataserver}" \
 ```
 
 If I instead only wanted to run a mining instance of telliot:
 
 ```bash
 export INSTANCE_NAME=lat
-helm install $INSTANCE_NAME configs/helm/ \
+helm install $INSTANCE_NAME configs/helm/telliot \
     --namespace tellor --create-namespace \
-    --set "telliot.modes={mine}" \
+    --set "modes={mine}" \
 ```
 
 A full list of values and their description can be found [here](https://github.com/tellor-io/telliot/blob/master/docs/helm-values.md)
+
+## Monitoring
+
+Monitoring is recommended and can be installed using a separate helm chart.
+
+To install monitoring with the default values run:
+
+```bash
+helm install monitoring /configs/helm/monitoring \
+    --namespace tellor
+
+```
 
 ## Upgrade
 
