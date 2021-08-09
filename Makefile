@@ -84,7 +84,8 @@ build:
 
 .PHONY: generate-helm-docs
 generate-helm-docs: 
-	helm-docs --output-file ../../docs/helm-values.md  --chart-search-root configs 
+	helm-docs --output-file ../../../docs/helm-values-telliot.md  --chart-search-root configs/helm/telliot
+	helm-docs --output-file ../../../docs/helm-values-monitoring.md  --chart-search-root configs/helm/monitoring
 
 .PHONY: generate-config-docs
 generate-config-docs: ## Auto generating the cli, config, and env.example documents using a golang script.
