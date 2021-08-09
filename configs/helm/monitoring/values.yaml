@@ -1,6 +1,6 @@
 grafana:
   enabled: true
-  # -- Enable persistance for grafana configuration
+  # -- Enable persistence for grafana configuration
   persist: true
   serveFromSubPath: false
   service:
@@ -50,7 +50,7 @@ alertmanager:
 
 prometheus:
   enabled: true
-  # -- Enable persistance for prometheus data
+  # -- Enable persistence for prometheus data
   persist: true
   service:
     port: 9090

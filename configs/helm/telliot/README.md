@@ -27,14 +27,14 @@ A Helm chart for Kubernetes
 | grafana.ingress.path | string | `"/"` | Subpath to access grafana |
 | grafana.ingress.tls.enabled | bool | `false` | Enable/Disable TLS for grafana |
 | grafana.ingress.tls.secret | string | `"grafana-tls-secret"` | Name of TLS secret to use for grafana |
-| grafana.persist | bool | `true` | Enable persistance for grafana configuration |
+| grafana.persist | bool | `true` | Enable persistence for grafana configuration |
 | grafana.serveFromSubPath | bool | `false` |  |
 | grafana.service.port | int | `80` |  |
 | grafana.storage | string | `"5Gi"` | Grafana persistent storage size |
 | prometheus.container.image | string | `"prom/prometheus:v2.24.0"` | Docker image for prometheus |
 | prometheus.container.port | int | `9090` |  |
 | prometheus.enabled | bool | `false` |  |
-| prometheus.persist | bool | `true` | Enable persistance for prometheus data |
+| prometheus.persist | bool | `true` | Enable persistence for prometheus data |
 | prometheus.service.port | int | `9090` |  |
 | prometheus.storage | int | `50` | Prometheus storage size in GB  |
 | prometheus.storageClassName | string | `"manual"` |  |
