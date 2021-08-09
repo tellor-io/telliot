@@ -186,7 +186,7 @@ helm install $INSTANCE_NAME configs/helm/telliot \
     --set "modes={mine}" \
 ```
 
-A full list of values and their description can be found [here](https://github.com/tellor-io/telliot/blob/master/docs/helm-values.md)
+A full list of values and their description can be found [here](https://github.com/tellor-io/telliot/blob/master/docs/helm-values-telliot.md)
 
 ## Monitoring
 
@@ -199,6 +199,8 @@ helm install monitoring /configs/helm/monitoring \
     --namespace tellor
 
 ```
+
+A full list of values and their description can be found [here](https://github.com/tellor-io/telliot/blob/master/docs/helm-values-monitoring.md)
 
 ## Upgrade
 
