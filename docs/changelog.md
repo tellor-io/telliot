@@ -9,6 +9,7 @@ NOTE: As semantic versioning states all 0.y.z releases can contain breaking chan
 We use _breaking :warning:_ to mark changes that are not backward compatible \(relates only to v0.y.z releases.\)
 
 ## [v6.0.0](https://github.com/tellor-io/telliot/releases/tag/v6.0.0) - 2021.08.18
+
 ### Changed
 * [\#465](https://github.com/tellor-io/telliot/pull/465) Update DATA ID to use VWAP api endpoints directly and no local aggregation.
 
