@@ -11,7 +11,7 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ## [v6.0.0](https://github.com/tellor-io/telliot/releases/tag/v6.0.0) - 2021.08.18
 
 ### Changed
-* [\#465](https://github.com/tellor-io/telliot/pull/465) Update DATA ID to use VWAP api endpoints directly and no local aggregation.
+* [\#465](https://github.com/tellor-io/telliot/pull/465) Update data ID 10 (Ampleforth) to use VWAP api endpoints directly and no local aggregation.
 
 ### Added
 
