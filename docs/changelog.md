@@ -11,12 +11,12 @@ We use _breaking :warning:_ to mark changes that are not backward compatible \(r
 ## [v6.0.0](https://github.com/tellor-io/telliot/releases/tag/v6.0.0) - 2021.08.18
 
 ### Changed
-* [\#465](https://github.com/tellor-io/telliot/pull/465) Update DATA ID to use VWAP api endpoints directly and no local aggregation.
+* [\#465](https://github.com/tellor-io/telliot/pull/465) Update data ID 10 (AMPL/USD) to use VWAP api endpoints directly and no local aggregation.
 
 ### Added
 
 ### Fixed
-* [\#484](https://github.com/tellor-io/telliot/pull/484) Switch "now" and "end of day" url params.
+* [\#484](https://github.com/tellor-io/telliot/pull/484) Switch "now" and "end of day" for ID 10 (AMPL/USD) url params.
 
 ## [v5.9.0](https://github.com/tellor-io/telliot/releases/tag/v5.9.0) - 2021.08.04
 
