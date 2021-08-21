@@ -104,8 +104,12 @@
                 "param": "$.content[0][vwap]"
             },
             {
-                "URL": "https://api.anyblock.tools/market/AMPL_USD_via_ALL/daily-volume?roundDay=false&debug=false&access_token=$ANYBLOCK_KEY&start=$BOD&end=$EOD",
+                "URL": "https://api.anyblock.tools/market/AMPL_USD_via_ALL/daily-volume?roundDay=false&debug=false&access_token=$ANYBLOCK_KEY&start=$BOD_MILLISECONDS&end=$EOD_MILLISECONDS",
                 "param": "$.overallVWAP"
+            },
+            {
+                "URL": "https://min-api.cryptocompare.com/data/dayAvg?fsym=AMPL&tsym=USD&toTs=$EOD_SECONDS&api_key=$CC_KEY",
+                "param": "$.USD"
             }
         ]
     },
