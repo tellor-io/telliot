@@ -121,8 +121,9 @@ func createDataSources(ctx context.Context, cfg Config, client *ethclient.Client
 		for _, endpoint := range api.Endpoints {
 			var err error
 
-			endpoint.URL = web.ExpandTimeVars(endpoint.URL)
-			endpoint.URL = os.Expand(endpoint.URL, func(key string) string {
+			// Fail early when api url is missing env var.
+			url := web.ExpandTimeVars(endpoint.URL)
+			endpoint.URL = os.Expand(url, func(key string) string {
 				if os.Getenv(key) == "" {
 					err = errors.Errorf("missing required env variable in index url:%v", key)
 				}
@@ -384,6 +385,7 @@ func NewJSONapiVolume(interval time.Duration, url string, parser Parser) *JSONap
 	return &JSONapiVolume{
 		JSONapi: &JSONapi{
 			url:      url,
+			urlRaw:   url,
 			interval: interval,
 			Parser:   parser,
 		},
@@ -397,7 +399,7 @@ type JSONapiVolume struct {
 
 func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
 	var err error
-	self.url = web.ExpandTimeVars(self.url)
+	self.url = web.ExpandTimeVars(self.urlRaw)
 	self.url = os.Expand(self.url, func(key string) string {
 		if os.Getenv(key) == "" {
 			err = errors.Errorf("missing required env variable in index url:%v", key)
@@ -429,6 +431,7 @@ func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
 func NewJSONapi(interval time.Duration, url string, parser Parser) *JSONapi {
 	return &JSONapi{
 		url:      url,
+		urlRaw:   url,
 		interval: interval,
 		Parser:   parser,
 	}
@@ -468,7 +471,7 @@ type Bravenewcoin struct {
 
 func (self *Bravenewcoin) Get(ctx context.Context) (float64, error) {
 	var err error
-	self.url = web.ExpandTimeVars(self.url)
+	self.url = web.ExpandTimeVars(self.urlRaw)
 	self.url = os.Expand(self.url, func(key string) string {
 		if os.Getenv(key) == "" {
 			err = errors.Errorf("missing required env variable in index url:%v", key)
@@ -551,13 +554,14 @@ func getBearer(apiKey string) (string, error) {
 
 type JSONapi struct {
 	url      string
+	urlRaw   string
 	interval time.Duration
 	Parser
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, error) {
 	var err error
-	self.url = web.ExpandTimeVars(self.url)
+	self.url = web.ExpandTimeVars(self.urlRaw)
 	self.url = os.Expand(self.url, func(key string) string {
 		if os.Getenv(key) == "" {
 			err = errors.Errorf("missing required env variable in index url:%v", key)
