@@ -396,6 +396,17 @@ type JSONapiVolume struct {
 }
 
 func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
+	var err error
+	self.url = web.ExpandTimeVars(self.url)
+	self.url = os.Expand(self.url, func(key string) string {
+		if os.Getenv(key) == "" {
+			err = errors.Errorf("missing required env variable in index url:%v", key)
+		}
+		return os.Getenv(key)
+	})
+	if err != nil {
+		return 0, err
+	}
 	vals, err := web.Get(ctx, self.url, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
@@ -456,6 +467,17 @@ type Bravenewcoin struct {
 }
 
 func (self *Bravenewcoin) Get(ctx context.Context) (float64, error) {
+	var err error
+	self.url = web.ExpandTimeVars(self.url)
+	self.url = os.Expand(self.url, func(key string) string {
+		if os.Getenv(key) == "" {
+			err = errors.Errorf("missing required env variable in index url:%v", key)
+		}
+		return os.Getenv(key)
+	})
+	if err != nil {
+		return 0, err
+	}
 
 	headers := make(map[string]string)
 
@@ -534,6 +556,17 @@ type JSONapi struct {
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, error) {
+	var err error
+	self.url = web.ExpandTimeVars(self.url)
+	self.url = os.Expand(self.url, func(key string) string {
+		if os.Getenv(key) == "" {
+			err = errors.Errorf("missing required env variable in index url:%v", key)
+		}
+		return os.Getenv(key)
+	})
+	if err != nil {
+		return 0, err
+	}
 	vals, err := web.Get(ctx, self.url, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
