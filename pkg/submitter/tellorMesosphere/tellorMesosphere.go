@@ -1,7 +1,7 @@
 // Copyright (c) The Tellor Authors.
 // Licensed under the MIT License.
 
-package tellorAccess
+package tellorMesosphere
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -20,19 +21,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
-	psr "github.com/tellor-io/telliot/pkg/psr/tellorAccess"
+	mathU "github.com/tellor-io/telliot/pkg/math"
+	psr "github.com/tellor-io/telliot/pkg/psr/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/transactor"
 )
 
 const (
-	ComponentName             = "submitterTellorAccess"
-	percentageChangeThreshold = 0.1 // 0.1%.
+	ComponentName = "submitterTellorMesosphere"
 )
 
 type Config struct {
-	Enabled  bool
-	LogLevel string
+	Enabled              bool
+	LogLevel             string
+	MinSubmitPeriod      format.Duration `help:"The time limit between each submit for a staked miner."`
+	MinSubmitPriceChange float64         `help:" Submit only if that price changed at least that much percent."`
 }
 
 /**
@@ -47,8 +51,8 @@ type Submitter struct {
 	logger          log.Logger
 	cfg             Config
 	account         *ethereum.Account
-	client          contracts.ETHClient
-	contract        *contracts.ITellorAccess
+	client          *ethclient.Client
+	contract        *contracts.ITellorMesosphere
 	transactor      transactor.Transactor
 	submitCount     prometheus.Counter
 	submitFailCount prometheus.Counter
@@ -63,8 +67,8 @@ func New(
 	ctx context.Context,
 	logger log.Logger,
 	cfg Config,
-	client contracts.ETHClient,
-	contract *contracts.ITellorAccess,
+	client *ethclient.Client,
+	contract *contracts.ITellorMesosphere,
 	account *ethereum.Account,
 	transactor transactor.Transactor,
 	psr *psr.Psr,
@@ -126,11 +130,11 @@ func (self *Submitter) Start() error {
 	for _, reqID := range self.reqIDs {
 		exists, val, ts, err := self.contract.GetCurrentValue(&bind.CallOpts{Context: self.ctx}, big.NewInt(1))
 		if err != nil {
-			level.Error(self.logger).Log("msg", "retrieve current value", "reqID", reqID, "err", err)
+			level.Error(self.logger).Log("msg", "retrieve current value while checking for last submit", "reqID", reqID, "err", err)
 			break
 		}
 		if !exists {
-			level.Error(self.logger).Log("msg", "current value doesn't exist", "reqID", reqID, "err", err)
+			level.Error(self.logger).Log("msg", "current value doesn't exist for checking for last submit", "reqID", reqID)
 			break
 		}
 		self.lastSubmitValue[reqID] = float64(val.Int64())
@@ -149,7 +153,7 @@ func (self *Submitter) Start() error {
 		}
 	}
 
-	ticker := time.NewTicker(2 * time.Minute)
+	ticker := time.NewTicker(self.cfg.MinSubmitPeriod.Duration)
 	defer ticker.Stop()
 	for {
 		select {
@@ -177,7 +181,7 @@ func (self *Submitter) Submit(reqID int64) error {
 		return errors.Wrap(err, "checking reporter status")
 	}
 	if !isReporter {
-		return errors.Wrap(err, "addr not a reporter")
+		return errors.New("addr not a reporter")
 	}
 
 	val, err := self.psr.GetValue(reqID, time.Now())
@@ -185,7 +189,7 @@ func (self *Submitter) Submit(reqID int64) error {
 		return errors.Wrap(err, "getting the value from the aggregator")
 	}
 
-	if !self.shouldSubmit(reqID, val) {
+	if !self.shouldSubmit(reqID, float64(val)) {
 		return nil
 	}
 	level.Info(self.logger).Log(
@@ -236,18 +240,18 @@ func (self *Submitter) Submit(reqID int64) error {
 	return nil
 }
 
-func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
+func (self *Submitter) shouldSubmit(reqID int64, newVal float64) bool {
 	logger := log.With(self.logger, "msg", "should submit check passed", "reqID", reqID)
 
 	if self.lastSubmitTime[reqID].IsZero() {
-		level.Debug(logger).Log(
+		level.Info(logger).Log(
 			"reason", "first submit",
 		)
 		return true
 	}
 
 	if lastSubmitTime, ok := self.lastSubmitTime[reqID]; ok && time.Since(lastSubmitTime) > (5*time.Minute) {
-		level.Debug(logger).Log(
+		level.Info(logger).Log(
 			"reason", "more then 5 minutes since last submit",
 			"timePassed", time.Since(lastSubmitTime),
 		)
@@ -259,12 +263,12 @@ func (self *Submitter) shouldSubmit(reqID int64, newVal int64) bool {
 		level.Error(self.logger).Log("msg", "last value check - no record for last value")
 	}
 
-	percentageChange := math.Abs((lastSubmitValue-float64(newVal))/lastSubmitValue) * 100
-	if percentageChange > percentageChangeThreshold {
-		level.Debug(logger).Log(
+	PercentageDiff := math.Abs(mathU.PercentageDiff(lastSubmitValue, newVal))
+	if PercentageDiff > self.cfg.MinSubmitPriceChange {
+		level.Info(logger).Log(
 			"reason", "value change more then threshold",
-			"percentageChange", percentageChange,
-			"percentageThresohld", percentageChangeThreshold,
+			"PercentageDiff", PercentageDiff,
+			"percentageThresohld", self.cfg.MinSubmitPriceChange,
 			"lastSubmitValue", lastSubmitValue,
 			"newValue", newVal,
 		)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -50,7 +51,7 @@ type MiningMgr struct {
 	ctx              context.Context
 	close            context.CancelFunc
 	logger           log.Logger
-	ethClient        contracts.ETHClient
+	ethClient        *ethclient.Client
 	group            *MiningGroup
 	taskerCh         chan *Work
 	submitterCh      chan *Result
@@ -67,7 +68,7 @@ func NewMiningManager(
 	contractInstance *contracts.ITellor,
 	taskerCh chan *Work,
 	submitterCh chan *Result,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 ) (*MiningMgr, error) {
 
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)

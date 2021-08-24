@@ -4,15 +4,19 @@ description: Here are the nuts and bolts for using the CLI
 
 # Setup and usage
 
-## Get the CLI
-
-The CLI support only linux and is provided as a pre-built binary with every release and also as a docker image.
+The CLI supports only linux and is provided as a pre-built binary with every release and also as a docker image.
 
 [Github releases](https://github.com/tellor-io/telliot/releases)
 
 [https://hub.docker.com/u/tellor](https://hub.docker.com/u/tellor)
 
-## Config files.
+## Get the telliot CLI and set up default configs.
+
+```
+wget https://raw.githubusercontent.com/tellor-io/telliot/master/get-telliot.sh && source get-telliot.sh
+```
+
+## Edit config files.
  - `.env` - keeps private information(private keys, api keys etc.). Most commands require some secrets and these are kept in this file as a precaution against accidental exposure. For a working setup it is required to at least add one private key in your `"ETH_PRIVATE_KEYS"` environment variable. Multiple private keys are supported separated by `,`.
  - `index.json` - all api endpoint for data providers. The cli uses these provider endpoints to gather data which is then used to submit to the onchain oracle.
  - `manualdata.json` - for providing data manually. There is currently one data point which must be manually created. The rolling 3 month average of the US PCE . It is updated monthly. _Make sure to keep this file up to date._
@@ -28,20 +32,6 @@ The following example shows request ID 4, inputting a value of 9000 with 6 digit
 
 
 > by default the cli looks for these in the `./configs` folder relative to the cli folder.
-
-### Here is a quick reference how to run the cli with the default configs.
-
-```
-mkdir ./configs
-cd ./configs
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/index.json
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/manualData.json
-wget https://raw.githubusercontent.com/tellor-io/telliot/master/configs/env.example
-mv env.example .env
-cd ../
-wget https://github.com/tellor-io/telliot/releases/latest/download/telliot
-chmod +x telliot
-```
 
 ## Deposit or withdraw a stake
 
@@ -78,7 +68,7 @@ The same instance can be used with multiple private keys in the `.env` file sepa
 Telliot supports submiting data to different contracts and the config folder contains examples for that.
 For example:
 ```bash
-./telliot mine --config=configs/configTellorAccess.json
+./telliot mine --config=configs/configTellorMesosphere.json
 ```
 
 ## DataServer - a shared data API feeds.

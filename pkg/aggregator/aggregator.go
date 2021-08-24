@@ -101,14 +101,14 @@ func (self *Aggregator) ManualValue(oracleName string, reqID int64, ts time.Time
 }
 
 func (self *Aggregator) MedianAt(symbol string, at time.Time) (float64, float64, error) {
-	values, confidence, err := self.valuesAtWithConfidence(symbol, at)
+	vals, confidence, err := self.valsAtWithConfidence(symbol, at)
 	if err != nil {
 		return 0, 0, err
 	}
-	if len(values) == 0 {
-		return 0, 0, errors.Errorf("no values at:%v", at)
+	if len(vals) == 0 {
+		return 0, 0, errors.Errorf("no vals at:%v", at)
 	}
-	median, confidenceM := self.median(values)
+	median, confidenceM := self.median(vals)
 	if confidenceM < confidence {
 		confidence = confidenceM
 	}
@@ -123,11 +123,11 @@ func (self *Aggregator) MedianAtEOD(symbol string, at time.Time) (float64, float
 }
 
 func (self *Aggregator) MeanAt(symbol string, at time.Time) (float64, float64, error) {
-	values, confidence, err := self.valuesAtWithConfidence(symbol, at)
+	vals, confidence, err := self.valsAtWithConfidence(symbol, at)
 	if err != nil {
 		return 0, 0, err
 	}
-	price, confidenceM := self.mean(values)
+	price, confidenceM := self.mean(vals)
 	if confidenceM < confidence {
 		confidence = confidenceM
 	}
@@ -135,6 +135,10 @@ func (self *Aggregator) MeanAt(symbol string, at time.Time) (float64, float64, e
 }
 
 func (self *Aggregator) mean(vals []float64) (float64, float64) {
+	if len(vals) == 1 {
+		return vals[0], 100
+	}
+
 	priceSum := 0.0
 	min, max := vals[0], vals[0]
 	for _, val := range vals {
@@ -186,7 +190,7 @@ func (self *Aggregator) TimeWeightedAvg(
 		return 0, 0, errors.Wrapf(_result.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(_result.Value.(promql.Vector)) == 0 {
-		return 0, 0, errors.Errorf("no result for TWAP values query:%v", query.Statement())
+		return 0, 0, errors.Errorf("no result for TWAP vals query:%v", query.Statement())
 	}
 
 	result := _result.Value.(promql.Vector)[0].V
@@ -231,7 +235,7 @@ func (self *Aggregator) TimeWeightedAvg(
 // Example for 1h.
 // avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/30s)).
 //
-// Values are calculated using the official VWAP formula from
+// vals are calculated using the official VWAP formula from
 // https://tradingtuitions.com/vwap-trading-strategy-excel-sheet/
 func (self *Aggregator) VolumWeightedAvg(
 	symbol string,
@@ -279,7 +283,7 @@ func (self *Aggregator) VolumWeightedAvg(
 	}
 	result := _result.Value.(promql.Vector)
 	if len(result) == 0 {
-		return 0, 0, errors.Errorf("no result for VWAP values query:%v", qStmt)
+		return 0, 0, errors.Errorf("no result for VWAP vals query:%v", qStmt)
 	}
 
 	// Confidence level for prices.
@@ -339,13 +343,24 @@ func (self *Aggregator) VolumWeightedAvg(
 	return result[len(result)-1].V, confidence * 100, nil
 }
 
-func (self *Aggregator) median(values []float64) (float64, float64) {
-	sort.Slice(values, func(i, j int) bool {
-		return values[i] < values[j]
+func (self *Aggregator) median(vals []float64) (float64, float64) {
+	if len(vals) == 1 {
+		return vals[0], 100
+	}
+	sort.Slice(vals, func(i, j int) bool {
+		return vals[i] < vals[j]
 	})
-	price := values[len(values)/2]
 
-	return price, confidenceInDifference(values[0], values[len(values)-1])
+	position := len(vals) / 2
+	price := vals[position]
+
+	// When number of vals is even need to use the mean
+	// of the 2 middle vals.
+	if len(vals)%2 == 0 {
+		price = (vals[position-1] + vals[position]) / 2
+	}
+
+	return price, confidenceInDifference(vals[0], vals[len(vals)-1])
 }
 
 // confidenceInDifference calculates the percentage difference between the max and min and subtract this from 100%.
@@ -356,7 +371,7 @@ func confidenceInDifference(min, max float64) float64 {
 	return 100 - (math.Abs(min-max)/min)*100
 }
 
-// valuesAtWithConfidence returns the value from all sources for a given symbol with the confidence level.
+// valsAtWithConfidence returns the value from all sources for a given symbol with the confidence level.
 // 100% confidence is when all apis have returned a value within the last tracker interval.
 // For every missing value the calculation subtracts some confidence level.
 // Confidence is calculated actualDataPointCount/maxDataPointCount.
@@ -364,14 +379,14 @@ func confidenceInDifference(min, max float64) float64 {
 //
 // Example confidence for 1h.
 // avg(count_over_time(indexTracker_value{symbol="AMPL_USD"}[1h]) / (3.6e+12/30s)).
-func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]float64, float64, error) {
+func (self *Aggregator) valsAtWithConfidence(symbol string, at time.Time) ([]float64, float64, error) {
 	resolution, err := self.resolution(symbol, at)
 	if err != nil {
 		return nil, 0, err
 	}
 	lookBack := time.Duration(resolution + 1e+9) // 1 sec more then the pull interval to make sure the tracker has added a value. Interval is in nanosecond granularity.
 	var prices []float64
-	pricesVector, err := self.valuesAt(symbol, at, lookBack)
+	pricesVector, err := self.valsAt(symbol, at, lookBack)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -399,14 +414,14 @@ func (self *Aggregator) valuesAtWithConfidence(symbol string, at time.Time) ([]f
 		return nil, 0, errors.Wrapf(confidence.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(confidence.Value.(promql.Vector)) == 0 {
-		return nil, 0, errors.Errorf("no values for confidence at:%v, query:%v", at, query.Statement())
+		return nil, 0, errors.Errorf("no vals for confidence at:%v, query:%v", at, query.Statement())
 	}
 
 	return prices, confidence.Value.(promql.Vector)[0].V * 100, nil
 }
 
-// valuesAt returns all values from all indexes at a given time.
-func (self *Aggregator) valuesAt(symbol string, at time.Time, lookBack time.Duration) (promql.Vector, error) {
+// valsAt returns all vals from all indexes at a given time.
+func (self *Aggregator) valsAt(symbol string, at time.Time, lookBack time.Duration) (promql.Vector, error) {
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
 		`last_over_time( `+index.ValueMetricName+`{symbol="`+format.SanitizeMetricName(symbol)+`"} [`+lookBack.String()+`])`,
@@ -439,7 +454,7 @@ func (self *Aggregator) resolution(symbol string, at time.Time) (time.Duration, 
 		return 0, errors.Wrapf(_trackerInterval.Err, "error evaluating query:%v", query.Statement())
 	}
 	if len(_trackerInterval.Value.(promql.Vector)) == 0 {
-		return 0, errors.Errorf("no values for tracker interval at:%v, query:%v", at, query.Statement())
+		return 0, errors.Errorf("no vals for tracker interval at:%v, query:%v", at, query.Statement())
 	}
 
 	return time.Duration(_trackerInterval.Value.(promql.Vector)[0].V), nil

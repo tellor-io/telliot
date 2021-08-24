@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -20,6 +21,7 @@ import (
 	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
 	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/math"
 	psrTellor "github.com/tellor-io/telliot/pkg/psr/tellor"
 )
 
@@ -37,7 +39,7 @@ type Dispute struct {
 	close         context.CancelFunc
 	cfg           Config
 	tsDB          *tsdb.DB
-	client        contracts.ETHClient
+	client        *ethclient.Client
 	contract      *contracts.ITellor
 	pendingAppend map[string]context.CancelFunc
 	mtx           sync.Mutex
@@ -49,7 +51,7 @@ func New(
 	ctx context.Context,
 	cfg Config,
 	tsDB *tsdb.DB,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contract *contracts.ITellor,
 	psrTellor *psrTellor.Psr,
 ) (*Dispute, error) {
@@ -237,7 +239,7 @@ func (self *Dispute) addValTellor(event *tellor.TellorNonceSubmitted) (err error
 			"miner", event.Miner.String(),
 			"oracleValue", valAct,
 			"psrValue", valExp,
-			"difference", ((float64(valExp)-float64(valAct.Int64()))/float64(valExp))*100,
+			"difference", math.PercentageDiff(float64(valAct.Int64()), float64(valExp)),
 		)
 	}
 	return nil

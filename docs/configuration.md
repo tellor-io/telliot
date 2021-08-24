@@ -31,19 +31,20 @@ Flags:
 * `approve`
 
 ```
-Usage: telliot approve <address> <amount> [<account>]
+Usage: telliot approve --from=STRING --to=STRING <amount>
 
 Approve tokens
 
 Arguments:
-  <address>
   <amount>
-  [<account>]
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
+      --from=STRING
+      --to=STRING
 
 ```
 
@@ -89,26 +90,29 @@ Flags:
   -h, --help    Show context-sensitive help.
 
 Commands:
-  dispute new [<account>]
+  dispute new <addr> <request-id> <timestamp> <miner-index>
     start a new dispute
 
-  dispute vote [<account>]
+  dispute vote <addr> <dispute-id> <support>
     vote on a open dispute
 
-  dispute list [<account>]
+  dispute list <addr>
     list open disputes
+
+  dispute tally <dispute-id>
+    tally votes for a dispute ID
 
 ```
 
 * `dispute list`
 
 ```
-Usage: telliot dispute list [<account>]
+Usage: telliot dispute list <addr>
 
 list open disputes
 
 Arguments:
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
@@ -120,34 +124,59 @@ Flags:
 * `dispute new`
 
 ```
-Usage: telliot dispute new [<account>]
+Usage: telliot dispute new <addr> <request-id> <timestamp> <miner-index>
 
 start a new dispute
 
 Arguments:
-  [<account>]
+  <addr>
+  <request-id>     the request id to dispute it
+  <timestamp>      the submitted timestamp to dispute
+  <miner-index>    the miner index to dispute
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
+
+```
+
+* `dispute tally`
+
+```
+Usage: telliot dispute tally <dispute-id>
+
+tally votes for a dispute ID
+
+Arguments:
+  <dispute-id>    the dispute id
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
 * `dispute vote`
 
 ```
-Usage: telliot dispute vote [<account>]
+Usage: telliot dispute vote <addr> <dispute-id> <support>
 
 vote on a open dispute
 
 Arguments:
-  [<account>]
+  <addr>
+  <dispute-id>    the dispute id
+  <support>       true or false
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
@@ -176,16 +205,16 @@ Flags:
   -h, --help    Show context-sensitive help.
 
 Commands:
-  stake deposit [<account>]
+  stake deposit <addr>
     deposit a stake
 
-  stake request [<account>]
+  stake request <addr>
     request to withdraw stake
 
-  stake withdraw <address> [<account>]
+  stake withdraw <addr>
     withdraw stake
 
-  stake status [<account>]
+  stake status <addr>
     show stake status
 
 ```
@@ -193,46 +222,48 @@ Commands:
 * `stake deposit`
 
 ```
-Usage: telliot stake deposit [<account>]
+Usage: telliot stake deposit <addr>
 
 deposit a stake
 
 Arguments:
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
 * `stake request`
 
 ```
-Usage: telliot stake request [<account>]
+Usage: telliot stake request <addr>
 
 request to withdraw stake
 
 Arguments:
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
 * `stake status`
 
 ```
-Usage: telliot stake status [<account>]
+Usage: telliot stake status <addr>
 
 show stake status
 
 Arguments:
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
@@ -244,37 +275,38 @@ Flags:
 * `stake withdraw`
 
 ```
-Usage: telliot stake withdraw <address> [<account>]
+Usage: telliot stake withdraw <addr>
 
 withdraw stake
 
 Arguments:
-  <address>
-  [<account>]
+  <addr>
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
 
 ```
 
 * `transfer`
 
 ```
-Usage: telliot transfer <address> <amount> [<account>]
+Usage: telliot transfer --from=STRING --to=STRING <amount>
 
 Transfer tokens
 
 Arguments:
-  <address>
   <amount>
-  [<account>]
 
 Flags:
   -h, --help                  Show context-sensitive help.
 
       --config=CONFIG-PATH    path to config file
+      --gas-price=INT         gas price to use when running the command
+      --from=STRING
+      --to=STRING
 
 ```
 
@@ -302,74 +334,79 @@ Flags:
 ```json
 {
 	"Aggregator": {
-		"LogLevel": "(Required: false)  - Default: info",
-		"ManualDataFile": "(Required: false)  - Default: configs/manualData.json"
+		"LogLevel": "Required:false, Default:info",
+		"ManualDataFile": "Required:false, Default:configs/manualData.json"
 	},
 	"Db": {
-		"LogLevel": "(Required: false)  - Default: info",
-		"Path": "(Required: false)  - Default: db",
-		"RemoteHost": "(Required: false)  - Default: ",
-		"RemotePort": "(Required: false)  - Default: 0",
+		"LogLevel": "Required:false, Default:info",
+		"Path": "Required:false, Default:db",
+		"RemoteHost": "Required:false, Default:",
+		"RemotePort": "Required:false, Default:0",
 		"RemoteTimeout": {
-			"Duration": "(Required: false)  - Default: 5s"
+			"Duration": "Required:false, Default:5s"
 		}
 	},
 	"DisputeTracker": {
-		"LogLevel": "(Required: false)  - Default: info"
+		"LogLevel": "Required:false, Default:info"
 	},
-	"Ethereum": {
-		"LogLevel": "(Required: false)  - Default: info",
-		"Timeout": "(Required: false)  - Default: 3000"
-	},
-	"IndexTracker": {
-		"IndexFile": "(Required: false)  - Default: configs/index.json",
-		"Interval": {
-			"Duration": "(Required: false)  - Default: 30s"
-		},
-		"LogLevel": "(Required: false)  - Default: info"
-	},
-	"Mining": {
-		"Heartbeat": "(Required: false)  - Default: 1m0s",
-		"LogLevel": "(Required: false)  - Default: info"
-	},
-	"ProfitTracker": {
-		"LogLevel": "(Required: false)  - Default: info"
-	},
-	"PsrTellor": {
-		"MinConfidence": "(Required: false)  - Default: 70"
-	},
-	"PsrTellorAccess": {
-		"MinConfidence": "(Required: false)  - Default: 0"
-	},
-	"SubmitterTellor": {
-		"Enabled": "(Required: false)  - Default: true",
-		"LogLevel": "(Required: false)  - Default: info",
-		"MinSubmitPeriod": {
-			"Duration": "(Required: false)  - Default: 15m1s"
-		},
-		"ProfitThreshold": "(Required: false)  - Default: 0"
-	},
-	"SubmitterTellorAccess": {
-		"Enabled": "(Required: false)  - Default: false",
-		"LogLevel": "(Required: false)  - Default: info"
-	},
-	"Tasker": {
-		"LogLevel": "(Required: false)  - Default: info"
-	},
-	"Transactor": {
-		"GasMax": "(Required: false)  - Default: 10",
-		"GasMultiplier": "(Required: false)  - Default: 1",
-		"LogLevel": "(Required: false)  - Default: info"
-	},
-	"Web": {
-		"ListenHost": "(Required: false)  - Default: ",
-		"ListenPort": "(Required: false)  - Default: 9090",
-		"LogLevel": "(Required: false)  - Default: info",
-		"ReadTimeout": {
-			"Duration": "(Required: false)  - Default: 0s"
+	"GasStation": {
+		"TimeWait": {
+			"Duration": "Required:false, Default:1m0s"
 		}
 	},
-	"envFile": "(Required: false)  - Default: configs/.env"
+	"IndexTracker": {
+		"IndexFile": "Required:false, Default:configs/index.json",
+		"Interval": {
+			"Duration": "Required:false, Default:30s"
+		},
+		"LogLevel": "Required:false, Default:info"
+	},
+	"Mining": {
+		"Heartbeat": "Required:false, Default:1m0s",
+		"LogLevel": "Required:false, Default:info"
+	},
+	"ProfitTracker": {
+		"LogLevel": "Required:false, Default:info"
+	},
+	"PsrTellor": {
+		"MinConfidence": "Required:false, Default:70"
+	},
+	"PsrTellorMesosphere": {
+		"MinConfidence": "Required:false, Default:0"
+	},
+	"SubmitterTellor": {
+		"Enabled": "Required:false, Default:true",
+		"LogLevel": "Required:false, Default:info",
+		"MinSubmitPeriod": {
+			"Duration": "Required:false, Default:15m1s"
+		},
+		"ProfitThreshold": "Required:false, Default:0, Description:Minimum percent of profit when submitting a solution. For example if the tx cost is 0.01 ETH and current reward is 0.02 ETH a ProfitThreshold of 200% or more will wait until the reward is increased or the gas cost is lowered a ProfitThreshold of 199% or less will submit."
+	},
+	"SubmitterTellorMesosphere": {
+		"Enabled": "Required:false, Default:false",
+		"LogLevel": "Required:false, Default:info",
+		"MinSubmitPeriod": {
+			"Duration": "Required:false, Default:15s"
+		},
+		"MinSubmitPriceChange": "Required:false, Default:0.05, Description: Submit only if that price changed at least that much percent."
+	},
+	"Tasker": {
+		"LogLevel": "Required:false, Default:info"
+	},
+	"Transactor": {
+		"GasMax": "Required:false, Default:10",
+		"GasMultiplier": "Required:false, Default:1",
+		"LogLevel": "Required:false, Default:info"
+	},
+	"Web": {
+		"ListenHost": "Required:false, Default:",
+		"ListenPort": "Required:false, Default:9090",
+		"LogLevel": "Required:false, Default:info",
+		"ReadTimeout": {
+			"Duration": "Required:false, Default:0s"
+		}
+	},
+	"envFile": "Required:false, Default:configs/.env"
 }
 ```
 Here are the config defaults in json format:
@@ -389,9 +426,8 @@ Here are the config defaults in json format:
 	"DisputeTracker": {
 		"LogLevel": "info"
 	},
-	"Ethereum": {
-		"LogLevel": "info",
-		"Timeout": 3000
+	"GasStation": {
+		"TimeWait": "1m0s"
 	},
 	"IndexTracker": {
 		"IndexFile": "configs/index.json",
@@ -408,7 +444,7 @@ Here are the config defaults in json format:
 	"PsrTellor": {
 		"MinConfidence": 70
 	},
-	"PsrTellorAccess": {
+	"PsrTellorMesosphere": {
 		"MinConfidence": 0
 	},
 	"SubmitterTellor": {
@@ -417,9 +453,11 @@ Here are the config defaults in json format:
 		"MinSubmitPeriod": "15m1s",
 		"ProfitThreshold": 0
 	},
-	"SubmitterTellorAccess": {
+	"SubmitterTellorMesosphere": {
 		"Enabled": false,
-		"LogLevel": "info"
+		"LogLevel": "info",
+		"MinSubmitPeriod": "15s",
+		"MinSubmitPriceChange": 0.05
 	},
 	"Tasker": {
 		"LogLevel": "info"

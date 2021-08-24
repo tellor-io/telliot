@@ -5,9 +5,11 @@ package index
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"sort"
@@ -15,15 +17,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/itchyny/gojq"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/timestamp"
 	"github.com/prometheus/prometheus/tsdb"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
 	"github.com/tellor-io/telliot/pkg/format"
 	"github.com/tellor-io/telliot/pkg/logging"
@@ -61,7 +64,7 @@ func New(
 	ctx context.Context,
 	cfg Config,
 	tsDB *tsdb.DB,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 ) (*IndexTracker, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
 	if err != nil {
@@ -99,7 +102,7 @@ func New(
 	}, nil
 }
 
-func createDataSources(ctx context.Context, cfg Config, client contracts.ETHClient) (map[string][]DataSource, error) {
+func createDataSources(ctx context.Context, cfg Config, client *ethclient.Client) (map[string][]DataSource, error) {
 	// Load index file.
 	byteValue, err := ioutil.ReadFile(cfg.IndexFile)
 	if err != nil {
@@ -117,6 +120,8 @@ func createDataSources(ctx context.Context, cfg Config, client contracts.ETHClie
 	for symbol, api := range indexes {
 		for _, endpoint := range api.Endpoints {
 			var err error
+
+			endpoint.URL = web.ExpandTimeVars(endpoint.URL)
 			endpoint.URL = os.Expand(endpoint.URL, func(key string) string {
 				if os.Getenv(key) == "" {
 					err = errors.Errorf("missing required env variable in index url:%v", key)
@@ -144,6 +149,13 @@ func createDataSources(ctx context.Context, cfg Config, client contracts.ETHClie
 					source = NewJSONapi(api.Interval.Duration, endpoint.URL, NewParser(endpoint))
 					if strings.Contains(strings.ToLower(symbol), "volume") {
 						source = NewJSONapiVolume(api.Interval.Duration, endpoint.URL, NewParser(endpoint))
+					}
+				}
+			case bravenewcoin:
+				{
+					source, err = NewBravenewcoin(api.Interval.Duration, endpoint.URL, NewParser(endpoint))
+					if err != nil {
+						return nil, errors.Wrap(err, "creating Bravenewcoin source")
 					}
 				}
 			case ethereumSource:
@@ -274,6 +286,11 @@ func (self *IndexTracker) recordInterval(logger log.Logger, ts int64, interval t
 func (self *IndexTracker) recordValue(logger log.Logger, ts int64, interval time.Duration, symbol string, dataSource DataSource) (err error) {
 	value, err := dataSource.Get(self.ctx)
 	if err != nil {
+		self.getErrors.With(
+			prometheus.Labels{
+				"source": dataSource.Source(),
+			},
+		).Inc()
 		return errors.Wrap(err, "getting values from data source")
 	}
 
@@ -329,6 +346,7 @@ type IndexType string
 
 const (
 	httpSource     IndexType = "http"
+	bravenewcoin   IndexType = "bravenewcoin"
 	ethereumSource IndexType = "ethereum"
 )
 
@@ -337,6 +355,7 @@ type ParserType string
 
 const (
 	jsonPathParser ParserType = "jsonPath"
+	jqParser       ParserType = "jq"
 	uniswapParser  ParserType = "Uniswap"
 	balancerParser ParserType = "Balancer"
 )
@@ -377,7 +396,18 @@ type JSONapiVolume struct {
 }
 
 func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
-	vals, err := web.Fetch(ctx, self.url)
+	var err error
+	self.url = web.ExpandTimeVars(self.url)
+	self.url = os.Expand(self.url, func(key string) string {
+		if os.Getenv(key) == "" {
+			err = errors.Errorf("missing required env variable in index url:%v", key)
+		}
+		return os.Getenv(key)
+	})
+	if err != nil {
+		return 0, err
+	}
+	vals, err := web.Get(ctx, self.url, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}
@@ -404,6 +434,121 @@ func NewJSONapi(interval time.Duration, url string, parser Parser) *JSONapi {
 	}
 }
 
+func NewBravenewcoin(interval time.Duration, urlString string, parser Parser) (*Bravenewcoin, error) {
+	u, err := url.Parse(urlString)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse bravecoin url")
+	}
+
+	apiKey := u.Query().Get("rapidapi-key")
+	if apiKey == "" {
+		return nil, errors.New("rapid api key is empty")
+	}
+
+	bearerToken, err := getBearer(apiKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "get rapid bearer token")
+	}
+	return &Bravenewcoin{
+		apiKey:      apiKey,
+		bearerToken: bearerToken,
+		JSONapi: &JSONapi{
+			url:      urlString,
+			interval: interval,
+			Parser:   parser,
+		},
+	}, nil
+}
+
+type Bravenewcoin struct {
+	apiKey      string
+	bearerToken string
+	*JSONapi
+}
+
+func (self *Bravenewcoin) Get(ctx context.Context) (float64, error) {
+	var err error
+	self.url = web.ExpandTimeVars(self.url)
+	self.url = os.Expand(self.url, func(key string) string {
+		if os.Getenv(key) == "" {
+			err = errors.Errorf("missing required env variable in index url:%v", key)
+		}
+		return os.Getenv(key)
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	headers := make(map[string]string)
+
+	headers["x-rapidapi-key"] = self.apiKey
+
+	headers["authorization"] = "Bearer " + self.bearerToken
+	headers["x-rapidapi-host"] = "bravenewcoin.p.rapidapi.com"
+
+	vals, err := web.Get(ctx, self.url, headers)
+	if err != nil {
+		// Refresh the bearer token and try again
+		bearerToken, err := getBearer(self.apiKey)
+		if err != nil {
+			return 0, errors.Wrap(err, "get rapid bearer token")
+		}
+		self.bearerToken = bearerToken
+		vals, err = web.Get(ctx, self.url, headers)
+		if err != nil {
+			return 0, errors.Wrapf(err, "fetching data rapid API url:%v", self.url)
+		}
+	}
+	val, _, err := self.Parse(vals)
+	return val, err
+}
+
+func getBearer(apiKey string) (string, error) {
+	url := "https://bravenewcoin.p.rapidapi.com/oauth/token?rapidapi-key=" + apiKey
+
+	payload := strings.NewReader("{\n    \"audience\": \"https://api.bravenewcoin.com\",\n    \"client_id\": \"oCdQoZoI96ERE9HY3sQ7JmbACfBf55RY\",\n    \"grant_type\": \"client_credentials\"\n}")
+
+	req, err := http.NewRequest("POST", url, payload)
+	if err != nil {
+		return "", errors.Wrap(err, "create client request")
+	}
+
+	req.Header.Add("content-type", "application/json")
+	req.Header.Add("x-rapidapi-host", "bravenewcoin.p.rapidapi.com")
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := http.Client{Transport: tr}
+
+	res, err := client.Do(req)
+
+	if err != nil {
+		return "", errors.Wrap(err, "client request")
+	}
+
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", errors.Wrapf(err, "read body")
+	}
+
+	if res.StatusCode/100 != 2 {
+		return "", errors.Wrapf(err, "request status not ok:%v", string(body))
+	}
+
+	output := struct {
+		Access_token string `json:"access_token,omitempty"`
+	}{}
+
+	err = json.Unmarshal(body, &output)
+	if err != nil {
+		return "", errors.Wrapf(err, "json marshal:%v", string(body))
+	}
+
+	return output.Access_token, nil
+}
+
 type JSONapi struct {
 	url      string
 	interval time.Duration
@@ -411,7 +556,18 @@ type JSONapi struct {
 }
 
 func (self *JSONapi) Get(ctx context.Context) (float64, error) {
-	vals, err := web.Fetch(ctx, self.url)
+	var err error
+	self.url = web.ExpandTimeVars(self.url)
+	self.url = os.Expand(self.url, func(key string) string {
+		if os.Getenv(key) == "" {
+			err = errors.Errorf("missing required env variable in index url:%v", key)
+		}
+		return os.Getenv(key)
+	})
+	if err != nil {
+		return 0, err
+	}
+	vals, err := web.Get(ctx, self.url, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "fetching data from API url:%v", self.url)
 	}
@@ -447,28 +603,82 @@ type JsonPathParser struct {
 }
 
 func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
-	var output interface{}
+	var inputToParse interface{}
 
 	maxErrL := len(string(input)) - 1
 	if maxErrL > 200 {
 		maxErrL = 200
 	}
 
+	err := json.Unmarshal(input, &inputToParse)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "json marshal:%v", string(input)[:maxErrL])
+	}
+
+	output, err := jsonpath.Read(inputToParse, self.param)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "json path read:%v", string(input)[:maxErrL])
+	}
+
+	value, timestamp, err := parseInterface(output)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "parse interface:%v", string(input)[:maxErrL])
+	}
+
+	return value, timestamp, nil
+}
+
+type JqParser struct {
+	param string
+}
+
+func (self *JqParser) Parse(input []byte) (float64, time.Time, error) {
+	var inputToParse interface{}
+
+	maxErrL := len(string(input)) - 1
+	if maxErrL > 200 {
+		maxErrL = 200
+	}
+
+	err := json.Unmarshal(input, &inputToParse)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "json marshal:%v", string(input)[:maxErrL])
+	}
+
+	query, err := gojq.Parse(self.param)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "jq read:%v", string(input)[:maxErrL])
+	}
+	iter := query.Run(inputToParse)
+
+	output, ok := iter.Next()
+	if !ok {
+		return 0, time.Time{}, errors.Wrapf(err, "jq iterate:%v", string(input)[:maxErrL])
+	}
+
+	_, ok = iter.Next()
+	if ok {
+		return 0, time.Time{}, errors.Errorf("jq parsing contains multiple values:%v", string(input)[:maxErrL])
+	}
+
+	if err, ok := output.(error); ok {
+		return 0, time.Time{}, errors.Wrapf(err, "jq parse:%v", string(input)[:maxErrL])
+	}
+
+	value, timestamp, err := parseInterface(output)
+	if err != nil {
+		return 0, time.Time{}, errors.Wrapf(err, "parse interface:%v", string(input)[:maxErrL])
+	}
+
+	return value, timestamp, nil
+}
+
+func parseInterface(data interface{}) (float64, time.Time, error) {
 	timestamp := time.Now()
-
-	err := json.Unmarshal(input, &output)
-	if err != nil {
-		return 0, timestamp, errors.Wrapf(err, "json marshal:%v", string(input)[:maxErrL])
-	}
-
-	output, err = jsonpath.Read(output, self.param)
-	if err != nil {
-		return 0, timestamp, errors.Wrapf(err, "json path read:%v", string(input)[:maxErrL])
-	}
 
 	// Expect result to be a slice of float or a single float value.
 	var resultList []interface{}
-	switch result := output.(type) {
+	switch result := data.(type) {
 	case []interface{}:
 		resultList = result
 	default:
@@ -499,6 +709,7 @@ func (self *JsonPathParser) Parse(input []byte) (float64, time.Time, error) {
 			}
 		}
 	}
+
 	return value, timestamp, nil
 }
 
@@ -506,6 +717,10 @@ func NewParser(t Endpoint) Parser {
 	switch t.Parser {
 	case jsonPathParser:
 		return &JsonPathParser{
+			param: t.Param,
+		}
+	case jqParser:
+		return &JqParser{
 			param: t.Param,
 		}
 	default:

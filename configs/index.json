@@ -95,6 +95,24 @@
             }
         ]
     },
+    "AMPL/USD/VWAP": {
+        "interval": "10m",
+        "endpoints": [
+            {
+                "Type": "bravenewcoin",
+                "URL": "https://bravenewcoin.p.rapidapi.com/ohlcv?size=1&indexId=551cdbbe-2a97-4af8-b6bc-3254210ed021&indexType=GWA&rapidapi-key=$RAPID_KEY",
+                "param": "$.content[0][vwap]"
+            },
+            {
+                "URL": "https://api.anyblock.tools/market/AMPL_USD_via_ALL/daily-volume?roundDay=false&debug=false&access_token=$ANYBLOCK_KEY&start=$BOD_MILLISECONDS&end=$EOD_MILLISECONDS",
+                "param": "$.overallVWAP"
+            },
+            {
+                "URL": "https://min-api.cryptocompare.com/data/dayAvg?fsym=AMPL&tsym=USD&toTs=$EOD_SECONDS&api_key=$CC_KEY",
+                "param": "$.USD"
+            }
+        ]
+    },
     "ATOM/USD": {
         "endpoints": [
             {
@@ -252,8 +270,14 @@
         "interval": "1h",
         "endpoints": [
             {
-                "URL": "https://api.llama.fi/charts",
-                "param": "$[-1:].totalLiquidityUSD"
+                "URL": "https://api.llama.fi/protocols",
+                "parser": "jq",
+                "param": "map( select(.chain==\"Ethereum\") | .tvl ) | add"
+            },
+            {
+                "URL": "https://openapi.debank.com/v1/protocol/list",
+                "parser": "jq",
+                "param": "map( select(.chain==\"eth\") | .tvl ) | add"
             },
             {
                 "URL": "https://data-api.defipulse.com/api/v1/defipulse/api/MarketData",
@@ -632,8 +656,8 @@
     "ZRX/BNB": {
         "endpoints": [
             {
-                "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXBNB&interval=1d&limit=1",
-                "param": "$[0][4]"
+                "URL": "https://api.coingecko.com/api/v3/simple/price?ids=0x&vs_currencies=bnb",
+                "param": "$[\"0x\"][\"bnb\"]"
             }
         ]
     },
@@ -642,6 +666,22 @@
             {
                 "URL": "https://api.binance.com/api/v1/klines?symbol=ZRXUSDT&interval=1d&limit=1",
                 "param": "$[0][4]"
+            }
+        ]
+    },
+    "ETH/JPY": {
+        "endpoints": [
+            {
+                "URL": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=jpy&include_last_updated_at=true",
+                "param": "$.ethereum.jpy"
+            },
+            {
+                "URL": "https://api.bitflyer.com/v1/getticker?product_code=ETH_JPY",
+                "param": "$.ltp"
+            },
+            {
+                "URL": "https://api-pub.bitfinex.com/v2/ticker/tETHJPY",
+                "param": "$[6]"
             }
         ]
     }

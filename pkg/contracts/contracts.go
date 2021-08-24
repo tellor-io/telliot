@@ -2,26 +2,29 @@ package contracts
 
 import (
 	"context"
-	"math/big"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/tellor-io/telliot/pkg/contracts/balancer"
 	"github.com/tellor-io/telliot/pkg/contracts/lens"
 	"github.com/tellor-io/telliot/pkg/contracts/tellor"
-	"github.com/tellor-io/telliot/pkg/contracts/tellorAccess"
+	"github.com/tellor-io/telliot/pkg/contracts/tellorMesosphere"
 	"github.com/tellor-io/telliot/pkg/contracts/uniswap"
 )
 
 const (
-	TellorAddress                      = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
-	TellorAccessAddressRinkeby         = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
-	TellorAccessAddressArbitrumTestnet = "0xCf26Ce0a3a9EF0125FA53a05A00b6B68F5ddb27A"
-	TellorAccessAddress                = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
-	LensAddressMainnet                 = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
-	LensAddressRinkeby                 = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
+	TellorAddress                          = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
+	TellorAddressGoerli                    = "0xA0238859b8626cCd6981438200Eded52F05dB37A"
+	TellorAddressHardhat                   = "0x8920050E1126125a27A4EaC5122AD3586c056E51"
+	TellorMesosphereAddressRinkeby         = "0xB2a25FD022526c64823FF1bF03bf348Fd0787f2a"
+	TellorMesosphereAddressArbitrumTestnet = "0x7A1e398A228271D1B8b1fb1ede678A3e4c79f50A"
+	TellorMesosphereAddressPolygonTestnet  = "0x32704dCEb8dA339516f4AE561Cd40a6cBE6d98c9"
+	TellorMesosphereAddressPolygonMainnet  = "0xACC2d27400029904919ea54fFc0b18Bf07C57875"
+	TellorMesosphereAddress                = "0x5a991dd4f646ed7efdd090b1ba5b68d222273f7e"
+	LensAddressMainnet                     = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
+	LensAddressRinkeby                     = "0xebEF7ceB7C43850898e258be0a1ea5ffcdBc3205"
+	LensAddressHardhat                     = "0x577417CFaF319a1fAD90aA135E3848D2C00e68CF"
 )
 
 type (
@@ -37,9 +40,9 @@ const (
 	ITellorABI        = tellor.ITellorABI
 )
 
-type ITellorAccess struct {
+type ITellorMesosphere struct {
 	Address common.Address
-	*tellorAccess.TellorAccess
+	*tellorMesosphere.TellorMesosphere
 }
 
 type ITellor struct {
@@ -49,70 +52,18 @@ type ITellor struct {
 	Address common.Address
 }
 
-// ETHClient is the main abstraction interface for client operations.
-type ETHClient interface {
-
-	// Close the client.
-	Close()
-
-	// CodeAt returns the code of the given account. This is needed to differentiate
-	// between contract internal errors and the local chain being out of sync.
-	CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
-
-	// TransactionReceipt implements the geth backend DeployBackend interface.
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
-
-	// ContractCall executes an Ethereum contract call with the specified data as the
-	// input.
-	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
-	NonceAt(ctx context.Context, address common.Address) (uint64, error)
-	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
-
-	// PendingCodeAt returns the code of the given account in the pending state.
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-
-	//PendingNonceAt gets the given address's nonce for submitting transactions
-	PendingNonceAt(ctx context.Context, address common.Address) (uint64, error)
-	EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error)
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-
-	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
-	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
-	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error)
-	BalanceAt(ctx context.Context, address common.Address, block *big.Int) (*big.Int, error)
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
-	IsSyncing(ctx context.Context) (bool, error)
-	NetworkID(ctx context.Context) (*big.Int, error)
-	HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error)
-	TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error)
-	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
-	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-	BlockNumber(ctx context.Context) (uint64, error)
-}
-
-func getLensAddress(client ETHClient) (common.Address, error) {
-	networkID, err := client.NetworkID(context.Background())
+func NewITellor(client *ethclient.Client) (*ITellor, error) {
+	conractAddr, err := GetTellorAddress(client)
 	if err != nil {
-		return common.Address{}, err
+		return nil, errors.Wrap(err, "getting contract address")
 	}
-	switch netID := networkID.Int64(); netID {
-	case 1:
-		return common.HexToAddress(LensAddressMainnet), nil
-	case 4:
-		return common.HexToAddress(LensAddressRinkeby), nil
-	default:
-		return common.Address{}, errors.Errorf("contract address for current network id not found:%v", netID)
-	}
-}
-
-func NewITellor(client ETHClient) (*ITellor, error) {
-	tellorInstance, err := tellor.NewITellor(common.HexToAddress(TellorAddress), client)
+	tellorInstance, err := tellor.NewITellor(conractAddr, client)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating telllor interface")
+		return nil, errors.Wrap(err, "creating contract interface")
 	}
-	contractAddr, err := getLensAddress(client)
+	contractAddr, err := GetLensAddress(client)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating lens address")
+		return nil, errors.Wrap(err, "getting contract address")
 	}
 
 	lensInstance, err := lens.NewMain(contractAddr, client)
@@ -123,29 +74,70 @@ func NewITellor(client ETHClient) (*ITellor, error) {
 	return &ITellor{Address: common.HexToAddress(TellorAddress), ITellor: tellorInstance, Main: lensInstance}, nil
 }
 
-func NewITellorAccess(client ETHClient) (*ITellorAccess, error) {
-	conractAddr, err := getTellorAccessAddress(client)
+func NewITellorMesosphere(client *ethclient.Client) (*ITellorMesosphere, error) {
+	conractAddr, err := GetTellorMesosphereAddress(client)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating lens address")
+		return nil, errors.Wrap(err, "getting contract address")
 	}
-	tellorInstance, err := tellorAccess.NewTellorAccess(conractAddr, client)
+	tellorInstance, err := tellorMesosphere.NewTellorMesosphere(conractAddr, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating telllor interface")
 	}
 
-	return &ITellorAccess{Address: common.HexToAddress(TellorAccessAddress), TellorAccess: tellorInstance}, nil
+	return &ITellorMesosphere{Address: common.HexToAddress(TellorMesosphereAddress), TellorMesosphere: tellorInstance}, nil
 }
 
-func getTellorAccessAddress(client ETHClient) (common.Address, error) {
+func GetTellorMesosphereAddress(client *ethclient.Client) (common.Address, error) {
 	networkID, err := client.NetworkID(context.Background())
 	if err != nil {
 		return common.Address{}, err
 	}
 	switch netID := networkID.Int64(); netID {
 	case 421611:
-		return common.HexToAddress(TellorAccessAddressArbitrumTestnet), nil
+		return common.HexToAddress(TellorMesosphereAddressArbitrumTestnet), nil
 	case 4:
-		return common.HexToAddress(TellorAccessAddressRinkeby), nil
+		return common.HexToAddress(TellorMesosphereAddressRinkeby), nil
+	case 80001:
+		return common.HexToAddress(TellorMesosphereAddressPolygonTestnet), nil
+	case 137:
+		return common.HexToAddress(TellorMesosphereAddressPolygonMainnet), nil
+	default:
+		return common.Address{}, errors.Errorf("contract address for current network id not found:%v", netID)
+	}
+}
+
+func GetTellorAddress(client *ethclient.Client) (common.Address, error) {
+	networkID, err := client.NetworkID(context.Background())
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	switch netID := networkID.Int64(); netID {
+	case 31337:
+		return common.HexToAddress(TellorAddressHardhat), nil
+	case 4: // Rinkeby has the same address as mainnet.
+		fallthrough
+	case 1:
+		return common.HexToAddress(TellorAddress), nil
+	case 5:
+		return common.HexToAddress(TellorAddressGoerli), nil
+	default:
+		return common.Address{}, errors.Errorf("network id not supported id:%v", netID)
+	}
+}
+
+func GetLensAddress(client *ethclient.Client) (common.Address, error) {
+	networkID, err := client.NetworkID(context.Background())
+	if err != nil {
+		return common.Address{}, err
+	}
+	switch netID := networkID.Int64(); netID {
+	case 31337:
+		return common.HexToAddress(LensAddressHardhat), nil
+	case 1:
+		return common.HexToAddress(LensAddressMainnet), nil
+	case 4:
+		return common.HexToAddress(LensAddressRinkeby), nil
 	default:
 		return common.Address{}, errors.Errorf("contract address for current network id not found:%v", netID)
 	}

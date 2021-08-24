@@ -11,14 +11,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/tellor-io/telliot/pkg/contracts"
 	"github.com/tellor-io/telliot/pkg/ethereum"
+	"github.com/tellor-io/telliot/pkg/gasPrice"
 	"github.com/tellor-io/telliot/pkg/logging"
-	"github.com/tellor-io/telliot/pkg/tracker/gasPrice"
 )
 
 const ComponentName = "transactor"
@@ -39,16 +39,16 @@ type TransactorDefault struct {
 	netID           *big.Int
 	cfg             Config
 	logger          log.Logger
-	gasPriceTracker *gasPrice.GasTracker
-	client          contracts.ETHClient
+	gasPriceQuerier gasPrice.GasPriceQuerier
+	client          *ethclient.Client
 	account         *ethereum.Account
 }
 
 func New(
 	logger log.Logger,
 	cfg Config,
-	gasPriceTracker *gasPrice.GasTracker,
-	client contracts.ETHClient,
+	gasPriceQuerier gasPrice.GasPriceQuerier,
+	client *ethclient.Client,
 	account *ethereum.Account,
 ) (*TransactorDefault, error) {
 	logger, err := logging.ApplyFilter(cfg.LogLevel, logger)
@@ -67,14 +67,14 @@ func New(
 		netID:           netID,
 		cfg:             cfg,
 		logger:          log.With(logger, "component", ComponentName),
-		gasPriceTracker: gasPriceTracker,
+		gasPriceQuerier: gasPriceQuerier,
 		client:          client,
 		account:         account,
 	}, nil
 }
 
 func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*bind.TransactOpts) (*types.Transaction, error)) (*types.Transaction, *types.Receipt, error) {
-	nonce, err := self.client.NonceAt(ctx, self.account.Address)
+	nonce, err := self.client.NonceAt(ctx, self.account.Address, nil)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting nonce for miner address")
 	}
@@ -82,11 +82,10 @@ func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*
 	// Use the same nonce in case there is a stuck transaction so that it resubmits the same TX with higher gas price.
 	IntNonce := int64(nonce)
 
-	_gasPrice, err := self.gasPriceTracker.Query(ctx)
+	gasPrice, err := self.gasPriceQuerier.Query(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting data from the db")
 	}
-	gasPrice := big.NewInt(int64(_gasPrice))
 
 	mul := self.cfg.GasMultiplier
 	if mul > 0 {
@@ -151,7 +150,7 @@ func (self *TransactorDefault) Transact(ctx context.Context, contractCall func(*
 				level.Warn(self.logger).Log("msg", "last transaction is stuck so will increase the gas price and try to resend")
 				finalError = err
 			} else {
-				finalError = errors.Wrap(err, "contract call SubmitMiningSolution")
+				finalError = errors.Wrap(err, "contract call")
 			}
 
 			delay := 15 * time.Second

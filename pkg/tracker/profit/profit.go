@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -27,13 +28,15 @@ import (
 
 const ComponentName = "profitTracker"
 
+const DefaultRetry = 30 * time.Second
+
 type Config struct {
 	LogLevel string
 }
 
 type ProfitTracker struct {
 	netID            *big.Int
-	client           contracts.ETHClient
+	client           *ethclient.Client
 	logger           log.Logger
 	contractInstance *contracts.ITellor
 	abi              abi.ABI
@@ -56,7 +59,7 @@ func NewProfitTracker(
 	logger log.Logger,
 	ctx context.Context,
 	cfg Config,
-	client contracts.ETHClient,
+	client *ethclient.Client,
 	contractInstance *contracts.ITellor,
 	addrs []common.Address,
 ) (*ProfitTracker, error) {
@@ -160,7 +163,7 @@ func (self *ProfitTracker) Stop() {
 
 func (self *ProfitTracker) monitorReward() {
 	var err error
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 	var sub event.Subscription
 	events := make(chan *tellor.TellorTransferred)
@@ -231,7 +234,7 @@ func (self *ProfitTracker) monitorReward() {
 
 func (self *ProfitTracker) monitorCost() {
 	var err error
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 
 	logger := log.With(self.logger, "event", "NonceSubmitted")
@@ -303,7 +306,7 @@ func (self *ProfitTracker) monitorCost() {
 
 func (self *ProfitTracker) monitorCostFailed() {
 	var err error
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 
 	logger := log.With(self.logger, "event", "NewHead")
@@ -421,14 +424,14 @@ func (self *ProfitTracker) monitorCostFailed() {
 }
 
 func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor.TellorNonceSubmitted) {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-self.ctx.Done():
 			level.Debug(logger).Log("msg", "transaction confirmation check canceled")
 			return
-		default:
+		case <-ticker.C:
 		}
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
@@ -459,21 +462,18 @@ func (self *ProfitTracker) setCostWhenConfirmed(logger log.Logger, event *tellor
 		}
 
 		level.Debug(logger).Log("msg", "transaction not yet mined")
-
-		<-ticker.C
-		continue
 	}
 }
 
 func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tellor.TellorTransferred) {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(DefaultRetry)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-self.ctx.Done():
 			level.Debug(logger).Log("msg", "transaction confirmation check canceled")
 			return
-		default:
+		case <-ticker.C:
 		}
 		receipt, err := self.client.TransactionReceipt(self.ctx, event.Raw.TxHash)
 		if err != nil {
@@ -503,10 +503,7 @@ func (self *ProfitTracker) setProfitWhenConfirmed(logger log.Logger, event *tell
 			self.balances.With(prometheus.Labels{"addr": event.To.String(), "token": "TRB"}).(prometheus.Gauge).Set(balance)
 			return
 		}
-
 		level.Debug(logger).Log("msg", "transaction not yet mined")
-		<-ticker.C
-		continue
 	}
 }
 

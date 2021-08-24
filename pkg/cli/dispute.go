@@ -7,72 +7,120 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/go-kit/kit/log"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/tellor-io/telliot/pkg/config"
 	"github.com/tellor-io/telliot/pkg/contracts"
+	"github.com/tellor-io/telliot/pkg/ethereum"
 	tEthereum "github.com/tellor-io/telliot/pkg/ethereum"
-	"github.com/tellor-io/telliot/pkg/format"
-	psr "github.com/tellor-io/telliot/pkg/psr/tellor"
+	"github.com/tellor-io/telliot/pkg/logging"
+	"github.com/tellor-io/telliot/pkg/math"
 )
 
-func Dispute(
-	ctx context.Context,
-	logger log.Logger,
-	client contracts.ETHClient,
-	contract *contracts.ITellor,
-	account *tEthereum.Account,
-	requestId *big.Int,
-	timestamp *big.Int,
-	minerIndex *big.Int,
-) error {
+type disputeID struct {
+	DisputeID int64 `arg:"" required:"" help:"the dispute id"`
+}
 
-	if !minerIndex.IsUint64() || minerIndex.Uint64() > 4 {
-		return errors.Errorf("miner index should be between 0 and 4 (got %s)", minerIndex.Text(10))
+type newDisputeCmd struct {
+	cfgGasAddr
+	RequestID  int64 `arg:""  help:"the request id to dispute it"`
+	Timestamp  int64 `arg:""  help:"the submitted timestamp to dispute"`
+	MinerIndex int64 `arg:""  help:"the miner index to dispute"`
+}
+
+func (self newDisputeCmd) Run() error {
+	logger := logging.NewLogger()
+	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
 	}
 
-	balance, err := contract.BalanceOf(nil, account.Address)
+	client, err := ethereum.NewClient(ctx, logger)
+	if err != nil {
+		return errors.Wrap(err, "creating ethereum client")
+	}
+
+	account, err := ethereum.GetAccountByPubAddess(self.Addr)
+	if err != nil {
+		return err
+	}
+	contract, err := contracts.NewITellor(client)
+	if err != nil {
+		return errors.Wrap(err, "create tellor contract instance")
+	}
+
+	if self.MinerIndex < 0 || self.MinerIndex > 4 {
+		return errors.Errorf("miner index should be between 0 and 4 (got %v)", self.MinerIndex)
+	}
+
+	balance, err := contract.BalanceOf(&bind.CallOpts{Context: ctx}, account.Address)
 	if err != nil {
 		return errors.Wrap(err, "fetch balance")
 	}
-	var asBytes32 [32]byte
-	copy(asBytes32[:], crypto.Keccak256([]byte("_DISPUTE_FEE")))
-	disputeCost, err := contract.GetUintVar(nil, asBytes32)
+
+	disputeCost, err := contract.GetUintVar(&bind.CallOpts{Context: ctx}, tEthereum.Keccak256([]byte("_DISPUTE_FEE")))
 	if err != nil {
 		return errors.Wrap(err, "get dispute cost")
 	}
 
 	if balance.Cmp(disputeCost) < 0 {
 		return errors.Errorf("insufficient balance TRB actual: %v, TRB required:%v)",
-			format.ERC20Balance(balance),
-			format.ERC20Balance(disputeCost))
+			math.BigInt18eToFloat(balance),
+			math.BigInt18eToFloat(disputeCost))
 	}
 
-	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account)
+	var gasPrice *big.Int
+	if self.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(self.GasPrice) * params.GWei)
+	}
+
+	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account, gasPrice)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
 
-	tx, err := contract.BeginDispute(auth, requestId, timestamp, minerIndex)
+	tx, err := contract.BeginDispute(auth, big.NewInt(self.RequestID), big.NewInt(self.Timestamp), big.NewInt(self.MinerIndex))
 	if err != nil {
 		return errors.Wrap(err, "send dispute txn")
 	}
-	level.Info(logger).Log("msg", "dispute started", "txn", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "dispute started", "tx", tx.Hash())
 	return nil
 }
 
-func Vote(
-	ctx context.Context,
-	logger log.Logger,
-	client contracts.ETHClient,
-	contract *contracts.ITellor,
-	account *tEthereum.Account,
-	disputeId *big.Int,
-	supportsDispute bool,
-) error {
+type voteCmd struct {
+	cfgGasAddr
+	disputeID
+	Support bool `arg:"" required:"" help:"true or false"`
+}
 
-	voted, err := contract.DidVote(nil, disputeId, contract.Address)
+func (self voteCmd) Run() error {
+	logger := logging.NewLogger()
+	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
+	client, err := ethereum.NewClient(ctx, logger)
+	if err != nil {
+		return errors.Wrap(err, "creating ethereum client")
+	}
+
+	account, err := ethereum.GetAccountByPubAddess(self.Addr)
+	if err != nil {
+		return err
+	}
+	contract, err := contracts.NewITellor(client)
+	if err != nil {
+		return errors.Wrap(err, "create tellor contract instance")
+	}
+
+	voted, err := contract.DidVote(&bind.CallOpts{Context: ctx}, big.NewInt(self.DisputeID), account.Address)
 	if err != nil {
 		return errors.Wrapf(err, "check if you've already voted")
 	}
@@ -81,28 +129,124 @@ func Vote(
 		return nil
 	}
 
-	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account)
+	var gasPrice *big.Int
+	if self.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(self.GasPrice) * params.GWei)
+	}
+
+	auth, err := tEthereum.PrepareEthTransaction(ctx, client, account, gasPrice)
 	if err != nil {
 		return errors.Wrapf(err, "prepare ethereum transaction")
 	}
-	tx, err := contract.Vote(auth, disputeId, supportsDispute)
+	tx, err := contract.Vote(auth, big.NewInt(self.DisputeID), self.Support)
 	if err != nil {
 		return errors.Wrapf(err, "submit vote transaction")
 	}
 
-	level.Info(logger).Log("msg", "vote submitted with transaction", "tx", tx.Hash().Hex())
+	level.Info(logger).Log("msg", "vote submitted with transaction", "tx", tx.Hash())
 	return nil
 }
 
-func List(
-	ctx context.Context,
-	logger log.Logger,
-	client contracts.ETHClient,
-	contract *contracts.ITellor,
-	account *tEthereum.Account,
-	psr *psr.Psr,
-) error {
+type tallyCmd struct {
+	cfgGas
+	disputeID
+}
+
+func (self tallyCmd) Run() error {
+	logger := logging.NewLogger()
+	ctx := context.Background()
+
+	_, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	if err != nil {
+		return errors.Wrap(err, "creating config")
+	}
+
+	client, err := ethereum.NewClient(ctx, logger)
+	if err != nil {
+		return errors.Wrap(err, "creating ethereum client")
+	}
+
+	accounts, err := ethereum.GetAccounts()
+	if err != nil {
+		return err
+	}
+	contract, err := contracts.NewITellor(client)
+	if err != nil {
+		return errors.Wrap(err, "create tellor contract instance")
+	}
+
+	var gasPrice *big.Int
+	if self.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(self.GasPrice) * params.GWei)
+	}
+
+	auth, err := tEthereum.PrepareEthTransaction(ctx, client, accounts[0], gasPrice)
+	if err != nil {
+		return errors.Wrapf(err, "prepare ethereum transaction")
+	}
+
+	tx, err := contract.TallyVotes(auth, big.NewInt(self.DisputeID))
+	if err != nil {
+		return errors.Wrapf(err, "run tally votes if you've already voted")
+	}
+
+	level.Info(logger).Log("msg", "tally votes submitted", "tx", tx.Hash().Hex())
+	return nil
+}
+
+type listCmd struct {
+	cfgAddr
+}
+
+func (self listCmd) Run() error {
 	// TODO fix it!
+
+	// logger := logging.NewLogger()
+	// ctx := context.Background()
+
+	// cfg, err := config.ParseConfig(logger, string(self.Config)) // Load the env file.
+	// if err != nil {
+	// 	return errors.Wrap(err, "creating config")
+	// }
+
+	// client, err := ethereum.NewClient(ctx, logger)
+	// if err != nil {
+	// 	return errors.Wrap(err, "creating ethereum client")
+	// }
+	// account, err := ethereum.GetAccountByPubAddess(self.Addr)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// // Open the TSDB database.
+	// var querable storage.SampleAndChunkQueryable
+	// if cfg.Db.RemoteHost != "" {
+	// 	querable, err = db.NewRemoteDB(cfg.Db)
+	// 	if err != nil {
+	// 		return errors.Wrap(err, "opening remote tsdb DB")
+	// 	}
+	// } else {
+	// 	if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
+	// 		return errors.Wrap(err, "creating tsdb DB folder")
+	// 	}
+	// 	tsdbOptions := tsdb.DefaultOptions()
+	// 	tsdbOptions.NoLockfile = true
+	// 	querable, err = tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
+	// 	if err != nil {
+	// 		return errors.Wrap(err, "opening tsdb DB")
+	// 	}
+	// }
+
+	// aggregator, err := aggregator.New(logger, ctx, cfg.Aggregator, querable)
+	// if err != nil {
+	// 	return errors.Wrap(err, "creating aggregator")
+	// }
+
+	// psr := psrTellor.New(logger, cfg.PsrTellor, aggregator)
+	// contract, err := contracts.NewITellor(client)
+	// if err != nil {
+	// 	return errors.Wrap(err, "create tellor contract instance")
+	// }
 
 	// abi, err := abi.JSON(strings.NewReader(contracts.ITellorABI))
 	// if err != nil {
@@ -139,7 +283,7 @@ func List(
 	// 	if err != nil {
 	// 		return errors.Wrap(err, "unpack dispute event from logs")
 	// 	}
-	// 	_, executed, votePassed, _, reportedAddr, reportingMiner, _, uintVars, currTally, err := contract.GetAllDisputeVars(nil, disputeI.DisputeId)
+	// 	_, executed, votePassed, _, reportedAddr, reportingMiner, _, uintVars, currTally, err := contract.GetAllDisputeVars(&bind.CallOpts{Context: ctx}, disputeI.DisputeId)
 	// 	if err != nil {
 	// 		return errors.Wrap(err, "get dispute details")
 	// 	}
@@ -165,7 +309,7 @@ func List(
 	// 		"reportedAddr", reportedAddr.Hex(),
 	// 		"reportingMiner", reportingMiner.Hex(),
 	// 		"createdTime", createdTime.Format("3:04 PM January 02, 2006 MST"),
-	// 		"fee", format.ERC20Balance(uintVars[8]),
+	// 		"fee", math.BigInt18eToFloat(uintVars[8]),
 	// 		"requestId", disputeI.RequestId.Uint64(),
 	// 	)
 
@@ -202,7 +346,7 @@ func List(
 	// 	level.Info(logger).Log(
 	// 		"msg", "current TRB support for this dispute",
 	// 		"currTallyRatio", fmt.Sprintf("%0.f%%", currTallyRatio*100),
-	// 		"TRB", format.ERC20Balance(uintVars[7]),
+	// 		"TRB", math.BigInt18eToFloat(uintVars[7]),
 	// 		"votes", uintVars[4],
 	// 	)
 

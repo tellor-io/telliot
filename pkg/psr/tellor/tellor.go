@@ -72,7 +72,8 @@ func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
 	case 9:
 		val, conf, err = self.aggregator.MedianAtEOD("ETH/USD", ts)
 	case 10: // For more details see https://docs.google.com/document/d/1RFCApk1PznMhSRVhiyFl_vBDPA4mP2n1dTmfqjvuTNw/edit
-		val, conf, err = self.aggregator.VolumWeightedAvg("AMPL/USD", time.Now().Add(-(24 * time.Hour)), time.Now(), 10*time.Minute)
+		// For now this uses third party APIs and don't do local aggregation.
+		val, conf, err = self.aggregator.MedianAt("AMPL/USD/VWAP", ts)
 	case 11:
 		val, conf, err = self.aggregator.MedianAt("ZEC/ETH", ts)
 	case 12:
@@ -168,9 +169,11 @@ func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
 	case 56:
 		val, conf, err = self.aggregator.MedianAt("VIXEOD", ts)
 	case 57:
-		val, conf, err = self.aggregator.MeanAt("DEFITVL", ts)
+		val, conf, err = self.aggregator.MedianAt("DEFITVL", ts)
 	case 58:
 		val, conf, err = self.aggregator.MeanAt("DEFIMCAP", ts)
+	case 59:
+		val, conf, err = self.aggregator.MedianAt("ETH/JPY", ts)
 	default:
 		return 0, errors.Errorf("undeclared request ID:%v", reqID)
 	}
