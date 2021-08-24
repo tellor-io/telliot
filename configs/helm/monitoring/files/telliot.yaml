@@ -1,0 +1,11 @@
+groups:
+- name: telliot
+  rules:
+  - alert: SubmitError
+    expr: rate(telliot_mining_submit_fails_total[5m])>1
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Submit failed (account: {{ $labels.account }})"
+      description: "There was a failed submit in the last 5 minutes"

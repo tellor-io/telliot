@@ -1,0 +1,62 @@
+grafana:
+  enabled: true
+  # -- Enable persistence for grafana configuration
+  persist: true
+  serveFromSubPath: false
+  service:
+    port: 80
+  ingress:
+    # -- Ingress class to use for grafana
+    class: nginx
+    # -- Hostname to use for accessing grafana
+    hostname: monitor.tellor.io
+    # -- Subpath to access grafana
+    path: /
+    tls:
+      # -- Enable/Disable TLS for grafana
+      enabled: false
+      # -- Name of TLS secret to use for grafana
+      secret: grafana-tls-secret
+  container:
+    port: 3000
+    # -- Docker image for grafana
+    image: grafana/grafana:7.3.6
+  # -- Grafana persistent storage size
+  storage: 5Gi
+
+alertmanager:
+  enabled: true
+  container:
+    # -- Docker image for alertmanager
+    image: prom/alertmanager:v0.19.0
+    port: 9093
+  service:
+    port: 9093
+  bot:
+    # -- Whether to enable alertmanager
+    enabled: false
+    service:
+      port: 8080
+    container:
+      # -- Docker image for alertmanager
+      image: metalmatze/alertmanager-bot:0.4.3
+      port: 8080
+    storage: 1Gi
+    telegram:
+      # -- Telegram token
+      token: Null
+      # -- Telegram admin username
+      admin: Null
+
+prometheus:
+  enabled: true
+  # -- Enable persistence for prometheus data
+  persist: true
+  service:
+    port: 9090
+  container:
+    port: 9090
+    # -- Docker image for prometheus
+    image: prom/prometheus:v2.24.0
+  # -- Prometheus storage size in GB
+  storage: 50

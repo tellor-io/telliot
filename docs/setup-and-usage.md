@@ -99,112 +99,125 @@ cp configs/.env.example configs/.env # Edit the file after the copy.
 docker run -v $(pwd)/configs:/configs tellor/telliot:master mine
 ```
 
-## Run cli in mining mode with k8s
+## Run on Kubernetes with Helm Chart
 
-{% hint style="info" %}
-tested with [google cloud](https://cloud.google.com), but should work with any k8s cluster.
-{% endhint %}
+A Helm chart for installing telliot on Kubernetes
 
-* Install [`gcloud`](https://cloud.google.com/sdk/docs/install)
-* Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl)
-* Create a k8s cluster with a single node
-* Login to the cluster
+[A guide for installing helm can be found here](https://helm.sh/docs/intro/install/)
+
+## telliot Configuration
+
+Include telliot configuration files in the files directory of this chart.
+
+These files should be:
+
+- .env
+- index.json
+- manualData.json
+
+Run the following to use the default configuration files:
 
 ```bash
-gcloud auth login --project projectName
-gcloud container clusters get-credentials main --zone europe-west2-a --project projectName
+cp configs/index.json configs/manualData.json configs/helm/files/
+cp configs/.env.example configs/helm/files/.env # you will need to edit this file with your own secrets after copying
 ```
 
-* Deploy the `cli` \(by default deployed to run as a miner\)
+Optionally you can also include config.json if you would like to override any default config values.
+
+If you would like to use separate .env or config.json files for the mining and dataserver instances, copy those files under their respective directory in config/helm/files.
+For example to use a unique config.json and .env for mining and dataserver instances run:
 
 ```bash
-git clone https://github.com/tellor-io/telliot
-cd telliot
-export INSTANCE_NAME=lat # Use max 3 characters due to k8s limitation for port names.
-export DEPL_NAME=telliot-m # This is the name of the deployment file.
-export CFG_FOLDER=.local/configs/$DEPL_NAME-$INSTANCE_NAME # Configs will be copied to this folder.
-export DEPL_INSTANCE_NAME=$DEPL_NAME-$INSTANCE_NAME
-mkdir -p $CFG_FOLDER
-
-# Create the secret file.
-cp configs/.env.example $CFG_FOLDER/.env # Edit the file after the copy.
-
-touch $CFG_FOLDER/config.json # Create an empty file and if needed overwrite the defaults.
-
-# Copy the manual data file.
-cp configs/manualData.json $CFG_FOLDER/manualData.json
-
-# Apply the configs.
-kubectl create secret generic $DEPL_INSTANCE_NAME --from-env-file=$CFG_FOLDER/.env
-kubectl create configmap $DEPL_INSTANCE_NAME \
-  --from-file=configs/index.json \
-  --from-file=$CFG_FOLDER/config.json \
-  --from-file=$CFG_FOLDER/manualData.json \
-  -o yaml --dry-run=client | kubectl apply -f -
-
-# Copy the manifest and run it.
-cp configs/manifests/$DEPL_NAME.yml $CFG_FOLDER/$DEPL_NAME.yml
-sed -i "s/$DEPL_NAME/$DEPL_INSTANCE_NAME/g" $CFG_FOLDER/$DEPL_NAME.yml
-kubectl apply -f $CFG_FOLDER/$DEPL_NAME.yml
+# Mining instance
+cp configs/config.json configs/helm/files/mine/
+cp configs/.env.example configs/helm/files/mine/.env
+# dataserver instance
+cp configs/config.json configs/helm/files/dataserver/
+cp configs/.env.example configs/helm/files/dataserver/.env
 ```
 
-### Run the cli in dataserver mode.
+## Usage
+
+After you have moved your configuration files to config/helm/files, you can install this chart using the following command:
 
 ```bash
-export INSTANCE_NAME=lat # Use max 3 characters due to k8s limitation for port names.
-export CFG_FOLDER=.local/configs/db
-export DEPL_NAME=telliot-db
-mkdir -p $CFG_FOLDER
-
-# Run the same commands as the mining deployment.
-
-See [configuration page](configuration.md) on how to setup other instances to connect to this remote dataserver
-
-### To run another instance.
-
-```bash
-export NAME= # Put an instance name here. Something short as some properties are limited by length(e.g `export NAME=PR1`).
-# Run all the other commands from initial k8s setup.
+export INSTANCE_NAME=lat
+helm install $INSTANCE_NAME configs/helm/ \
+    --namespace tellor --create-namespace
 ```
 
-### To delete an instance.
+INSTANCE_NAME being a string you would use to denote this instance of telliot.
+
+Keep in mind this command is using all default values.
+
+## Values
+
+The default helm values will install a mining instance of telliot.
+
+To override these values during installation include `--set $key=$value` in the helm upgrade command.
+
+For example, to run a dataserver instance of telliot using a custom image with 5Gi of storage:
 
 ```bash
-kubectl delete statefulsets.apps $DEPL_INSTANCE_NAME
-kubectl delete service $DEPL_INSTANCE_NAME
-kubectl delete configmap $DEPL_INSTANCE_NAME
-kubectl delete secret $DEPL_INSTANCE_NAME
-kubectl delete persistentvolumeclaims $DEPL_INSTANCE_NAME
+export INSTANCE_NAME=lat
+helm install $INSTANCE_NAME configs/helm/telliot \
+    --namespace tellor --create-namespace \
+    --set "container.image=mytelliot:01" \
+    --set "storage=5Gi" \
+    --set "modes={dataserver}" \
 ```
 
-### To run a custom docker image.
+If I instead only wanted to run a mining instance of telliot:
 
 ```bash
-export REPO= # Your docker repository name.
-docker build . -t $REPO/telliot:custom
-docker push $REPO/telliot:latest
-
-sed -i "s/tellor\/telliot:latest/$REPO\/telliot:custom/g" $CFG_FOLDER/telliot-m.yml
-kubectl apply -f $CFG_FOLDER/telliot-m.yml
+export INSTANCE_NAME=lat
+helm install $INSTANCE_NAME configs/helm/telliot \
+    --namespace tellor --create-namespace \
+    --set "modes={mine}" \
 ```
 
-### Optionally deploy the monitoring stack with Prometheus and Grafana.
+A full list of values and their description can be found [here](https://github.com/tellor-io/telliot/blob/master/docs/helm-values-telliot.md)
+
+## Monitoring
+
+Monitoring is recommended and can be installed using a separate helm chart.
+
+To install monitoring with the default values run:
 
 ```bash
-kubectl apply -f configs/manifests/monitoring-persist.yml
-kubectl apply -f configs/manifests/monitoring.yml
+helm install monitoring /configs/helm/monitoring \
+    --namespace tellor
+
 ```
 
-###  Optionally deploy the alerting manager and get alerts on your Telegram bot.
+A full list of values and their description can be found [here](https://github.com/tellor-io/telliot/blob/master/docs/helm-values-monitoring.md)
 
-This uses the alertmanager bot. see [here](https://github.com/metalmatze/alertmanager-bot) for more info and available commands.
+## Upgrade
+
+To upgrade your instance simply run
 
 ```bash
-# Create a secret for the telegram authentication.
-kubectl create secret generic alertmanager-bot \
-  --from-literal=admin='<telegram admin>' \
-  --from-literal=token='<telegram token>'
-kubectl apply -f configs/manifests/alerting-persist.yml
-kubectl apply -f configs/manifests/alerting.yml
+helm upgrade $INSTANCE_NAME configs/helm/ --namespace tellor --set $key=$value
 ```
 
+With `$key=$value` being the desired value changes you would like to make.
+
+If you would like to make any config changes, move the updated configuration file to configs/helm/files/ and run
+
+```bash
+helm upgrade $INSTANCE_NAME configs/helm/ --namespace tellor
+```
+
+## Removal
+
+Uninstalling an instance of telliot using helm is as simple as
+
+```bash
+helm uninstall $INSTANCE_NAME --namespace tellor
+```
+
+Where instance name was the name for the release you specified during installation. You can find this value by running
+
+```bash
+helm list --namespace tellor
+```

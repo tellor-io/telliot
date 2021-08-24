@@ -33,6 +33,11 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.16.x
+      - name: Installing helm-docs
+        run: |
+          wget https://github.com/norwoodj/helm-docs/releases/download/v1.5.0/helm-docs_1.5.0_linux_amd64.deb 
+          sudo dpkg -i helm-docs_1.5.0_linux_amd64.deb 
+          rm -f helm-docs_1.5.0_linux_amd64.deb
       - uses: actions/cache@v1
         with:
           path: ~/go/pkg/mod

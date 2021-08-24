@@ -1,0 +1,11 @@
+container:
+  # -- Docker image for telliot
+  image: tellor/telliot:master
+  port: 9090
+service:
+  port: 9090
+# -- Array of commands to spawn separate instances of telliot instances with
+modes:
+  - mine
+# -- telliot persistent storage size
+storage: 2Gi
