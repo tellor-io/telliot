@@ -4,13 +4,12 @@ go 1.16
 
 require (
 	github.com/alecthomas/kong v0.2.18-0.20210609031350-33ce628ecde8
-	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/bluele/gcache v0.0.2
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
-	github.com/ethereum/go-ethereum v1.10.3
+	github.com/ethereum/go-ethereum v1.10.8
 	github.com/fatih/structtag v1.2.0
 	github.com/go-kit/kit v0.10.0
 	github.com/google/go-github/v35 v35.3.1-0.20210613000602-77dd0eb64ad2
