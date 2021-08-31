@@ -57,6 +57,7 @@ type IndexTracker struct {
 	dataSources map[string][]DataSource
 	value       *prometheus.GaugeVec
 	getErrors   *prometheus.CounterVec
+	client		*ethclient.Client
 }
 
 func New(
@@ -85,6 +86,7 @@ func New(
 		dataSources: dataSources,
 		tsDB:        tsDB,
 		cfg:         cfg,
+		client:		 client,
 		getErrors: promauto.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "telliot",
 			Subsystem: ComponentName,
@@ -116,7 +118,6 @@ func createDataSources(ctx context.Context, cfg Config, client *ethclient.Client
 	}
 
 	dataSources := make(map[string][]DataSource)
-
 	for symbol, api := range indexes {
 		for _, endpoint := range api.Endpoints {
 			var err error
@@ -194,6 +195,7 @@ func createDataSources(ctx context.Context, cfg Config, client *ethclient.Client
 
 func (self *IndexTracker) Run() error {
 	delay := time.Second
+	self.dataSources,_ = createDataSources(self.ctx, self.cfg, self.client)
 	for symbol, dataSources := range self.dataSources {
 		for _, dataSource := range dataSources {
 			// Use the default interval when not set.
