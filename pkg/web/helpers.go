@@ -79,10 +79,8 @@ func ExpandTimeVars(url string) string {
 	yesterdayBodMilliseconds := strconv.Itoa(int(yesterdayBod.Unix() * 1000))
 	yesterdayEodMilliseconds := strconv.Itoa(int(yesterdayEod.Unix() * 1000))
 	yesterdayEodSeconds := strconv.Itoa(int(yesterdayEod.Unix()))
-
 	url = strings.Replace(url, "$BOD_MILLISECONDS", yesterdayBodMilliseconds, -1)
 	url = strings.Replace(url, "$EOD_MILLISECONDS", yesterdayEodMilliseconds, -1)
 	url = strings.Replace(url, "$EOD_SECONDS", yesterdayEodSeconds, -1)
-
 	return url
 }

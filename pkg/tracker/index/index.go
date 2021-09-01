@@ -7,10 +7,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"fmt"
 	"os"
 	"sort"
 	"strconv"
@@ -123,6 +123,7 @@ func createDataSources(ctx context.Context, cfg Config, client *ethclient.Client
 			var err error
 
 			// Fail early when api url is missing env var.
+			urlRaw := endpoint.URL
 			url := web.ExpandTimeVars(endpoint.URL)
 			endpoint.URL = os.Expand(url, func(key string) string {
 				if os.Getenv(key) == "" {
@@ -148,14 +149,14 @@ func createDataSources(ctx context.Context, cfg Config, client *ethclient.Client
 			switch endpoint.Type {
 			case httpSource:
 				{
-					source = NewJSONapi(api.Interval.Duration, endpoint.URL, NewParser(endpoint))
+					source = NewJSONapi(api.Interval.Duration, endpoint.URL, NewParser(endpoint),urlRaw)
 					if strings.Contains(strings.ToLower(symbol), "volume") {
-						source = NewJSONapiVolume(api.Interval.Duration, endpoint.URL, NewParser(endpoint))
+						source = NewJSONapiVolume(api.Interval.Duration, endpoint.URL, NewParser(endpoint),urlRaw)
 					}
 				}
 			case bravenewcoin:
 				{
-					source, err = NewBravenewcoin(api.Interval.Duration, endpoint.URL, NewParser(endpoint))
+					source, err = NewBravenewcoin(api.Interval.Duration, endpoint.URL, NewParser(endpoint),urlRaw)
 					if err != nil {
 						return nil, errors.Wrap(err, "creating Bravenewcoin source")
 					}
@@ -383,11 +384,11 @@ type Apis struct {
 // This is to avoid double counting volumes for the same time period.
 // Another way is to skip adding the data, but this messes up the confidence calculations
 // which counts total added data points.
-func NewJSONapiVolume(interval time.Duration, url string, parser Parser) *JSONapiVolume {
+func NewJSONapiVolume(interval time.Duration, url string, parser Parser,urlRaw string) *JSONapiVolume {
 	return &JSONapiVolume{
 		JSONapi: &JSONapi{
 			url:      url,
-			urlRaw:   url,
+			urlRaw:   urlRaw,
 			interval: interval,
 			Parser:   parser,
 		},
@@ -430,16 +431,16 @@ func (self *JSONapiVolume) Get(ctx context.Context) (float64, error) {
 
 }
 
-func NewJSONapi(interval time.Duration, url string, parser Parser) *JSONapi {
+func NewJSONapi(interval time.Duration, url string, parser Parser,urlRaw string) *JSONapi {
 	return &JSONapi{
 		url:      url,
-		urlRaw:   url,
+		urlRaw:   urlRaw,
 		interval: interval,
 		Parser:   parser,
 	}
 }
 
-func NewBravenewcoin(interval time.Duration, urlString string, parser Parser) (*Bravenewcoin, error) {
+func NewBravenewcoin(interval time.Duration, urlString string, parser Parser,urlRaw string) (*Bravenewcoin, error) {
 	u, err := url.Parse(urlString)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse bravecoin url")
@@ -459,6 +460,7 @@ func NewBravenewcoin(interval time.Duration, urlString string, parser Parser) (*
 		bearerToken: bearerToken,
 		JSONapi: &JSONapi{
 			url:      urlString,
+			urlRaw:   urlRaw,
 			interval: interval,
 			Parser:   parser,
 		},

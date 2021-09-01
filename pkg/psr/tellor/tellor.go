@@ -6,7 +6,6 @@ package tellor
 import (
 	"math"
 	"time"
-
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -185,6 +184,5 @@ func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
 	if conf < self.cfg.MinConfidence {
 		return 0, errors.Errorf("not enough confidence - value:%v, conf:%v,confidence threshold:%v", val, conf, self.cfg.MinConfidence)
 	}
-
 	return val, err
 }
