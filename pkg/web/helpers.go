@@ -22,9 +22,28 @@ func Get(ctx context.Context, url string, headers map[string]string) ([]byte, er
 	client := http.Client{Transport: tr}
 	ticker := time.NewTicker(1 * time.Second)
 
-	req, err := http.NewRequest("GET", ExpandTimeVars(url), nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if strings.Contains(url, "https://api.anyblock.tools/market/AMPL_USD_via_ALL/") {
+		yesterday := time.Now().UTC().AddDate(0, 0, -1)
+		yesterdayBod := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
+		yesterdayEod := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 23, 59, 59, 999, yesterday.Location())
+		yesterdayBodMilliseconds := strconv.Itoa(int(yesterdayBod.Unix() * 1000))
+		yesterdayEodMilliseconds := strconv.Itoa(int(yesterdayEod.Unix() * 1000))
+		q := req.URL.Query()
+		q.Add("start", yesterdayBodMilliseconds)
+		q.Add("end", yesterdayEodMilliseconds)
+		req.URL.RawQuery = q.Encode()
+	} else if strings.Contains(url, "https://min-api.cryptocompare.com/data/dayAvg") {
+		yesterday := time.Now().UTC().AddDate(0, 0, -1)
+		yesterdayEod := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 23, 59, 59, 999, yesterday.Location())
+		yesterdayEodSeconds := strconv.Itoa(int(yesterdayEod.Unix()))
+		q := req.URL.Query()
+		q.Add("toTs", yesterdayEodSeconds)
+		req.URL.RawQuery = q.Encode()
 	}
 
 	for k, v := range headers {
@@ -70,19 +89,4 @@ func Get(ctx context.Context, url string, headers map[string]string) ([]byte, er
 
 	return nil, errFinal
 
-}
-
-func ExpandTimeVars(url string) string {
-	yesterday := time.Now().UTC().AddDate(0, 0, -1)
-	yesterdayBod := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
-	yesterdayEod := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 23, 59, 59, 999, yesterday.Location())
-	yesterdayBodMilliseconds := strconv.Itoa(int(yesterdayBod.Unix() * 1000))
-	yesterdayEodMilliseconds := strconv.Itoa(int(yesterdayEod.Unix() * 1000))
-	yesterdayEodSeconds := strconv.Itoa(int(yesterdayEod.Unix()))
-
-	url = strings.Replace(url, "$BOD_MILLISECONDS", yesterdayBodMilliseconds, -1)
-	url = strings.Replace(url, "$EOD_MILLISECONDS", yesterdayEodMilliseconds, -1)
-	url = strings.Replace(url, "$EOD_SECONDS", yesterdayEodSeconds, -1)
-
-	return url
 }
