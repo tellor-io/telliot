@@ -106,10 +106,6 @@
             {
                 "URL": "https://api.anyblock.tools/market/AMPL_USD_via_ALL/daily-volume?roundDay=false&debug=false&access_token=$ANYBLOCK_KEY",
                 "param": "$.overallVWAP"
-            },
-            {
-                "URL": "https://min-api.cryptocompare.com/data/dayAvg?fsym=AMPL&tsym=USD&api_key=$CC_KEY",
-                "param": "$.USD"
             }
         ]
     },
