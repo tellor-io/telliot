@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cryptoriums/telliot/pkg/tracker/blocks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -81,7 +82,7 @@ func (self mineCmd) Run() error {
 			tsdbOptions := tsdb.DefaultOptions()
 			// 5 days are enough as the aggregator needs data only 24 hours in the past.
 			tsdbOptions.RetentionDuration = int64(5 * 24 * time.Hour)
-			_tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
+			_tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions, tsdb.NewDBStats())
 			if err != nil {
 				return errors.Wrap(err, "opening local tsdb DB")
 			}
@@ -123,6 +124,19 @@ func (self mineCmd) Run() error {
 			if !ok {
 				return errors.New("tsdb is not a writable DB instance")
 			}
+
+			trackerBlocks, err := blocks.New(ctx, logger, blocks.Config{LogLevel: "info"}, _tsDB, client)
+			if err != nil {
+				return errors.Wrap(err, "creating com:"+blocks.ComponentName)
+			}
+
+			g.Add(func() error {
+				trackerBlocks.Start()
+				level.Info(logger).Log("msg", "shutdown complete", "component", blocks.ComponentName)
+				return err
+			}, func(error) {
+				trackerBlocks.Stop()
+			})
 
 			// Index Tracker.
 			index, err := index.New(logger, ctx, cfg.IndexTracker, _tsDB, client)

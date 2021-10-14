@@ -439,6 +439,24 @@ func (self *Aggregator) valsAt(symbol string, at time.Time, lookBack time.Durati
 	return result.Value.(promql.Vector), nil
 }
 
+func (self *Aggregator) InstantQuery(q string, at time.Time) (promql.Vector, error) {
+	query, err := self.promqlEngine.NewInstantQuery(
+		self.tsDB,
+		q,
+		at,
+	)
+	if err != nil {
+		return promql.Vector{}, err
+	}
+	defer query.Close()
+	res := query.Exec(self.ctx)
+	if res.Err != nil {
+		return promql.Vector{}, errors.Wrapf(res.Err, "error evaluating query:%v", query.Statement())
+	}
+
+	return res.Value.(promql.Vector), nil
+}
+
 func (self *Aggregator) resolution(symbol string, at time.Time) (time.Duration, error) {
 	query, err := self.promqlEngine.NewInstantQuery(
 		self.tsDB,
