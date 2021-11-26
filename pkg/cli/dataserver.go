@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cryptoriums/telliot/pkg/tracker/blocks"
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
@@ -53,7 +54,7 @@ func (self dataserverCmd) Run() error {
 		if err := os.MkdirAll(cfg.Db.Path, 0777); err != nil {
 			return errors.Wrap(err, "creating tsdb DB folder")
 		}
-		tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions)
+		tsDB, err := tsdb.Open(cfg.Db.Path, nil, nil, tsdbOptions, tsdb.NewDBStats())
 		if err != nil {
 			return errors.Wrap(err, "creating tsdb DB")
 		}
@@ -132,6 +133,19 @@ func (self dataserverCmd) Run() error {
 				srv.Stop()
 			})
 		}
+
+		trackerBlocks, err := blocks.New(ctx, logger, blocks.Config{LogLevel: "debug"}, tsDB, client)
+		if err != nil {
+			return errors.Wrap(err, "creating com:"+blocks.ComponentName)
+		}
+
+		g.Add(func() error {
+			trackerBlocks.Start()
+			level.Info(logger).Log("msg", "shutdown complete", "component", blocks.ComponentName)
+			return err
+		}, func(error) {
+			trackerBlocks.Stop()
+		})
 	}
 
 	if err := g.Run(); err != nil {

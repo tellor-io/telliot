@@ -7,6 +7,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/cryptoriums/telliot/pkg/tracker/blocks"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -174,6 +175,27 @@ func (self *Psr) getValue(reqID int64, ts time.Time) (float64, error) {
 		val, conf, err = self.aggregator.MeanAt("DEFIMCAP", ts)
 	case 59:
 		val, conf, err = self.aggregator.MedianAt("ETH/JPY", ts)
+	case 60:
+		hourIn7Days := "168h"
+
+		confL, errL := self.aggregator.InstantQuery(`sum(count_over_time(`+blocks.MetricBlockGasPriceAvg+`[`+hourIn7Days+`]))/ sum(`+blocks.MetricBlockNum+` - `+blocks.MetricBlockNum+` offset `+hourIn7Days+`)`, time.Now())
+		if errL != nil {
+			return 0, errors.Wrap(err, "getting confidence")
+		}
+		if len(confL) != 1 {
+			return 0, errors.New("not enough data for calculating confidence")
+		}
+		conf = confL[0].V
+
+		valL, errL := self.aggregator.InstantQuery(`avg_over_time(`+blocks.MetricBlockGasPriceAvg+`[`+hourIn7Days+`])`, time.Now())
+		if errL != nil {
+			return 0, errors.Wrap(err, "getting price avg")
+		}
+		if len(valL) != 1 {
+			return 0, errors.New("no data")
+		}
+
+		val = valL[0].V / 1e9 // Return the result in GWEI.
 	default:
 		return 0, errors.Errorf("undeclared request ID:%v", reqID)
 	}
